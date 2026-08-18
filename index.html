@@ -220,7 +220,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-    // --- نظام تشغيل الصوت المحسّن (يشمل حركة الدبابة) ---
+    // --- نظام الأصوات المحدث (صوت حركة مستقل لكل دبابة وأصوات للعدو) ---
     const soundFiles = {
         shoot: 'sounds/shoot.mp3',
         rocket: 'sounds/rocket.mp3',
@@ -229,35 +229,11 @@
         move: 'sounds/tank_move.mp3'
     };
 
-    let moveAudio = null;
-    let isMovingAudioPlaying = false;
-
-    function playSound(type) {
+    function playSound(type, volume = 1.0) {
         if (soundFiles[type]) {
             const audio = new Audio(soundFiles[type]);
-            audio.volume = 1.0;
+            audio.volume = volume;
             audio.play().catch(e => {});
-        }
-    }
-
-    function updateMoveSound(shouldPlay) {
-        if (shouldPlay) {
-            if (!moveAudio) {
-                moveAudio = new Audio(soundFiles.move);
-                moveAudio.loop = true;
-                moveAudio.volume = 0.6;
-            }
-            if (!isMovingAudioPlaying) {
-                moveAudio.play().then(() => {
-                    isMovingAudioPlaying = true;
-                }).catch(e => {});
-            }
-        } else {
-            if (moveAudio && isMovingAudioPlaying) {
-                moveAudio.pause();
-                moveAudio.currentTime = 0;
-                isMovingAudioPlaying = false;
-            }
         }
     }
 
@@ -584,6 +560,11 @@
         hpLabel.innerText = `${initialHp}`;
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
+        // إنشاء محرك صوت خاص وحصري لهذه الدبابة لتتحرك بحرية وبشكل مستقل
+        let moveAudio = new Audio(soundFiles.move);
+        moveAudio.loop = true;
+        moveAudio.volume = 0.4;
+
         return { 
             mesh: tankGroup, 
             hpLabel: hpLabel, 
@@ -593,8 +574,35 @@
             hp: initialHp, 
             maxHp: initialHp, 
             lastShot: 0, 
-            isDestroyed: false 
+            isDestroyed: false,
+            moveAudio: moveAudio,
+            isMovingPlaying: false
         };
+    }
+
+    function updateTankAudio(tank, isMoving) {
+        if (gameOver || tank.isDestroyed) {
+            if (tank.isMovingPlaying) {
+                tank.moveAudio.pause();
+                tank.moveAudio.currentTime = 0;
+                tank.isMovingPlaying = false;
+            }
+            return;
+        }
+
+        if (isMoving) {
+            if (!tank.isMovingPlaying) {
+                tank.moveAudio.play().then(() => {
+                    tank.isMovingPlaying = true;
+                }).catch(e => {});
+            }
+        } else {
+            if (tank.isMovingPlaying) {
+                tank.moveAudio.pause();
+                tank.moveAudio.currentTime = 0;
+                tank.isMovingPlaying = false;
+            }
+        }
     }
 
     function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
@@ -823,10 +831,11 @@
         const now = Date.now();
         if (now - fromTank.lastShot < 1200) return;
         fromTank.lastShot = now;
-        if (fromTank.team === 'player') {
-            triggerCameraShake(1.2);
-            playSound('shoot');
-        }
+        
+        // تشغيل صوت الإطلاق لكل دبابة (سواء لاعب أو عدو)
+        playSound('shoot', fromTank.team === 'player' ? 1.0 : 0.4);
+        if (fromTank.team === 'player') triggerCameraShake(1.2);
+
         const bulletMesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffcc00 }));
         bulletMesh.position.copy(fromTank.mesh.position).add(new THREE.Vector3(0, 3, 0));
         scene.add(bulletMesh);
@@ -837,10 +846,11 @@
         const now = Date.now();
         if (now - fromTank.lastShot < 3500) return;
         fromTank.lastShot = now;
-        if (fromTank.team === 'player') {
-            triggerCameraShake(2.5);
-            playSound('rocket');
-        }
+
+        // تشغيل صوت الصاروخ لكل دبابة
+        playSound('rocket', fromTank.team === 'player' ? 1.0 : 0.5);
+        if (fromTank.team === 'player') triggerCameraShake(2.5);
+
         const missileGeo = new THREE.ConeGeometry(0.4, 2.5, 6);
         missileGeo.rotateX(Math.PI / 2);
         const missileMesh = new THREE.Mesh(missileGeo, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
@@ -935,6 +945,7 @@
                     b.targetTank.isDestroyed = true;
                     b.targetTank.target = null;
                     b.targetTank.hpLabel.remove();
+                    updateTankAudio(b.targetTank, false);
                     if (b.fromTeam === 'player') totalTanksLost++;
                     else enemyTanksLost++;
                 }
@@ -961,7 +972,7 @@
                 m.mesh.lookAt(m.targetPos);
                 if (dir.length() < 3.5) {
                     createShockwaveAndExplosion(m.mesh.position);
-                    triggerCameraShake(2.2);
+                    if (m.fromTeam === 'player') triggerCameraShake(2.2);
                     if (m.targetTank && !m.targetTank.isDestroyed) {
                         m.targetTank.hp -= 120;
                         updateTanksDamageVisual(m.targetTank);
@@ -969,6 +980,7 @@
                             m.targetTank.isDestroyed = true;
                             m.targetTank.target = null;
                             m.targetTank.hpLabel.remove();
+                            updateTankAudio(m.targetTank, false);
                             if (m.fromTeam === 'player') totalTanksLost++;
                             else enemyTanksLost++;
                         }
@@ -982,15 +994,17 @@
             }
         }
 
-        // فحص ما إذا كانت أي دبابة تابعة للاعب تتحرك حالياً لتشغيل صوت الحركة
-        let isAnyPlayerTankMoving = false;
-
+        // حركة وتحديث أصوات دبابات اللاعبين (كل دبابة على حدة)
         playerTanks.forEach(tankData => {
-            if (tankData.isDestroyed) return;
+            if (tankData.isDestroyed) {
+                updateTankAudio(tankData, false);
+                return;
+            }
+            let isMoving = false;
             if (tankData.target) {
                 const dist = tankData.mesh.position.distanceTo(tankData.target);
                 if (dist > 1.5) {
-                    isAnyPlayerTankMoving = true;
+                    isMoving = true;
                     const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
                     tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
                     let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
@@ -1000,6 +1014,7 @@
                     tankData.target = null; 
                 }
             }
+            updateTankAudio(tankData, isMoving);
             
             let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < 110);
             if (enemyTarget) {
@@ -1007,9 +1022,6 @@
                 else fireBullet(tankData, enemyTarget);
             }
         });
-
-        // تشغيل أو إيقاف صوت المشي بناءً على حركة دبابات اللاعب
-        updateMoveSound(isAnyPlayerTankMoving);
 
         let enemyBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
         let playerBaseZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
@@ -1026,8 +1038,12 @@
             }
         }
 
+        // حركة وتحديث أصوات دبابات العدو (كل دبابة على حدة)
         enemyTanks.forEach(tankData => {
-            if (tankData.isDestroyed) return;
+            if (tankData.isDestroyed) {
+                updateTankAudio(tankData, false);
+                return;
+            }
             if (!tankData.target || Math.random() < 0.01) {
                 let targetZ = playerBaseZ;
                 if (Math.random() < 0.3 && oilRigs.length > 0) {
@@ -1037,13 +1053,17 @@
                     tankData.target = new THREE.Vector3((Math.random() - 0.5) * 40, 0, targetZ);
                 }
             }
+            let isMoving = false;
             const dist = tankData.mesh.position.distanceTo(tankData.target);
             if (dist > 1.5) {
+                isMoving = true;
                 const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
                 tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
                 let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
                 if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
             }
+            updateTankAudio(tankData, isMoving);
+
             let playerTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < 110);
             if (playerTarget) {
                 if (tankData.type === 'rocket') fireTacticalMissile(tankData, playerTarget);
@@ -1176,7 +1196,9 @@
     function startCinematicEnding(isPlayerWinner) {
         gameOver = true;
         isCinematicEnding = true;
-        updateMoveSound(false); // إيقاف صوت المشي عند نهاية اللعبة
+        // إيقاف جميع أصوات حركة الدبابات عند النهاية
+        [...playerTanks, ...enemyTanks].forEach(t => updateTankAudio(t, false));
+
         document.getElementById('ui-overlay').style.display = 'none';
 
         let eBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
