@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>معركة السيطرة الاستراتيجية</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        #start-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+        }
+
+        .menu-card {
+            background: rgba(30, 41, 59, 0.95); border: 1px solid #38bdf8;
+            border-radius: 12px; padding: 16px 20px; width: 90%; max-width: 380px; text-align: center;
+        }
+
+        .menu-card h1 { font-size: 16px; margin-bottom: 10px; color: #38bdf8; }
+        .section-title { font-size: 11px; color: #94a3b8; margin: 6px 0 3px 0; text-align: right; }
+        .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+
+        .flag-btn {
+            flex: 1; padding: 6px; border: 1px solid #475569; border-radius: 6px;
+            background: #1e293b; color: #fff; font-weight: bold; font-size: 11px; cursor: pointer;
+        }
+
+        .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
+
+        #start-btn {
+            width: 100%; margin-top: 10px; padding: 8px; border: none; border-radius: 6px;
+            background: #0284c7; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+
+        #ui-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5; pointer-events: none; display: none;
+        }
+
+        .tank-hp-label {
+            position: absolute; transform: translate(-50%, -100%);
+            background: rgba(0, 0, 0, 0.75); padding: 1px 4px; border-radius: 3px;
+            font-size: 9px; font-weight: bold; pointer-events: none; white-space: nowrap;
+            border: 1px solid #334155; transition: transform 0.1s linear;
+        }
+        .hp-player { color: #22c55e; border-color: rgba(34, 197, 94, 0.4); }
+        .hp-enemy { color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
+
+        .top-capture-box {
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            width: 210px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8;
+            border-radius: 6px; padding: 4px 8px; text-align: center; color: white; font-size: 10px;
+        }
+        .capture-bar-bg { width: 100%; height: 5px; background: #334155; border-radius: 3px; margin-top: 2px; overflow: hidden; }
+        .capture-bar-fill { width: 0%; height: 100%; background: #22c55e; }
+
+        .left-controls-group {
+            position: absolute; top: 8px; left: 8px; pointer-events: auto;
+            display: flex; flex-direction: column; gap: 6px; width: 130px;
+        }
+
+        .selection-controls { display: flex; gap: 4px; width: 100%; }
+        .sel-btn {
+            flex: 1; background: rgba(30, 41, 59, 0.85); border: 1px solid #38bdf8; color: white;
+            padding: 5px 4px; border-radius: 5px; font-size: 10px; font-weight: bold; text-align: center; cursor: pointer;
+        }
+        .sel-btn.active { background: #0284c7; }
+
+        .corner-economy {
+            background: rgba(15, 23, 42, 0.85); border: 1px solid #f59e0b;
+            border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 5px; width: 100%;
+        }
+        .money-row { display: flex; justify-content: space-between; align-items: center; }
+        .money-small { color: #fbbf24; font-weight: bold; font-size: 11px; }
+        
+        .buy-btn-small {
+            background: #22c55e; border: none; color: white; padding: 5px;
+            border-radius: 4px; font-weight: bold; font-size: 9px; width: 100%; text-align: center; cursor: pointer;
+        }
+        .buy-btn-small:disabled { background: #64748b; }
+        .buy-btn-rocket { background: #ea580c; }
+        .buy-btn-rocket:disabled { background: #64748b; }
+
+        #floating-msg {
+            position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75); color: #38bdf8; padding: 3px 8px;
+            border-radius: 4px; font-size: 10px; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+        }
+
+        .cam-controls {
+            position: absolute; bottom: 8px; right: 8px;
+            display: grid; grid-template-columns: repeat(3, 42px); gap: 4px;
+            pointer-events: auto;
+        }
+        .cam-btn {
+            width: 42px; height: 42px; background: rgba(30, 41, 59, 0.85);
+            border: 1px solid #38bdf8; border-radius: 6px; color: white;
+            font-size: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .cam-btn:active, .cam-btn.pressed { background: #0284c7; border-color: #7dd3fc; }
+        .cam-btn.up { grid-column: 2; grid-row: 1; }
+        .cam-btn.left { grid-column: 1; grid-row: 2; }
+        .cam-btn.down { grid-column: 2; grid-row: 2; }
+        .cam-btn.right { grid-column: 3; grid-row: 2; }
+        .cam-btn.zoom-in { grid-column: 1; grid-row: 1; font-size: 12px; }
+        .cam-btn.zoom-out { grid-column: 3; grid-row: 1; font-size: 12px; }
+
+        .cam-hint {
+            position: absolute; bottom: 8px; left: 8px;
+            background: rgba(15, 23, 42, 0.75); border: 1px solid #38bdf8;
+            color: #93c5fd; padding: 3px 6px; border-radius: 4px; font-size: 9px; pointer-events: none;
+        }
+
+        #victory-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
+            background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+        }
+        #victory-screen h1 { font-size: 20px; color: #22c55e; margin-bottom: 6px; }
+        .stats-box {
+            background: rgba(30, 41, 59, 0.9); border: 1px solid #38bdf8; border-radius: 8px;
+            padding: 10px 16px; font-size: 11px; margin: 8px 0; width: 260px; text-align: right; line-height: 1.5;
+        }
+        #victory-flag-canvas { width: 180px; height: 100px; border-radius: 6px; margin: 6px 0; }
+        .restart-btn { padding: 6px 16px; background: #22c55e; border: none; color: white; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="start-menu">
+    <div class="menu-card">
+        <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
+        
+        <div class="section-title">اختر علم معسكرك:</div>
+        <div class="flag-options" id="player-flags">
+            <button class="flag-btn active-player" onclick="selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
+            <button class="flag-btn" onclick="selectFlag('player', 'red')">الأحمر (نجمتان)</button>
+        </div>
+
+        <div class="section-title">اختر علم معسكر العدو:</div>
+        <div class="flag-options" id="enemy-flags">
+            <button class="flag-btn" onclick="selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
+            <button class="flag-btn active-enemy" onclick="selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
+        </div>
+
+        <button id="start-btn" onclick="startGame()">بدء المعركة 🚀</button>
+    </div>
+</div>
+
+<div id="ui-overlay">
+    <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
+
+    <div class="top-capture-box">
+        <div id="capture-status-text">سيطر على معسكر العدو لتربح!</div>
+        <div class="capture-bar-bg">
+            <div id="capture-bar-fill" class="capture-bar-fill"></div>
+        </div>
+    </div>
+
+    <div class="left-controls-group">
+        <div class="selection-controls">
+            <button class="sel-btn active" id="sel-all-btn" onclick="setSelectionMode('all')">الكل</button>
+            <button class="sel-btn" id="sel-single-btn" onclick="setSelectionMode('single')">فردي</button>
+        </div>
+
+        <div class="corner-economy">
+            <div class="money-row">
+                <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
+                <div class="money-small"><span id="money-display">500</span>$</div>
+            </div>
+            <button class="buy-btn-small" id="buy-tank-btn" onclick="buyPlayerTank('normal')">عادية (150$)</button>
+            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="buyPlayerTank('rocket')">صاروخية (300$)</button>
+        </div>
+    </div>
+
+    <div id="floating-msg"></div>
+
+    <div class="cam-controls">
+        <button class="cam-btn zoom-in" 
+            onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
+            ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
+        
+        <button class="cam-btn up" 
+            onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)"
+            ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+        
+        <button class="cam-btn zoom-out" 
+            onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)"
+            ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
+        
+        <button class="cam-btn left" 
+            onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)"
+            ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+        
+        <button class="cam-btn down" 
+            onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)"
+            ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+        
+        <button class="cam-btn right" 
+            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
+            ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+    </div>
+
+    <div class="cam-hint">اسحب بالشاشة لتنقل الكاميرا أو استخدم الأزرار 🎯</div>
+</div>
+
+<div id="victory-screen">
+    <h1 id="victory-title">انتهت المعركة!</h1>
+    <div class="stats-box" id="stats-content"></div>
+    <canvas id="victory-flag-canvas"></canvas>
+    <button class="restart-btn" onclick="location.reload()">إعادة المعركة 🔄</button>
+</div>
+
+<div id="canvas-container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+    // --- نظام تشغيل الصوت المحسّن ---
+    const soundFiles = {
+        shoot: 'sounds/shoot.mp3',
+        rocket: 'sounds/rocket.mp3',
+        explosion: 'sounds/explosion.mp3',
+        buy: 'sounds/buy.mp3'
+    };
+
+    function playSound(type) {
+        if (soundFiles[type]) {
+            const audio = new Audio(soundFiles[type]);
+            audio.volume = 1.0;
+            audio.play().catch(e => {
+                // يتجاهل أي قيود أمان للمتصفح إذا لم يتم الضغط بعد
+            });
+        }
+    }
+
+    let scene, camera, renderer;
+    let playerFlagType = 'green';
+    let enemyFlagType = 'red';
+
+    let cameraRadius = 200, targetCameraRadius = 200;
+    let cameraTheta = Math.PI / 4;
+    let cameraPhi = Math.PI / 3.5;
+    let targetLookAt = new THREE.Vector3(0, 0, 0);
+
+    let shakeTimer = 0;
+    let shakeIntensity = 0;
+    let camInputs = { up: false, down: false, left: false, right: false, zi: false, zo: false };
+
+    let isDragging = false;
+    let previousTouchX = 0;
+    let previousTouchY = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let hasMoved = false;
+
+    let playerTanks = [];
+    let enemyTanks = [];
+    let bullets = [];
+    let tacticalMissiles = [];
+    let shockwaves = [];
+    let smokeParticles = [];
+    let obstacles = []; 
+
+    let selectionMode = 'all';
+    let selectedTank = null;
+    let playerTargetPos = null;
+
+    let targetMarkerMesh;
+    let raycaster = new THREE.Raycaster();
+    let mouse = new THREE.Vector2();
+    let terrainMesh;
+
+    let enemyPoleFlagMesh, playerPoleFlagMesh;
+    let enemyFlagDataRef, playerFlagDataRef;
+    let enemyFlagHeight = 38.5;
+    let playerFlagHeight = 38.5;
+
+    let captureProgress = 0;
+    let enemyCaptureProgress = 0;
+    let gameOver = false;
+    let isCinematicEnding = false;
+    let cinematicTargetLook = null;
+
+    const BASE_DISTANCE = 160;
+    const CAPTURE_RADIUS = 35;
+    const TANK_RADIUS = 6; 
+
+    let playerMoney = 500;
+    let enemyMoney = 500;
+    let totalMoneySpent = 0;
+    let totalTanksLost = 0;
+    let enemyTanksLost = 0;
+    let oilRigs = [];
+    let gameTick = 0;
+    let flagWaveTime = 0;
+    let activeFlagMeshes = [];
+
+    let playerBuildCooldown = 0;
+    let enemyBuildCooldown = 0;
+
+    function showFloatingMsg(text) {
+        const msg = document.getElementById('floating-msg');
+        msg.innerText = text;
+        msg.style.opacity = '1';
+        setTimeout(() => { msg.style.opacity = '0'; }, 2000);
+    }
+
+    function init() {
+        const container = document.getElementById('canvas-container');
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x38bdf8);
+
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
+        updateCameraPosition();
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        container.appendChild(renderer.domElement);
+
+        setupLighting();
+        createBrownSoilTerrain();
+        createBases();
+        createOilRigs();
+        createTargetMarker();
+        setupInteraction();
+
+        updateEconomyUI();
+        window.addEventListener('resize', onWindowResize);
+        animate();
+    }
+
+    function camMove(dir, state) { camInputs[dir] = state; }
+
+    function processCameraInputs() {
+        if (isCinematicEnding) return;
+        const moveSpeed = 3.5;
+        let dx = 0, dz = 0;
+
+        if (camInputs.up) { dx -= Math.sin(cameraTheta) * moveSpeed; dz -= Math.cos(cameraTheta) * moveSpeed; }
+        if (camInputs.down) { dx += Math.sin(cameraTheta) * moveSpeed; dz += Math.cos(cameraTheta) * moveSpeed; }
+        if (camInputs.left) { dx -= Math.cos(cameraTheta) * moveSpeed; dz += Math.sin(cameraTheta) * moveSpeed; }
+        if (camInputs.right) { dx += Math.cos(cameraTheta) * moveSpeed; dz -= Math.sin(cameraTheta) * moveSpeed; }
+
+        targetLookAt.x = Math.max(-300, Math.min(300, targetLookAt.x + dx));
+        targetLookAt.z = Math.max(-300, Math.min(300, targetLookAt.z + dz));
+
+        if (camInputs.zi) targetCameraRadius = Math.max(50, targetCameraRadius - 5);
+        if (camInputs.zo) targetCameraRadius = Math.min(400, targetCameraRadius + 5);
+    }
+
+    function selectFlag(role, color) {
+        if (role === 'player') {
+            if (color === enemyFlagType) enemyFlagType = color === 'green' ? 'red' : 'green';
+            playerFlagType = color;
+        } else {
+            if (color === playerFlagType) playerFlagType = color === 'green' ? 'red' : 'green';
+            enemyFlagType = color;
+        }
+        updateFlagButtonsUI();
+    }
+
+    function updateFlagButtonsUI() {
+        document.querySelectorAll('#player-flags .flag-btn').forEach(btn => {
+            btn.classList.toggle('active-player', btn.innerText.includes(playerFlagType === 'green' ? 'الأخضر' : 'الأحمر'));
+        });
+        document.querySelectorAll('#enemy-flags .flag-btn').forEach(btn => {
+            btn.classList.toggle('active-enemy', btn.innerText.includes(enemyFlagType === 'green' ? 'الأخضر' : 'الأحمر'));
+        });
+    }
+
+    function setSelectionMode(mode) {
+        selectionMode = mode;
+        document.getElementById('sel-all-btn').classList.toggle('active', mode === 'all');
+        document.getElementById('sel-single-btn').classList.toggle('active', mode === 'single');
+        if (mode === 'all') selectedTank = null;
+        showFloatingMsg(mode === 'all' ? 'تم تحديد جميع الدبابات' : 'اضغط على الدبابة لتحديدها');
+    }
+
+    function startGame() {
+        document.getElementById('start-menu').style.display = 'none';
+        document.getElementById('ui-overlay').style.display = 'block';
+        
+        // تشغيل صوت خفيف أو تهيئة السياق الصوتي عبر تفاعل المستخدم
+        playSound('buy');
+
+        let playerSideZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
+        targetLookAt.set(0, 0, playerSideZ / 2);
+        showFloatingMsg('بدأت المعركة برصيد 500$ لكل طرف!');
+    }
+
+    function setupLighting() {
+        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(150, 250, 150);
+        scene.add(dirLight);
+    }
+
+    function createBrownSoilTerrain() {
+        const geometry = new THREE.PlaneGeometry(800, 800, 30, 30);
+        geometry.rotateX(-Math.PI / 2);
+        terrainMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 }));
+        scene.add(terrainMesh);
+    }
+
+    function createPlayerBase(parentGroup) {
+        const buildingMat = new THREE.MeshStandardMaterial({ color: 0x2e3b23, roughness: 0.7 });
+        const subBuildingMat = new THREE.MeshStandardMaterial({ color: 0x3b4a2e, roughness: 0.8 });
+
+        const mainBuilding = new THREE.Mesh(new THREE.BoxGeometry(26, 9, 16), buildingMat);
+        mainBuilding.position.set(0, 4.5, 0); 
+        parentGroup.add(mainBuilding);
+
+        const subBuilding1 = new THREE.Mesh(new THREE.BoxGeometry(12, 5, 10), subBuildingMat);
+        subBuilding1.position.set(-15, 2.5, 6);
+        parentGroup.add(subBuilding1);
+
+        const subBuilding2 = new THREE.Mesh(new THREE.BoxGeometry(10, 6, 10), subBuildingMat);
+        subBuilding2.position.set(15, 3, -6);
+        parentGroup.add(subBuilding2);
+
+        const watchTower = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 14, 6), new THREE.MeshStandardMaterial({color: 0x1f291a}));
+        watchTower.position.set(-14, 7, -8);
+        parentGroup.add(watchTower);
+    }
+
+    function createEnemyBase(parentGroup) {
+        const fortMat = new THREE.MeshStandardMaterial({ color: 0x3d322c, roughness: 0.8 });
+        const accentMat = new THREE.MeshStandardMaterial({ color: 0x1f1916, roughness: 0.6 });
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.3 });
+
+        const coreBuilding = new THREE.Mesh(new THREE.BoxGeometry(28, 9, 16), fortMat);
+        coreBuilding.position.set(0, 4.5, 0);
+        parentGroup.add(coreBuilding);
+
+        const enemySub = new THREE.Mesh(new THREE.BoxGeometry(12, 5, 10), accentMat);
+        enemySub.position.set(14, 2.5, 6);
+        parentGroup.add(enemySub);
+
+        const towerBase = new THREE.Mesh(new THREE.CylinderGeometry(2, 2.8, 22, 8), metalMat);
+        towerBase.position.set(-15, 11, -6);
+        parentGroup.add(towerBase);
+
+        const towerCabin = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 6), fortMat);
+        towerCabin.position.set(-15, 23, -6);
+        parentGroup.add(towerCabin);
+
+        const towerRoof = new THREE.Mesh(new THREE.ConeGeometry(4.5, 3, 8), accentMat);
+        towerRoof.position.set(-15, 26.5, -6);
+        parentGroup.add(towerRoof);
+    }
+
+    function createBases() {
+        const northBase = new THREE.Group();
+        northBase.position.set(0, 0, -BASE_DISTANCE);
+        
+        const southBase = new THREE.Group();
+        southBase.position.set(0, 0, BASE_DISTANCE);
+        southBase.rotation.y = Math.PI;
+
+        if (playerFlagType === 'green') {
+            createPlayerBase(northBase);
+            createEnemyBase(southBase);
+        } else {
+            createPlayerBase(southBase);
+            createEnemyBase(northBase);
+        }
+
+        scene.add(northBase);
+        scene.add(southBase);
+
+        obstacles.push({ x: 0, z: -BASE_DISTANCE, radius: 18 });
+        obstacles.push({ x: 0, z: BASE_DISTANCE, radius: 18 });
+
+        let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
+        let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
+        
+        let pZ = playerFlagType === 'green' ? -BASE_DISTANCE + 35 : BASE_DISTANCE - 35;
+        let eZ = playerFlagType === 'green' ? BASE_DISTANCE - 35 : -BASE_DISTANCE + 35;
+
+        playerTanks.push(createTank(0, 0, pZ, pColor, 'player', 'normal'));
+        enemyTanks.push(createTank(0, 0, eZ, eColor, 'enemy', 'normal'));
+            
+        let northPoleZ = -BASE_DISTANCE;
+        let southPoleZ = BASE_DISTANCE;
+        
+        enemyPoleFlagMesh = createFlagPole(new THREE.Group(), 0, 0, playerFlagType === 'green' ? southPoleZ : northPoleZ, enemyFlagType, 'enemy');
+        playerPoleFlagMesh = createFlagPole(new THREE.Group(), 0, 0, playerFlagType === 'green' ? northPoleZ : southPoleZ, playerFlagType, 'player');
+    }
+
+    function createOilRigs() {
+        const oilMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 });
+        const positions = [{ x: 55, z: 0 }, { x: -55, z: 0 }];
+
+        positions.forEach(pos => {
+            const rigGroup = new THREE.Group();
+            rigGroup.position.set(pos.x, 0, pos.z);
+            const base = new THREE.Mesh(new THREE.BoxGeometry(10, 3, 10), oilMat);
+            base.position.y = 1.5; rigGroup.add(base);
+
+            const flagGroup = new THREE.Group();
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 20, 6), new THREE.MeshStandardMaterial({color: 0x999999}));
+            pole.position.set(5, 10, 5); flagGroup.add(pole);
+
+            const flagGeo = new THREE.PlaneGeometry(7, 4, 12, 4);
+            const flagMat = new THREE.MeshBasicMaterial({ map: createFlagTexture('none'), side: THREE.DoubleSide });
+            const flagMesh = new THREE.Mesh(flagGeo, flagMat);
+            flagMesh.position.set(8.5, 18, 5); flagGroup.add(flagMesh);
+            activeFlagMeshes.push({ mesh: flagMesh, baseHeight: 18, type: 'none' });
+
+            rigGroup.add(flagGroup);
+            scene.add(rigGroup);
+            obstacles.push({ x: pos.x, z: pos.z, radius: 8 });
+            
+            oilRigs.push({
+                x: pos.x, z: pos.z, group: rigGroup,
+                flagData: activeFlagMeshes[activeFlagMeshes.length - 1],
+                owner: 'none', captureProgress: 0
+            });
+        });
+    }
+
+    function createTank(x, y, z, colorHex, team, type = 'normal') {
+        const tankGroup = new THREE.Group();
+        let isRocketTank = (type === 'rocket');
+        
+        let baseColor = isRocketTank ? (team === 'player' ? 0x1e3a8a : 0x7f1d1d) : colorHex;
+        const armorMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.5 });
+        const trackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+
+        const bodySizeX = isRocketTank ? 7 : 6;
+        const bodySizeZ = isRocketTank ? 10 : 9;
+        const body = new THREE.Mesh(new THREE.BoxGeometry(bodySizeX, 2.2, bodySizeZ), armorMat);
+        body.position.y = 1.2; body.name = "body"; tankGroup.add(body);
+        
+        const leftTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, bodySizeZ + 0.2), trackMat);
+        leftTrack.position.set(-(bodySizeX/2 + 0.5), 0.8, 0); tankGroup.add(leftTrack);
+        
+        const rightTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, bodySizeZ + 0.2), trackMat);
+        rightTrack.position.set((bodySizeX/2 + 0.5), 0.8, 0); tankGroup.add(rightTrack);
+        
+        const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 10), armorMat);
+        turret.position.y = 2.8; turret.name = "turret"; tankGroup.add(turret);
+        
+        if (isRocketTank) {
+            const launcherPod = new THREE.Mesh(new THREE.BoxGeometry(3, 1.8, 4), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+            launcherPod.position.set(0, 3.8, 0); launcherPod.name = "launcherPod"; tankGroup.add(launcherPod);
+        } else {
+            const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 6, 6), armorMat);
+            cannon.rotation.x = Math.PI / 2; cannon.position.set(0, 2.8, 4); cannon.name = "cannon"; tankGroup.add(cannon);
+        }
+
+        tankGroup.position.set(x, y, z);
+        scene.add(tankGroup);
+
+        const hpLabel = document.createElement('div');
+        hpLabel.className = `tank-hp-label ${team === 'player' ? 'hp-player' : 'hp-enemy'}`;
+        let initialHp = isRocketTank ? 200 : 100;
+        hpLabel.innerText = `${initialHp}`;
+        document.getElementById('hp-labels-container').appendChild(hpLabel);
+
+        return { 
+            mesh: tankGroup, 
+            hpLabel: hpLabel, 
+            target: null, 
+            team: team, 
+            type: type, 
+            hp: initialHp, 
+            maxHp: initialHp, 
+            lastShot: 0, 
+            isDestroyed: false 
+        };
+    }
+
+    function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
+        const geo = new THREE.SphereGeometry(0.8 * scale, 6, 6);
+        const mat = new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.7 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*2, 2, (Math.random()-0.5)*2));
+        scene.add(mesh);
+        smokeParticles.push({ mesh: mesh, life: 35, vy: 0.12 });
+    }
+
+    function updateTanksDamageVisual(tankData) {
+        let healthPercent = tankData.hp / tankData.maxHp;
+        let colorHex = healthPercent > 0.6 ? null : (healthPercent > 0.3 ? 0x555555 : 0x111111);
+        if (colorHex !== null) {
+            tankData.mesh.traverse((child) => {
+                if (child.isMesh && child.material && child.name !== "") {
+                    child.material.color.setHex(colorHex);
+                }
+            });
+        }
+    }
+
+    function buyPlayerTank(type) {
+        if (playerBuildCooldown > 0) return;
+
+        let cost = (type === 'rocket') ? 300 : 150;
+
+        if (playerMoney >= cost) {
+            playerMoney -= cost;
+            totalMoneySpent += cost;
+            playerBuildCooldown = 1200;
+            updateEconomyUI();
+            
+            playSound('buy');
+            
+            let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
+            let pZ = playerFlagType === 'green' ? -BASE_DISTANCE + 40 : BASE_DISTANCE - 40;
+            let pX = (Math.random() - 0.5) * 30;
+            let newTank = createTank(pX, 0, pZ, pColor, 'player', type);
+            if (playerTargetPos) newTank.target = playerTargetPos.clone();
+            playerTanks.push(newTank);
+            showFloatingMsg(type === 'rocket' ? 'تم طلب دبابة صواريخ (تخرج خلال 20 ثانية)' : 'تم طلب دبابة عادية (تخرج خلال 20 ثانية)');
+        }
+    }
+
+    function createFlagPole(group, x, y, z, flagType, role) {
+        group.position.set(x, y, z);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 35, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
+        pole.position.set(16, 17.5, 0); group.add(pole);
+
+        const flagGeo = new THREE.PlaneGeometry(10, 6, 14, 4);
+        const flagMat = new THREE.MeshBasicMaterial({ map: createFlagTexture(flagType), side: THREE.DoubleSide });
+        const flagMesh = new THREE.Mesh(flagGeo, flagMat);
+        flagMesh.position.set(21, 38.5, 0);
+        group.add(flagMesh);
+
+        let flagDataObj = { mesh: flagMesh, baseHeight: 38.5, type: flagType };
+        activeFlagMeshes.push(flagDataObj);
+
+        if (role === 'enemy') enemyFlagDataRef = flagDataObj;
+        else playerFlagDataRef = flagDataObj;
+
+        scene.add(group);
+        return flagMesh;
+    }
+
+    function createFlagTexture(type) {
+        const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        if (type === 'green') {
+            ctx.fillStyle = '#007a3d'; ctx.fillRect(0, 0, 128, 21);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 21, 128, 22);
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 43, 128, 21);
+            drawStar(ctx, 42, 32, '#cc0000'); drawStar(ctx, 64, 32, '#cc0000'); drawStar(ctx, 85, 32, '#cc0000');
+        } else if(type === 'red') {
+            ctx.fillStyle = '#cc0000'; ctx.fillRect(0, 0, 128, 21);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 21, 128, 22);
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 43, 128, 21);
+            drawStar(ctx, 50, 32, '#007a3d'); drawStar(ctx, 78, 32, '#007a3d');
+        } else {
+            ctx.fillStyle = '#e5e7eb'; ctx.fillRect(0, 0, 128, 64);
+            ctx.fillStyle = '#9ca3af'; ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('محايد', 64, 36);
+        }
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    function drawStar(ctx, cx, cy, color) {
+        let rot = Math.PI / 2 * 3; let step = Math.PI / 5;
+        ctx.beginPath(); ctx.moveTo(cx, cy - 8);
+        for (let i = 0; i < 5; i++) {
+            ctx.lineTo(cx + Math.cos(rot) * 8, cy + Math.sin(rot) * 8); rot += step;
+            ctx.lineTo(cx + Math.cos(rot) * 3.5, cy + Math.sin(rot) * 3.5); rot += step;
+        }
+        ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+    }
+
+    function animateFlags() {
+        flagWaveTime += 0.15;
+        activeFlagMeshes.forEach(item => {
+            const positions = item.mesh.geometry.attributes.position;
+            for (let i = 0; i < positions.count; i++) {
+                let u = positions.getX(i);
+                let v = positions.getY(i);
+                if (u > -4.8) {
+                    let distanceFactor = (u + 5) / 10;
+                    let wave = Math.sin(flagWaveTime * 2.5 - u * 1.2) * 0.7 * distanceFactor;
+                    let secondaryWave = Math.cos(flagWaveTime * 4 - v * 0.8) * 0.3 * distanceFactor;
+                    positions.setZ(i, wave + secondaryWave);
+                }
+            }
+            positions.needsUpdate = true;
+        });
+    }
+
+    function createTargetMarker() {
+        const geo = new THREE.RingGeometry(1, 2, 16); geo.rotateX(-Math.PI / 2);
+        targetMarkerMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide }));
+        targetMarkerMesh.visible = false;
+        scene.add(targetMarkerMesh);
+    }
+
+    function updateCameraPosition() {
+        cameraRadius = THREE.MathUtils.lerp(cameraRadius, targetCameraRadius, 0.15);
+
+        let shakeX = 0, shakeY = 0;
+        if (shakeTimer > 0) {
+            shakeTimer--;
+            shakeX = (Math.random() - 0.5) * shakeIntensity;
+            shakeY = (Math.random() - 0.5) * shakeIntensity;
+        }
+
+        if (isCinematicEnding && cinematicTargetLook) {
+            targetLookAt.lerp(cinematicTargetLook, 0.05);
+            cameraRadius = THREE.MathUtils.lerp(cameraRadius, 70, 0.05);
+            cameraTheta += 0.01;
+        }
+
+        camera.position.x = targetLookAt.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta) + shakeX;
+        camera.position.y = targetLookAt.y + cameraRadius * Math.cos(cameraPhi) + shakeY;
+        camera.position.z = targetLookAt.z + cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+        camera.lookAt(targetLookAt);
+    }
+
+    function triggerCameraShake(intensity = 1.8) {
+        shakeTimer = 18;
+        shakeIntensity = intensity;
+    }
+
+    function setupInteraction() {
+        const dom = renderer.domElement;
+
+        dom.addEventListener('pointerdown', (e) => {
+            if (gameOver || isCinematicEnding) return;
+            isDragging = true;
+            hasMoved = false;
+            previousTouchX = e.clientX;
+            previousTouchY = e.clientY;
+            touchStartX = e.clientX;
+            touchStartY = e.clientY;
+        });
+
+        dom.addEventListener('pointermove', (e) => {
+            if (!isDragging || gameOver || isCinematicEnding) return;
+
+            const deltaX = e.clientX - previousTouchX;
+            const deltaY = e.clientY - previousTouchY;
+
+            if (Math.abs(e.clientX - touchStartX) > 5 || Math.abs(e.clientY - touchStartY) > 5) {
+                hasMoved = true;
+            }
+
+            if (hasMoved) {
+                cameraTheta -= deltaX * 0.008;
+                cameraPhi = Math.max(0.2, Math.min(Math.PI / 2 - 0.05, cameraPhi - deltaY * 0.008));
+            }
+
+            previousTouchX = e.clientX;
+            previousTouchY = e.clientY;
+        });
+
+        dom.addEventListener('pointerup', (e) => {
+            if (gameOver || isCinematicEnding) return;
+            isDragging = false;
+
+            if (!hasMoved) {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+
+                if (selectionMode === 'single') {
+                    let tankObjects = playerTanks.map(t => t.mesh);
+                    let intersects = raycaster.intersectObjects(tankObjects, true);
+                    if (intersects.length > 0) {
+                        let hitMesh = intersects[0].object;
+                        let found = playerTanks.find(t => t.mesh === hitMesh || t.mesh.children.includes(hitMesh));
+                        if (found && !found.isDestroyed) {
+                            selectedTank = found;
+                            showFloatingMsg('تم تحديد الدبابة');
+                            return;
+                        }
+                    }
+                }
+
+                const intersects = raycaster.intersectObject(terrainMesh);
+                if (intersects.length > 0) {
+                    playerTargetPos = intersects[0].point;
+                    targetMarkerMesh.position.copy(playerTargetPos);
+                    targetMarkerMesh.position.y = 0.1; targetMarkerMesh.visible = true;
+
+                    if (selectionMode === 'all') {
+                        playerTanks.forEach((t, index) => {
+                            if (t.isDestroyed) return;
+                            let offset = new THREE.Vector3((index%3)*8 - 8, 0, Math.floor(index/3)*8);
+                            t.target = playerTargetPos.clone().add(offset);
+                        });
+                    } else if (selectedTank && !selectedTank.isDestroyed) {
+                        selectedTank.target = playerTargetPos.clone();
+                    }
+                }
+            }
+        });
+
+        dom.addEventListener('wheel', (e) => { 
+            if(!isCinematicEnding) targetCameraRadius = Math.max(40, Math.min(400, targetCameraRadius + e.deltaY * 0.3)); 
+        }, { passive: true });
+    }
+
+    function canMoveTo(nextPos) {
+        for (let obs of obstacles) {
+            let dx = nextPos.x - obs.x; let dz = nextPos.z - obs.z;
+            if (Math.sqrt(dx*dx + dz*dz) < obs.radius + TANK_RADIUS) return false;
+        }
+        return true;
+    }
+
+    function fireBullet(fromTank, targetTank) {
+        const now = Date.now();
+        if (now - fromTank.lastShot < 1200) return;
+        fromTank.lastShot = now;
+
+        if (fromTank.team === 'player') {
+            triggerCameraShake(1.2);
+            playSound('shoot');
+        }
+
+        const bulletMesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffcc00 }));
+        bulletMesh.position.copy(fromTank.mesh.position).add(new THREE.Vector3(0, 3, 0));
+        scene.add(bulletMesh);
+
+        bullets.push({ 
+            mesh: bulletMesh, 
+            fromTank: fromTank, 
+            fromTeam: fromTank.team, 
+            targetTank: targetTank, 
+            speed: 2.2, 
+            damage: 34
+        });
+    }
+
+    function fireTacticalMissile(fromTank, targetTank) {
+        const now = Date.now();
+        if (now - fromTank.lastShot < 3500) return;
+        fromTank.lastShot = now;
+
+        if (fromTank.team === 'player') {
+            triggerCameraShake(2.5);
+            playSound('rocket');
+        }
+
+        const missileGeo = new THREE.ConeGeometry(0.4, 2.5, 6);
+        missileGeo.rotateX(Math.PI / 2);
+        const missileMesh = new THREE.Mesh(missileGeo, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        
+        let startPos = fromTank.mesh.position.clone().add(new THREE.Vector3(0, 4, 0));
+        missileMesh.position.copy(startPos);
+        scene.add(missileMesh);
+
+        tacticalMissiles.push({
+            mesh: missileMesh,
+            fromTeam: fromTank.team,
+            targetTank: targetTank,
+            phase: 'up',
+            peakHeight: 65,
+            progress: 0,
+            startPos: startPos,
+            targetPos: targetTank.mesh.position.clone()
+        });
+    }
+
+    function createShockwaveAndExplosion(centerPos) {
+        playSound('explosion');
+
+        const ringGeo = new THREE.RingGeometry(0.5, 1, 32);
+        ringGeo.rotateX(-Math.PI / 2);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.copy(centerPos);
+        ringMesh.position.y = 0.2;
+        scene.add(ringMesh);
+
+        const beamGeo = new THREE.CylinderGeometry(3, 8, 1, 16, 1, true);
+        const beamMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+        const beamMesh = new THREE.Mesh(beamGeo, beamMat);
+        beamMesh.position.copy(centerPos);
+        beamMesh.position.y = 5;
+        scene.add(beamMesh);
+
+        shockwaves.push({
+            ring: ringMesh,
+            beam: beamMesh,
+            life: 25,
+            scaleSpeed: 1.4
+        });
+
+        for (let i = 0; i < 8; i++) {
+            addSmokeParticle(centerPos, 0xff4500, 1.8);
+        }
+    }
+
+    function updateTankHpLabels() {
+        const tempV = new THREE.Vector3();
+        const allTanks = [...playerTanks, ...enemyTanks];
+
+        allTanks.forEach(tank => {
+            if (tank.isDestroyed) {
+                tank.hpLabel.style.display = 'none';
+                return;
+            }
+            tank.hpLabel.style.display = 'block';
+            tank.mesh.getWorldPosition(tempV);
+            tempV.y += (3.8 * tank.mesh.scale.y); 
+            
+            tempV.project(camera);
+            if (tempV.z > 1) {
+                tank.hpLabel.style.display = 'none';
+                return;
+            }
+            const x = (tempV.x * .5 + .5) * window.innerWidth;
+            const y = (-(tempV.y * .5) + .5) * window.innerHeight;
+
+            tank.hpLabel.style.left = `${x}px`;
+            tank.hpLabel.style.top = `${y}px`;
+            tank.hpLabel.innerText = `${tank.hp}`;
+        });
+    }
+
+    function updateTanksMovement() {
+        if (gameOver) return;
+
+        if (playerBuildCooldown > 0) {
+            playerBuildCooldown--;
+            updateEconomyUI();
+        }
+
+        if (enemyBuildCooldown > 0) enemyBuildCooldown--;
+
+        for (let i = smokeParticles.length - 1; i >= 0; i--) {
+            let p = smokeParticles[i];
+            p.life--; p.mesh.position.y += p.vy; p.mesh.scale.multiplyScalar(1.03); p.mesh.material.opacity -= 0.025;
+            if (p.life <= 0) { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); smokeParticles.splice(i, 1); }
+        }
+
+        for (let i = shockwaves.length - 1; i >= 0; i--) {
+            let sw = shockwaves[i];
+            sw.life--;
+            sw.ring.scale.addScalar(sw.scaleSpeed);
+            sw.ring.material.opacity -= 0.04;
+            sw.beam.scale.y += 0.8;
+            sw.beam.material.opacity -= 0.04;
+            if (sw.life <= 0) {
+                scene.remove(sw.ring); sw.ring.geometry.dispose(); sw.ring.material.dispose();
+                scene.remove(sw.beam); sw.beam.geometry.dispose(); sw.beam.material.dispose();
+                shockwaves.splice(i, 1);
+            }
+        }
+
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            if (!b.targetTank || !b.targetTank.mesh.parent || b.targetTank.isDestroyed) {
+                scene.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); bullets.splice(i, 1);
+                continue;
+            }
+            let dir = new THREE.Vector3().subVectors(b.targetTank.mesh.position, b.mesh.position);
+            if (dir.length() < 2.5) {
+                b.targetTank.hp -= b.damage;
+                playSound('explosion');
+                addSmokeParticle(b.targetTank.mesh.position);
+                updateTanksDamageVisual(b.targetTank);
+
+                if (b.targetTank.hp <= 0 && !b.targetTank.isDestroyed) {
+                    b.targetTank.isDestroyed = true;
+                    b.targetTank.target = null;
+                    b.targetTank.hpLabel.remove();
+                    if (b.fromTeam === 'player') totalTanksLost++;
+                    else enemyTanksLost++;
+                }
+                scene.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); bullets.splice(i, 1);
+            } else {
+                b.mesh.position.add(dir.normalize().multiplyScalar(b.speed));
+            }
+        }
+
+        for (let i = tacticalMissiles.length - 1; i >= 0; i--) {
+            let m = tacticalMissiles[i];
+            if (!m.targetTank || !m.targetTank.mesh.parent || m.targetTank.isDestroyed) {
+                if (m.targetTank) m.targetPos.copy(m.targetTank.mesh.position);
+            } else {
+                m.targetPos.copy(m.targetTank.mesh.position);
+            }
+
+            if (m.phase === 'up') {
+                m.mesh.position.y += 1.8;
+                addSmokeParticle(m.mesh.position, 0xaaaaaa, 0.8);
+                if (m.mesh.position.y >= m.peakHeight) {
+                    m.phase = 'dive';
+                }
+            } else if (m.phase === 'dive') {
+                let dir = new THREE.Vector3().subVectors(m.targetPos, m.mesh.position);
+                m.mesh.lookAt(m.targetPos);
+                
+                if (dir.length() < 3.5) {
+                    createShockwaveAndExplosion(m.mesh.position);
+                    triggerCameraShake(2.2);
+
+                    if (m.targetTank && !m.targetTank.isDestroyed) {
+                        m.targetTank.hp -= 120;
+                        updateTanksDamageVisual(m.targetTank);
+                        if (m.targetTank.hp <= 0) {
+                            m.targetTank.isDestroyed = true;
+                            m.targetTank.target = null;
+                            m.targetTank.hpLabel.remove();
+                            if (m.fromTeam === 'player') totalTanksLost++;
+                            else enemyTanksLost++;
+                        }
+                    }
+
+                    scene.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose();
+                    tacticalMissiles.splice(i, 1);
+                } else {
+                    m.mesh.position.add(dir.normalize().multiplyScalar(3.2));
+                    addSmokeParticle(m.mesh.position, 0xff5500, 1.2);
+                }
+            }
+        }
+
+        playerTanks.forEach(tankData => {
+            if (tankData.isDestroyed) return;
+            if (tankData.target) {
+                const dist = tankData.mesh.position.distanceTo(tankData.target);
+                if (dist > 1.5) {
+                    const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                    tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
+                    let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
+                    if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
+                } else {
+                    if (tankData.target === playerTargetPos) { targetMarkerMesh.visible = false; }
+                    tankData.target = null; 
+                }
+            }
+            
+            let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < 110);
+            if (enemyTarget) {
+                if (tankData.type === 'rocket') {
+                    fireTacticalMissile(tankData, enemyTarget);
+                } else {
+                    fireBullet(tankData, enemyTarget);
+                }
+            }
+        });
+
+        let enemyBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
+        let playerBaseZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
+
+        if (enemyMoney >= 150 && enemyBuildCooldown === 0 && enemyTanks.filter(t => !t.isDestroyed).length < 5) {
+            let buyType = (enemyMoney >= 300 && Math.random() > 0.5) ? 'rocket' : 'normal';
+            let cost = (buyType === 'rocket') ? 300 : 150;
+            if (enemyMoney >= cost) {
+                enemyMoney -= cost;
+                enemyBuildCooldown = 1200; 
+                let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
+                let eZ = playerFlagType === 'green' ? BASE_DISTANCE - 40 : -BASE_DISTANCE + 40;
+                enemyTanks.push(createTank((Math.random() - 0.5) * 30, 0, eZ, eColor, 'enemy', buyType));
+            }
+        }
+
+        enemyTanks.forEach(tankData => {
+            if (tankData.isDestroyed) return;
+            if (!tankData.target || Math.random() < 0.01) {
+                let targetZ = playerBaseZ;
+                if (Math.random() < 0.3 && oilRigs.length > 0) {
+                    let rig = oilRigs[Math.floor(Math.random() * oilRigs.length)];
+                    tankData.target = new THREE.Vector3(rig.x, 0, rig.z);
+                } else {
+                    tankData.target = new THREE.Vector3((Math.random() - 0.5) * 40, 0, targetZ);
+                }
+            }
+            const dist = tankData.mesh.position.distanceTo(tankData.target);
+            if (dist > 1.5) {
+                const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
+                let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
+                if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
+            }
+            let playerTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < 110);
+            if (playerTarget) {
+                if (tankData.type === 'rocket') fireTacticalMissile(tankData, playerTarget);
+                else fireBullet(tankData, playerTarget);
+            }
+        });
+
+        updateTankHpLabels();
+    }
+
+    function updateEconomyUI() {
+        document.getElementById('money-display').innerText = playerMoney;
+        let buyBtn = document.getElementById('buy-tank-btn');
+        let rocketBtn = document.getElementById('buy-rocket-tank-btn');
+
+        if (playerBuildCooldown > 0) {
+            let secs = Math.ceil(playerBuildCooldown / 60);
+            buyBtn.innerText = `انتظار (${secs}ث)`;
+            rocketBtn.innerText = `انتظار (${secs}ث)`;
+            buyBtn.disabled = true;
+            rocketBtn.disabled = true;
+        } else {
+            buyBtn.innerText = `عادية (150$)`;
+            rocketBtn.innerText = `صاروخية (300$)`;
+            buyBtn.disabled = (playerMoney < 150);
+            rocketBtn.disabled = (playerMoney < 300);
+        }
+    }
+
+    function checkLogicAndEconomy() {
+        if (gameOver) return;
+
+        gameTick++;
+        if (gameTick % 60 === 0) {
+            let pIncome = 0, eIncome = 0;
+            oilRigs.forEach(rig => {
+                if (rig.owner === 'player') pIncome += 10;
+                else if (rig.owner === 'enemy') eIncome += 10;
+            });
+            if (pIncome > 0) { playerMoney += pIncome; updateEconomyUI(); }
+            if (eIncome > 0) enemyMoney += eIncome;
+        }
+
+        oilRigs.forEach(rig => {
+            let playerNear = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, 0, rig.z)) < 22);
+            let enemyNear = enemyTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, 0, rig.z)) < 22);
+
+            if (playerNear && !enemyNear && rig.owner !== 'player') {
+                rig.captureProgress += 1.5;
+                if (rig.captureProgress >= 100) {
+                    rig.owner = 'player';
+                    rig.flagData.mesh.material.map = createFlagTexture(playerFlagType);
+                    rig.flagData.type = playerFlagType;
+                    showFloatingMsg('تمت السيطرة على بئر النفط!');
+                }
+            } else if (enemyNear && !playerNear && rig.owner !== 'enemy') {
+                rig.captureProgress -= 1.5;
+                if (rig.captureProgress <= -100) {
+                    rig.owner = 'enemy';
+                    rig.flagData.mesh.material.map = createFlagTexture(enemyFlagType);
+                    rig.flagData.type = enemyFlagType;
+                }
+            }
+        });
+
+        const enemyBasePos = new THREE.Vector3(0, 0, playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE);
+        const playerBasePos = new THREE.Vector3(0, 0, playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE);
+
+        let playerAtEnemyBase = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(enemyBasePos) < CAPTURE_RADIUS);
+        let enemyAtPlayerBase = enemyTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(playerBasePos) < CAPTURE_RADIUS);
+        
+        const captureText = document.getElementById('capture-status-text');
+        const captureFill = document.getElementById('capture-bar-fill');
+
+        if (playerAtEnemyBase) {
+            captureProgress += 0.3;
+            captureText.innerText = `السيطرة على العدو: ${Math.floor(captureProgress)}%`;
+            captureFill.style.width = `${Math.min(100, captureProgress)}%`;
+            captureFill.style.backgroundColor = '#22c55e';
+            
+            if (enemyFlagDataRef) {
+                enemyFlagHeight = THREE.MathUtils.lerp(38.5, 5, captureProgress / 100);
+                enemyPoleFlagMesh.position.y = enemyFlagHeight;
+            }
+
+            if (captureProgress >= 100) {
+                if (enemyFlagDataRef) {
+                    enemyFlagDataRef.mesh.material.map = createFlagTexture(playerFlagType);
+                    enemyFlagDataRef.mesh.material.needsUpdate = true;
+                    enemyPoleFlagMesh.position.y = 38.5;
+                }
+                startCinematicEnding(true);
+            }
+        } else if (captureProgress > 0 && captureProgress < 100 && !enemyAtPlayerBase) {
+            captureProgress -= 0.1;
+            captureFill.style.width = `${captureProgress}%`;
+            if (enemyFlagDataRef) {
+                enemyFlagHeight = THREE.MathUtils.lerp(38.5, 5, captureProgress / 100);
+                enemyPoleFlagMesh.position.y = enemyFlagHeight;
+            }
+        }
+
+        if (enemyAtPlayerBase) {
+            enemyCaptureProgress += 0.25;
+            captureText.innerText = `اختراق معسكرك: ${Math.floor(enemyCaptureProgress)}%`;
+            captureFill.style.width = `${Math.min(100, enemyCaptureProgress)}%`;
+            captureFill.style.backgroundColor = '#ef4444';
+
+            if (playerFlagDataRef) {
+                playerFlagHeight = THREE.MathUtils.lerp(38.5, 5, enemyCaptureProgress / 100);
+                playerPoleFlagMesh.position.y = playerFlagHeight;
+            }
+
+            if (enemyCaptureProgress >= 100) {
+                if (playerFlagDataRef) {
+                    playerFlagDataRef.mesh.material.map = createFlagTexture(enemyFlagType);
+                    playerFlagDataRef.mesh.material.needsUpdate = true;
+                    playerPoleFlagMesh.position.y = 38.5;
+                }
+                startCinematicEnding(false);
+            }
+        } else if (enemyCaptureProgress > 0 && enemyCaptureProgress < 100 && !playerAtEnemyBase) {
+            enemyCaptureProgress -= 0.1;
+            captureFill.style.width = `${enemyCaptureProgress}%`;
+            captureFill.style.backgroundColor = '#22c55e';
+            if (playerFlagDataRef) {
+                playerFlagHeight = THREE.MathUtils.lerp(38.5, 5, enemyCaptureProgress / 100);
+                playerPoleFlagMesh.position.y = playerFlagHeight;
+            }
+        }
+    }
+
+    function startCinematicEnding(isPlayerWinner) {
+        gameOver = true;
+        isCinematicEnding = true;
+        document.getElementById('ui-overlay').style.display = 'none';
+
+        let eBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
+        cinematicTargetLook = isPlayerWinner ? new THREE.Vector3(0, 15, eBaseZ) : new THREE.Vector3(0, 15, playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE);
+
+        setTimeout(() => {
+            triggerVictoryScreen(isPlayerWinner);
+        }, 3000);
+    }
+
+    function triggerVictoryScreen(isPlayerWinner) {
+        const screen = document.getElementById('victory-screen');
+        const title = document.getElementById('victory-title');
+        const statsBox = document.getElementById('stats-content');
+        screen.style.display = 'flex';
+
+        let winningFlag = isPlayerWinner ? playerFlagType : enemyFlagType;
+        if (isPlayerWinner) {
+            title.innerText = "انتصار ساحق! 🚩"; title.style.color = "#22c55e";
+        } else {
+            title.innerText = "هزيمة قاسية! ⚠️ لقد سيطر العدو على معسكرك!"; title.style.color = "#ef4444";
+        }
+
+        let activePlayerTanks = playerTanks.filter(t => !t.isDestroyed).length;
+        statsBox.innerHTML = `
+            • العلم المنتصر: ${winningFlag === 'green' ? 'الأخضر (3 نجوم)' : 'الأحمر (نجمتان)'}<br>
+            • خسائر دباباتك: ${totalTanksLost}<br>
+            • دبابات العدو المدمرة: ${enemyTanksLost}<br>
+            • إجمالي المال المصروف: ${totalMoneySpent}$<br>
+            • الدبابات الحية المتبقية: ${activePlayerTanks}
+        `;
+        renderVictoryFlagCanvas(winningFlag);
+    }
+
+    function renderVictoryFlagCanvas(flagType) {
+        const canvas = document.getElementById('victory-flag-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 180; canvas.height = 100;
+        if (flagType === 'green') {
+            ctx.fillStyle = '#007a3d'; ctx.fillRect(0, 0, 180, 33);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 33, 180, 34);
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 67, 180, 33);
+            drawStar(ctx, 50, 50, '#cc0000'); drawStar(ctx, 90, 50, '#cc0000'); drawStar(ctx, 130, 50, '#cc0000');
+        } else {
+            ctx.fillStyle = '#cc0000'; ctx.fillRect(0, 0, 180, 33);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 33, 180, 34);
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 67, 180, 33);
+            drawStar(ctx, 70, 50, '#007a3d'); drawStar(ctx, 110, 50, '#007a3d');
+        }
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        processCameraInputs();
+        updateCameraPosition();
+        updateTanksMovement();
+        checkLogicAndEconomy();
+        animateFlags();
+        renderer.render(scene, camera);
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
