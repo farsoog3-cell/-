@@ -220,13 +220,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-    // --- نظام الأصوات المحدث (صوت حركة مستقل لكل دبابة وأصوات للعدو) ---
+    // --- تعريف مسارات الأصوات (شامل صوت الخمول Idle وصوت المشي Move) ---
     const soundFiles = {
         shoot: 'sounds/shoot.mp3',
         rocket: 'sounds/rocket.mp3',
         explosion: 'sounds/explosion.mp3',
         buy: 'sounds/buy.mp3',
-        move: 'sounds/tank_move.mp3'
+        idle: 'sounds/tank_idle.mp3',   // صوت هواء/خمول المحرك عند التوقف
+        move: 'sounds/tank_move.mp3'    // صوت المشي عند الحركة
     };
 
     function playSound(type, volume = 1.0) {
@@ -560,10 +561,15 @@
         hpLabel.innerText = `${initialHp}`;
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
-        // إنشاء محرك صوت خاص وحصري لهذه الدبابة لتتحرك بحرية وبشكل مستقل
+        // 1. صوت الخمول (Idle/هواء محرك دائر يعمل طالما الدبابة حية وليست متحركة)
+        let idleAudio = new Audio(soundFiles.idle);
+        idleAudio.loop = true;
+        idleAudio.volume = 0.25;
+
+        // 2. صوت المشي (Move يعمل فقط عند التحرك الفعلي)
         let moveAudio = new Audio(soundFiles.move);
         moveAudio.loop = true;
-        moveAudio.volume = 0.4;
+        moveAudio.volume = 0.45;
 
         return { 
             mesh: tankGroup, 
@@ -575,32 +581,40 @@
             maxHp: initialHp, 
             lastShot: 0, 
             isDestroyed: false,
+            idleAudio: idleAudio,
             moveAudio: moveAudio,
-            isMovingPlaying: false
+            isIdlePlaying: false,
+            isMovePlaying: false
         };
     }
 
+    // إدارة تبديل الأصوات بناءً على حالة الدبابة (توقف / حركة)
     function updateTankAudio(tank, isMoving) {
         if (gameOver || tank.isDestroyed) {
-            if (tank.isMovingPlaying) {
-                tank.moveAudio.pause();
-                tank.moveAudio.currentTime = 0;
-                tank.isMovingPlaying = false;
-            }
+            if (tank.isIdlePlaying) { tank.idleAudio.pause(); tank.idleAudio.currentTime = 0; tank.isIdlePlaying = false; }
+            if (tank.isMovePlaying) { tank.moveAudio.pause(); tank.moveAudio.currentTime = 0; tank.isMovePlaying = false; }
             return;
         }
 
         if (isMoving) {
-            if (!tank.isMovingPlaying) {
-                tank.moveAudio.play().then(() => {
-                    tank.isMovingPlaying = true;
-                }).catch(e => {});
+            // أثناء الحركة: أوقف صوت الخمول، وشغّل صوت المشي
+            if (tank.isIdlePlaying) {
+                tank.idleAudio.pause();
+                tank.idleAudio.currentTime = 0;
+                tank.isIdlePlaying = false;
+            }
+            if (!tank.isMovePlaying) {
+                tank.moveAudio.play().then(() => { tank.isMovePlaying = true; }).catch(e => {});
             }
         } else {
-            if (tank.isMovingPlaying) {
+            // أثناء التوقف: أوقف صوت المشي، وشغّل صوت الخمول (الهواء/المحرك الدائر)
+            if (tank.isMovePlaying) {
                 tank.moveAudio.pause();
                 tank.moveAudio.currentTime = 0;
-                tank.isMovingPlaying = false;
+                tank.isMovePlaying = false;
+            }
+            if (!tank.isIdlePlaying) {
+                tank.idleAudio.play().then(() => { tank.isIdlePlaying = true; }).catch(e => {});
             }
         }
     }
@@ -832,7 +846,6 @@
         if (now - fromTank.lastShot < 1200) return;
         fromTank.lastShot = now;
         
-        // تشغيل صوت الإطلاق لكل دبابة (سواء لاعب أو عدو)
         playSound('shoot', fromTank.team === 'player' ? 1.0 : 0.4);
         if (fromTank.team === 'player') triggerCameraShake(1.2);
 
@@ -847,7 +860,6 @@
         if (now - fromTank.lastShot < 3500) return;
         fromTank.lastShot = now;
 
-        // تشغيل صوت الصاروخ لكل دبابة
         playSound('rocket', fromTank.team === 'player' ? 1.0 : 0.5);
         if (fromTank.team === 'player') triggerCameraShake(2.5);
 
@@ -994,7 +1006,7 @@
             }
         }
 
-        // حركة وتحديث أصوات دبابات اللاعبين (كل دبابة على حدة)
+        // تحديث دبابات اللاعبين وتطبيق صوت الخمول أو المشي
         playerTanks.forEach(tankData => {
             if (tankData.isDestroyed) {
                 updateTankAudio(tankData, false);
@@ -1038,7 +1050,7 @@
             }
         }
 
-        // حركة وتحديث أصوات دبابات العدو (كل دبابة على حدة)
+        // تحديث دبابات العدو وتطبيق صوت الخمول أو المشي
         enemyTanks.forEach(tankData => {
             if (tankData.isDestroyed) {
                 updateTankAudio(tankData, false);
@@ -1196,7 +1208,6 @@
     function startCinematicEnding(isPlayerWinner) {
         gameOver = true;
         isCinematicEnding = true;
-        // إيقاف جميع أصوات حركة الدبابات عند النهاية
         [...playerTanks, ...enemyTanks].forEach(t => updateTankAudio(t, false));
 
         document.getElementById('ui-overlay').style.display = 'none';
