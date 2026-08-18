@@ -220,15 +220,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-    // --- مسارات الأصوات والموسيقى الحربية ---
     const soundFiles = {
-        menuBgm: 'sounds/menu_bgm.mp3',      // موسيقى القائمة التشويقية قبل البدء
-        battleBgm: 'sounds/battle_bgm.mp3',  // 🎵 الموسيقى الحربية الأساسية أثناء اللعب داخل المعركة
-        click: 'sounds/click.mp3',            // صوت لمس/ضغط الأزرار
-        attack: 'sounds/attack.mp3',          // صوت هجوم حماسي عند هجومك على العدو
-        danger: 'sounds/danger.mp3',          // صوت حزين/إنذار عند هجوم العدو عليك
-        victory: 'sounds/victory_sound.mp3',  // صوت الانتصار عند اكتمال السيطرة
-        defeat: 'sounds/defeat_sound.mp3',    // صوت حزين عند اكتمال سيطرة العدو عليك
+        menuBgm: 'sounds/menu_bgm.mp3',
+        battleBgm: 'sounds/battle_bgm.mp3',
+        click: 'sounds/click.mp3',
+        attack: 'sounds/attack.mp3',
+        danger: 'sounds/danger.mp3',
+        victory: 'sounds/victory_sound.mp3',
+        defeat: 'sounds/defeat_sound.mp3',
         shoot: 'sounds/shoot.mp3',
         rocket: 'sounds/rocket.mp3',
         explosion: 'sounds/explosion.mp3',
@@ -237,17 +236,14 @@
         move: 'sounds/tank_move.mp3'
     };
 
-    // إعداد موسيقى القائمة الخلفية
     let menuBgmAudio = new Audio(soundFiles.menuBgm);
     menuBgmAudio.loop = true;
     menuBgmAudio.volume = 0.4;
     
-    // إعداد الموسيقى الحربية الأساسية للعب
     let battleBgmAudio = new Audio(soundFiles.battleBgm);
     battleBgmAudio.loop = true;
     battleBgmAudio.volume = 0.5;
 
-    // تشغيل موسيقى القائمة تلقائياً عند أول تفاعل للصفحة
     window.addEventListener('pointerdown', () => {
         if (menuBgmAudio.paused && document.getElementById('start-menu').style.display !== 'none') {
             menuBgmAudio.play().catch(e => {});
@@ -343,7 +339,9 @@
     function init() {
         const container = document.getElementById('canvas-container');
         scene = new THREE.Scene();
+        // إعداد الضباب حول حواف الأرض بلون مطابق لخلفية المشهد
         scene.background = new THREE.Color(0x38bdf8);
+        scene.fog = new THREE.FogExp2(0x38bdf8, 0.0035);
 
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
         updateCameraPosition();
@@ -354,7 +352,7 @@
         container.appendChild(renderer.domElement);
 
         setupLighting();
-        createBrownSoilTerrain();
+        createHillyBrownSoilTerrain(); // الأرضية مع تضاريس وتلال خفيفة
         createBases();
         createOilRigs();
         createTargetMarker();
@@ -413,10 +411,8 @@
     }
 
     function startGame() {
-        // إيقاف موسيقى القائمة وتشغيل الموسيقى الحربية الأساسية للمعركة
         menuBgmAudio.pause();
         menuBgmAudio.currentTime = 0;
-        
         battleBgmAudio.play().catch(e => {});
 
         document.getElementById('start-menu').style.display = 'none';
@@ -434,9 +430,26 @@
         scene.add(dirLight);
     }
 
-    function createBrownSoilTerrain() {
-        const geometry = new THREE.PlaneGeometry(800, 800, 30, 30);
+    // إنشاء الأرضية مع تضاريس وتلال خفيفة
+    function createHillyBrownSoilTerrain() {
+        const geometry = new THREE.PlaneGeometry(800, 800, 45, 45);
         geometry.rotateX(-Math.PI / 2);
+
+        const positionAttr = geometry.attributes.position;
+        for (let i = 0; i < positionAttr.count; i++) {
+            let px = positionAttr.getX(i);
+            let pz = positionAttr.getZ(i);
+            // إضافة تلال خفيفة باستخدام دالة جيبية وتوزيع عشوائي
+            let h = Math.sin(px * 0.02) * Math.cos(pz * 0.02) * 3.5 + Math.sin(px * 0.008) * 5;
+            // جعل مناطق المعسكرات مستوية قليلاً لسهولة الحركة والاصطفاف
+            let distFromCenter = Math.sqrt(px*px + pz*pz);
+            if (distFromCenter < 120) {
+                h *= 0.3;
+            }
+            positionAttr.setY(i, h);
+        }
+        geometry.computeVertexNormals();
+
         terrainMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 }));
         scene.add(terrainMesh);
     }
@@ -892,6 +905,7 @@
         bullets.push({ mesh: bulletMesh, fromTank: fromTank, fromTeam: fromTank.team, targetTank: targetTank, speed: 2.2, damage: 34 });
     }
 
+    // إطلاق صاروخ بمدى بعيد ومسار منحني (يرتفع للأعلى ويهبط مع دخان وعزم تدمير محيطي AoE)
     function fireTacticalMissile(fromTank, targetTank) {
         const now = Date.now();
         if (now - fromTank.lastShot < 3500) return;
@@ -912,13 +926,21 @@
         let startPos = fromTank.mesh.position.clone().add(new THREE.Vector3(0, 4, 0));
         missileMesh.position.copy(startPos);
         scene.add(missileMesh);
+
+        let targetPos = targetTank.mesh.position.clone();
+
         tacticalMissiles.push({
-            mesh: missileMesh, fromTeam: fromTank.team, targetTank: targetTank,
-            phase: 'up', peakHeight: 65, progress: 0, startPos: startPos, targetPos: targetTank.mesh.position.clone()
+            mesh: missileMesh, 
+            fromTeam: fromTank.team, 
+            targetTank: targetTank,
+            startPos: startPos, 
+            targetPos: targetPos,
+            progress: 0,
+            totalDuration: 75 // سرعة القذيفة بمسارها المنحني البعيد
         });
     }
 
-    function createShockwaveAndExplosion(centerPos) {
+    function createShockwaveAndExplosion(centerPos, fromTeam) {
         playSound('explosion');
         const ringGeo = new THREE.RingGeometry(0.5, 1, 32);
         ringGeo.rotateX(-Math.PI / 2);
@@ -935,6 +957,26 @@
 
         shockwaves.push({ ring: ringMesh, beam: beamMesh, life: 25, scaleSpeed: 1.4 });
         for (let i = 0; i < 8; i++) addSmokeParticle(centerPos, 0xff4500, 1.8);
+
+        // تأثير الضرر المحيطي (AoE) لجميع الدبابات القريبة من مكان السقوط
+        let allTanks = [...playerTanks, ...enemyTanks];
+        allTanks.forEach(tank => {
+            if (tank.isDestroyed) return;
+            let dist = tank.mesh.position.distanceTo(centerPos);
+            if (dist < 28) { // نطاق التأثير الانفجاري
+                let damageAmount = Math.floor(110 * (1 - dist / 28));
+                tank.hp -= Math.max(30, damageAmount);
+                updateTanksDamageVisual(tank);
+                if (tank.hp <= 0 && !tank.isDestroyed) {
+                    tank.isDestroyed = true;
+                    tank.target = null;
+                    tank.hpLabel.remove();
+                    updateTankAudio(tank, false);
+                    if (fromTeam === 'player' && tank.team === 'enemy') enemyTanksLost++;
+                    else if (fromTeam === 'enemy' && tank.team === 'player') totalTanksLost++;
+                }
+            }
+        });
     }
 
     function updateTankHpLabels() {
@@ -1010,42 +1052,30 @@
             }
         }
 
+        // تحديث حركة الصواريخ بمسار منحني (ترتفع للأعلى بمنتصف المسار وتهبط للهدف مع دخان)
         for (let i = tacticalMissiles.length - 1; i >= 0; i--) {
             let m = tacticalMissiles[i];
-            if (!m.targetTank || !m.targetTank.mesh.parent || m.targetTank.isDestroyed) {
-                if (m.targetTank) m.targetPos.copy(m.targetTank.mesh.position);
-            } else {
+            if (m.targetTank && !m.targetTank.isDestroyed) {
                 m.targetPos.copy(m.targetTank.mesh.position);
             }
 
-            if (m.phase === 'up') {
-                m.mesh.position.y += 1.8;
-                addSmokeParticle(m.mesh.position, 0xaaaaaa, 0.8);
-                if (m.mesh.position.y >= m.peakHeight) m.phase = 'dive';
-            } else if (m.phase === 'dive') {
-                let dir = new THREE.Vector3().subVectors(m.targetPos, m.mesh.position);
-                m.mesh.lookAt(m.targetPos);
-                if (dir.length() < 3.5) {
-                    createShockwaveAndExplosion(m.mesh.position);
-                    if (m.fromTeam === 'player') triggerCameraShake(2.2);
-                    if (m.targetTank && !m.targetTank.isDestroyed) {
-                        m.targetTank.hp -= 120;
-                        updateTanksDamageVisual(m.targetTank);
-                        if (m.targetTank.hp <= 0) {
-                            m.targetTank.isDestroyed = true;
-                            m.targetTank.target = null;
-                            m.targetTank.hpLabel.remove();
-                            updateTankAudio(m.targetTank, false);
-                            if (m.fromTeam === 'player') totalTanksLost++;
-                            else enemyTanksLost++;
-                        }
-                    }
-                    scene.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose();
-                    tacticalMissiles.splice(i, 1);
-                } else {
-                    m.mesh.position.add(dir.normalize().multiplyScalar(3.2));
-                    addSmokeParticle(m.mesh.position, 0xff5500, 1.2);
-                }
+            m.progress++;
+            let t = m.progress / m.totalDuration;
+
+            if (t >= 1.0) {
+                createShockwaveAndExplosion(m.targetPos, m.fromTeam);
+                if (m.fromTeam === 'player') triggerCameraShake(2.2);
+                scene.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose();
+                tacticalMissiles.splice(i, 1);
+            } else {
+                // حساب مسار منحني (Bezier-like arc): ارتفاع تدريجي ثم هبوط نحو الهدف
+                let currentPos = new THREE.Vector3().lerpVectors(m.startPos, m.targetPos, t);
+                let arcHeight = Math.sin(t * Math.PI) * 45; // أقصى ارتفاع للصاروخ في الجو
+                currentPos.y += arcHeight;
+
+                // توجيه رأس الصاروخ نحو الموقع الحالي
+                m.mesh.position.copy(currentPos);
+                addSmokeParticle(m.mesh.position, 0xdddddd, 1.0);
             }
         }
 
@@ -1055,26 +1085,49 @@
                 return;
             }
             let isMoving = false;
-            if (tankData.target) {
-                const dist = tankData.mesh.position.distanceTo(tankData.target);
-                if (dist > 1.5) {
-                    isMoving = true;
-                    const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
-                    tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
+            
+            // تخصيص سلوك القصف عن بُعد لدبابات الصواريخ
+            let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
+
+            if (tankData.type === 'rocket' && enemyTarget) {
+                let distToEnemy = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
+                // إذا كانت الدبابة الصاروخية قريبة جداً من العدو، تتراجع للخلف قليلاً لتقصف من بعيد
+                if (distToEnemy < 60) {
+                    let retreatDir = new THREE.Vector3().subVectors(tankData.mesh.position, enemyTarget.mesh.position).setY(0).normalize();
+                    let nextPos = tankData.mesh.position.clone().add(retreatDir.multiplyScalar(0.3));
+                    if (canMoveTo(nextPos)) {
+                        tankData.mesh.position.copy(nextPos);
+                        isMoving = true;
+                    }
+                } else if (distToEnemy > 110) {
+                    // الاقتراب للمدى المناسب
+                    let dir = new THREE.Vector3().subVectors(enemyTarget.mesh.position, tankData.mesh.position).setY(0).normalize();
                     let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
-                    if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
-                } else {
-                    if (tankData.target === playerTargetPos) { targetMarkerMesh.visible = false; }
-                    tankData.target = null; 
+                    if (canMoveTo(nextPos)) {
+                        tankData.mesh.position.copy(nextPos);
+                        isMoving = true;
+                    }
+                }
+                fireTacticalMissile(tankData, enemyTarget);
+            } else {
+                if (tankData.target) {
+                    const dist = tankData.mesh.position.distanceTo(tankData.target);
+                    if (dist > 1.5) {
+                        isMoving = true;
+                        const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                        tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
+                        let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
+                        if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
+                    } else {
+                        if (tankData.target === playerTargetPos) { targetMarkerMesh.visible = false; }
+                        tankData.target = null; 
+                    }
+                }
+                if (enemyTarget) {
+                    fireBullet(tankData, enemyTarget);
                 }
             }
             updateTankAudio(tankData, isMoving);
-            
-            let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < 110);
-            if (enemyTarget) {
-                if (tankData.type === 'rocket') fireTacticalMissile(tankData, enemyTarget);
-                else fireBullet(tankData, enemyTarget);
-            }
         });
 
         let enemyBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
@@ -1092,36 +1145,56 @@
             }
         }
 
+        // ذكاء العدو وقصفه عن بُعد للدبابات الصاروخية
         enemyTanks.forEach(tankData => {
             if (tankData.isDestroyed) {
                 updateTankAudio(tankData, false);
                 return;
             }
-            if (!tankData.target || Math.random() < 0.01) {
-                let targetZ = playerBaseZ;
-                if (Math.random() < 0.3 && oilRigs.length > 0) {
-                    let rig = oilRigs[Math.floor(Math.random() * oilRigs.length)];
-                    tankData.target = new THREE.Vector3(rig.x, 0, rig.z);
-                } else {
-                    tankData.target = new THREE.Vector3((Math.random() - 0.5) * 40, 0, targetZ);
+            let playerTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
+            let isMoving = false;
+
+            if (tankData.type === 'rocket' && playerTarget) {
+                let distToPlayer = tankData.mesh.position.distanceTo(playerTarget.mesh.position);
+                if (distToPlayer < 60) {
+                    let retreatDir = new THREE.Vector3().subVectors(tankData.mesh.position, playerTarget.mesh.position).setY(0).normalize();
+                    let nextPos = tankData.mesh.position.clone().add(retreatDir.multiplyScalar(0.3));
+                    if (canMoveTo(nextPos)) {
+                        tankData.mesh.position.copy(nextPos);
+                        isMoving = true;
+                    }
+                } else if (distToPlayer > 110) {
+                    let dir = new THREE.Vector3().subVectors(playerTarget.mesh.position, tankData.mesh.position).setY(0).normalize();
+                    let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
+                    if (canMoveTo(nextPos)) {
+                        tankData.mesh.position.copy(nextPos);
+                        isMoving = true;
+                    }
+                }
+                fireTacticalMissile(tankData, playerTarget);
+            } else {
+                if (!tankData.target || Math.random() < 0.01) {
+                    let targetZ = playerBaseZ;
+                    if (Math.random() < 0.3 && oilRigs.length > 0) {
+                        let rig = oilRigs[Math.floor(Math.random() * oilRigs.length)];
+                        tankData.target = new THREE.Vector3(rig.x, 0, rig.z);
+                    } else {
+                        tankData.target = new THREE.Vector3((Math.random() - 0.5) * 40, 0, targetZ);
+                    }
+                }
+                const dist = tankData.mesh.position.distanceTo(tankData.target);
+                if (dist > 1.5) {
+                    isMoving = true;
+                    const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                    tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
+                    let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
+                    if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
+                }
+                if (playerTarget) {
+                    fireBullet(tankData, playerTarget);
                 }
             }
-            let isMoving = false;
-            const dist = tankData.mesh.position.distanceTo(tankData.target);
-            if (dist > 1.5) {
-                isMoving = true;
-                const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
-                tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
-                let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
-                if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
-            }
             updateTankAudio(tankData, isMoving);
-
-            let playerTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < 110);
-            if (playerTarget) {
-                if (tankData.type === 'rocket') fireTacticalMissile(tankData, playerTarget);
-                else fireBullet(tankData, playerTarget);
-            }
         });
 
         updateTankHpLabels();
@@ -1250,7 +1323,6 @@
         gameOver = true;
         isCinematicEnding = true;
         
-        // إيقاف الموسيقى الحربية فور انتهاء المعركة
         battleBgmAudio.pause();
         battleBgmAudio.currentTime = 0;
 
