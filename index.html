@@ -120,7 +120,7 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
             background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff;
         }
-        #victory-screen h1 { font-size: 20px; color: #22c55e; margin-bottom: 6px; text-align: center; padding: 0 10px; }
+        #victory-screen h1 { font-size: 20px; color: #22c55e; margin-bottom: 6px; }
         .stats-box {
             background: rgba(30, 41, 59, 0.9); border: 1px solid #38bdf8; border-radius: 8px;
             padding: 10px 16px; font-size: 11px; margin: 8px 0; width: 260px; text-align: right; line-height: 1.5;
@@ -137,17 +137,17 @@
         
         <div class="section-title">اختر علم معسكرك:</div>
         <div class="flag-options" id="player-flags">
-            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
+            <button class="flag-btn active-player" onclick="selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
+            <button class="flag-btn" onclick="selectFlag('player', 'red')">الأحمر (نجمتان)</button>
         </div>
 
         <div class="section-title">اختر علم معسكر العدو:</div>
         <div class="flag-options" id="enemy-flags">
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
-            <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
+            <button class="flag-btn" onclick="selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
+            <button class="flag-btn active-enemy" onclick="selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
         </div>
 
-        <button id="start-btn" onclick="playClickSound(); startGame()">بدء المعركة 🚀</button>
+        <button id="start-btn" onclick="startGame()">بدء المعركة 🚀</button>
     </div>
 </div>
 
@@ -163,8 +163,8 @@
 
     <div class="left-controls-group">
         <div class="selection-controls">
-            <button class="sel-btn active" id="sel-all-btn" onclick="playClickSound(); setSelectionMode('all')">الكل</button>
-            <button class="sel-btn" id="sel-single-btn" onclick="playClickSound(); setSelectionMode('single')">فردي</button>
+            <button class="sel-btn active" id="sel-all-btn" onclick="setSelectionMode('all')">الكل</button>
+            <button class="sel-btn" id="sel-single-btn" onclick="setSelectionMode('single')">فردي</button>
         </div>
 
         <div class="corner-economy">
@@ -172,8 +172,8 @@
                 <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
                 <div class="money-small"><span id="money-display">500</span>$</div>
             </div>
-            <button class="buy-btn-small" id="buy-tank-btn" onclick="playClickSound(); buyPlayerTank('normal')">عادية (150$)</button>
-            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="playClickSound(); buyPlayerTank('rocket')">صاروخية (300$)</button>
+            <button class="buy-btn-small" id="buy-tank-btn" onclick="buyPlayerTank('normal')">عادية (150$)</button>
+            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="buyPlayerTank('rocket')">صاروخية (300$)</button>
         </div>
     </div>
 
@@ -212,7 +212,7 @@
     <h1 id="victory-title">انتهت المعركة!</h1>
     <div class="stats-box" id="stats-content"></div>
     <canvas id="victory-flag-canvas"></canvas>
-    <button class="restart-btn" onclick="playClickSound(); location.reload()">إعادة المعركة 🔄</button>
+    <button class="restart-btn" onclick="location.reload()">إعادة المعركة 🔄</button>
 </div>
 
 <div id="canvas-container"></div>
@@ -220,47 +220,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-    const soundFiles = {
-        menuBgm: 'sounds/menu_bgm.mp3',
-        battleBgm: 'sounds/battle_bgm.mp3',
-        click: 'sounds/click.mp3',
-        attack: 'sounds/attack.mp3',
-        danger: 'sounds/danger.mp3',
-        victory: 'sounds/victory_sound.mp3',
-        defeat: 'sounds/defeat_sound.mp3',
-        shoot: 'sounds/shoot.mp3',
-        rocket: 'sounds/rocket.mp3',
-        explosion: 'sounds/explosion.mp3',
-        buy: 'sounds/buy.mp3',
-        idle: 'sounds/tank_idle.mp3',
-        move: 'sounds/tank_move.mp3'
+    // --- نظام تشغيل الصوت عبر ملفات محلية/خارجية (Audio Elements) ---
+    const sounds = {
+        shoot: new Audio('sounds/shoot.mp3'),         // صوت إطلاق النار
+        rocket: new Audio('sounds/rocket.mp3'),       // صوت إطلاق الصاروخ
+        explosion: new Audio('sounds/explosion.mp3'), // صوت الانفجار
+        buy: new Audio('sounds/buy.mp3')              // صوت الشراء
     };
 
-    let menuBgmAudio = new Audio(soundFiles.menuBgm);
-    menuBgmAudio.loop = true;
-    menuBgmAudio.volume = 0.4;
-    
-    let battleBgmAudio = new Audio(soundFiles.battleBgm);
-    battleBgmAudio.loop = true;
-    battleBgmAudio.volume = 0.5;
-
-    window.addEventListener('pointerdown', () => {
-        if (menuBgmAudio.paused && document.getElementById('start-menu').style.display !== 'none') {
-            menuBgmAudio.play().catch(e => {});
-        }
-    }, { once: true });
-
-    function playClickSound() {
-        const audio = new Audio(soundFiles.click);
-        audio.volume = 0.6;
-        audio.play().catch(e => {});
-    }
-
-    function playSound(type, volume = 1.0) {
-        if (soundFiles[type]) {
-            const audio = new Audio(soundFiles[type]);
-            audio.volume = volume;
-            audio.play().catch(e => {});
+    function playSound(type) {
+        if (sounds[type]) {
+            sounds[type].currentTime = 0;
+            sounds[type].play().catch(e => {});
         }
     }
 
@@ -326,8 +297,9 @@
     let flagWaveTime = 0;
     let activeFlagMeshes = [];
 
-    let playerBuildCooldown = 0;
-    let enemyBuildCooldown = 0;
+    // تعيين فترة الانتظار الأولية بـ 10 ثوانٍ (600 إطار / 60 إطاراً في الثانية)
+    let playerBuildCooldown = 600;
+    let enemyBuildCooldown = 600;
 
     function showFloatingMsg(text) {
         const msg = document.getElementById('floating-msg');
@@ -339,9 +311,7 @@
     function init() {
         const container = document.getElementById('canvas-container');
         scene = new THREE.Scene();
-        // إعداد الضباب حول حواف الأرض بلون مطابق لخلفية المشهد
         scene.background = new THREE.Color(0x38bdf8);
-        scene.fog = new THREE.FogExp2(0x38bdf8, 0.0035);
 
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
         updateCameraPosition();
@@ -352,7 +322,7 @@
         container.appendChild(renderer.domElement);
 
         setupLighting();
-        createHillyBrownSoilTerrain(); // الأرضية مع تضاريس وتلال خفيفة
+        createBrownSoilTerrain();
         createBases();
         createOilRigs();
         createTargetMarker();
@@ -411,16 +381,17 @@
     }
 
     function startGame() {
-        menuBgmAudio.pause();
-        menuBgmAudio.currentTime = 0;
-        battleBgmAudio.play().catch(e => {});
-
         document.getElementById('start-menu').style.display = 'none';
         document.getElementById('ui-overlay').style.display = 'block';
-        playSound('buy');
+        
+        // تفعيل وقت الانتظار الأولي (10 ثوانٍ) لكل من اللاعب والعدو عند بدء اللعبة
+        playerBuildCooldown = 600;
+        enemyBuildCooldown = 600;
+        updateEconomyUI();
+
         let playerSideZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
         targetLookAt.set(0, 0, playerSideZ / 2);
-        showFloatingMsg('بدأت المعركة برصيد 500$ لكل طرف!');
+        showFloatingMsg('بدأت المعركة! انتظر 10 ثوانٍ لاستخراج الدبابات الأولى.');
     }
 
     function setupLighting() {
@@ -430,26 +401,9 @@
         scene.add(dirLight);
     }
 
-    // إنشاء الأرضية مع تضاريس وتلال خفيفة
-    function createHillyBrownSoilTerrain() {
-        const geometry = new THREE.PlaneGeometry(800, 800, 45, 45);
+    function createBrownSoilTerrain() {
+        const geometry = new THREE.PlaneGeometry(800, 800, 30, 30);
         geometry.rotateX(-Math.PI / 2);
-
-        const positionAttr = geometry.attributes.position;
-        for (let i = 0; i < positionAttr.count; i++) {
-            let px = positionAttr.getX(i);
-            let pz = positionAttr.getZ(i);
-            // إضافة تلال خفيفة باستخدام دالة جيبية وتوزيع عشوائي
-            let h = Math.sin(px * 0.02) * Math.cos(pz * 0.02) * 3.5 + Math.sin(px * 0.008) * 5;
-            // جعل مناطق المعسكرات مستوية قليلاً لسهولة الحركة والاصطفاف
-            let distFromCenter = Math.sqrt(px*px + pz*pz);
-            if (distFromCenter < 120) {
-                h *= 0.3;
-            }
-            positionAttr.setY(i, h);
-        }
-        geometry.computeVertexNormals();
-
         terrainMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 }));
         scene.add(terrainMesh);
     }
@@ -610,14 +564,6 @@
         hpLabel.innerText = `${initialHp}`;
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
-        let idleAudio = new Audio(soundFiles.idle);
-        idleAudio.loop = true;
-        idleAudio.volume = 0.25;
-
-        let moveAudio = new Audio(soundFiles.move);
-        moveAudio.loop = true;
-        moveAudio.volume = 0.45;
-
         return { 
             mesh: tankGroup, 
             hpLabel: hpLabel, 
@@ -627,40 +573,8 @@
             hp: initialHp, 
             maxHp: initialHp, 
             lastShot: 0, 
-            isDestroyed: false,
-            idleAudio: idleAudio,
-            moveAudio: moveAudio,
-            isIdlePlaying: false,
-            isMovePlaying: false
+            isDestroyed: false 
         };
-    }
-
-    function updateTankAudio(tank, isMoving) {
-        if (gameOver || tank.isDestroyed) {
-            if (tank.isIdlePlaying) { tank.idleAudio.pause(); tank.idleAudio.currentTime = 0; tank.isIdlePlaying = false; }
-            if (tank.isMovePlaying) { tank.moveAudio.pause(); tank.moveAudio.currentTime = 0; tank.isMovePlaying = false; }
-            return;
-        }
-
-        if (isMoving) {
-            if (tank.isIdlePlaying) {
-                tank.idleAudio.pause();
-                tank.idleAudio.currentTime = 0;
-                tank.isIdlePlaying = false;
-            }
-            if (!tank.isMovePlaying) {
-                tank.moveAudio.play().then(() => { tank.isMovePlaying = true; }).catch(e => {});
-            }
-        } else {
-            if (tank.isMovePlaying) {
-                tank.moveAudio.pause();
-                tank.moveAudio.currentTime = 0;
-                tank.isMovePlaying = false;
-            }
-            if (!tank.isIdlePlaying) {
-                tank.idleAudio.play().then(() => { tank.isIdlePlaying = true; }).catch(e => {});
-            }
-        }
     }
 
     function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
@@ -686,20 +600,25 @@
 
     function buyPlayerTank(type) {
         if (playerBuildCooldown > 0) return;
+
         let cost = (type === 'rocket') ? 300 : 150;
+
         if (playerMoney >= cost) {
             playerMoney -= cost;
             totalMoneySpent += cost;
-            playerBuildCooldown = 1200;
+            // تعيين وقت الانتظار بـ 10 ثوانٍ (600 إطار) بعد كل عملية شراء
+            playerBuildCooldown = 600;
             updateEconomyUI();
+            
             playSound('buy');
+            
             let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
             let pZ = playerFlagType === 'green' ? -BASE_DISTANCE + 40 : BASE_DISTANCE - 40;
             let pX = (Math.random() - 0.5) * 30;
             let newTank = createTank(pX, 0, pZ, pColor, 'player', type);
             if (playerTargetPos) newTank.target = playerTargetPos.clone();
             playerTanks.push(newTank);
-            showFloatingMsg(type === 'rocket' ? 'تم طلب دبابة صواريخ' : 'تم طلب دبابة عادية');
+            showFloatingMsg(type === 'rocket' ? 'تم طلب دبابة صواريخ (تخرج خلال 10 ثوانٍ)' : 'تم طلب دبابة عادية (تخرج خلال 10 ثوانٍ)');
         }
     }
 
@@ -782,17 +701,20 @@
 
     function updateCameraPosition() {
         cameraRadius = THREE.MathUtils.lerp(cameraRadius, targetCameraRadius, 0.15);
+
         let shakeX = 0, shakeY = 0;
         if (shakeTimer > 0) {
             shakeTimer--;
             shakeX = (Math.random() - 0.5) * shakeIntensity;
             shakeY = (Math.random() - 0.5) * shakeIntensity;
         }
+
         if (isCinematicEnding && cinematicTargetLook) {
             targetLookAt.lerp(cinematicTargetLook, 0.05);
             cameraRadius = THREE.MathUtils.lerp(cameraRadius, 70, 0.05);
             cameraTheta += 0.01;
         }
+
         camera.position.x = targetLookAt.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta) + shakeX;
         camera.position.y = targetLookAt.y + cameraRadius * Math.cos(cameraPhi) + shakeY;
         camera.position.z = targetLookAt.z + cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
@@ -806,6 +728,7 @@
 
     function setupInteraction() {
         const dom = renderer.domElement;
+
         dom.addEventListener('pointerdown', (e) => {
             if (gameOver || isCinematicEnding) return;
             isDragging = true;
@@ -818,15 +741,19 @@
 
         dom.addEventListener('pointermove', (e) => {
             if (!isDragging || gameOver || isCinematicEnding) return;
+
             const deltaX = e.clientX - previousTouchX;
             const deltaY = e.clientY - previousTouchY;
+
             if (Math.abs(e.clientX - touchStartX) > 5 || Math.abs(e.clientY - touchStartY) > 5) {
                 hasMoved = true;
             }
+
             if (hasMoved) {
                 cameraTheta -= deltaX * 0.008;
                 cameraPhi = Math.max(0.2, Math.min(Math.PI / 2 - 0.05, cameraPhi - deltaY * 0.008));
             }
+
             previousTouchX = e.clientX;
             previousTouchY = e.clientY;
         });
@@ -834,6 +761,7 @@
         dom.addEventListener('pointerup', (e) => {
             if (gameOver || isCinematicEnding) return;
             isDragging = false;
+
             if (!hasMoved) {
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -889,108 +817,107 @@
         const now = Date.now();
         if (now - fromTank.lastShot < 1200) return;
         fromTank.lastShot = now;
-        
-        playSound('shoot', fromTank.team === 'player' ? 1.0 : 0.4);
-        
+
         if (fromTank.team === 'player') {
-            playSound('attack', 0.8);
             triggerCameraShake(1.2);
-        } else {
-            playSound('danger', 0.8);
+            playSound('shoot');
         }
 
         const bulletMesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffcc00 }));
         bulletMesh.position.copy(fromTank.mesh.position).add(new THREE.Vector3(0, 3, 0));
         scene.add(bulletMesh);
-        bullets.push({ mesh: bulletMesh, fromTank: fromTank, fromTeam: fromTank.team, targetTank: targetTank, speed: 2.2, damage: 34 });
+
+        bullets.push({ 
+            mesh: bulletMesh, 
+            fromTank: fromTank, 
+            fromTeam: fromTank.team, 
+            targetTank: targetTank, 
+            speed: 2.2, 
+            damage: 34
+        });
     }
 
-    // إطلاق صاروخ بمدى بعيد ومسار منحني (يرتفع للأعلى ويهبط مع دخان وعزم تدمير محيطي AoE)
     function fireTacticalMissile(fromTank, targetTank) {
         const now = Date.now();
         if (now - fromTank.lastShot < 3500) return;
         fromTank.lastShot = now;
 
-        playSound('rocket', fromTank.team === 'player' ? 1.0 : 0.5);
-        
         if (fromTank.team === 'player') {
-            playSound('attack', 0.9);
             triggerCameraShake(2.5);
-        } else {
-            playSound('danger', 0.9);
+            playSound('rocket');
         }
 
         const missileGeo = new THREE.ConeGeometry(0.4, 2.5, 6);
         missileGeo.rotateX(Math.PI / 2);
         const missileMesh = new THREE.Mesh(missileGeo, new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        
         let startPos = fromTank.mesh.position.clone().add(new THREE.Vector3(0, 4, 0));
         missileMesh.position.copy(startPos);
         scene.add(missileMesh);
 
-        let targetPos = targetTank.mesh.position.clone();
-
         tacticalMissiles.push({
-            mesh: missileMesh, 
-            fromTeam: fromTank.team, 
+            mesh: missileMesh,
+            fromTeam: fromTank.team,
             targetTank: targetTank,
-            startPos: startPos, 
-            targetPos: targetPos,
+            phase: 'up',
+            peakHeight: 65,
             progress: 0,
-            totalDuration: 75 // سرعة القذيفة بمسارها المنحني البعيد
+            startPos: startPos,
+            targetPos: targetTank.mesh.position.clone()
         });
     }
 
-    function createShockwaveAndExplosion(centerPos, fromTeam) {
+    function createShockwaveAndExplosion(centerPos) {
         playSound('explosion');
+
         const ringGeo = new THREE.RingGeometry(0.5, 1, 32);
         ringGeo.rotateX(-Math.PI / 2);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.position.copy(centerPos); ringMesh.position.y = 0.2;
+        ringMesh.position.copy(centerPos);
+        ringMesh.position.y = 0.2;
         scene.add(ringMesh);
 
         const beamGeo = new THREE.CylinderGeometry(3, 8, 1, 16, 1, true);
         const beamMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
         const beamMesh = new THREE.Mesh(beamGeo, beamMat);
-        beamMesh.position.copy(centerPos); beamMesh.position.y = 5;
+        beamMesh.position.copy(centerPos);
+        beamMesh.position.y = 5;
         scene.add(beamMesh);
 
-        shockwaves.push({ ring: ringMesh, beam: beamMesh, life: 25, scaleSpeed: 1.4 });
-        for (let i = 0; i < 8; i++) addSmokeParticle(centerPos, 0xff4500, 1.8);
-
-        // تأثير الضرر المحيطي (AoE) لجميع الدبابات القريبة من مكان السقوط
-        let allTanks = [...playerTanks, ...enemyTanks];
-        allTanks.forEach(tank => {
-            if (tank.isDestroyed) return;
-            let dist = tank.mesh.position.distanceTo(centerPos);
-            if (dist < 28) { // نطاق التأثير الانفجاري
-                let damageAmount = Math.floor(110 * (1 - dist / 28));
-                tank.hp -= Math.max(30, damageAmount);
-                updateTanksDamageVisual(tank);
-                if (tank.hp <= 0 && !tank.isDestroyed) {
-                    tank.isDestroyed = true;
-                    tank.target = null;
-                    tank.hpLabel.remove();
-                    updateTankAudio(tank, false);
-                    if (fromTeam === 'player' && tank.team === 'enemy') enemyTanksLost++;
-                    else if (fromTeam === 'enemy' && tank.team === 'player') totalTanksLost++;
-                }
-            }
+        shockwaves.push({
+            ring: ringMesh,
+            beam: beamMesh,
+            life: 25,
+            scaleSpeed: 1.4
         });
+
+        for (let i = 0; i < 8; i++) {
+            addSmokeParticle(centerPos, 0xff4500, 1.8);
+        }
     }
 
     function updateTankHpLabels() {
         const tempV = new THREE.Vector3();
         const allTanks = [...playerTanks, ...enemyTanks];
+
         allTanks.forEach(tank => {
-            if (tank.isDestroyed) { tank.hpLabel.style.display = 'none'; return; }
+            if (tank.isDestroyed) {
+                tank.hpLabel.style.display = 'none';
+                return;
+            }
             tank.hpLabel.style.display = 'block';
             tank.mesh.getWorldPosition(tempV);
             tempV.y += (3.8 * tank.mesh.scale.y); 
+            
             tempV.project(camera);
-            if (tempV.z > 1) { tank.hpLabel.style.display = 'none'; return; }
+            if (tempV.z > 1) {
+                tank.hpLabel.style.display = 'none';
+                return;
+            }
             const x = (tempV.x * .5 + .5) * window.innerWidth;
             const y = (-(tempV.y * .5) + .5) * window.innerHeight;
+
             tank.hpLabel.style.left = `${x}px`;
             tank.hpLabel.style.top = `${y}px`;
             tank.hpLabel.innerText = `${tank.hp}`;
@@ -1004,6 +931,7 @@
             playerBuildCooldown--;
             updateEconomyUI();
         }
+
         if (enemyBuildCooldown > 0) enemyBuildCooldown--;
 
         for (let i = smokeParticles.length - 1; i >= 0; i--) {
@@ -1038,11 +966,11 @@
                 playSound('explosion');
                 addSmokeParticle(b.targetTank.mesh.position);
                 updateTanksDamageVisual(b.targetTank);
+
                 if (b.targetTank.hp <= 0 && !b.targetTank.isDestroyed) {
                     b.targetTank.isDestroyed = true;
                     b.targetTank.target = null;
                     b.targetTank.hpLabel.remove();
-                    updateTankAudio(b.targetTank, false);
                     if (b.fromTeam === 'player') totalTanksLost++;
                     else enemyTanksLost++;
                 }
@@ -1052,149 +980,113 @@
             }
         }
 
-        // تحديث حركة الصواريخ بمسار منحني (ترتفع للأعلى بمنتصف المسار وتهبط للهدف مع دخان)
         for (let i = tacticalMissiles.length - 1; i >= 0; i--) {
             let m = tacticalMissiles[i];
-            if (m.targetTank && !m.targetTank.isDestroyed) {
+            if (!m.targetTank || !m.targetTank.mesh.parent || m.targetTank.isDestroyed) {
+                if (m.targetTank) m.targetPos.copy(m.targetTank.mesh.position);
+            } else {
                 m.targetPos.copy(m.targetTank.mesh.position);
             }
 
-            m.progress++;
-            let t = m.progress / m.totalDuration;
+            if (m.phase === 'up') {
+                m.mesh.position.y += 1.8;
+                addSmokeParticle(m.mesh.position, 0xaaaaaa, 0.8);
+                if (m.mesh.position.y >= m.peakHeight) {
+                    m.phase = 'dive';
+                }
+            } else if (m.phase === 'dive') {
+                let dir = new THREE.Vector3().subVectors(m.targetPos, m.mesh.position);
+                m.mesh.lookAt(m.targetPos);
+                
+                if (dir.length() < 3.5) {
+                    createShockwaveAndExplosion(m.mesh.position);
+                    triggerCameraShake(2.2);
 
-            if (t >= 1.0) {
-                createShockwaveAndExplosion(m.targetPos, m.fromTeam);
-                if (m.fromTeam === 'player') triggerCameraShake(2.2);
-                scene.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose();
-                tacticalMissiles.splice(i, 1);
-            } else {
-                // حساب مسار منحني (Bezier-like arc): ارتفاع تدريجي ثم هبوط نحو الهدف
-                let currentPos = new THREE.Vector3().lerpVectors(m.startPos, m.targetPos, t);
-                let arcHeight = Math.sin(t * Math.PI) * 45; // أقصى ارتفاع للصاروخ في الجو
-                currentPos.y += arcHeight;
+                    if (m.targetTank && !m.targetTank.isDestroyed) {
+                        m.targetTank.hp -= 120;
+                        updateTanksDamageVisual(m.targetTank);
+                        if (m.targetTank.hp <= 0) {
+                            m.targetTank.isDestroyed = true;
+                            m.targetTank.target = null;
+                            m.targetTank.hpLabel.remove();
+                            if (m.fromTeam === 'player') totalTanksLost++;
+                            else enemyTanksLost++;
+                        }
+                    }
 
-                // توجيه رأس الصاروخ نحو الموقع الحالي
-                m.mesh.position.copy(currentPos);
-                addSmokeParticle(m.mesh.position, 0xdddddd, 1.0);
+                    scene.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose();
+                    tacticalMissiles.splice(i, 1);
+                } else {
+                    m.mesh.position.add(dir.normalize().multiplyScalar(3.2));
+                    addSmokeParticle(m.mesh.position, 0xff5500, 1.2);
+                }
             }
         }
 
         playerTanks.forEach(tankData => {
-            if (tankData.isDestroyed) {
-                updateTankAudio(tankData, false);
-                return;
-            }
-            let isMoving = false;
-            
-            // تخصيص سلوك القصف عن بُعد لدبابات الصواريخ
-            let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
-
-            if (tankData.type === 'rocket' && enemyTarget) {
-                let distToEnemy = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
-                // إذا كانت الدبابة الصاروخية قريبة جداً من العدو، تتراجع للخلف قليلاً لتقصف من بعيد
-                if (distToEnemy < 60) {
-                    let retreatDir = new THREE.Vector3().subVectors(tankData.mesh.position, enemyTarget.mesh.position).setY(0).normalize();
-                    let nextPos = tankData.mesh.position.clone().add(retreatDir.multiplyScalar(0.3));
-                    if (canMoveTo(nextPos)) {
-                        tankData.mesh.position.copy(nextPos);
-                        isMoving = true;
-                    }
-                } else if (distToEnemy > 110) {
-                    // الاقتراب للمدى المناسب
-                    let dir = new THREE.Vector3().subVectors(enemyTarget.mesh.position, tankData.mesh.position).setY(0).normalize();
+            if (tankData.isDestroyed) return;
+            if (tankData.target) {
+                const dist = tankData.mesh.position.distanceTo(tankData.target);
+                if (dist > 1.5) {
+                    const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                    tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
                     let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
-                    if (canMoveTo(nextPos)) {
-                        tankData.mesh.position.copy(nextPos);
-                        isMoving = true;
-                    }
+                    if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
+                } else {
+                    if (tankData.target === playerTargetPos) { targetMarkerMesh.visible = false; }
+                    tankData.target = null; 
                 }
-                fireTacticalMissile(tankData, enemyTarget);
-            } else {
-                if (tankData.target) {
-                    const dist = tankData.mesh.position.distanceTo(tankData.target);
-                    if (dist > 1.5) {
-                        isMoving = true;
-                        const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
-                        tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
-                        let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
-                        if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
-                    } else {
-                        if (tankData.target === playerTargetPos) { targetMarkerMesh.visible = false; }
-                        tankData.target = null; 
-                    }
-                }
-                if (enemyTarget) {
+            }
+            
+            let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < 110);
+            if (enemyTarget) {
+                if (tankData.type === 'rocket') {
+                    fireTacticalMissile(tankData, enemyTarget);
+                } else {
                     fireBullet(tankData, enemyTarget);
                 }
             }
-            updateTankAudio(tankData, isMoving);
         });
 
         let enemyBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
         let playerBaseZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
 
+        // العدو ينتظر 10 ثوانٍ (enemyBuildCooldown === 0) قبل شراء دبابة جديدة
         if (enemyMoney >= 150 && enemyBuildCooldown === 0 && enemyTanks.filter(t => !t.isDestroyed).length < 5) {
             let buyType = (enemyMoney >= 300 && Math.random() > 0.5) ? 'rocket' : 'normal';
             let cost = (buyType === 'rocket') ? 300 : 150;
             if (enemyMoney >= cost) {
                 enemyMoney -= cost;
-                enemyBuildCooldown = 1200; 
+                enemyBuildCooldown = 600; // تعيين وقت الانتظار للعدو بـ 10 ثوانٍ بعد كل شراء
                 let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
                 let eZ = playerFlagType === 'green' ? BASE_DISTANCE - 40 : -BASE_DISTANCE + 40;
                 enemyTanks.push(createTank((Math.random() - 0.5) * 30, 0, eZ, eColor, 'enemy', buyType));
             }
         }
 
-        // ذكاء العدو وقصفه عن بُعد للدبابات الصاروخية
         enemyTanks.forEach(tankData => {
-            if (tankData.isDestroyed) {
-                updateTankAudio(tankData, false);
-                return;
-            }
-            let playerTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
-            let isMoving = false;
-
-            if (tankData.type === 'rocket' && playerTarget) {
-                let distToPlayer = tankData.mesh.position.distanceTo(playerTarget.mesh.position);
-                if (distToPlayer < 60) {
-                    let retreatDir = new THREE.Vector3().subVectors(tankData.mesh.position, playerTarget.mesh.position).setY(0).normalize();
-                    let nextPos = tankData.mesh.position.clone().add(retreatDir.multiplyScalar(0.3));
-                    if (canMoveTo(nextPos)) {
-                        tankData.mesh.position.copy(nextPos);
-                        isMoving = true;
-                    }
-                } else if (distToPlayer > 110) {
-                    let dir = new THREE.Vector3().subVectors(playerTarget.mesh.position, tankData.mesh.position).setY(0).normalize();
-                    let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
-                    if (canMoveTo(nextPos)) {
-                        tankData.mesh.position.copy(nextPos);
-                        isMoving = true;
-                    }
-                }
-                fireTacticalMissile(tankData, playerTarget);
-            } else {
-                if (!tankData.target || Math.random() < 0.01) {
-                    let targetZ = playerBaseZ;
-                    if (Math.random() < 0.3 && oilRigs.length > 0) {
-                        let rig = oilRigs[Math.floor(Math.random() * oilRigs.length)];
-                        tankData.target = new THREE.Vector3(rig.x, 0, rig.z);
-                    } else {
-                        tankData.target = new THREE.Vector3((Math.random() - 0.5) * 40, 0, targetZ);
-                    }
-                }
-                const dist = tankData.mesh.position.distanceTo(tankData.target);
-                if (dist > 1.5) {
-                    isMoving = true;
-                    const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
-                    tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
-                    let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
-                    if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
-                }
-                if (playerTarget) {
-                    fireBullet(tankData, playerTarget);
+            if (tankData.isDestroyed) return;
+            if (!tankData.target || Math.random() < 0.01) {
+                let targetZ = playerBaseZ;
+                if (Math.random() < 0.3 && oilRigs.length > 0) {
+                    let rig = oilRigs[Math.floor(Math.random() * oilRigs.length)];
+                    tankData.target = new THREE.Vector3(rig.x, 0, rig.z);
+                } else {
+                    tankData.target = new THREE.Vector3((Math.random() - 0.5) * 40, 0, targetZ);
                 }
             }
-            updateTankAudio(tankData, isMoving);
+            const dist = tankData.mesh.position.distanceTo(tankData.target);
+            if (dist > 1.5) {
+                const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
+                let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
+                if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
+            }
+            let playerTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < 110);
+            if (playerTarget) {
+                if (tankData.type === 'rocket') fireTacticalMissile(tankData, playerTarget);
+                else fireBullet(tankData, playerTarget);
+            }
         });
 
         updateTankHpLabels();
@@ -1221,6 +1113,7 @@
 
     function checkLogicAndEconomy() {
         if (gameOver) return;
+
         gameTick++;
         if (gameTick % 60 === 0) {
             let pIncome = 0, eIncome = 0;
@@ -1273,6 +1166,7 @@
                 enemyFlagHeight = THREE.MathUtils.lerp(38.5, 5, captureProgress / 100);
                 enemyPoleFlagMesh.position.y = enemyFlagHeight;
             }
+
             if (captureProgress >= 100) {
                 if (enemyFlagDataRef) {
                     enemyFlagDataRef.mesh.material.map = createFlagTexture(playerFlagType);
@@ -1300,6 +1194,7 @@
                 playerFlagHeight = THREE.MathUtils.lerp(38.5, 5, enemyCaptureProgress / 100);
                 playerPoleFlagMesh.position.y = playerFlagHeight;
             }
+
             if (enemyCaptureProgress >= 100) {
                 if (playerFlagDataRef) {
                     playerFlagDataRef.mesh.material.map = createFlagTexture(enemyFlagType);
@@ -1322,24 +1217,14 @@
     function startCinematicEnding(isPlayerWinner) {
         gameOver = true;
         isCinematicEnding = true;
-        
-        battleBgmAudio.pause();
-        battleBgmAudio.currentTime = 0;
-
-        [...playerTanks, ...enemyTanks].forEach(t => updateTankAudio(t, false));
-
         document.getElementById('ui-overlay').style.display = 'none';
-
-        if (isPlayerWinner) {
-            playSound('victory', 1.0);
-        } else {
-            playSound('defeat', 1.0);
-        }
 
         let eBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
         cinematicTargetLook = isPlayerWinner ? new THREE.Vector3(0, 15, eBaseZ) : new THREE.Vector3(0, 15, playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE);
 
-        setTimeout(() => { triggerVictoryScreen(isPlayerWinner); }, 3000);
+        setTimeout(() => {
+            triggerVictoryScreen(isPlayerWinner);
+        }, 3000);
     }
 
     function triggerVictoryScreen(isPlayerWinner) {
