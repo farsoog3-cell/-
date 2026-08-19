@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية</title>
+    <title>معركة السيطرة الاستراتيجية - مضخات نفط واقعية ومتحركة</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -264,7 +264,7 @@
         }
     }
 
-    let scene, camera, renderer;
+    let scene, camera, renderer, dirLight;
     let playerFlagType = 'green';
     let enemyFlagType = 'red';
 
@@ -291,6 +291,10 @@
     let shockwaves = [];
     let smokeParticles = [];
     let obstacles = []; 
+    let rotatingRadars = [];
+    let tankTracks = [];
+    let treadTextureCache = null;
+    let animatedRigs = []; // مصفوفة لتخزين حركات آبار النفط
 
     let selectionMode = 'all';
     let selectedTank = null;
@@ -339,9 +343,8 @@
     function init() {
         const container = document.getElementById('canvas-container');
         scene = new THREE.Scene();
-        // إعداد الضباب حول حواف الأرض بلون مطابق لخلفية المشهد
-        scene.background = new THREE.Color(0x38bdf8);
-        scene.fog = new THREE.FogExp2(0x38bdf8, 0.0035);
+        scene.background = new THREE.Color(0x7dd3fc);
+        scene.fog = new THREE.FogExp2(0x7dd3fc, 0.003);
 
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
         updateCameraPosition();
@@ -349,10 +352,12 @@
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
         setupLighting();
-        createHillyBrownSoilTerrain(); // الأرضية مع تضاريس وتلال خفيفة
+        createHillyBrownSoilTerrain();
         createBases();
         createOilRigs();
         createTargetMarker();
@@ -424,13 +429,24 @@
     }
 
     function setupLighting() {
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
-        dirLight.position.set(150, 250, 150);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        
+        dirLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+        dirLight.position.set(150, 280, 150);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 800;
+        let d = 250;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        dirLight.shadow.bias = -0.0005;
         scene.add(dirLight);
     }
 
-    // إنشاء الأرضية مع تضاريس وتلال خفيفة
     function createHillyBrownSoilTerrain() {
         const geometry = new THREE.PlaneGeometry(800, 800, 45, 45);
         geometry.rotateX(-Math.PI / 2);
@@ -439,9 +455,7 @@
         for (let i = 0; i < positionAttr.count; i++) {
             let px = positionAttr.getX(i);
             let pz = positionAttr.getZ(i);
-            // إضافة تلال خفيفة باستخدام دالة جيبية وتوزيع عشوائي
             let h = Math.sin(px * 0.02) * Math.cos(pz * 0.02) * 3.5 + Math.sin(px * 0.008) * 5;
-            // جعل مناطق المعسكرات مستوية قليلاً لسهولة الحركة والاصطفاف
             let distFromCenter = Math.sqrt(px*px + pz*pz);
             if (distFromCenter < 120) {
                 h *= 0.3;
@@ -450,55 +464,100 @@
         }
         geometry.computeVertexNormals();
 
-        terrainMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 }));
+        const terrainMat = new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 });
+        terrainMesh = new THREE.Mesh(geometry, terrainMat);
+        terrainMesh.receiveShadow = true;
         scene.add(terrainMesh);
     }
 
     function createPlayerBase(parentGroup) {
-        const buildingMat = new THREE.MeshStandardMaterial({ color: 0x2e3b23, roughness: 0.7 });
-        const subBuildingMat = new THREE.MeshStandardMaterial({ color: 0x3b4a2e, roughness: 0.8 });
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+        const concreteMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.7 });
+        const darkRoofMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
+        const neonGreenMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x15803d, roughness: 0.2 });
+        const metalPlateMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.3, roughness: 0.4 });
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3 });
+        const windowMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, roughness: 0.1 });
 
-        const mainBuilding = new THREE.Mesh(new THREE.BoxGeometry(26, 9, 16), buildingMat);
-        mainBuilding.position.set(0, 4.5, 0); 
-        parentGroup.add(mainBuilding);
+        [-18, 18].forEach(x => {
+            const sideWall = new THREE.Mesh(new THREE.BoxGeometry(2.5, 7, 32), wallMat);
+            sideWall.position.set(x, 3.5, 0); sideWall.castShadow = true; sideWall.receiveShadow = true; parentGroup.add(sideWall);
+        });
+        const backWall = new THREE.Mesh(new THREE.BoxGeometry(38.5, 7, 2.5), wallMat);
+        backWall.position.set(0, 3.5, 16); backWall.castShadow = true; backWall.receiveShadow = true; parentGroup.add(backWall);
 
-        const subBuilding1 = new THREE.Mesh(new THREE.BoxGeometry(12, 5, 10), subBuildingMat);
-        subBuilding1.position.set(-15, 2.5, 6);
-        parentGroup.add(subBuilding1);
+        const hqBase = new THREE.Mesh(new THREE.BoxGeometry(18, 8, 14), concreteMat);
+        hqBase.position.set(0, 4, -4); hqBase.castShadow = true; hqBase.receiveShadow = true; parentGroup.add(hqBase);
 
-        const subBuilding2 = new THREE.Mesh(new THREE.BoxGeometry(10, 6, 10), subBuildingMat);
-        subBuilding2.position.set(15, 3, -6);
-        parentGroup.add(subBuilding2);
+        const mainDoor = new THREE.Mesh(new THREE.BoxGeometry(3, 4.5, 0.5), doorMat);
+        mainDoor.position.set(0, 2.25, 3.1); parentGroup.add(mainDoor);
 
-        const watchTower = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 14, 6), new THREE.MeshStandardMaterial({color: 0x1f291a}));
-        watchTower.position.set(-14, 7, -8);
-        parentGroup.add(watchTower);
+        [-5, 5].forEach(wx => {
+            const windowObj = new THREE.Mesh(new THREE.BoxGeometry(2, 1.5, 0.4), windowMat);
+            windowObj.position.set(wx, 5.5, 3.1); parentGroup.add(windowObj);
+        });
+
+        const hqTop = new THREE.Mesh(new THREE.BoxGeometry(12, 5, 10), metalPlateMat);
+        hqTop.position.set(0, 10.5, -4); hqTop.castShadow = true; parentGroup.add(hqTop);
+
+        const hqRoof = new THREE.Mesh(new THREE.BoxGeometry(14, 1.5, 12), darkRoofMat);
+        hqRoof.position.set(0, 13.5, -4); hqRoof.castShadow = true; parentGroup.add(hqRoof);
+
+        const neonStrip = new THREE.Mesh(new THREE.BoxGeometry(12.2, 0.4, 10.2), neonGreenMat);
+        neonStrip.position.set(0, 12.6, -4); parentGroup.add(neonStrip);
+
+        const radarSupport = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 3, 8), metalPlateMat);
+        radarSupport.position.set(0, 15.7, -4); radarSupport.castShadow = true; parentGroup.add(radarSupport);
+
+        const mainRadarDish = new THREE.Mesh(new THREE.ConeGeometry(3.2, 1.8, 12), metalPlateMat);
+        mainRadarDish.rotation.x = Math.PI / 2;
+        mainRadarDish.position.set(0, 17.5, -4);
+        mainRadarDish.castShadow = true;
+        parentGroup.add(mainRadarDish);
+        rotatingRadars.push(mainRadarDish);
     }
 
     function createEnemyBase(parentGroup) {
-        const fortMat = new THREE.MeshStandardMaterial({ color: 0x3d322c, roughness: 0.8 });
-        const accentMat = new THREE.MeshStandardMaterial({ color: 0x1f1916, roughness: 0.6 });
-        const metalMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.3 });
+        const darkArmorMat = new THREE.MeshStandardMaterial({ color: 0x1e1b18, roughness: 0.6 });
+        const rustMetalMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.8 });
+        const redGlowMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0x991b1b, roughness: 0.3 });
+        const fortressMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.5 });
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
+        const windowRedMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0x991b1b, roughness: 0.1 });
 
-        const coreBuilding = new THREE.Mesh(new THREE.BoxGeometry(28, 9, 16), fortMat);
-        coreBuilding.position.set(0, 4.5, 0);
-        parentGroup.add(coreBuilding);
+        [-18, 18].forEach(x => {
+            const eSideWall = new THREE.Mesh(new THREE.BoxGeometry(2.5, 8, 32), darkArmorMat);
+            eSideWall.position.set(x, 4, 0); eSideWall.castShadow = true; eSideWall.receiveShadow = true; parentGroup.add(eSideWall);
+        });
+        const eBackWall = new THREE.Mesh(new THREE.BoxGeometry(38.5, 8, 2.5), darkArmorMat);
+        eBackWall.position.set(0, 4, 16); eBackWall.castShadow = true; eBackWall.receiveShadow = true; parentGroup.add(eBackWall);
 
-        const enemySub = new THREE.Mesh(new THREE.BoxGeometry(12, 5, 10), accentMat);
-        enemySub.position.set(14, 2.5, 6);
-        parentGroup.add(enemySub);
+        const coreFort = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 15), fortressMat);
+        coreFort.position.set(0, 5, -3); coreFort.castShadow = true; coreFort.receiveShadow = true; parentGroup.add(coreFort);
 
-        const towerBase = new THREE.Mesh(new THREE.CylinderGeometry(2, 2.8, 22, 8), metalMat);
-        towerBase.position.set(-15, 11, -6);
-        parentGroup.add(towerBase);
+        const enemyDoor = new THREE.Mesh(new THREE.BoxGeometry(3.5, 5, 0.5), doorMat);
+        enemyDoor.position.set(0, 2.5, 4.6); parentGroup.add(enemyDoor);
 
-        const towerCabin = new THREE.Mesh(new THREE.BoxGeometry(6, 4, 6), fortMat);
-        towerCabin.position.set(-15, 23, -6);
-        parentGroup.add(towerCabin);
+        [-6, 6].forEach(wx => {
+            const eWindow = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 0.4), windowRedMat);
+            eWindow.position.set(wx, 6.5, 4.6); parentGroup.add(eWindow);
+        });
 
-        const towerRoof = new THREE.Mesh(new THREE.ConeGeometry(4.5, 3, 8), accentMat);
-        towerRoof.position.set(-15, 26.5, -6);
-        parentGroup.add(towerRoof);
+        const upperFort = new THREE.Mesh(new THREE.BoxGeometry(14, 6, 10), darkArmorMat);
+        upperFort.position.set(0, 13, -3); upperFort.castShadow = true; parentGroup.add(upperFort);
+
+        const energyDome = new THREE.Mesh(new THREE.SphereGeometry(4.5, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), redGlowMat);
+        energyDome.position.set(0, 16, -3); parentGroup.add(energyDome);
+
+        const eRadarSupport = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 3, 8), rustMetalMat);
+        eRadarSupport.position.set(0, 16.5, 5); eRadarSupport.castShadow = true; parentGroup.add(eRadarSupport);
+
+        const eMainRadarDish = new THREE.Mesh(new THREE.CylinderGeometry(3, 0.6, 1.5, 10), darkArmorMat);
+        eMainRadarDish.rotation.x = Math.PI / 3;
+        eMainRadarDish.position.set(0, 18.5, 5);
+        eMainRadarDish.castShadow = true;
+        parentGroup.add(eMainRadarDish);
+        rotatingRadars.push(eMainRadarDish);
     }
 
     function createBases() {
@@ -520,8 +579,8 @@
         scene.add(northBase);
         scene.add(southBase);
 
-        obstacles.push({ x: 0, z: -BASE_DISTANCE, radius: 18 });
-        obstacles.push({ x: 0, z: BASE_DISTANCE, radius: 18 });
+        obstacles.push({ x: 0, z: -BASE_DISTANCE, radius: 20 });
+        obstacles.push({ x: 0, z: BASE_DISTANCE, radius: 20 });
 
         let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
         let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
@@ -539,35 +598,84 @@
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), 0, 0, playerFlagType === 'green' ? northPoleZ : southPoleZ, playerFlagType, 'player');
     }
 
+    // --- دالة إنشاء مضخات النفط الواقعية والمتحركة ---
     function createOilRigs() {
-        const oilMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 });
         const positions = [{ x: 55, z: 0 }, { x: -55, z: 0 }];
 
         positions.forEach(pos => {
             const rigGroup = new THREE.Group();
             rigGroup.position.set(pos.x, 0, pos.z);
-            const base = new THREE.Mesh(new THREE.BoxGeometry(10, 3, 10), oilMat);
-            base.position.y = 1.5; rigGroup.add(base);
+
+            // 1. القاعدة الخرسانية للبئر
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });
+            const base = new THREE.Mesh(new THREE.BoxGeometry(12, 2, 12), baseMat);
+            base.position.y = 1; base.castShadow = true; base.receiveShadow = true;
+            rigGroup.add(base);
+
+            // 2. الهيكل الحديدي الهرمي للمضخة (A-Frame)
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.5 });
+            const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8, 0.8), frameMat);
+            leftPillar.position.set(-2.5, 5, 0); leftPillar.rotation.z = 0.15; leftPillar.castShadow = true;
+            rigGroup.add(leftPillar);
+
+            const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8, 0.8), frameMat);
+            rightPillar.position.set(2.5, 5, 0); rightPillar.rotation.z = -0.15; rightPillar.castShadow = true;
+            rigGroup.add(rightPillar);
+
+            // العارضة العلوية
+            const topBar = new THREE.Mesh(new THREE.BoxGeometry(6, 0.8, 1.2), frameMat);
+            topBar.position.set(0, 9, 0); topBar.castShadow = true;
+            rigGroup.add(topBar);
+
+            // 3. ذراع المضخة المتحرك (Beam)
+            const beamGroup = new THREE.Group();
+            beamGroup.position.set(0, 9.4, 0);
+
+            const walkingBeam = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 14), new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.3 }));
+            walkingBeam.position.set(0, 0, 1); walkingBeam.castShadow = true;
+            beamGroup.add(walkingBeam);
+
+            // رأس الحصان المنحني (Horsehead)
+            const horseheadMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+            const horsehead = new THREE.Mesh(new THREE.BoxGeometry(1.4, 3, 2), horseheadMat);
+            horsehead.position.set(0, -1.2, 7.5); horsehead.castShadow = true;
+            beamGroup.add(horsehead);
+
+            // ثقل الموازنة الخلفي (Counterweight)
+            const weightMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+            const counterweight = new THREE.Mesh(new THREE.BoxGeometry(3, 2.5, 3), weightMat);
+            counterweight.position.set(0, -1, -5.5); counterweight.castShadow = true;
+            beamGroup.add(counterweight);
+
+            rigGroup.add(beamGroup);
+
+            // 4. محرك المضخة والعلم الجانبي
+            const motorBox = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+            motorBox.position.set(0, 2.5, -5.5); motorBox.castShadow = true;
+            rigGroup.add(motorBox);
 
             const flagGroup = new THREE.Group();
-            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 20, 6), new THREE.MeshStandardMaterial({color: 0x999999}));
-            pole.position.set(5, 10, 5); flagGroup.add(pole);
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 18, 6), new THREE.MeshStandardMaterial({color: 0x999999}));
+            pole.position.set(6, 9, -4); flagGroup.add(pole);
 
             const flagGeo = new THREE.PlaneGeometry(7, 4, 12, 4);
             const flagMat = new THREE.MeshBasicMaterial({ map: createFlagTexture('none'), side: THREE.DoubleSide });
             const flagMesh = new THREE.Mesh(flagGeo, flagMat);
-            flagMesh.position.set(8.5, 18, 5); flagGroup.add(flagMesh);
-            activeFlagMeshes.push({ mesh: flagMesh, baseHeight: 18, type: 'none' });
+            flagMesh.position.set(9.5, 16, -4); flagGroup.add(flagMesh);
+            activeFlagMeshes.push({ mesh: flagMesh, baseHeight: 16, type: 'none' });
 
             rigGroup.add(flagGroup);
             scene.add(rigGroup);
-            obstacles.push({ x: pos.x, z: pos.z, radius: 8 });
+            obstacles.push({ x: pos.x, z: pos.z, radius: 9 });
             
             oilRigs.push({
                 x: pos.x, z: pos.z, group: rigGroup,
+                beam: beamGroup,
                 flagData: activeFlagMeshes[activeFlagMeshes.length - 1],
                 owner: 'none', captureProgress: 0
             });
+            
+            animatedRigs.push(beamGroup);
         });
     }
 
@@ -582,23 +690,23 @@
         const bodySizeX = isRocketTank ? 7 : 6;
         const bodySizeZ = isRocketTank ? 10 : 9;
         const body = new THREE.Mesh(new THREE.BoxGeometry(bodySizeX, 2.2, bodySizeZ), armorMat);
-        body.position.y = 1.2; body.name = "body"; tankGroup.add(body);
+        body.position.y = 1.2; body.name = "body"; body.castShadow = true; body.receiveShadow = true; tankGroup.add(body);
         
         const leftTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, bodySizeZ + 0.2), trackMat);
-        leftTrack.position.set(-(bodySizeX/2 + 0.5), 0.8, 0); tankGroup.add(leftTrack);
+        leftTrack.position.set(-(bodySizeX/2 + 0.5), 0.8, 0); leftTrack.castShadow = true; tankGroup.add(leftTrack);
         
         const rightTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, bodySizeZ + 0.2), trackMat);
-        rightTrack.position.set((bodySizeX/2 + 0.5), 0.8, 0); tankGroup.add(rightTrack);
+        rightTrack.position.set((bodySizeX/2 + 0.5), 0.8, 0); rightTrack.castShadow = true; tankGroup.add(rightTrack);
         
         const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 10), armorMat);
-        turret.position.y = 2.8; turret.name = "turret"; tankGroup.add(turret);
+        turret.position.y = 2.8; turret.name = "turret"; turret.castShadow = true; tankGroup.add(turret);
         
         if (isRocketTank) {
             const launcherPod = new THREE.Mesh(new THREE.BoxGeometry(3, 1.8, 4), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
-            launcherPod.position.set(0, 3.8, 0); launcherPod.name = "launcherPod"; tankGroup.add(launcherPod);
+            launcherPod.position.set(0, 3.8, 0); launcherPod.name = "launcherPod"; launcherPod.castShadow = true; tankGroup.add(launcherPod);
         } else {
             const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 6, 6), armorMat);
-            cannon.rotation.x = Math.PI / 2; cannon.position.set(0, 2.8, 4); cannon.name = "cannon"; tankGroup.add(cannon);
+            cannon.rotation.x = Math.PI / 2; cannon.position.set(0, 2.8, 4); cannon.name = "cannon"; cannon.castShadow = true; tankGroup.add(cannon);
         }
 
         tankGroup.position.set(x, y, z);
@@ -628,11 +736,65 @@
             maxHp: initialHp, 
             lastShot: 0, 
             isDestroyed: false,
+            destructionTimer: 0,
+            smokeObject: null,
             idleAudio: idleAudio,
             moveAudio: moveAudio,
             isIdlePlaying: false,
-            isMovePlaying: false
+            isMovePlaying: false,
+            lastTrackPos: new THREE.Vector3(x, y, z)
         };
+    }
+
+    function getRealisticTreadTexture() {
+        if (treadTextureCache) return treadTextureCache;
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.fillStyle = '#261408';
+        ctx.fillRect(0, 0, 64, 128);
+        
+        ctx.fillStyle = '#110a04';
+        for (let y = 8; y < 128; y += 16) {
+            ctx.fillRect(6, y, 52, 6);
+            ctx.fillStyle = '#3a2211';
+            ctx.fillRect(6, y + 6, 52, 2);
+            ctx.fillStyle = '#110a04';
+        }
+
+        treadTextureCache = new THREE.CanvasTexture(canvas);
+        treadTextureCache.wrapS = THREE.RepeatWrapping;
+        treadTextureCache.wrapT = THREE.RepeatWrapping;
+        treadTextureCache.repeat.set(1, 3);
+        return treadTextureCache;
+    }
+
+    function spawnRealisticTankTracks(centerPos, rotationY, bodyWidth) {
+        const halfWidth = bodyWidth / 2 + 0.3;
+        const trackGeo = new THREE.PlaneGeometry(1.2, 3.2);
+        trackGeo.rotateX(-Math.PI / 2);
+
+        const trackMat = new THREE.MeshBasicMaterial({ 
+            map: getRealisticTreadTexture(), 
+            transparent: true, 
+            opacity: 0.9 
+        });
+
+        const offsetX = Math.cos(rotationY) * halfWidth;
+        const offsetZ = Math.sin(rotationY) * halfWidth;
+
+        const leftMesh = new THREE.Mesh(trackGeo, trackMat);
+        leftMesh.position.set(centerPos.x - offsetX, 0.04, centerPos.z + offsetZ);
+        leftMesh.rotation.y = rotationY;
+        scene.add(leftMesh);
+        tankTracks.push({ mesh: leftMesh, life: 350 });
+
+        const rightMesh = new THREE.Mesh(trackGeo, trackMat.clone());
+        rightMesh.position.set(centerPos.x + offsetX, 0.04, centerPos.z - offsetZ);
+        rightMesh.rotation.y = rotationY;
+        scene.add(rightMesh);
+        tankTracks.push({ mesh: rightMesh, life: 350 });
     }
 
     function updateTankAudio(tank, isMoving) {
@@ -706,7 +868,7 @@
     function createFlagPole(group, x, y, z, flagType, role) {
         group.position.set(x, y, z);
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 35, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
-        pole.position.set(16, 17.5, 0); group.add(pole);
+        pole.position.set(16, 17.5, 0); pole.castShadow = true; group.add(pole);
 
         const flagGeo = new THREE.PlaneGeometry(10, 6, 14, 4);
         const flagMat = new THREE.MeshBasicMaterial({ map: createFlagTexture(flagType), side: THREE.DoubleSide });
@@ -757,6 +919,11 @@
 
     function animateFlags() {
         flagWaveTime += 0.15;
+        
+        rotatingRadars.forEach(radar => {
+            radar.rotation.y += 0.025;
+        });
+
         activeFlagMeshes.forEach(item => {
             const positions = item.mesh.geometry.attributes.position;
             for (let i = 0; i < positions.count; i++) {
@@ -905,7 +1072,6 @@
         bullets.push({ mesh: bulletMesh, fromTank: fromTank, fromTeam: fromTank.team, targetTank: targetTank, speed: 2.2, damage: 34 });
     }
 
-    // إطلاق صاروخ بمدى بعيد ومسار منحني (يرتفع للأعلى ويهبط مع دخان وعزم تدمير محيطي AoE)
     function fireTacticalMissile(fromTank, targetTank) {
         const now = Date.now();
         if (now - fromTank.lastShot < 3500) return;
@@ -936,7 +1102,7 @@
             startPos: startPos, 
             targetPos: targetPos,
             progress: 0,
-            totalDuration: 75 // سرعة القذيفة بمسارها المنحني البعيد
+            totalDuration: 75
         });
     }
 
@@ -958,19 +1124,17 @@
         shockwaves.push({ ring: ringMesh, beam: beamMesh, life: 25, scaleSpeed: 1.4 });
         for (let i = 0; i < 8; i++) addSmokeParticle(centerPos, 0xff4500, 1.8);
 
-        // تأثير الضرر المحيطي (AoE) لجميع الدبابات القريبة من مكان السقوط
         let allTanks = [...playerTanks, ...enemyTanks];
         allTanks.forEach(tank => {
             if (tank.isDestroyed) return;
             let dist = tank.mesh.position.distanceTo(centerPos);
-            if (dist < 28) { // نطاق التأثير الانفجاري
+            if (dist < 28) {
                 let damageAmount = Math.floor(110 * (1 - dist / 28));
                 tank.hp -= Math.max(30, damageAmount);
                 updateTanksDamageVisual(tank);
                 if (tank.hp <= 0 && !tank.isDestroyed) {
                     tank.isDestroyed = true;
                     tank.target = null;
-                    tank.hpLabel.remove();
                     updateTankAudio(tank, false);
                     if (fromTeam === 'player' && tank.team === 'enemy') enemyTanksLost++;
                     else if (fromTeam === 'enemy' && tank.team === 'player') totalTanksLost++;
@@ -1005,6 +1169,20 @@
             updateEconomyUI();
         }
         if (enemyBuildCooldown > 0) enemyBuildCooldown--;
+
+        for (let i = tankTracks.length - 1; i >= 0; i--) {
+            let tr = tankTracks[i];
+            tr.life--;
+            if (tr.life < 100) {
+                tr.mesh.material.opacity = (tr.life / 100) * 0.9;
+            }
+            if (tr.life <= 0) {
+                scene.remove(tr.mesh);
+                tr.mesh.geometry.dispose();
+                tr.mesh.material.dispose();
+                tankTracks.splice(i, 1);
+            }
+        }
 
         for (let i = smokeParticles.length - 1; i >= 0; i--) {
             let p = smokeParticles[i];
@@ -1041,7 +1219,6 @@
                 if (b.targetTank.hp <= 0 && !b.targetTank.isDestroyed) {
                     b.targetTank.isDestroyed = true;
                     b.targetTank.target = null;
-                    b.targetTank.hpLabel.remove();
                     updateTankAudio(b.targetTank, false);
                     if (b.fromTeam === 'player') totalTanksLost++;
                     else enemyTanksLost++;
@@ -1052,7 +1229,6 @@
             }
         }
 
-        // تحديث حركة الصواريخ بمسار منحني (ترتفع للأعلى بمنتصف المسار وتهبط للهدف مع دخان)
         for (let i = tacticalMissiles.length - 1; i >= 0; i--) {
             let m = tacticalMissiles[i];
             if (m.targetTank && !m.targetTank.isDestroyed) {
@@ -1068,65 +1244,92 @@
                 scene.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose();
                 tacticalMissiles.splice(i, 1);
             } else {
-                // حساب مسار منحني (Bezier-like arc): ارتفاع تدريجي ثم هبوط نحو الهدف
                 let currentPos = new THREE.Vector3().lerpVectors(m.startPos, m.targetPos, t);
-                let arcHeight = Math.sin(t * Math.PI) * 45; // أقصى ارتفاع للصاروخ في الجو
+                let arcHeight = Math.sin(t * Math.PI) * 45;
                 currentPos.y += arcHeight;
 
-                // توجيه رأس الصاروخ نحو الموقع الحالي
                 m.mesh.position.copy(currentPos);
                 addSmokeParticle(m.mesh.position, 0xdddddd, 1.0);
             }
         }
 
-        playerTanks.forEach(tankData => {
+        let allTanksCombined = [...playerTanks, ...enemyTanks];
+        allTanksCombined.forEach(tankData => {
             if (tankData.isDestroyed) {
+                tankData.destructionTimer++;
+                if (tankData.destructionTimer <= 600) {
+                    if (tankData.destructionTimer % 15 === 0) {
+                        addSmokeParticle(tankData.mesh.position, 0x111111, 1.5);
+                    }
+                } else {
+                    tankData.mesh.visible = false;
+                    tankData.hpLabel.remove();
+                }
                 updateTankAudio(tankData, false);
                 return;
             }
+
             let isMoving = false;
-            
-            // تخصيص سلوك القصف عن بُعد لدبابات الصواريخ
             let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
 
+            if (tankData.team === 'enemy') {
+                enemyTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
+            }
+
             if (tankData.type === 'rocket' && enemyTarget) {
-                let distToEnemy = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
-                // إذا كانت الدبابة الصاروخية قريبة جداً من العدو، تتراجع للخلف قليلاً لتقصف من بعيد
-                if (distToEnemy < 60) {
+                let distToTarget = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
+                if (distToTarget < 60) {
                     let retreatDir = new THREE.Vector3().subVectors(tankData.mesh.position, enemyTarget.mesh.position).setY(0).normalize();
                     let nextPos = tankData.mesh.position.clone().add(retreatDir.multiplyScalar(0.3));
-                    if (canMoveTo(nextPos)) {
-                        tankData.mesh.position.copy(nextPos);
-                        isMoving = true;
-                    }
-                } else if (distToEnemy > 110) {
-                    // الاقتراب للمدى المناسب
+                    if (canMoveTo(nextPos)) { tankData.mesh.position.copy(nextPos); isMoving = true; }
+                } else if (distToTarget > 110) {
                     let dir = new THREE.Vector3().subVectors(enemyTarget.mesh.position, tankData.mesh.position).setY(0).normalize();
                     let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
-                    if (canMoveTo(nextPos)) {
-                        tankData.mesh.position.copy(nextPos);
-                        isMoving = true;
-                    }
+                    if (canMoveTo(nextPos)) { tankData.mesh.position.copy(nextPos); isMoving = true; }
                 }
                 fireTacticalMissile(tankData, enemyTarget);
             } else {
-                if (tankData.target) {
+                if (tankData.team === 'player') {
+                    if (tankData.target) {
+                        const dist = tankData.mesh.position.distanceTo(tankData.target);
+                        if (dist > 1.5) {
+                            isMoving = true;
+                            const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                            tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
+                            let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
+                            if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
+                        } else {
+                            if (tankData.target === playerTargetPos) { targetMarkerMesh.visible = false; }
+                            tankData.target = null; 
+                        }
+                    }
+                } else {
+                    if (!tankData.target || Math.random() < 0.01) {
+                        let targetZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
+                        tankData.target = new THREE.Vector3((Math.random() - 0.5) * 40, 0, targetZ);
+                    }
                     const dist = tankData.mesh.position.distanceTo(tankData.target);
                     if (dist > 1.5) {
                         isMoving = true;
                         const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
                         tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
-                        let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
+                        let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
                         if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
-                    } else {
-                        if (tankData.target === playerTargetPos) { targetMarkerMesh.visible = false; }
-                        tankData.target = null; 
                     }
                 }
                 if (enemyTarget) {
                     fireBullet(tankData, enemyTarget);
                 }
             }
+
+            if (isMoving) {
+                if (tankData.mesh.position.distanceTo(tankData.lastTrackPos) > 2.8) {
+                    let bodyWidth = tankData.type === 'rocket' ? 7 : 6;
+                    spawnRealisticTankTracks(tankData.mesh.position, tankData.mesh.rotation.y, bodyWidth);
+                    tankData.lastTrackPos.copy(tankData.mesh.position);
+                }
+            }
+
             updateTankAudio(tankData, isMoving);
         });
 
@@ -1141,61 +1344,10 @@
                 enemyBuildCooldown = 1200; 
                 let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
                 let eZ = playerFlagType === 'green' ? BASE_DISTANCE - 40 : -BASE_DISTANCE + 40;
-                enemyTanks.push(createTank((Math.random() - 0.5) * 30, 0, eZ, eColor, 'enemy', buyType));
+                let newEnemyTank = createTank((Math.random() - 0.5) * 30, 0, eZ, eColor, 'enemy', buyType);
+                enemyTanks.push(newEnemyTank);
             }
         }
-
-        // ذكاء العدو وقصفه عن بُعد للدبابات الصاروخية
-        enemyTanks.forEach(tankData => {
-            if (tankData.isDestroyed) {
-                updateTankAudio(tankData, false);
-                return;
-            }
-            let playerTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
-            let isMoving = false;
-
-            if (tankData.type === 'rocket' && playerTarget) {
-                let distToPlayer = tankData.mesh.position.distanceTo(playerTarget.mesh.position);
-                if (distToPlayer < 60) {
-                    let retreatDir = new THREE.Vector3().subVectors(tankData.mesh.position, playerTarget.mesh.position).setY(0).normalize();
-                    let nextPos = tankData.mesh.position.clone().add(retreatDir.multiplyScalar(0.3));
-                    if (canMoveTo(nextPos)) {
-                        tankData.mesh.position.copy(nextPos);
-                        isMoving = true;
-                    }
-                } else if (distToPlayer > 110) {
-                    let dir = new THREE.Vector3().subVectors(playerTarget.mesh.position, tankData.mesh.position).setY(0).normalize();
-                    let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
-                    if (canMoveTo(nextPos)) {
-                        tankData.mesh.position.copy(nextPos);
-                        isMoving = true;
-                    }
-                }
-                fireTacticalMissile(tankData, playerTarget);
-            } else {
-                if (!tankData.target || Math.random() < 0.01) {
-                    let targetZ = playerBaseZ;
-                    if (Math.random() < 0.3 && oilRigs.length > 0) {
-                        let rig = oilRigs[Math.floor(Math.random() * oilRigs.length)];
-                        tankData.target = new THREE.Vector3(rig.x, 0, rig.z);
-                    } else {
-                        tankData.target = new THREE.Vector3((Math.random() - 0.5) * 40, 0, targetZ);
-                    }
-                }
-                const dist = tankData.mesh.position.distanceTo(tankData.target);
-                if (dist > 1.5) {
-                    isMoving = true;
-                    const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
-                    tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
-                    let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
-                    if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
-                }
-                if (playerTarget) {
-                    fireBullet(tankData, playerTarget);
-                }
-            }
-            updateTankAudio(tankData, isMoving);
-        });
 
         updateTankHpLabels();
     }
@@ -1396,6 +1548,13 @@
         updateTanksMovement();
         checkLogicAndEconomy();
         animateFlags();
+        
+        // --- تحريك آبار ومضخات النفط صعوداً وهبوطاً ---
+        let time = Date.now() * 0.003;
+        animatedRigs.forEach((beam, index) => {
+            beam.rotation.x = Math.sin(time + index) * 0.35;
+        });
+
         renderer.render(scene, camera);
     }
 
