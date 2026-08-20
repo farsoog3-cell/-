@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - مضخات نفط واقعية ومتحركة</title>
+    <title>معركة السيطرة الاستراتيجية - تصادم كامل وآبار متعددة</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -268,7 +268,7 @@
     let playerFlagType = 'green';
     let enemyFlagType = 'red';
 
-    let cameraRadius = 200, targetCameraRadius = 200;
+    let cameraRadius = 280, targetCameraRadius = 280;
     let cameraTheta = Math.PI / 4;
     let cameraPhi = Math.PI / 3.5;
     let targetLookAt = new THREE.Vector3(0, 0, 0);
@@ -294,7 +294,7 @@
     let rotatingRadars = [];
     let tankTracks = [];
     let treadTextureCache = null;
-    let animatedRigs = []; // مصفوفة لتخزين حركات آبار النفط
+    let animatedRigs = [];
 
     let selectionMode = 'all';
     let selectedTank = null;
@@ -316,9 +316,10 @@
     let isCinematicEnding = false;
     let cinematicTargetLook = null;
 
-    const BASE_DISTANCE = 160;
-    const CAPTURE_RADIUS = 35;
-    const TANK_RADIUS = 6; 
+    const CORNER_OFFSET = 380; 
+    const MAP_LIMIT = 460;
+    const CAPTURE_RADIUS = 38;
+    const TANK_RADIUS = 4.5; 
 
     let playerMoney = 500;
     let enemyMoney = 500;
@@ -333,6 +334,13 @@
     let playerBuildCooldown = 0;
     let enemyBuildCooldown = 0;
 
+    function getTerrainHeight(x, z) {
+        let h = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 5 + Math.sin(x * 0.008) * 8;
+        let distFromCenter = Math.sqrt(x * x + z * z);
+        if (distFromCenter < 140) h *= 0.2;
+        return h;
+    }
+
     function showFloatingMsg(text) {
         const msg = document.getElementById('floating-msg');
         msg.innerText = text;
@@ -344,7 +352,7 @@
         const container = document.getElementById('canvas-container');
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x7dd3fc);
-        scene.fog = new THREE.FogExp2(0x7dd3fc, 0.003);
+        scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0018);
 
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
         updateCameraPosition();
@@ -372,7 +380,7 @@
 
     function processCameraInputs() {
         if (isCinematicEnding) return;
-        const moveSpeed = 3.5;
+        const moveSpeed = 5.0;
         let dx = 0, dz = 0;
 
         if (camInputs.up) { dx -= Math.sin(cameraTheta) * moveSpeed; dz -= Math.cos(cameraTheta) * moveSpeed; }
@@ -380,11 +388,11 @@
         if (camInputs.left) { dx -= Math.cos(cameraTheta) * moveSpeed; dz += Math.sin(cameraTheta) * moveSpeed; }
         if (camInputs.right) { dx += Math.cos(cameraTheta) * moveSpeed; dz -= Math.sin(cameraTheta) * moveSpeed; }
 
-        targetLookAt.x = Math.max(-300, Math.min(300, targetLookAt.x + dx));
-        targetLookAt.z = Math.max(-300, Math.min(300, targetLookAt.z + dz));
+        targetLookAt.x = Math.max(-420, Math.min(420, targetLookAt.x + dx));
+        targetLookAt.z = Math.max(-420, Math.min(420, targetLookAt.z + dz));
 
-        if (camInputs.zi) targetCameraRadius = Math.max(50, targetCameraRadius - 5);
-        if (camInputs.zo) targetCameraRadius = Math.min(400, targetCameraRadius + 5);
+        if (camInputs.zi) targetCameraRadius = Math.max(60, targetCameraRadius - 5);
+        if (camInputs.zo) targetCameraRadius = Math.min(550, targetCameraRadius + 5);
     }
 
     function selectFlag(role, color) {
@@ -423,22 +431,31 @@
         document.getElementById('start-menu').style.display = 'none';
         document.getElementById('ui-overlay').style.display = 'block';
         playSound('buy');
-        let playerSideZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
-        targetLookAt.set(0, 0, playerSideZ / 2);
-        showFloatingMsg('بدأت المعركة برصيد 500$ لكل طرف!');
+
+        let playerCampX = CORNER_OFFSET;
+        let playerCampZ = CORNER_OFFSET;
+        let terrainH = getTerrainHeight(playerCampX, playerCampZ);
+
+        targetLookAt.set(playerCampX, terrainH, playerCampZ);
+        targetCameraRadius = 110; 
+        cameraPhi = Math.PI / 3.8;
+        cameraRadius = targetCameraRadius;
+        updateCameraPosition();
+
+        showFloatingMsg('بدأت المعركة! الكاميرا الآن فوق معسكرك.');
     }
 
     function setupLighting() {
         scene.add(new THREE.AmbientLight(0xffffff, 0.8));
         
         dirLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
-        dirLight.position.set(150, 280, 150);
+        dirLight.position.set(300, 450, 300);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
         dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 800;
-        let d = 250;
+        dirLight.shadow.camera.far = 1200;
+        let d = 450;
         dirLight.shadow.camera.left = -d;
         dirLight.shadow.camera.right = d;
         dirLight.shadow.camera.top = d;
@@ -448,18 +465,14 @@
     }
 
     function createHillyBrownSoilTerrain() {
-        const geometry = new THREE.PlaneGeometry(800, 800, 45, 45);
+        const geometry = new THREE.PlaneGeometry(1100, 1100, 50, 50);
         geometry.rotateX(-Math.PI / 2);
 
         const positionAttr = geometry.attributes.position;
         for (let i = 0; i < positionAttr.count; i++) {
             let px = positionAttr.getX(i);
             let pz = positionAttr.getZ(i);
-            let h = Math.sin(px * 0.02) * Math.cos(pz * 0.02) * 3.5 + Math.sin(px * 0.008) * 5;
-            let distFromCenter = Math.sqrt(px*px + pz*pz);
-            if (distFromCenter < 120) {
-                h *= 0.3;
-            }
+            let h = getTerrainHeight(px, pz);
             positionAttr.setY(i, h);
         }
         geometry.computeVertexNormals();
@@ -561,58 +574,67 @@
     }
 
     function createBases() {
-        const northBase = new THREE.Group();
-        northBase.position.set(0, 0, -BASE_DISTANCE);
-        
-        const southBase = new THREE.Group();
-        southBase.position.set(0, 0, BASE_DISTANCE);
-        southBase.rotation.y = Math.PI;
+        const playerBaseGroup = new THREE.Group();
+        playerBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
+        playerBaseGroup.rotation.y = -(3 * Math.PI) / 4; 
+
+        const enemyBaseGroup = new THREE.Group();
+        enemyBaseGroup.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
+        enemyBaseGroup.rotation.y = -Math.PI / 4; 
 
         if (playerFlagType === 'green') {
-            createPlayerBase(northBase);
-            createEnemyBase(southBase);
+            createPlayerBase(playerBaseGroup);
+            createEnemyBase(enemyBaseGroup);
         } else {
-            createPlayerBase(southBase);
-            createEnemyBase(northBase);
+            createPlayerBase(enemyBaseGroup);
+            createEnemyBase(playerBaseGroup);
         }
 
-        scene.add(northBase);
-        scene.add(southBase);
+        scene.add(playerBaseGroup);
+        scene.add(enemyBaseGroup);
 
-        obstacles.push({ x: 0, z: -BASE_DISTANCE, radius: 20 });
-        obstacles.push({ x: 0, z: BASE_DISTANCE, radius: 20 });
+        obstacles.push({ x: CORNER_OFFSET, z: CORNER_OFFSET, radius: 22 });
+        obstacles.push({ x: -CORNER_OFFSET, z: -CORNER_OFFSET, radius: 22 });
 
         let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
         let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
         
-        let pZ = playerFlagType === 'green' ? -BASE_DISTANCE + 35 : BASE_DISTANCE - 35;
-        let eZ = playerFlagType === 'green' ? BASE_DISTANCE - 35 : -BASE_DISTANCE + 35;
+        let pTankX = CORNER_OFFSET - 45;
+        let pTankZ = CORNER_OFFSET - 45;
+        let eTankX = -CORNER_OFFSET + 45;
+        let eTankZ = -CORNER_OFFSET + 45;
 
-        playerTanks.push(createTank(0, 0, pZ, pColor, 'player', 'normal'));
-        enemyTanks.push(createTank(0, 0, eZ, eColor, 'enemy', 'normal'));
+        let playerTank = createTank(pTankX, pTankZ, pColor, 'player', 'normal');
+        let enemyTank = createTank(eTankX, eTankZ, eColor, 'enemy', 'normal');
+
+        playerTank.mesh.rotation.y = -Math.PI / 4;
+        enemyTank.mesh.rotation.y = (3 * Math.PI) / 4;
+
+        playerTanks.push(playerTank);
+        enemyTanks.push(enemyTank);
             
-        let northPoleZ = -BASE_DISTANCE;
-        let southPoleZ = BASE_DISTANCE;
-        
-        enemyPoleFlagMesh = createFlagPole(new THREE.Group(), 0, 0, playerFlagType === 'green' ? southPoleZ : northPoleZ, enemyFlagType, 'enemy');
-        playerPoleFlagMesh = createFlagPole(new THREE.Group(), 0, 0, playerFlagType === 'green' ? northPoleZ : southPoleZ, playerFlagType, 'player');
+        enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, enemyFlagType, 'enemy');
+        playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
-    // --- دالة إنشاء مضخات النفط الواقعية والمتحركة ---
     function createOilRigs() {
-        const positions = [{ x: 55, z: 0 }, { x: -55, z: 0 }];
+        const positions = [
+            { x: 50, z: -50 }, 
+            { x: -50, z: 50 },
+            { x: -70, z: -70 },
+            { x: 70, z: 70 }
+        ];
 
         positions.forEach(pos => {
             const rigGroup = new THREE.Group();
-            rigGroup.position.set(pos.x, 0, pos.z);
+            let terrainH = getTerrainHeight(pos.x, pos.z);
+            rigGroup.position.set(pos.x, terrainH, pos.z);
 
-            // 1. القاعدة الخرسانية للبئر
             const baseMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });
             const base = new THREE.Mesh(new THREE.BoxGeometry(12, 2, 12), baseMat);
             base.position.y = 1; base.castShadow = true; base.receiveShadow = true;
             rigGroup.add(base);
 
-            // 2. الهيكل الحديدي الهرمي للمضخة (A-Frame)
             const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.5 });
             const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8, 0.8), frameMat);
             leftPillar.position.set(-2.5, 5, 0); leftPillar.rotation.z = 0.15; leftPillar.castShadow = true;
@@ -622,12 +644,10 @@
             rightPillar.position.set(2.5, 5, 0); rightPillar.rotation.z = -0.15; rightPillar.castShadow = true;
             rigGroup.add(rightPillar);
 
-            // العارضة العلوية
             const topBar = new THREE.Mesh(new THREE.BoxGeometry(6, 0.8, 1.2), frameMat);
             topBar.position.set(0, 9, 0); topBar.castShadow = true;
             rigGroup.add(topBar);
 
-            // 3. ذراع المضخة المتحرك (Beam)
             const beamGroup = new THREE.Group();
             beamGroup.position.set(0, 9.4, 0);
 
@@ -635,13 +655,11 @@
             walkingBeam.position.set(0, 0, 1); walkingBeam.castShadow = true;
             beamGroup.add(walkingBeam);
 
-            // رأس الحصان المنحني (Horsehead)
             const horseheadMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
             const horsehead = new THREE.Mesh(new THREE.BoxGeometry(1.4, 3, 2), horseheadMat);
             horsehead.position.set(0, -1.2, 7.5); horsehead.castShadow = true;
             beamGroup.add(horsehead);
 
-            // ثقل الموازنة الخلفي (Counterweight)
             const weightMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
             const counterweight = new THREE.Mesh(new THREE.BoxGeometry(3, 2.5, 3), weightMat);
             counterweight.position.set(0, -1, -5.5); counterweight.castShadow = true;
@@ -649,7 +667,6 @@
 
             rigGroup.add(beamGroup);
 
-            // 4. محرك المضخة والعلم الجانبي
             const motorBox = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), new THREE.MeshStandardMaterial({ color: 0x334155 }));
             motorBox.position.set(0, 2.5, -5.5); motorBox.castShadow = true;
             rigGroup.add(motorBox);
@@ -666,7 +683,8 @@
 
             rigGroup.add(flagGroup);
             scene.add(rigGroup);
-            obstacles.push({ x: pos.x, z: pos.z, radius: 9 });
+            
+            obstacles.push({ x: pos.x, z: pos.z, radius: 10 });
             
             oilRigs.push({
                 x: pos.x, z: pos.z, group: rigGroup,
@@ -679,7 +697,7 @@
         });
     }
 
-    function createTank(x, y, z, colorHex, team, type = 'normal') {
+    function createTank(x, z, colorHex, team, type = 'normal') {
         const tankGroup = new THREE.Group();
         let isRocketTank = (type === 'rocket');
         
@@ -709,7 +727,8 @@
             cannon.rotation.x = Math.PI / 2; cannon.position.set(0, 2.8, 4); cannon.name = "cannon"; cannon.castShadow = true; tankGroup.add(cannon);
         }
 
-        tankGroup.position.set(x, y, z);
+        let terrainY = getTerrainHeight(x, z);
+        tankGroup.position.set(x, terrainY, z);
         scene.add(tankGroup);
 
         const hpLabel = document.createElement('div');
@@ -737,12 +756,11 @@
             lastShot: 0, 
             isDestroyed: false,
             destructionTimer: 0,
-            smokeObject: null,
             idleAudio: idleAudio,
             moveAudio: moveAudio,
             isIdlePlaying: false,
             isMovePlaying: false,
-            lastTrackPos: new THREE.Vector3(x, y, z)
+            lastTrackPos: new THREE.Vector3(x, terrainY, z)
         };
     }
 
@@ -784,14 +802,16 @@
         const offsetX = Math.cos(rotationY) * halfWidth;
         const offsetZ = Math.sin(rotationY) * halfWidth;
 
+        let terrainH = getTerrainHeight(centerPos.x - offsetX, centerPos.z + offsetZ);
         const leftMesh = new THREE.Mesh(trackGeo, trackMat);
-        leftMesh.position.set(centerPos.x - offsetX, 0.04, centerPos.z + offsetZ);
+        leftMesh.position.set(centerPos.x - offsetX, terrainH + 0.04, centerPos.z + offsetZ);
         leftMesh.rotation.y = rotationY;
         scene.add(leftMesh);
         tankTracks.push({ mesh: leftMesh, life: 350 });
 
+        let terrainH2 = getTerrainHeight(centerPos.x + offsetX, centerPos.z - offsetZ);
         const rightMesh = new THREE.Mesh(trackGeo, trackMat.clone());
-        rightMesh.position.set(centerPos.x + offsetX, 0.04, centerPos.z - offsetZ);
+        rightMesh.position.set(centerPos.x + offsetX, terrainH2 + 0.04, centerPos.z - offsetZ);
         rightMesh.rotation.y = rotationY;
         scene.add(rightMesh);
         tankTracks.push({ mesh: rightMesh, life: 350 });
@@ -805,23 +825,11 @@
         }
 
         if (isMoving) {
-            if (tank.isIdlePlaying) {
-                tank.idleAudio.pause();
-                tank.idleAudio.currentTime = 0;
-                tank.isIdlePlaying = false;
-            }
-            if (!tank.isMovePlaying) {
-                tank.moveAudio.play().then(() => { tank.isMovePlaying = true; }).catch(e => {});
-            }
+            if (tank.isIdlePlaying) { tank.idleAudio.pause(); tank.idleAudio.currentTime = 0; tank.isIdlePlaying = false; }
+            if (!tank.isMovePlaying) { tank.moveAudio.play().then(() => { tank.isMovePlaying = true; }).catch(e => {}); }
         } else {
-            if (tank.isMovePlaying) {
-                tank.moveAudio.pause();
-                tank.moveAudio.currentTime = 0;
-                tank.isMovePlaying = false;
-            }
-            if (!tank.isIdlePlaying) {
-                tank.idleAudio.play().then(() => { tank.isIdlePlaying = true; }).catch(e => {});
-            }
+            if (tank.isMovePlaying) { tank.moveAudio.pause(); tank.moveAudio.currentTime = 0; tank.isMovePlaying = false; }
+            if (!tank.isIdlePlaying) { tank.idleAudio.play().then(() => { tank.isIdlePlaying = true; }).catch(e => {}); }
         }
     }
 
@@ -829,7 +837,8 @@
         const geo = new THREE.SphereGeometry(0.8 * scale, 6, 6);
         const mat = new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.7 });
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*2, 2, (Math.random()-0.5)*2));
+        let groundH = getTerrainHeight(pos.x, pos.z);
+        mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*2, Math.max(2, groundH + 2), (Math.random()-0.5)*2));
         scene.add(mesh);
         smokeParticles.push({ mesh: mesh, life: 35, vy: 0.12 });
     }
@@ -856,17 +865,19 @@
             updateEconomyUI();
             playSound('buy');
             let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
-            let pZ = playerFlagType === 'green' ? -BASE_DISTANCE + 40 : BASE_DISTANCE - 40;
-            let pX = (Math.random() - 0.5) * 30;
-            let newTank = createTank(pX, 0, pZ, pColor, 'player', type);
+            let pX = CORNER_OFFSET - 50 + (Math.random() - 0.5) * 20;
+            let pZ = CORNER_OFFSET - 50 + (Math.random() - 0.5) * 20;
+            let newTank = createTank(pX, pZ, pColor, 'player', type);
+            newTank.mesh.rotation.y = -Math.PI / 4;
             if (playerTargetPos) newTank.target = playerTargetPos.clone();
             playerTanks.push(newTank);
             showFloatingMsg(type === 'rocket' ? 'تم طلب دبابة صواريخ' : 'تم طلب دبابة عادية');
         }
     }
 
-    function createFlagPole(group, x, y, z, flagType, role) {
-        group.position.set(x, y, z);
+    function createFlagPole(group, x, z, flagType, role) {
+        let terrainH = getTerrainHeight(x, z);
+        group.position.set(x, terrainH, z);
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 35, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
         pole.position.set(16, 17.5, 0); pole.castShadow = true; group.add(pole);
 
@@ -919,10 +930,7 @@
 
     function animateFlags() {
         flagWaveTime += 0.15;
-        
-        rotatingRadars.forEach(radar => {
-            radar.rotation.y += 0.025;
-        });
+        rotatingRadars.forEach(radar => { radar.rotation.y += 0.025; });
 
         activeFlagMeshes.forEach(item => {
             const positions = item.mesh.geometry.attributes.position;
@@ -1024,7 +1032,8 @@
                 if (intersects.length > 0) {
                     playerTargetPos = intersects[0].point;
                     targetMarkerMesh.position.copy(playerTargetPos);
-                    targetMarkerMesh.position.y = 0.1; targetMarkerMesh.visible = true;
+                    targetMarkerMesh.position.y = getTerrainHeight(playerTargetPos.x, playerTargetPos.z) + 0.1;
+                    targetMarkerMesh.visible = true;
 
                     if (selectionMode === 'all') {
                         playerTanks.forEach((t, index) => {
@@ -1040,15 +1049,52 @@
         });
 
         dom.addEventListener('wheel', (e) => { 
-            if(!isCinematicEnding) targetCameraRadius = Math.max(40, Math.min(400, targetCameraRadius + e.deltaY * 0.3)); 
+            if(!isCinematicEnding) targetCameraRadius = Math.max(50, Math.min(550, targetCameraRadius + e.deltaY * 0.3)); 
         }, { passive: true });
     }
 
-    function canMoveTo(nextPos) {
-        for (let obs of obstacles) {
-            let dx = nextPos.x - obs.x; let dz = nextPos.z - obs.z;
-            if (Math.sqrt(dx*dx + dz*dz) < obs.radius + TANK_RADIUS) return false;
+    // --- خوارزمية الذكاء الاصطناعي وتجنب العوائق المُحسنة ---
+    function getSmartMovementVector(currentPos, desiredDir, currentTank) {
+        let bestDir = desiredDir.clone().normalize();
+        
+        // التحقق مما إذا كان الاتجاه المباشر آمناً تماماً
+        let testPos = currentPos.clone().add(bestDir.clone().multiplyScalar(0.35));
+        if (isPositionSafe(testPos, currentTank)) {
+            return bestDir;
         }
+
+        // إذا كان هناك عائق، فحص مسارات بديلة يميناً ويساراً (Raycasting جانبي ذكي)
+        let angles = [0.4, -0.4, 0.8, -0.8, 1.2, -1.2, Math.PI / 2, -Math.PI / 2];
+        for (let angle of angles) {
+            let rotatedDir = desiredDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), angle).normalize();
+            let altTestPos = currentPos.clone().add(rotatedDir.multiplyScalar(0.35));
+            if (isPositionSafe(altTestPos, currentTank)) {
+                return rotatedDir;
+            }
+        }
+
+        return null; // التوقف المؤقت في حال الانغلاق التام لتفادي الاختراق
+    }
+
+    function isPositionSafe(nextPos, currentTank) {
+        if (Math.abs(nextPos.x) > MAP_LIMIT || Math.abs(nextPos.z) > MAP_LIMIT) return false;
+
+        // فحص المباني والعوائق الثابتة وآبار النفط
+        for (let obs of obstacles) {
+            let dx = nextPos.x - obs.x; 
+            let dz = nextPos.z - obs.z;
+            if (Math.sqrt(dx * dx + dz * dz) < obs.radius + TANK_RADIUS) return false;
+        }
+
+        // فحص الدبابات الأخرى لتجنب التصادم بين الوحدات
+        let allTanks = [...playerTanks, ...enemyTanks];
+        for (let other of allTanks) {
+            if (other === currentTank || other.isDestroyed) continue;
+            let dx = nextPos.x - other.mesh.position.x;
+            let dz = nextPos.z - other.mesh.position.z;
+            if (Math.sqrt(dx * dx + dz * dz) < TANK_RADIUS * 2.2) return false;
+        }
+
         return true;
     }
 
@@ -1058,7 +1104,6 @@
         fromTank.lastShot = now;
         
         playSound('shoot', fromTank.team === 'player' ? 1.0 : 0.4);
-        
         if (fromTank.team === 'player') {
             playSound('attack', 0.8);
             triggerCameraShake(1.2);
@@ -1078,7 +1123,6 @@
         fromTank.lastShot = now;
 
         playSound('rocket', fromTank.team === 'player' ? 1.0 : 0.5);
-        
         if (fromTank.team === 'player') {
             playSound('attack', 0.9);
             triggerCameraShake(2.5);
@@ -1112,13 +1156,15 @@
         ringGeo.rotateX(-Math.PI / 2);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.position.copy(centerPos); ringMesh.position.y = 0.2;
+        ringMesh.position.copy(centerPos); 
+        ringMesh.position.y = getTerrainHeight(centerPos.x, centerPos.z) + 0.2;
         scene.add(ringMesh);
 
         const beamGeo = new THREE.CylinderGeometry(3, 8, 1, 16, 1, true);
         const beamMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
         const beamMesh = new THREE.Mesh(beamGeo, beamMat);
-        beamMesh.position.copy(centerPos); beamMesh.position.y = 5;
+        beamMesh.position.copy(centerPos); 
+        beamMesh.position.y = getTerrainHeight(centerPos.x, centerPos.z) + 5;
         scene.add(beamMesh);
 
         shockwaves.push({ ring: ringMesh, beam: beamMesh, life: 25, scaleSpeed: 1.4 });
@@ -1164,18 +1210,13 @@
     function updateTanksMovement() {
         if (gameOver) return;
 
-        if (playerBuildCooldown > 0) {
-            playerBuildCooldown--;
-            updateEconomyUI();
-        }
+        if (playerBuildCooldown > 0) { playerBuildCooldown--; updateEconomyUI(); }
         if (enemyBuildCooldown > 0) enemyBuildCooldown--;
 
         for (let i = tankTracks.length - 1; i >= 0; i--) {
             let tr = tankTracks[i];
             tr.life--;
-            if (tr.life < 100) {
-                tr.mesh.material.opacity = (tr.life / 100) * 0.9;
-            }
+            if (tr.life < 100) tr.mesh.material.opacity = (tr.life / 100) * 0.9;
             if (tr.life <= 0) {
                 scene.remove(tr.mesh);
                 tr.mesh.geometry.dispose();
@@ -1231,9 +1272,7 @@
 
         for (let i = tacticalMissiles.length - 1; i >= 0; i--) {
             let m = tacticalMissiles[i];
-            if (m.targetTank && !m.targetTank.isDestroyed) {
-                m.targetPos.copy(m.targetTank.mesh.position);
-            }
+            if (m.targetTank && !m.targetTank.isDestroyed) m.targetPos.copy(m.targetTank.mesh.position);
 
             m.progress++;
             let t = m.progress / m.totalDuration;
@@ -1247,7 +1286,6 @@
                 let currentPos = new THREE.Vector3().lerpVectors(m.startPos, m.targetPos, t);
                 let arcHeight = Math.sin(t * Math.PI) * 45;
                 currentPos.y += arcHeight;
-
                 m.mesh.position.copy(currentPos);
                 addSmokeParticle(m.mesh.position, 0xdddddd, 1.0);
             }
@@ -1258,9 +1296,7 @@
             if (tankData.isDestroyed) {
                 tankData.destructionTimer++;
                 if (tankData.destructionTimer <= 600) {
-                    if (tankData.destructionTimer % 15 === 0) {
-                        addSmokeParticle(tankData.mesh.position, 0x111111, 1.5);
-                    }
+                    if (tankData.destructionTimer % 15 === 0) addSmokeParticle(tankData.mesh.position, 0x111111, 1.5);
                 } else {
                     tankData.mesh.visible = false;
                     tankData.hpLabel.remove();
@@ -1280,12 +1316,22 @@
                 let distToTarget = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
                 if (distToTarget < 60) {
                     let retreatDir = new THREE.Vector3().subVectors(tankData.mesh.position, enemyTarget.mesh.position).setY(0).normalize();
-                    let nextPos = tankData.mesh.position.clone().add(retreatDir.multiplyScalar(0.3));
-                    if (canMoveTo(nextPos)) { tankData.mesh.position.copy(nextPos); isMoving = true; }
+                    let safeDir = getSmartMovementVector(tankData.mesh.position, retreatDir, tankData);
+                    if (safeDir) {
+                        let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.3));
+                        nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
+                        tankData.mesh.position.copy(nextPos); 
+                        isMoving = true;
+                    }
                 } else if (distToTarget > 110) {
                     let dir = new THREE.Vector3().subVectors(enemyTarget.mesh.position, tankData.mesh.position).setY(0).normalize();
-                    let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
-                    if (canMoveTo(nextPos)) { tankData.mesh.position.copy(nextPos); isMoving = true; }
+                    let safeDir = getSmartMovementVector(tankData.mesh.position, dir, tankData);
+                    if (safeDir) {
+                        let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.35));
+                        nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
+                        tankData.mesh.position.copy(nextPos); 
+                        isMoving = true;
+                    }
                 }
                 fireTacticalMissile(tankData, enemyTarget);
             } else {
@@ -1293,33 +1339,39 @@
                     if (tankData.target) {
                         const dist = tankData.mesh.position.distanceTo(tankData.target);
                         if (dist > 1.5) {
-                            isMoving = true;
-                            const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
-                            tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
-                            let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.35));
-                            if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
+                            const desiredDir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                            let safeDir = getSmartMovementVector(tankData.mesh.position, desiredDir, tankData);
+                            if (safeDir) {
+                                isMoving = true;
+                                tankData.mesh.rotation.y += (Math.atan2(safeDir.x, safeDir.z) - tankData.mesh.rotation.y) * 0.15;
+                                let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.35));
+                                nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
+                                tankData.mesh.position.copy(nextPos);
+                            }
                         } else {
-                            if (tankData.target === playerTargetPos) { targetMarkerMesh.visible = false; }
+                            if (tankData.target === playerTargetPos) targetMarkerMesh.visible = false;
                             tankData.target = null; 
                         }
                     }
                 } else {
                     if (!tankData.target || Math.random() < 0.01) {
-                        let targetZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
-                        tankData.target = new THREE.Vector3((Math.random() - 0.5) * 40, 0, targetZ);
+                        tankData.target = new THREE.Vector3(CORNER_OFFSET + (Math.random() - 0.5) * 40, 0, CORNER_OFFSET + (Math.random() - 0.5) * 40);
+                        tankData.target.y = getTerrainHeight(tankData.target.x, tankData.target.z);
                     }
                     const dist = tankData.mesh.position.distanceTo(tankData.target);
                     if (dist > 1.5) {
-                        isMoving = true;
-                        const dir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
-                        tankData.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tankData.mesh.rotation.y) * 0.15;
-                        let nextPos = tankData.mesh.position.clone().add(dir.multiplyScalar(0.32));
-                        if (canMoveTo(nextPos)) tankData.mesh.position.copy(nextPos);
+                        const desiredDir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                        let safeDir = getSmartMovementVector(tankData.mesh.position, desiredDir, tankData);
+                        if (safeDir) {
+                            isMoving = true;
+                            tankData.mesh.rotation.y += (Math.atan2(safeDir.x, safeDir.z) - tankData.mesh.rotation.y) * 0.15;
+                            let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.32));
+                            nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
+                            tankData.mesh.position.copy(nextPos);
+                        }
                     }
                 }
-                if (enemyTarget) {
-                    fireBullet(tankData, enemyTarget);
-                }
+                if (enemyTarget) fireBullet(tankData, enemyTarget);
             }
 
             if (isMoving) {
@@ -1333,9 +1385,6 @@
             updateTankAudio(tankData, isMoving);
         });
 
-        let enemyBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
-        let playerBaseZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
-
         if (enemyMoney >= 150 && enemyBuildCooldown === 0 && enemyTanks.filter(t => !t.isDestroyed).length < 5) {
             let buyType = (enemyMoney >= 300 && Math.random() > 0.5) ? 'rocket' : 'normal';
             let cost = (buyType === 'rocket') ? 300 : 150;
@@ -1343,8 +1392,10 @@
                 enemyMoney -= cost;
                 enemyBuildCooldown = 1200; 
                 let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
-                let eZ = playerFlagType === 'green' ? BASE_DISTANCE - 40 : -BASE_DISTANCE + 40;
-                let newEnemyTank = createTank((Math.random() - 0.5) * 30, 0, eZ, eColor, 'enemy', buyType);
+                let eX = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
+                let eZ = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
+                let newEnemyTank = createTank(eX, eZ, eColor, 'enemy', buyType);
+                newEnemyTank.mesh.rotation.y = (3 * Math.PI) / 4;
                 enemyTanks.push(newEnemyTank);
             }
         }
@@ -1385,8 +1436,8 @@
         }
 
         oilRigs.forEach(rig => {
-            let playerNear = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, 0, rig.z)) < 22);
-            let enemyNear = enemyTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, 0, rig.z)) < 22);
+            let playerNear = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, getTerrainHeight(rig.x, rig.z), rig.z)) < 22);
+            let enemyNear = enemyTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, getTerrainHeight(rig.x, rig.z), rig.z)) < 22);
 
             if (playerNear && !enemyNear && rig.owner !== 'player') {
                 rig.captureProgress += 1.5;
@@ -1406,8 +1457,8 @@
             }
         });
 
-        const enemyBasePos = new THREE.Vector3(0, 0, playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE);
-        const playerBasePos = new THREE.Vector3(0, 0, playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE);
+        const enemyBasePos = new THREE.Vector3(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
+        const playerBasePos = new THREE.Vector3(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
 
         let playerAtEnemyBase = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(enemyBasePos) < CAPTURE_RADIUS);
         let enemyAtPlayerBase = enemyTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(playerBasePos) < CAPTURE_RADIUS);
@@ -1479,17 +1530,12 @@
         battleBgmAudio.currentTime = 0;
 
         [...playerTanks, ...enemyTanks].forEach(t => updateTankAudio(t, false));
-
         document.getElementById('ui-overlay').style.display = 'none';
 
-        if (isPlayerWinner) {
-            playSound('victory', 1.0);
-        } else {
-            playSound('defeat', 1.0);
-        }
+        if (isPlayerWinner) playSound('victory', 1.0);
+        else playSound('defeat', 1.0);
 
-        let eBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
-        cinematicTargetLook = isPlayerWinner ? new THREE.Vector3(0, 15, eBaseZ) : new THREE.Vector3(0, 15, playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE);
+        cinematicTargetLook = isPlayerWinner ? new THREE.Vector3(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET) + 15, -CORNER_OFFSET) : new THREE.Vector3(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET) + 15, CORNER_OFFSET);
 
         setTimeout(() => { triggerVictoryScreen(isPlayerWinner); }, 3000);
     }
@@ -1530,7 +1576,7 @@
         } else {
             ctx.fillStyle = '#cc0000'; ctx.fillRect(0, 0, 180, 33);
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 33, 180, 34);
-            ctx.fillStyle = '#000000'; ctx.fillRect(0, 67, 180, 33);
+            ctx.fillStyle, ctx.fillRect(0, 67, 180, 33);
             drawStar(ctx, 70, 50, '#007a3d'); drawStar(ctx, 110, 50, '#007a3d');
         }
     }
@@ -1549,7 +1595,6 @@
         checkLogicAndEconomy();
         animateFlags();
         
-        // --- تحريك آبار ومضخات النفط صعوداً وهبوطاً ---
         let time = Date.now() * 0.003;
         animatedRigs.forEach((beam, index) => {
             beam.rotation.x = Math.sin(time + index) * 0.35;
