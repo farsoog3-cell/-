@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - تصادم كامل وآبار متعددة</title>
+    <title>معركة السيطرة الاستراتيجية - خريطة مصغرة وتحكم متطور</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -86,6 +86,14 @@
         .buy-btn-rocket { background: #ea580c; }
         .buy-btn-rocket:disabled { background: #64748b; }
 
+        /* تصميم الخريطة المصغرة */
+        #minimap-container {
+            position: absolute; bottom: 65px; left: 8px; width: 110px; height: 110px;
+            background: rgba(15, 23, 42, 0.9); border: 2px solid #38bdf8; border-radius: 50%;
+            overflow: hidden; pointer-events: auto; cursor: pointer; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        }
+        #minimap-canvas { width: 100%; height: 100%; }
+
         #floating-msg {
             position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.75); color: #38bdf8; padding: 3px 8px;
@@ -111,7 +119,7 @@
         .cam-btn.zoom-out { grid-column: 3; grid-row: 1; font-size: 12px; }
 
         .cam-hint {
-            position: absolute; bottom: 8px; left: 8px;
+            position: absolute; bottom: 8px; left: 125px;
             background: rgba(15, 23, 42, 0.75); border: 1px solid #38bdf8;
             color: #93c5fd; padding: 3px 6px; border-radius: 4px; font-size: 9px; pointer-events: none;
         }
@@ -177,6 +185,11 @@
         </div>
     </div>
 
+    <!-- الخريطة المصغرة -->
+    <div id="minimap-container" title="الخريطة المصغرة">
+        <canvas id="minimap-canvas" width="110" height="110"></canvas>
+    </div>
+
     <div id="floating-msg"></div>
 
     <div class="cam-controls">
@@ -205,7 +218,7 @@
             ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
     </div>
 
-    <div class="cam-hint">اسحب بالشاشة لتنقل الكاميرا أو استخدم الأزرار 🎯</div>
+    <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة المصغرة والتحكم 🎯</div>
 </div>
 
 <div id="victory-screen">
@@ -370,6 +383,7 @@
         createOilRigs();
         createTargetMarker();
         setupInteraction();
+        setupMinimapInteraction();
 
         updateEconomyUI();
         window.addEventListener('resize', onWindowResize);
@@ -483,14 +497,22 @@
         scene.add(terrainMesh);
     }
 
-    function createPlayerBase(parentGroup) {
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
-        const concreteMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.7 });
+    function createBaseStructure(parentGroup, isEnemy) {
+        const wallMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x1e1b18 : 0x334155, roughness: 0.5 });
+        const concreteMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x27272a : 0x64748b, roughness: 0.7 });
         const darkRoofMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
-        const neonGreenMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x15803d, roughness: 0.2 });
+        const glowMat = new THREE.MeshStandardMaterial({ 
+            color: isEnemy ? 0xef4444 : 0x22c55e, 
+            emissive: isEnemy ? 0x991b1b : 0x15803d, 
+            roughness: 0.2 
+        });
         const metalPlateMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.3, roughness: 0.4 });
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3 });
-        const windowMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, roughness: 0.1 });
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
+        const windowMat = new THREE.MeshStandardMaterial({ 
+            color: isEnemy ? 0xef4444 : 0x38bdf8, 
+            emissive: isEnemy ? 0x991b1b : 0x0284c7, 
+            roughness: 0.1 
+        });
 
         [-18, 18].forEach(x => {
             const sideWall = new THREE.Mesh(new THREE.BoxGeometry(2.5, 7, 32), wallMat);
@@ -516,7 +538,7 @@
         const hqRoof = new THREE.Mesh(new THREE.BoxGeometry(14, 1.5, 12), darkRoofMat);
         hqRoof.position.set(0, 13.5, -4); hqRoof.castShadow = true; parentGroup.add(hqRoof);
 
-        const neonStrip = new THREE.Mesh(new THREE.BoxGeometry(12.2, 0.4, 10.2), neonGreenMat);
+        const neonStrip = new THREE.Mesh(new THREE.BoxGeometry(12.2, 0.4, 10.2), glowMat);
         neonStrip.position.set(0, 12.6, -4); parentGroup.add(neonStrip);
 
         const radarSupport = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 3, 8), metalPlateMat);
@@ -530,49 +552,6 @@
         rotatingRadars.push(mainRadarDish);
     }
 
-    function createEnemyBase(parentGroup) {
-        const darkArmorMat = new THREE.MeshStandardMaterial({ color: 0x1e1b18, roughness: 0.6 });
-        const rustMetalMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.8 });
-        const redGlowMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0x991b1b, roughness: 0.3 });
-        const fortressMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.5 });
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
-        const windowRedMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0x991b1b, roughness: 0.1 });
-
-        [-18, 18].forEach(x => {
-            const eSideWall = new THREE.Mesh(new THREE.BoxGeometry(2.5, 8, 32), darkArmorMat);
-            eSideWall.position.set(x, 4, 0); eSideWall.castShadow = true; eSideWall.receiveShadow = true; parentGroup.add(eSideWall);
-        });
-        const eBackWall = new THREE.Mesh(new THREE.BoxGeometry(38.5, 8, 2.5), darkArmorMat);
-        eBackWall.position.set(0, 4, 16); eBackWall.castShadow = true; eBackWall.receiveShadow = true; parentGroup.add(eBackWall);
-
-        const coreFort = new THREE.Mesh(new THREE.BoxGeometry(20, 10, 15), fortressMat);
-        coreFort.position.set(0, 5, -3); coreFort.castShadow = true; coreFort.receiveShadow = true; parentGroup.add(coreFort);
-
-        const enemyDoor = new THREE.Mesh(new THREE.BoxGeometry(3.5, 5, 0.5), doorMat);
-        enemyDoor.position.set(0, 2.5, 4.6); parentGroup.add(enemyDoor);
-
-        [-6, 6].forEach(wx => {
-            const eWindow = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 0.4), windowRedMat);
-            eWindow.position.set(wx, 6.5, 4.6); parentGroup.add(eWindow);
-        });
-
-        const upperFort = new THREE.Mesh(new THREE.BoxGeometry(14, 6, 10), darkArmorMat);
-        upperFort.position.set(0, 13, -3); upperFort.castShadow = true; parentGroup.add(upperFort);
-
-        const energyDome = new THREE.Mesh(new THREE.SphereGeometry(4.5, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2), redGlowMat);
-        energyDome.position.set(0, 16, -3); parentGroup.add(energyDome);
-
-        const eRadarSupport = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 3, 8), rustMetalMat);
-        eRadarSupport.position.set(0, 16.5, 5); eRadarSupport.castShadow = true; parentGroup.add(eRadarSupport);
-
-        const eMainRadarDish = new THREE.Mesh(new THREE.CylinderGeometry(3, 0.6, 1.5, 10), darkArmorMat);
-        eMainRadarDish.rotation.x = Math.PI / 3;
-        eMainRadarDish.position.set(0, 18.5, 5);
-        eMainRadarDish.castShadow = true;
-        parentGroup.add(eMainRadarDish);
-        rotatingRadars.push(eMainRadarDish);
-    }
-
     function createBases() {
         const playerBaseGroup = new THREE.Group();
         playerBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
@@ -580,14 +559,14 @@
 
         const enemyBaseGroup = new THREE.Group();
         enemyBaseGroup.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
-        enemyBaseGroup.rotation.y = -Math.PI / 4; 
+        enemyBaseGroup.rotation.y = -(3 * Math.PI) / 4; // تم توحيد الاتجاه تماماً كطلبك
 
         if (playerFlagType === 'green') {
-            createPlayerBase(playerBaseGroup);
-            createEnemyBase(enemyBaseGroup);
+            createBaseStructure(playerBaseGroup, false);
+            createBaseStructure(enemyBaseGroup, true);
         } else {
-            createPlayerBase(enemyBaseGroup);
-            createEnemyBase(playerBaseGroup);
+            createBaseStructure(playerBaseGroup, true);
+            createBaseStructure(enemyBaseGroup, false);
         }
 
         scene.add(playerBaseGroup);
@@ -608,7 +587,7 @@
         let enemyTank = createTank(eTankX, eTankZ, eColor, 'enemy', 'normal');
 
         playerTank.mesh.rotation.y = -Math.PI / 4;
-        enemyTank.mesh.rotation.y = (3 * Math.PI) / 4;
+        enemyTank.mesh.rotation.y = -Math.PI / 4;
 
         playerTanks.push(playerTank);
         enemyTanks.push(enemyTank);
@@ -869,7 +848,12 @@
             let pZ = CORNER_OFFSET - 50 + (Math.random() - 0.5) * 20;
             let newTank = createTank(pX, pZ, pColor, 'player', type);
             newTank.mesh.rotation.y = -Math.PI / 4;
-            if (playerTargetPos) newTank.target = playerTargetPos.clone();
+            
+            // تتوجه الدبابة الجديدة نحو المكان المحدد الحالي تلقائياً
+            if (playerTargetPos) {
+                newTank.target = playerTargetPos.clone();
+            }
+
             playerTanks.push(newTank);
             showFloatingMsg(type === 'rocket' ? 'تم طلب دبابة صواريخ' : 'تم طلب دبابة عادية');
         }
@@ -1053,40 +1037,100 @@
         }, { passive: true });
     }
 
-    // --- خوارزمية الذكاء الاصطناعي وتجنب العوائق المُحسنة ---
+    // التفاعل مع الخريطة المصغرة لتحريك الكاميرا أو توجيه الدبابات سريعاً
+    function setupMinimapInteraction() {
+        const minimap = document.getElementById('minimap-container');
+        minimap.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            const rect = minimap.getBoundingClientRect();
+            const xClick = e.clientX - rect.left;
+            const yClick = e.clientY - rect.top;
+            
+            // تحويل إحداثيات الخريطة الدائرية إلى إحداثيات العالم الحقيقي
+            const normX = (xClick / rect.width - 0.5) * 2;
+            const normZ = (yClick / rect.height - 0.5) * 2;
+            
+            let worldX = normX * MAP_LIMIT;
+            let worldZ = normZ * MAP_LIMIT;
+            
+            targetLookAt.x = worldX;
+            targetLookAt.z = worldZ;
+            showFloatingMsg('تم نقل الكاميرا عبر الخريطة المصغرة');
+        });
+    }
+
+    // رسم الخريطة المصغرة في كل إطار
+    function renderMinimap() {
+        const canvas = document.getElementById('minimap-canvas');
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        
+        ctx.clearRect(0, 0, w, h);
+        
+        // رسم خلفية الخريطة
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(w/2, h/2, w/2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        const scale = (w / 2) / MAP_LIMIT;
+
+        // رسم قواعد المعسكرات
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(w/2 + CORNER_OFFSET * scale - 3, h/2 + CORNER_OFFSET * scale - 3, 6, 6);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(w/2 + (-CORNER_OFFSET) * scale - 3, h/2 + (-CORNER_OFFSET) * scale - 3, 6, 6);
+
+        // رسم دبابات اللاعب
+        playerTanks.forEach(t => {
+            if (t.isDestroyed) return;
+            let mx = w/2 + t.mesh.position.x * scale;
+            let mz = h/2 + t.mesh.position.z * scale;
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath(); ctx.arc(mx, mz, 2.5, 0, Math.PI*2); ctx.fill();
+        });
+
+        // رسم دبابات العدو
+        enemyTanks.forEach(t => {
+            if (t.isDestroyed) return;
+            let mx = w/2 + t.mesh.position.x * scale;
+            let mz = h/2 + t.mesh.position.z * scale;
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath(); ctx.arc(mx, mz, 2.5, 0, Math.PI*2); ctx.fill();
+        });
+
+        // رسم موقع الكاميرا الحالي على الخريطة
+        let camMx = w/2 + targetLookAt.x * scale;
+        let camMz = h/2 + targetLookAt.z * scale;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(camMx, camMz, 6, 0, Math.PI*2); ctx.stroke();
+    }
+
     function getSmartMovementVector(currentPos, desiredDir, currentTank) {
         let bestDir = desiredDir.clone().normalize();
-        
-        // التحقق مما إذا كان الاتجاه المباشر آمناً تماماً
         let testPos = currentPos.clone().add(bestDir.clone().multiplyScalar(0.35));
-        if (isPositionSafe(testPos, currentTank)) {
-            return bestDir;
-        }
+        if (isPositionSafe(testPos, currentTank)) return bestDir;
 
-        // إذا كان هناك عائق، فحص مسارات بديلة يميناً ويساراً (Raycasting جانبي ذكي)
         let angles = [0.4, -0.4, 0.8, -0.8, 1.2, -1.2, Math.PI / 2, -Math.PI / 2];
         for (let angle of angles) {
             let rotatedDir = desiredDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), angle).normalize();
             let altTestPos = currentPos.clone().add(rotatedDir.multiplyScalar(0.35));
-            if (isPositionSafe(altTestPos, currentTank)) {
-                return rotatedDir;
-            }
+            if (isPositionSafe(altTestPos, currentTank)) return rotatedDir;
         }
-
-        return null; // التوقف المؤقت في حال الانغلاق التام لتفادي الاختراق
+        return null;
     }
 
     function isPositionSafe(nextPos, currentTank) {
         if (Math.abs(nextPos.x) > MAP_LIMIT || Math.abs(nextPos.z) > MAP_LIMIT) return false;
 
-        // فحص المباني والعوائق الثابتة وآبار النفط
         for (let obs of obstacles) {
             let dx = nextPos.x - obs.x; 
             let dz = nextPos.z - obs.z;
             if (Math.sqrt(dx * dx + dz * dz) < obs.radius + TANK_RADIUS) return false;
         }
 
-        // فحص الدبابات الأخرى لتجنب التصادم بين الوحدات
         let allTanks = [...playerTanks, ...enemyTanks];
         for (let other of allTanks) {
             if (other === currentTank || other.isDestroyed) continue;
@@ -1094,7 +1138,6 @@
             let dz = nextPos.z - other.mesh.position.z;
             if (Math.sqrt(dx * dx + dz * dz) < TANK_RADIUS * 2.2) return false;
         }
-
         return true;
     }
 
@@ -1395,7 +1438,7 @@
                 let eX = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
                 let eZ = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
                 let newEnemyTank = createTank(eX, eZ, eColor, 'enemy', buyType);
-                newEnemyTank.mesh.rotation.y = (3 * Math.PI) / 4;
+                newEnemyTank.mesh.rotation.y = -Math.PI / 4;
                 enemyTanks.push(newEnemyTank);
             }
         }
@@ -1576,7 +1619,7 @@
         } else {
             ctx.fillStyle = '#cc0000'; ctx.fillRect(0, 0, 180, 33);
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 33, 180, 34);
-            ctx.fillStyle, ctx.fillRect(0, 67, 180, 33);
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 67, 180, 33);
             drawStar(ctx, 70, 50, '#007a3d'); drawStar(ctx, 110, 50, '#007a3d');
         }
     }
@@ -1594,6 +1637,7 @@
         updateTanksMovement();
         checkLogicAndEconomy();
         animateFlags();
+        renderMinimap();
         
         let time = Date.now() * 0.003;
         animatedRigs.forEach((beam, index) => {
