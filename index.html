@@ -307,10 +307,10 @@
         }
     }
 
-    let gameMode = 'ai'; // 'ai' or 'online'
+    let gameMode = 'ai';
     let peer = null, conn = null;
     let isHost = false;
-    let onlinePlayerRole = 'host'; // 'host' (bottom-right) or 'guest' (top-left)
+    let onlinePlayerRole = 'host';
 
     let scene, camera, renderer, dirLight;
     let playerFlagType = 'green';
@@ -448,8 +448,6 @@
             spawnEnemyTankNetwork(data.tankType, data.x, data.z);
         } else if (data.type === 'MOVE_TANK') {
             updateEnemyTankTargetNetwork(data.tankIndex, data.targetX, data.targetZ);
-        } else if (data.type === 'FIRE') {
-            // مزامنة إطلاق النار
         }
     }
 
@@ -553,7 +551,6 @@
         }
 
         if (gameMode === 'online' && !isRemoteCall && !isHost) {
-            // الضيف يعكس ألوانه
             enemyFlagType = playerFlagType;
             playerFlagType = playerFlagType === 'green' ? 'red' : 'green';
             onlinePlayerRole = 'guest';
@@ -978,17 +975,6 @@
         });
     }
 
-    function getSmartMovementVector(currentPos, desiredDir, currentTank) {
-        let bestDir = desiredDir.clone().normalize();
-        if (isPositionSafe(currentPos.clone().add(bestDir.clone().multiplyScalar(0.35)), currentTank)) return bestDir;
-        return null;
-    }
-
-    function isPositionSafe(nextPos, currentTank) {
-        if (Math.abs(nextPos.x) > MAP_LIMIT || Math.abs(nextPos.z) > MAP_LIMIT) return false;
-        return true;
-    }
-
     function fireBullet(fromTank, targetTank) {
         const now = Date.now();
         if (now - fromTank.lastShot < 1200) return;
@@ -1044,7 +1030,6 @@
             }
         });
 
-        // الذكاء الاصطناعي يعمل فقط إذا لم يكن اللعب أونلاين
         if (gameMode === 'ai' && enemyMoney >= 150 && enemyBuildCooldown === 0) {
             enemyMoney -= 150; enemyBuildCooldown = 1200;
             spawnEnemyTankNetwork('normal', -CORNER_OFFSET + 50, -CORNER_OFFSET + 50);
