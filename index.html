@@ -51,7 +51,6 @@
         }
         .room-btn.join { background: #8b5cf6; }
 
-        /* شاشة الانتظار والعد التنازلي أونلاين */
         #room-lobby-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 15;
             background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff;
@@ -201,7 +200,6 @@
     </div>
 </div>
 
-<!-- شاشة انتظار الغرفة أونلاين -->
 <div id="room-lobby-screen">
     <div class="lobby-card">
         <h2 id="lobby-title">غرفة الانتظار أونلاين</h2>
@@ -215,7 +213,6 @@
     </div>
 </div>
 
-<!-- شاشة العد التنازلي 5 ثوانٍ -->
 <div id="countdown-overlay">
     <div style="color: white; font-size: 18px; margin-bottom: 10px;">تبدأ المعركة خلال:</div>
     <div id="countdown-number">5</div>
@@ -274,16 +271,14 @@
 
 <div id="canvas-container"></div>
 
-<!-- استدعاء مكتبات Three.js و Socket.io 클라이언트 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://tank-game-server-o650.onrender.com/socket.io/socket.io.js"></script>
 
 <script>
-    // الاتصال بسيرفر Socket.io
-    const socket = io();
+    const socket = io("https://tank-game-server-o650.onrender.com");
     let currentRoomCode = null;
     let isOnlineMode = false;
-    let playerRole = 'host'; // host أو guest
+    let playerRole = 'host';
 
     const soundFiles = {
         menuBgm: 'sounds/menu_bgm.mp3',
@@ -324,7 +319,6 @@
         }
     }
 
-    // دوال الأونلاين عبر Socket.io
     function createRoomOnline() {
         const code = document.getElementById('room-code-input').value.trim();
         if (!code) { alert('الرجاء إدخال رمز الغرفة أولاً!'); return; }
@@ -346,7 +340,7 @@
         document.getElementById('start-menu').style.display = 'none';
         document.getElementById('room-lobby-screen').style.display = 'flex';
         document.getElementById('lobby-title').innerText = `الغرفة: ${currentRoomCode} (${playerRole === 'host' ? 'المنشئ' : 'المنضم'})`;
-        showFloatingMsg('تم الاتصال بالغرقة بنجاح!');
+        showFloatingMsg('تم الاتصال بالغرفة بنجاح!');
     });
 
     socket.on('room_error', (msg) => {
@@ -727,38 +721,6 @@
         };
     }
 
-    function getRealisticTreadTexture() {
-        if (treadTextureCache) return treadTextureCache;
-        const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 128;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#261408'; ctx.fillRect(0, 0, 64, 128);
-        ctx.fillStyle = '#110a04';
-        for (let y = 8; y < 128; y += 16) {
-            ctx.fillRect(6, y, 52, 6);
-            ctx.fillStyle = '#3a2211'; ctx.fillRect(6, y + 6, 52, 2);
-            ctx.fillStyle = '#110a04';
-        }
-        treadTextureCache = new THREE.CanvasTexture(canvas);
-        treadTextureCache.wrapS = THREE.RepeatWrapping; treadTextureCache.wrapT = THREE.RepeatWrapping;
-        treadTextureCache.repeat.set(1, 3);
-        return treadTextureCache;
-    }
-
-    function spawnRealisticTankTracks(centerPos, rotationY, bodyWidth) {
-        const halfWidth = bodyWidth / 2 + 0.3;
-        const trackGeo = new THREE.PlaneGeometry(1.2, 3.2); trackGeo.rotateX(-Math.PI / 2);
-        const trackMat = new THREE.MeshBasicMaterial({ map: getRealisticTreadTexture(), transparent: true, opacity: 0.9 });
-        const offsetX = Math.cos(rotationY) * halfWidth; const offsetZ = Math.sin(rotationY) * halfWidth;
-
-        const leftMesh = new THREE.Mesh(trackGeo, trackMat);
-        leftMesh.position.set(centerPos.x - offsetX, getTerrainHeight(centerPos.x - offsetX, centerPos.z + offsetZ) + 0.04, centerPos.z + offsetZ);
-        leftMesh.rotation.y = rotationY; scene.add(leftMesh); tankTracks.push({ mesh: leftMesh, life: 350 });
-
-        const rightMesh = new THREE.Mesh(trackGeo, trackMat.clone());
-        rightMesh.position.set(centerPos.x + offsetX, getTerrainHeight(centerPos.x + offsetX, centerPos.z - offsetZ) + 0.04, centerPos.z - offsetZ);
-        rightMesh.rotation.y = rotationY; scene.add(rightMesh); tankTracks.push({ mesh: rightMesh, life: 350 });
-    }
-
     function updateTankAudio(tank, isMoving) {
         if (gameOver || tank.isDestroyed) {
             if (tank.isIdlePlaying) { tank.idleAudio.pause(); tank.isIdlePlaying = false; }
@@ -772,12 +734,6 @@
             if (tank.isMovePlaying) { tank.moveAudio.pause(); tank.isMovePlaying = false; }
             if (!tank.isIdlePlaying) { tank.idleAudio.play().then(() => { tank.isIdlePlaying = true; }).catch(e => {}); }
         }
-    }
-
-    function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
-        const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.8 * scale, 6, 6), new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.7 }));
-        mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*2, Math.max(2, getTerrainHeight(pos.x, pos.z) + 2), (Math.random()-0.5)*2));
-        scene.add(mesh); smokeParticles.push({ mesh: mesh, life: 35, vy: 0.12 });
     }
 
     function updateTanksDamageVisual(tankData) {
@@ -884,8 +840,6 @@
         camera.lookAt(targetLookAt);
     }
 
-    function triggerCameraShake(intensity = 1.8) { shakeTimer = 18; shakeIntensity = intensity; }
-
     function setupInteraction() {
         const dom = renderer.domElement;
         dom.addEventListener('pointerdown', (e) => {
@@ -951,21 +905,6 @@
         enemyTanks.forEach(t => {
             if (!t.isDestroyed) { ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(55 + t.mesh.position.x * scale, 55 + t.mesh.position.z * scale, 2.5, 0, Math.PI*2); ctx.fill(); }
         });
-    }
-
-    function getSmartMovementVector(currentPos, desiredDir, currentTank) {
-        let bestDir = desiredDir.clone().normalize();
-        let testPos = currentPos.clone().add(bestDir.clone().multiplyScalar(0.35));
-        if (isPositionSafe(testPos, currentTank)) return bestDir;
-        return null;
-    }
-
-    function isPositionSafe(nextPos, currentTank) {
-        if (Math.abs(nextPos.x) > MAP_LIMIT || Math.abs(nextPos.z) > MAP_LIMIT) return false;
-        for (let obs of obstacles) {
-            if (Math.sqrt(Math.pow(nextPos.x - obs.x, 2) + Math.pow(nextPos.z - obs.z, 2)) < obs.radius + TANK_RADIUS) return false;
-        }
-        return true;
     }
 
     function fireBullet(fromTank, targetTank) {
