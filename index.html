@@ -158,13 +158,13 @@
         <div id="room-controls-section" style="display: none; margin-top: 8px;">
             <div class="input-group">
                 <div class="section-title">رقم الغرفة:</div>
-                <input type="text" id="room-id-input" placeholder="اكتب رقم أو اسم الغرفة..." value="room123">
+                <input type="text" id="room-id-input" placeholder="اكتب رقم الغرفة..." value="room123">
             </div>
             <div class="room-actions">
                 <button class="room-btn" onclick="playClickSound(); createRoom()">إنشاء غرفة</button>
                 <button class="room-btn" onclick="playClickSound(); joinRoom()">دخول الغرفة</button>
             </div>
-            <div id="room-status-msg" style="font-size: 10px; color: #38bdf8; margin-top: 4px;">بانتظار الاتصال بالسيرفر...</div>
+            <div id="room-status-msg" style="font-size: 10px; color: #38bdf8; margin-top: 4px;">جاهز للاتصال بالسيرفر...</div>
         </div>
 
         <div class="section-title">اختر علم معسكرك:</div>
@@ -301,11 +301,10 @@
     let playerFlagType = 'green';
     let enemyFlagType = 'red';
     
-    // متغيرات نظام الغرفة والسيرفر
-    let gameMode = 'bot'; // 'bot' أو 'multi'
+    let gameMode = 'bot'; 
     let socket = null;
     let currentRoomId = null;
-    let myPlayerRole = 'host'; // 'host' أو 'guest'
+    let myPlayerRole = 'host';
 
     let cameraRadius = 200, targetCameraRadius = 200;
     let cameraTheta = Math.PI / 4;
@@ -348,6 +347,7 @@
     let captureProgress = 0;
     let enemyCaptureProgress = 0;
     let gameOver = false;
+    let isGameStarted = false;
     let isCinematicEnding = false;
     let cinematicTargetLook = null;
 
@@ -402,7 +402,7 @@
         socket.on('room-joined', (data) => {
             currentRoomId = data.roomId;
             myPlayerRole = 'guest';
-            playerFlagType = 'red'; // الضيف يبدأ بالعلم الأحمر مثلاً لتمييز المعسكرات
+            playerFlagType = 'red'; 
             enemyFlagType = 'green';
             updateFlagButtonsUI();
             document.getElementById('room-status-msg').innerText = `انضممت للغرفة بنجاح! المعركة جاهزة.`;
@@ -417,11 +417,12 @@
         });
 
         socket.on('server-action', (data) => {
-            // استقبال أفعال العدو/الصديق في وضع الأونلاين
-            if (data.action === 'buyTank') {
-                spawnEnemyTankFromRemote(data.tankType, data.x, data.z);
-            } else if (data.action === 'moveTanks') {
-                setRemoteEnemyTargets(data.targetX, data.targetZ);
+            if (gameMode === 'multi') {
+                if (data.action === 'buyTank') {
+                    spawnEnemyTankFromRemote(data.tankType, data.x, data.z);
+                } else if (data.action === 'moveTanks') {
+                    setRemoteEnemyTargets(data.targetX, data.targetZ);
+                }
             }
         });
     }
@@ -519,6 +520,7 @@
         document.getElementById('start-menu').style.display = 'none';
         document.getElementById('ui-overlay').style.display = 'block';
         playSound('buy');
+        isGameStarted = true;
         let playerSideZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
         targetLookAt.set(0, 0, playerSideZ / 2);
         showFloatingMsg('بدأت المعركة برصيد 500$ لكل طرف!');
@@ -732,7 +734,7 @@
     }
 
     function updateTankAudio(tank, isMoving) {
-        if (gameOver || tank.isDestroyed) {
+        if (!isGameStarted || gameOver || tank.isDestroyed) {
             if (tank.isIdlePlaying) { tank.idleAudio.pause(); tank.idleAudio.currentTime = 0; tank.isIdlePlaying = false; }
             if (tank.isMovePlaying) { tank.moveAudio.pause(); tank.moveAudio.currentTime = 0; tank.isMovePlaying = false; }
             return;
@@ -797,7 +799,6 @@
             playerTanks.push(newTank);
             showFloatingMsg(type === 'rocket' ? 'تم طلب دبابة صواريخ' : 'تم طلب دبابة عادية');
 
-            // إذا كنا في وضع الأونلاين، نرسل الدبابة الجديدة للصديق عبر السيرفر
             if (gameMode === 'multi' && socket && currentRoomId) {
                 socket.emit('player-action', {
                     roomId: currentRoomId,
@@ -812,7 +813,6 @@
 
     function spawnEnemyTankFromRemote(type, x, z) {
         let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
-        // عكس الإحداثيات للخصم في الجهة المقابلة
         let remoteZ = -z;
         enemyTanks.push(createTank(x, 0, remoteZ, eColor, 'enemy', type));
         showFloatingMsg('الخصم أرسل دبابة جديدة في الميدان!');
@@ -931,7 +931,7 @@
     function setupInteraction() {
         const dom = renderer.domElement;
         dom.addEventListener('pointerdown', (e) => {
-            if (gameOver || isCinematicEnding) return;
+            if (!isGameStarted || gameOver || isCinematicEnding) return;
             isDragging = true;
             hasMoved = false;
             previousTouchX = e.clientX;
@@ -941,7 +941,7 @@
         });
 
         dom.addEventListener('pointermove', (e) => {
-            if (!isDragging || gameOver || isCinematicEnding) return;
+            if (!isGameStarted || !isDragging || gameOver || isCinematicEnding) return;
             const deltaX = e.clientX - previousTouchX;
             const deltaY = e.clientY - previousTouchY;
             if (Math.abs(e.clientX - touchStartX) > 5 || Math.abs(e.clientY - touchStartY) > 5) {
@@ -956,7 +956,7 @@
         });
 
         dom.addEventListener('pointerup', (e) => {
-            if (gameOver || isCinematicEnding) return;
+            if (!isGameStarted || gameOver || isCinematicEnding) return;
             isDragging = false;
             if (!hasMoved) {
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -993,7 +993,6 @@
                         selectedTank.target = playerTargetPos.clone();
                     }
 
-                    // إرسال حركة الدبابات للصديق في وضع الأونلاين
                     if (gameMode === 'multi' && socket && currentRoomId && playerTargetPos) {
                         socket.emit('player-action', {
                             roomId: currentRoomId,
@@ -1007,7 +1006,7 @@
         });
 
         dom.addEventListener('wheel', (e) => { 
-            if(!isCinematicEnding) targetCameraRadius = Math.max(40, Math.min(400, targetCameraRadius + e.deltaY * 0.3)); 
+            if(isGameStarted && !isCinematicEnding) targetCameraRadius = Math.max(40, Math.min(400, targetCameraRadius + e.deltaY * 0.3)); 
         }, { passive: true });
     }
 
@@ -1112,6 +1111,7 @@
     }
 
     function updateTankHpLabels() {
+        if (!isGameStarted) return;
         const tempV = new THREE.Vector3();
         const allTanks = [...playerTanks, ...enemyTanks];
         allTanks.forEach(tank => {
@@ -1130,7 +1130,7 @@
     }
 
     function updateTanksMovement() {
-        if (gameOver) return;
+        if (!isGameStarted || gameOver) return;
 
         if (playerBuildCooldown > 0) {
             playerBuildCooldown--;
@@ -1248,10 +1248,8 @@
             updateTankAudio(tankData, isMoving);
         });
 
-        let enemyBaseZ = playerFlagType === 'green' ? BASE_DISTANCE : -BASE_DISTANCE;
         let playerBaseZ = playerFlagType === 'green' ? -BASE_DISTANCE : BASE_DISTANCE;
 
-        // إذا كان اللعب ضد البوت، فإن البوت يبني تلقائياً. أما في وضع الأونلاين فالص صديق هو من يتحكم بالخصم عبر السيرفر.
         if (gameMode === 'bot') {
             if (enemyMoney >= 150 && enemyBuildCooldown === 0 && enemyTanks.filter(t => !t.isDestroyed).length < 5) {
                 let buyType = (enemyMoney >= 300 && Math.random() > 0.5) ? 'rocket' : 'normal';
@@ -1338,7 +1336,7 @@
     }
 
     function checkLogicAndEconomy() {
-        if (gameOver) return;
+        if (!isGameStarted || gameOver) return;
         gameTick++;
         if (gameTick % 60 === 0) {
             let pIncome = 0, eIncome = 0;
