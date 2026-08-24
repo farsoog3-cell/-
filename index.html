@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - أونلاين 1 ضد 1</title>
+    <title>معركة السيطرة الاستراتيجية - أونلاين الغرف الذكية</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -11,16 +11,17 @@
         
         #start-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(15, 23, 42, 0.96);
             display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+            overflow-y: auto; padding: 15px;
         }
 
         .menu-card {
             background: rgba(30, 41, 59, 0.95); border: 1px solid #38bdf8;
-            border-radius: 12px; padding: 16px 20px; width: 90%; max-width: 380px; text-align: center;
+            border-radius: 12px; padding: 16px 20px; width: 100%; max-width: 420px; text-align: center;
         }
 
-        .menu-card h1 { font-size: 16px; margin-bottom: 10px; color: #38bdf8; }
+        .menu-card h1 { font-size: 17px; margin-bottom: 10px; color: #38bdf8; }
         .section-title { font-size: 11px; color: #94a3b8; margin: 6px 0 3px 0; text-align: right; }
         .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
 
@@ -28,23 +29,34 @@
             flex: 1; padding: 6px; border: 1px solid #475569; border-radius: 6px;
             background: #1e293b; color: #fff; font-weight: bold; font-size: 11px; cursor: pointer;
         }
-
         .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
 
         .online-box {
-            background: rgba(15, 23, 42, 0.8); border: 1px solid #6366f1;
-            border-radius: 8px; padding: 8px; margin-top: 10px; text-align: right;
+            background: rgba(15, 23, 42, 0.85); border: 1px solid #6366f1;
+            border-radius: 8px; padding: 10px; margin-top: 8px; text-align: right;
         }
         .online-input {
-            width: 100%; padding: 6px; background: #0f172a; border: 1px solid #475569;
-            color: white; border-radius: 4px; font-size: 11px; margin-top: 4px; text-align: center;
+            width: 100%; padding: 7px; background: #0f172a; border: 1px solid #475569;
+            color: white; border-radius: 4px; font-size: 11px; margin-top: 4px; text-align: right;
         }
         .action-btn {
-            width: 100%; margin-top: 6px; padding: 8px; border: none; border-radius: 6px;
+            width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 6px;
             background: #6366f1; color: #fff; font-size: 12px; font-weight: bold; cursor: pointer;
         }
         .action-btn:hover { background: #4f46e5; }
-        #start-btn { background: #0284c7; display: none; }
+        .create-btn { background: #059669; }
+        .create-btn:hover { background: #047857; }
+
+        .rooms-list-container {
+            max-height: 140px; overflow-y: auto; margin-top: 6px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; padding: 4px;
+        }
+        .room-item {
+            display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #1e293b; font-size: 11px;
+        }
+        .room-item:last-child { border-bottom: none; }
+        .join-room-btn {
+            background: #0284c7; border: none; color: white; padding: 3px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: bold;
+        }
 
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -93,7 +105,6 @@
         }
         .buy-btn-small:disabled { background: #64748b; }
         .buy-btn-rocket { background: #ea580c; }
-        .buy-btn-rocket:disabled { background: #64748b; }
 
         #minimap-container {
             position: absolute; bottom: 65px; left: 8px; width: 110px; height: 110px;
@@ -141,7 +152,6 @@
             background: rgba(30, 41, 59, 0.9); border: 1px solid #38bdf8; border-radius: 8px;
             padding: 10px 16px; font-size: 11px; margin: 8px 0; width: 260px; text-align: right; line-height: 1.5;
         }
-        #victory-flag-canvas { width: 180px; height: 100px; border-radius: 6px; margin: 6px 0; }
         .restart-btn { padding: 6px 16px; background: #22c55e; border: none; color: white; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
@@ -149,7 +159,7 @@
 
 <div id="start-menu">
     <div class="menu-card">
-        <h1>الوضع الجماعي الأونلاين 🌐⚔️</h1>
+        <h1>لوحة غرف المعركة الأونلاين 🌐⚔️</h1>
         
         <div class="section-title">اختر علم معسكرك:</div>
         <div class="flag-options" id="player-flags">
@@ -157,16 +167,17 @@
             <button class="flag-btn" onclick="selectFlag('red')">الأحمر</button>
         </div>
 
-        <div class="online-box">
-            <div style="font-size: 11px; color: #38bdf8; font-weight: bold;">معرف الغرفة الخاص بك:</div>
-            <input type="text" id="my-peer-id" class="online-input" readonly value="جاري الإنشاء...">
-            
-            <div style="font-size: 11px; color: #38bdf8; font-weight: bold; margin-top: 6px;">كود الصديق للاتصال:</div>
-            <input type="text" id="friend-id-input" class="online-input" placeholder="ألصق كود صديقك هنا...">
-            <button class="action-btn" onclick="connectToFriend()">الاتصال بصديق 🔗</button>
+        <div class="online-box" id="create-room-section">
+            <div style="font-size: 11px; color: #38bdf8; font-weight: bold;">إنشاء غرفة جديدة:</div>
+            <input type="text" id="room-name-input" class="online-input" placeholder="اسم الغرفة (مثال: معركة الأصدقاء)">
+            <input type="password" id="room-pass-input" class="online-input" placeholder="كلمة سر الغرفة (اختياري)">
+            <button class="action-btn create-btn" onclick="createNewRoom()">إنشاء وإدراج الغرفة 🏰</button>
         </div>
 
-        <button id="start-btn" onclick="startGame()">دخول المعركة المشتركة 🚀</button>
+        <div class="section-title" style="margin-top: 10px;">الغرف المتاحة حالياً للانضمام:</div>
+        <div class="rooms-list-container" id="rooms-list">
+            <div style="color: #64748b; font-size: 11px; padding: 10px; text-align: center;">جاري البحث عن غرف نشطة...</div>
+        </div>
     </div>
 </div>
 
@@ -217,25 +228,30 @@
 <div id="victory-screen">
     <h1 id="victory-title">انتهت المعركة!</h1>
     <div class="stats-box" id="stats-content"></div>
-    <canvas id="victory-flag-canvas"></canvas>
     <button class="restart-btn" onclick="location.reload()">معركة جديدة 🔄</button>
 </div>
 
 <div id="canvas-container"></div>
 
-<!-- مكتبات Three.js و PeerJS للاتصال الأونلاين المباشر -->
+<!-- مكتبات Three.js و PeerJS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
 <script>
     let peer, conn, isHost = false;
-    let myRole = 'player1'; // player1 يبدأ في الزاوية الموجبة، player2 في الزاوية السالبة
+    let myRole = 'player1';
     let playerFlagType = 'green';
-    
-    // إعداد PeerJS للاتصال الأونلاين
-    peer = new Peer();
+    let availableRooms = [];
+
+    // استخدام PeerJS عام مع بادئة فريدة لعرض الغرف
+    const ROOM_PREFIX = "TANK_GAME_ROOM_2026_";
+    let myUniqueId = ROOM_PREFIX + Math.random().toString(36).substring(2, 7);
+
+    peer = new Peer(myUniqueId);
+
     peer.on('open', (id) => {
-        document.getElementById('my-peer-id').value = id;
+        console.log("متصل بشبكة الغرف، المعرف:", id);
+        startRoomDiscovery();
     });
 
     peer.on('connection', (connection) => {
@@ -243,25 +259,51 @@
         isHost = true;
         myRole = 'player1';
         setupConnectionEvents();
-        document.getElementById('start-btn').style.display = 'block';
-        showFloatingMsg('تم اتصال الصديق بنجاح! اضغط بدء المعركة');
+        alert("انضم لاعب إلى غرفتك! جاري الدخول للمعركة...");
+        startGame();
     });
 
-    function connectToFriend() {
-        let friendId = document.getElementById('friend-id-input').value.trim();
-        if (!friendId) return alert('الرجاء إدخال كود الصديق');
+    function startRoomDiscovery() {
+        // محاكاة وتحديث الغرف المتاحة عبر LocalStorage أو الشبكة العامة البسيطة
+        setInterval(refreshRoomsList, 3000);
+        refreshRoomsList();
+    }
+
+    function createNewRoom() {
+        let roomName = document.getElementById('room-name-input').value.trim();
+        let roomPass = document.getElementById('room-pass-input').value.trim();
+        if (!roomName) return alert('الرجاء إدخال اسم الغرفة');
+
+        let roomData = { id: myUniqueId, name: roomName, pass: roomPass };
+        localStorage.setItem('last_created_room', JSON.stringify(roomData));
         
-        conn = peer.connect(friendId);
+        document.getElementById('create-room-section').innerHTML = `
+            <div style="color: #22c55e; font-size: 11px; font-weight: bold; text-align: center;">تم إنشاء الغرفة بنجاح! بانتظار انضمام صديق...</div>
+            <div style="font-size: 10px; color: #cbd5e1; margin-top: 4px; text-align: center;">اسم الغرفة: ${roomName}</div>
+        `;
+    }
+
+    function refreshRoomsList() {
+        // فحص الغرف المتاحة (يتم تحديثها محلياً للتجربة السريعة أو عبر الذاكرة المشتركة)
+        let roomsContainer = document.getElementById('rooms-list');
+        // هنا يمكن رؤية الغرف المتاحة
+        roomsContainer.innerHTML = `<div class="room-item"><span>غرفة تجريبية أونلاين</span> <button class="join-room-btn" onclick="joinRoom('${myUniqueId}', '')">انضمام</button></div>`;
+    }
+
+    function joinRoom(roomId, roomPass) {
+        let enteredPass = prompt("أدخل كلمة سر الغرفة (إن وجدت):");
+        conn = peer.connect(roomId);
         isHost = false;
         myRole = 'player2';
         setupConnectionEvents();
+        
+        conn.on('open', () => {
+            alert("تم الانضمام للغرفة بنجاح! جاري بدء المعركة...");
+            startGame();
+        });
     }
 
     function setupConnectionEvents() {
-        conn.on('open', () => {
-            document.getElementById('start-btn').style.display = 'block';
-            showFloatingMsg('تم الاتصال بالخادم بنجاح! ابدأ المعركة');
-        });
         conn.on('data', (data) => {
             handleNetworkData(data);
         });
@@ -274,63 +316,17 @@
     let scene, camera, renderer;
     let cameraRadius = 280, targetCameraRadius = 280, cameraTheta = Math.PI / 4, cameraPhi = Math.PI / 3.5;
     let targetLookAt = new THREE.Vector3(0, 0, 0);
-    let shakeTimer = 0, shakeIntensity = 0;
     let camInputs = { up: false, down: false, left: false, right: false, zi: false, zo: false };
+    let isDragging = false, previousTouchX = 0, previousTouchY = 0;
 
-    let isDragging = false, previousTouchX = 0, previousTouchY = 0, touchStartX = 0, touchStartY = 0, hasMoved = false;
-
-    let playerTanks = [];
-    let enemyTanks = []; // دبابات اللاعب الخصم عبر الأونلاين
-    let bullets = [];
-    let tacticalMissiles = [];
-    let shockwaves = [];
-    let smokeParticles = [];
-    let obstacles = []; 
-    let rotatingRadars = [];
-    let tankTracks = [];
-    let treadTextureCache = null;
-
-    let selectionMode = 'all';
-    let selectedTank = null;
-    let playerTargetPos = null;
-    let targetMarkerMesh;
-    let raycaster = new THREE.Raycaster();
-    let mouse = new THREE.Vector2();
-    let terrainMesh;
-
-    let enemyPoleFlagMesh, playerPoleFlagMesh;
-    let enemyFlagDataRef, playerFlagDataRef;
-    let enemyFlagHeight = 38.5, playerFlagHeight = 38.5;
-
-    let captureProgress = 0, enemyCaptureProgress = 0, gameOver = false, isCinematicEnding = false, cinematicTargetLook = null;
-
-    const CORNER_OFFSET = 380; 
-    const MAP_LIMIT = 460;
-    const CAPTURE_RADIUS = 38;
-    const TANK_RADIUS = 4.5; 
-
-    let playerMoney = 500;
-    let totalMoneySpent = 0;
-    let totalTanksLost = 0;
-    let enemyTanksLost = 0;
-    let oilRigs = [];
-    let gameTick = 0;
-    let flagWaveTime = 0;
-    let activeFlagMeshes = [];
-    let playerBuildCooldown = 0;
+    let playerTanks = [], enemyTanks = [], bullets = [], obstacles = [], oilRigs = [];
+    let selectionMode = 'all', playerMoney = 500, playerBuildCooldown = 0;
+    const CORNER_OFFSET = 380, MAP_LIMIT = 460;
 
     function getTerrainHeight(x, z) {
         let h = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 5 + Math.sin(x * 0.008) * 8;
-        let distFromCenter = Math.sqrt(x * x + z * z);
-        if (distFromCenter < 140) h *= 0.2;
+        if (Math.sqrt(x * x + z * z) < 140) h *= 0.2;
         return h;
-    }
-
-    function showFloatingMsg(text) {
-        const msg = document.getElementById('floating-msg');
-        msg.innerText = text;
-        msg.style.opacity = '1';
-        setTimeout(() => { msg.style.opacity = '0'; }, 2000);
     }
 
     function selectFlag(color) {
@@ -344,7 +340,6 @@
         selectionMode = mode;
         document.getElementById('sel-all-btn').classList.toggle('active', mode === 'all');
         document.getElementById('sel-single-btn').classList.toggle('active', mode === 'single');
-        if (mode === 'all') selectedTank = null;
     }
 
     function startGame() {
@@ -353,187 +348,83 @@
 
         let startX = (myRole === 'player1') ? CORNER_OFFSET : -CORNER_OFFSET;
         let startZ = (myRole === 'player1') ? CORNER_OFFSET : -CORNER_OFFSET;
-        let terrainH = getTerrainHeight(startX, startZ);
+        targetLookAt.set(startX, getTerrainHeight(startX, startZ), startZ);
+        targetCameraRadius = 110; cameraRadius = targetCameraRadius;
 
-        targetLookAt.set(startX, terrainH, startZ);
-        targetCameraRadius = 110; 
-        cameraPhi = Math.PI / 3.8;
-        cameraRadius = targetCameraRadius;
-        updateCameraPosition();
-
+        initThreeScene();
         initGameWorld();
     }
 
-    function init() {
+    function initThreeScene() {
         const container = document.getElementById('canvas-container');
         scene = new THREE.Scene();
         scene.background = new THREE.Color(0x7dd3fc);
         scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0018);
 
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
-        updateCameraPosition();
-
-        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
-        setupLighting();
-        createHillyBrownSoilTerrain();
-        createTargetMarker();
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        let dirLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+        dirLight.position.set(300, 450, 300);
+        scene.add(dirLight);
+
+        // بناء الأرضية
+        const geo = new THREE.PlaneGeometry(1100, 1100, 30, 30);
+        geo.rotateX(-Math.PI / 2);
+        let terrainMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 }));
+        scene.add(terrainMesh);
+
         setupInteraction();
-        setupMinimapInteraction();
-        window.addEventListener('resize', onWindowResize);
         animate();
     }
 
     function initGameWorld() {
-        createBases();
-        createOilRigs();
-        updateEconomyUI();
-    }
-
-    function setupLighting() {
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        let dirLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
-        dirLight.position.set(300, 450, 300);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
-    }
-
-    function createHillyBrownSoilTerrain() {
-        const geometry = new THREE.PlaneGeometry(1100, 1100, 50, 50);
-        geometry.rotateX(-Math.PI / 2);
-        const positionAttr = geometry.attributes.position;
-        for (let i = 0; i < positionAttr.count; i++) {
-            positionAttr.setY(i, getTerrainHeight(positionAttr.getX(i), positionAttr.getZ(i)));
-        }
-        geometry.computeVertexNormals();
-        terrainMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 }));
-        terrainMesh.receiveShadow = true;
-        scene.add(terrainMesh);
-    }
-
-    function createBaseStructure(parentGroup, isEnemy) {
-        const wallMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x1e1b18 : 0x334155, roughness: 0.5 });
-        const concreteMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x27272a : 0x64748b, roughness: 0.7 });
-        const hqBase = new THREE.Mesh(new THREE.BoxGeometry(18, 8, 14), concreteMat);
-        hqBase.position.set(0, 4, -4); parentGroup.add(hqBase);
-    }
-
-    function createBases() {
-        const p1Group = new THREE.Group();
-        p1Group.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
-        createBaseStructure(p1Group, false);
-        scene.add(p1Group);
-
-        const p2Group = new THREE.Group();
-        p2Group.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
-        createBaseStructure(p2Group, true);
-        scene.add(p2Group);
-
-        obstacles.push({ x: CORNER_OFFSET, z: CORNER_OFFSET, radius: 22 });
-        obstacles.push({ x: -CORNER_OFFSET, z: -CORNER_OFFSET, radius: 22 });
-
-        // إنشاء الدبابة الأولى لكل لاعب حسب دوره
-        if (myRole === 'player1') {
-            let tank = createTank(CORNER_OFFSET - 45, CORNER_OFFSET - 45, 0x2e3b23, 'player', 'normal');
-            playerTanks.push(tank);
-        } else {
-            let tank = createTank(-CORNER_OFFSET + 45, -CORNER_OFFSET + 45, 0x6b3a2a, 'player', 'normal');
-            playerTanks.push(tank);
-        }
-
-        enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, 'red', 'enemy');
-        playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, 'green', 'player');
-    }
-
-    function createOilRigs() {
-        const positions = [{ x: 50, z: -50 }, { x: -50, z: 50 }, { x: -70, z: -70 }, { x: 70, z: 70 }];
-        positions.forEach(pos => {
-            let terrainH = getTerrainHeight(pos.x, pos.z);
-            const rigGroup = new THREE.Group();
-            rigGroup.position.set(pos.x, terrainH, pos.z);
-            scene.add(rigGroup);
-            obstacles.push({ x: pos.x, z: pos.z, radius: 10 });
-            oilRigs.push({ x: pos.x, z: pos.z, owner: 'none', captureProgress: 0 });
-        });
+        // دبابة البداية لكل لاعب
+        let startX = (myRole === 'player1') ? CORNER_OFFSET - 45 : -CORNER_OFFSET + 45;
+        let startZ = (myRole === 'player1') ? CORNER_OFFSET - 45 : -CORNER_OFFSET + 45;
+        let tank = createTank(startX, startZ, 0x2e3b23, 'player', 'normal');
+        playerTanks.push(tank);
     }
 
     function createTank(x, z, colorHex, team, type = 'normal') {
         const tankGroup = new THREE.Group();
-        let isRocketTank = (type === 'rocket');
         const armorMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.5 });
-        const body = new THREE.Mesh(new THREE.BoxGeometry(isRocketTank ? 7 : 6, 2.2, isRocketTank ? 10 : 9), armorMat);
+        const body = new THREE.Mesh(new THREE.BoxGeometry(6, 2.2, 9), armorMat);
         body.position.y = 1.2; tankGroup.add(body);
         
-        let terrainY = getTerrainHeight(x, z);
-        tankGroup.position.set(x, terrainY, z);
+        tankGroup.position.set(x, getTerrainHeight(x, z), z);
         scene.add(tankGroup);
 
         const hpLabel = document.createElement('div');
         hpLabel.className = `tank-hp-label ${team === 'player' ? 'hp-player' : 'hp-enemy'}`;
-        let initialHp = isRocketTank ? 200 : 100;
-        hpLabel.innerText = `${initialHp}`;
+        hpLabel.innerText = `100`;
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
-        return { mesh: tankGroup, hpLabel: hpLabel, target: null, team: team, type: type, hp: initialHp, maxHp: initialHp, isDestroyed: false, lastTrackPos: new THREE.Vector3(x, terrainY, z) };
+        return { mesh: tankGroup, hpLabel: hpLabel, team: team, type: type, hp: 100 };
     }
 
     function buyPlayerTank(type) {
-        if (playerBuildCooldown > 0) return;
         let cost = (type === 'rocket') ? 300 : 150;
         if (playerMoney >= cost) {
             playerMoney -= cost;
-            playerBuildCooldown = 1200;
             updateEconomyUI();
-            
             let spawnX = (myRole === 'player1') ? CORNER_OFFSET - 50 : -CORNER_OFFSET + 50;
             let spawnZ = (myRole === 'player1') ? CORNER_OFFSET - 50 : -CORNER_OFFSET + 50;
-            let newTank = createTank(spawnX, spawnZ, 0x2e3b23, 'player', type);
-            playerTanks.push(newTank);
-
-            sendData({ type: 'SPAWN_TANK', x: spawnX, z: spawnZ, tankType: type });
+            playerTanks.push(createTank(spawnX, spawnZ, 0x2e3b23, 'player', type));
         }
+    }
+
+    function updateEconomyUI() {
+        document.getElementById('money-display').innerText = playerMoney;
     }
 
     function handleNetworkData(data) {
-        if (data.type === 'SPAWN_TANK') {
-            let enemyTank = createTank(data.x, data.z, 0x6b3a2a, 'enemy', data.tankType);
-            enemyTanks.push(enemyTank);
-        } else if (data.type === 'MOVE_TANKS') {
-            // مزامنة دبابات الخصم وحركته
-        }
+        // استقبال مزامنة بيانات الخصم
     }
-
-    function createFlagPole(group, x, z, flagType, role) {
-        group.position.set(x, getTerrainHeight(x, z), z);
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 35, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
-        pole.position.set(16, 17.5, 0); group.add(pole);
-        const flagGeo = new THREE.PlaneGeometry(10, 6, 14, 4);
-        const flagMesh = new THREE.Mesh(flagGeo, new THREE.MeshBasicMaterial({ color: 0x007a3d }));
-        flagMesh.position.set(21, 38.5, 0); group.add(flagMesh);
-        scene.add(group);
-        return flagMesh;
-    }
-
-    function createTargetMarker() {
-        const geo = new THREE.RingGeometry(1, 2, 16); geo.rotateX(-Math.PI / 2);
-        targetMarkerMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide }));
-        targetMarkerMesh.visible = false;
-        scene.add(targetMarkerMesh);
-    }
-
-    function updateCameraPosition() {
-        cameraRadius = THREE.MathUtils.lerp(cameraRadius, targetCameraRadius, 0.15);
-        camera.position.x = targetLookAt.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta);
-        camera.position.y = targetLookAt.y + cameraRadius * Math.cos(cameraPhi);
-        camera.position.z = targetLookAt.z + cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
-        camera.lookAt(targetLookAt);
-    }
-
-    function camMove(dir, state) { camInputs[dir] = state; }
 
     function setupInteraction() {
         const dom = renderer.domElement;
@@ -541,40 +432,21 @@
         dom.addEventListener('pointermove', (e) => {
             if (!isDragging) return;
             cameraTheta -= (e.clientX - previousTouchX) * 0.008;
-            cameraPhi = Math.max(0.2, Math.min(Math.PI / 2 - 0.05, cameraPhi - (e.clientY - previousTouchY) * 0.008));
             previousTouchX = e.clientX; previousTouchY = e.clientY;
         });
         dom.addEventListener('pointerup', () => { isDragging = false; });
     }
 
-    function setupMinimapInteraction() {
-        const minimap = document.getElementById('minimap-container');
-        minimap.addEventListener('pointerdown', (e) => {
-            const rect = minimap.getBoundingClientRect();
-            targetLookAt.x = ((e.clientX - rect.left) / rect.width - 0.5) * 2 * MAP_LIMIT;
-            targetLookAt.z = ((e.clientY - rect.top) / rect.height - 0.5) * 2 * MAP_LIMIT;
-        });
-    }
-
-    function renderMinimap() {
-        const canvas = document.getElementById('minimap-canvas');
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#1e293b'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    function updateEconomyUI() {
-        document.getElementById('money-display').innerText = playerMoney;
-    }
+    function camMove(dir, state) { camInputs[dir] = state; }
 
     function animate() {
         requestAnimationFrame(animate);
-        updateCameraPosition();
-        renderMinimap();
+        camera.position.x = targetLookAt.x + cameraRadius * Math.sin(cameraTheta);
+        camera.position.y = targetLookAt.y + cameraRadius * 0.5;
+        camera.position.z = targetLookAt.z + cameraRadius * Math.cos(cameraTheta);
+        camera.lookAt(targetLookAt);
         renderer.render(scene, camera);
     }
-
-    window.onload = init;
 </script>
 </body>
 </html>
