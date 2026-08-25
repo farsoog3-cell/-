@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - أونلاين</title>
-    <!-- مكتبة Socket.io للاتصال بالسيرفر -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <title>معركة السيطرة الاستراتيجية - نظام الغرف الجماعية</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -13,54 +11,45 @@
         
         #start-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-            background: rgba(15, 23, 42, 0.98);
+            background: rgba(15, 23, 42, 0.95);
             display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+            overflow-y: auto; padding: 15px;
         }
 
         .menu-card {
             background: rgba(30, 41, 59, 0.95); border: 1px solid #38bdf8;
-            border-radius: 12px; padding: 16px 20px; width: 90%; max-width: 380px; text-align: center;
+            border-radius: 12px; padding: 16px 20px; width: 90%; max-width: 400px; text-align: center;
         }
 
         .menu-card h1 { font-size: 16px; margin-bottom: 10px; color: #38bdf8; }
         .section-title { font-size: 11px; color: #94a3b8; margin: 6px 0 3px 0; text-align: right; }
-        
-        .rooms-container {
-            max-height: 120px; overflow-y: auto; background: #0f172a; border: 1px solid #334155;
-            border-radius: 6px; margin-bottom: 8px; padding: 4px; text-align: right;
-        }
-        .room-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 5px 8px; border-bottom: 1px solid #1e293b; font-size: 11px;
-        }
-        .room-item button {
-            background: #22c55e; border: none; color: white; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 10px;
-        }
-
-        .room-inputs { display: flex; gap: 5px; margin-bottom: 8px; }
-        .room-input {
-            flex: 1; padding: 6px; background: #1e293b; border: 1px solid #475569;
-            color: white; border-radius: 6px; font-size: 11px; text-align: center;
-        }
-        .room-btn {
-            padding: 6px 12px; background: #0284c7; border: none;
-            color: white; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;
-        }
-
-        #waiting-room { display: none; margin-top: 8px; font-size: 11px; color: #fbbf24; font-weight: bold; }
-        
-        #start-btn {
-            width: 100%; margin-top: 10px; padding: 8px; border: none; border-radius: 6px;
-            background: #22c55e; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer; display: none;
-        }
-
         .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+
         .flag-btn {
             flex: 1; padding: 6px; border: 1px solid #475569; border-radius: 6px;
             background: #1e293b; color: #fff; font-weight: bold; font-size: 11px; cursor: pointer;
         }
+
         .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
         .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
+
+        .action-btn {
+            width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 6px;
+            background: #0284c7; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer;
+        }
+        .action-btn:disabled { background: #64748b; cursor: not-allowed; }
+        .action-btn.green { background: #22c55e; }
+        .action-btn.red { background: #ef4444; }
+
+        .lobbies-list {
+            max-height: 140px; overflow-y: auto; background: #0f172a; border: 1px solid #334155;
+            border-radius: 6px; margin-bottom: 8px; padding: 4px; text-align: right;
+        }
+        .lobby-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 8px; border-bottom: 1px solid #1e293b; font-size: 11px; color: #e2e8f0;
+        }
+        .lobby-item button { padding: 4px 8px; background: #22c55e; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 10px; }
 
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -164,35 +153,42 @@
 <body>
 
 <div id="start-menu">
-    <div class="menu-card">
-        <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
+    <div class="menu-card" id="lobby-selection-view">
+        <h1>قائمة الغرف المتاحة 🌐</h1>
+        <div class="section-title">الغرف المتاحة على السيرفر:</div>
+        <div class="lobbies-list" id="lobbies-container">
+            <div style="text-align:center; color:#94a3b8; font-size:11px; padding:15px;">جاري البحث عن غرف...</div>
+        </div>
+        <button class="action-btn green" onclick="playClickSound(); showCreateRoomPanel()">إنشاء غرفة جديدة ➕</button>
+    </div>
+
+    <div class="menu-card" id="create-room-view" style="display: none;">
+        <h1>إنشاء غرفة معركة ⚔️</h1>
+        <div class="section-title">اسم الغرفة:</div>
+        <input type="text" id="room-name-input" value="معركة الأبطال" style="width:100%; padding:6px; background:#1e293b; border:1px solid #475569; color:#fff; border-radius:4px; font-size:11px; margin-bottom:8px;">
         
-        <div class="section-title">قائمة الغرف المتاحة في السيرفر:</div>
-        <div id="rooms-list" class="rooms-container">
-            <div style="text-align:center; color:#64748b; padding:10px; font-size:11px;">جاري جلب الغرف...</div>
-        </div>
-
-        <div class="section-title">أو أنشئ غرفة جديدة:</div>
-        <div class="room-inputs">
-            <input type="text" id="room-input" class="room-input" placeholder="اسم أو رمز الغرفة" value="room1">
-            <button class="room-btn" onclick="playClickSound(); createRoom()">إنشاء</button>
-        </div>
-
-        <div id="waiting-room">⏳ في انتظار انضمام صديقك للغرفة...</div>
-
-        <div class="section-title" id="flag-title-1">اختر علم معسكرك:</div>
+        <div class="section-title">اختر علم معسكرك:</div>
         <div class="flag-options" id="player-flags">
-            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
+            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر</button>
+            <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر</button>
         </div>
 
-        <div class="section-title" id="flag-title-2">اختر علم معسكر العدو:</div>
-        <div class="flag-options" id="enemy-flags">
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
-            <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
-        </div>
+        <button class="action-btn green" onclick="playClickSound(); createRoomAction()">تأكيد وإنشاء الغرفة 🚀</button>
+        <button class="action-btn" style="background:#475569;" onclick="playClickSound(); showLobbySelection()">العودة للقائمة</button>
+    </div>
 
-        <button id="start-btn" onclick="playClickSound(); startBattleRequest()">بدء المعركة أونلاين 🚀</button>
+    <div class="menu-card" id="waiting-room-view" style="display: none;">
+        <h1 id="room-title-display">غرفة المعركة</h1>
+        <div class="stats-box" id="room-status-box" style="width:100%; text-align:center;">
+            في انتظار انضمام الصديق...
+        </div>
+        <div id="host-controls" style="display:none;">
+            <button class="action-btn green" id="start-battle-btn" onclick="playClickSound(); hostStartGame()" disabled>بدء المعركة (في انتظار الصديق)</button>
+        </div>
+        <div id="guest-controls" style="display:none;">
+            <button class="action-btn" id="ready-btn" onclick="playClickSound(); toggleReadyStatus()">تأكيد الجاهزية ✅</button>
+        </div>
+        <button class="action-btn" style="background:#ef4444; margin-top:8px;" onclick="playClickSound(); leaveRoom()">مغادرة الغرفة 🚪</button>
     </div>
 </div>
 
@@ -200,7 +196,7 @@
     <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
 
     <div class="top-capture-box">
-        <div id="capture-status-text">سيطر على معسكر العدو لتربح!</div>
+        <div id="capture-status-text">سيطر على معسكر الخصم لتربح!</div>
         <div class="capture-bar-bg">
             <div id="capture-bar-fill" class="capture-bar-fill"></div>
         </div>
@@ -254,14 +250,14 @@
             ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
     </div>
 
-    <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة المصغرة والتحكم 🎯</div>
+    <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة والتحكم 🎯</div>
 </div>
 
 <div id="victory-screen">
     <h1 id="victory-title">انتهت المعركة!</h1>
     <div class="stats-box" id="stats-content"></div>
     <canvas id="victory-flag-canvas"></canvas>
-    <button class="restart-btn" onclick="playClickSound(); location.reload()">إعادة المعركة 🔄</button>
+    <button class="restart-btn" onclick="playClickSound(); location.reload()">العودة للقائمة الرئيسية 🔄</button>
 </div>
 
 <div id="canvas-container"></div>
@@ -269,85 +265,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-    // الاتصال بالسيرفر
-    const socket = io("https://tank-game-server-o650.onrender.com");
-    let currentRoom = "";
-    let isHost = false;
-
-    // تحديث قائمة الغرف تلقائياً من السيرفر
-    socket.on('updateRooms', (rooms) => {
-        const listDiv = document.getElementById('rooms-list');
-        listDiv.innerHTML = '';
-        const roomKeys = Object.keys(rooms);
-
-        if (roomKeys.length === 0) {
-            listDiv.innerHTML = '<div style="text-align:center; color:#64748b; padding:8px; font-size:11px;">لا توجد غرف متاحة حالياً</div>';
-            return;
-        }
-
-        roomKeys.forEach(roomName => {
-            let roomData = rooms[roomName];
-            if (roomData.status === 'waiting') {
-                listDiv.innerHTML += `
-                    <div class="room-item">
-                        <span>🏷️ ${roomName} (${roomData.players}/2)</span>
-                        <button onclick="joinRoom('${roomName}')">انضمام</button>
-                    </div>
-                `;
-            }
-        });
-    });
-
-    function createRoom() {
-        const roomName = document.getElementById('room-input').value.trim();
-        if (!roomName) { alert('الرجاء إدخال اسم الغرفة'); return; }
-        isHost = true;
-        currentRoom = roomName;
-        socket.emit('createRoom', roomName);
-    }
-
-    function joinRoom(roomName) {
-        isHost = false;
-        currentRoom = roomName;
-        socket.emit('joinRoom', roomName);
-    }
-
-    socket.on('roomCreatedSuccess', (name) => {
-        currentRoom = name;
-        showFloatingMsg(`تم إنشاء الغرفة: ${name}`);
-        document.getElementById('waiting-room').style.display = 'block';
-        document.getElementById('waiting-room').innerText = "⏳ في انتظار انضمام صديقك...";
-        document.getElementById('start-btn').style.display = 'block';
-    });
-
-    socket.on('joinedRoomSuccess', (name) => {
-        currentRoom = name;
-        showFloatingMsg(`تم الانضمام للغرفة: ${name}`);
-        document.getElementById('waiting-room').style.display = 'block';
-        document.getElementById('waiting-room').innerText = "✅ انضممت بنجاح! في انتظار المضيف لبدء المعركة...";
-    });
-
-    socket.on('playerJoinedRoom', () => {
-        showFloatingMsg('انضم صديق إلى غرفتك!');
-        document.getElementById('waiting-room').innerText = "👥 انضم صديقك! يمكنك بدء المعركة الآن.";
-    });
-
-    socket.on('roomError', (msg) => {
-        alert(msg);
-    });
-
-    function startBattleRequest() {
-        socket.emit('startBattle', currentRoom);
-    }
-
-    socket.on('launchGame', () => {
-        startGame();
-    });
-
-    socket.on('connect', () => {
-        console.log("متصل بالسيرفر بنجاح، المعرف:", socket.id);
-    });
-
     const soundFiles = {
         menuBgm: 'sounds/menu_bgm.mp3',
         battleBgm: 'sounds/battle_bgm.mp3',
@@ -392,10 +309,188 @@
         }
     }
 
-    let scene, camera, renderer, dirLight;
+    // نظام إدارة الغرف (LocalStorage لتخزين ومزامنة الغرف بين الصديقين على نفس السيرفر)
+    let currentRoomId = null;
+    let isHost = false;
     let playerFlagType = 'green';
     let enemyFlagType = 'red';
+    let isReady = false;
 
+    function getStoredRooms() {
+        try {
+            let rooms = JSON.parse(localStorage.getItem('tank_game_rooms') || '[]');
+            let now = Date.now();
+            // تنظيف الغرف القديمة التي مضى عليها أكثر من دقيقتين بدون نشاط
+            rooms = rooms.filter(r => now - r.timestamp < 120000);
+            localStorage.setItem('tank_game_rooms', JSON.stringify(rooms));
+            return rooms;
+        } catch(e) { return []; }
+    }
+
+    function saveStoredRooms(rooms) {
+        localStorage.setItem('tank_game_rooms', JSON.stringify(rooms));
+    }
+
+    function refreshLobbiesList() {
+        const container = document.getElementById('lobbies-container');
+        let rooms = getStoredRooms();
+        if (rooms.length === 0) {
+            container.innerHTML = `<div style="text-align:center; color:#94a3b8; font-size:11px; padding:15px;">لا توجد غرف متاحة. أنشئ غرفة جديدة!</div>`;
+            return;
+        }
+        let html = '';
+        rooms.forEach(r => {
+            html += `<div class="lobby-item">
+                <span>🏰 ${r.name} (${r.hostFlag === 'green' ? 'أخضر' : 'أحمر'})</span>
+                <button onclick="playClickSound(); joinRoom('${r.id}')">انضمام 🎮</button>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    setInterval(() => {
+        if (document.getElementById('lobby-selection-view').style.display !== 'none') {
+            refreshLobbiesList();
+        } else if (currentRoomId) {
+            checkRoomStatus();
+        }
+    }, 1500);
+
+    function showLobbySelection() {
+        document.getElementById('lobby-selection-view').style.display = 'block';
+        document.getElementById('create-room-view').style.display = 'none';
+        document.getElementById('waiting-room-view').style.display = 'none';
+        refreshLobbiesList();
+    }
+
+    function showCreateRoomPanel() {
+        document.getElementById('lobby-selection-view').style.display = 'none';
+        document.getElementById('create-room-view').style.display = 'block';
+    }
+
+    function selectFlag(role, color) {
+        playerFlagType = color;
+        enemyFlagType = color === 'green' ? 'red' : 'green';
+        document.querySelectorAll('#player-flags .flag-btn').forEach(btn => {
+            btn.classList.toggle('active-player', btn.innerText.includes(color === 'green' ? 'الأخضر' : 'الأحمر'));
+        });
+    }
+
+    function createRoomAction() {
+        let roomName = document.getElementById('room-name-input').value || 'معركة سريعة';
+        currentRoomId = 'room_' + Math.floor(Math.random() * 100000);
+        isHost = true;
+        isReady = true;
+
+        let rooms = getStoredRooms();
+        rooms.push({
+            id: currentRoomId,
+            name: roomName,
+            hostFlag: playerFlagType,
+            guestJoined: false,
+            guestFlag: enemyFlagType,
+            guestReady: false,
+            gameStarted: false,
+            timestamp: Date.now()
+        });
+        saveStoredRooms(rooms);
+
+        document.getElementById('create-room-view').style.display = 'none';
+        document.getElementById('waiting-room-view').style.display = 'block';
+        document.getElementById('room-title-display').innerText = `الغرفة: ${roomName}`;
+        document.getElementById('host-controls').style.display = 'block';
+        document.getElementById('guest-controls').style.display = 'none';
+        document.getElementById('room-status-box').innerText = "في انتظار انضمام الصديق...";
+    }
+
+    function joinRoom(roomId) {
+        let rooms = getStoredRooms();
+        let room = rooms.find(r => r.id === roomId);
+        if (!room) { alert('هذه الغرفة لم تعد متاحة!'); refreshLobbiesList(); return; }
+
+        currentRoomId = roomId;
+        isHost = false;
+        isReady = false;
+        playerFlagType = room.guestFlag;
+        enemyFlagType = room.hostFlag;
+
+        room.guestJoined = true;
+        room.timestamp = Date.now();
+        saveStoredRooms(rooms);
+
+        document.getElementById('lobby-selection-view').style.display = 'none';
+        document.getElementById('waiting-room-view').style.display = 'block';
+        document.getElementById('room-title-display').innerText = `الغرفة: ${room.name}`;
+        document.getElementById('host-controls').style.display = 'none';
+        document.getElementById('guest-controls').style.display = 'block';
+        document.getElementById('room-status-box').innerText = "تم انضمامك بنجاح! اضغط تأكيد الجاهزية.";
+    }
+
+    function toggleReadyStatus() {
+        isReady = !isReady;
+        let btn = document.getElementById('ready-btn');
+        btn.innerText = isReady ? 'تم تأكيد الجاهزية ✅ (إلغاء)' : 'تأكيد الجاهزية ✅';
+        btn.style.background = isReady ? '#15803d' : '#0284c7';
+
+        let rooms = getStoredRooms();
+        let room = rooms.find(r => r.id === currentRoomId);
+        if (room) {
+            room.guestReady = isReady;
+            room.timestamp = Date.now();
+            saveStoredRooms(rooms);
+        }
+    }
+
+    function checkRoomStatus() {
+        let rooms = getStoredRooms();
+        let room = rooms.find(r => r.id === currentRoomId);
+        if (!room) return;
+
+        if (isHost) {
+            if (room.guestJoined) {
+                let statusText = room.guestReady ? "الصديق منضم وجاهز للمعركة! 🟢" : "الصديق منضم وفي انتظار تأكيد الجاهزية... 🟡";
+                document.getElementById('room-status-box').innerText = statusText;
+                let startBtn = document.getElementById('start-battle-btn');
+                startBtn.disabled = !room.guestReady;
+                startBtn.innerText = room.guestReady ? "بدء المعركة الآن 🚀" : "في انتظار جاهزية الصديق...";
+            } else {
+                document.getElementById('room-status-box').innerText = "في انتظار انضمام الصديق إلى الغرفة...";
+                document.getElementById('start-battle-btn').disabled = true;
+            }
+        } else {
+            if (room.gameStarted) {
+                startGame();
+            }
+        }
+    }
+
+    function hostStartGame() {
+        let rooms = getStoredRooms();
+        let room = rooms.find(r => r.id === currentRoomId);
+        if (room) {
+            room.gameStarted = true;
+            saveStoredRooms(rooms);
+        }
+        startGame();
+    }
+
+    function leaveRoom() {
+        if (currentRoomId) {
+            let rooms = getStoredRooms();
+            if (isHost) {
+                rooms = rooms.filter(r => r.id !== currentRoomId);
+            } else {
+                let room = rooms.find(r => r.id === currentRoomId);
+                if (room) { room.guestJoined = false; room.guestReady = false; }
+            }
+            saveStoredRooms(rooms);
+        }
+        currentRoomId = null;
+        showLobbySelection();
+    }
+
+    // محرك اللعبة وثلاثي الأبعاد
+    let scene, camera, renderer, dirLight;
     let cameraRadius = 280, targetCameraRadius = 280;
     let cameraTheta = Math.PI / 4;
     let cameraPhi = Math.PI / 3.5;
@@ -524,26 +619,6 @@
         if (camInputs.zo) targetCameraRadius = Math.min(550, targetCameraRadius + 5);
     }
 
-    function selectFlag(role, color) {
-        if (role === 'player') {
-            if (color === enemyFlagType) enemyFlagType = color === 'green' ? 'red' : 'green';
-            playerFlagType = color;
-        } else {
-            if (color === playerFlagType) playerFlagType = color === 'green' ? 'red' : 'green';
-            enemyFlagType = color;
-        }
-        updateFlagButtonsUI();
-    }
-
-    function updateFlagButtonsUI() {
-        document.querySelectorAll('#player-flags .flag-btn').forEach(btn => {
-            btn.classList.toggle('active-player', btn.innerText.includes(playerFlagType === 'green' ? 'الأخضر' : 'الأحمر'));
-        });
-        document.querySelectorAll('#enemy-flags .flag-btn').forEach(btn => {
-            btn.classList.toggle('active-enemy', btn.innerText.includes(enemyFlagType === 'green' ? 'الأخضر' : 'الأحمر'));
-        });
-    }
-
     function setSelectionMode(mode) {
         selectionMode = mode;
         document.getElementById('sel-all-btn').classList.toggle('active', mode === 'all');
@@ -561,17 +636,17 @@
         document.getElementById('ui-overlay').style.display = 'block';
         playSound('buy');
 
-        let playerCampX = CORNER_OFFSET;
-        let playerCampZ = CORNER_OFFSET;
-        let terrainH = getTerrainHeight(playerCampX, playerCampZ);
+        // إذا كان اللاعب هو المضيف يبدأ في معسكر CORNER_OFFSET، وإذا كان الضيف يبدأ في المعسكر المقابل
+        let startCoord = isHost ? CORNER_OFFSET : -CORNER_OFFSET;
+        let terrainH = getTerrainHeight(startCoord, startCoord);
 
-        targetLookAt.set(playerCampX, terrainH, playerCampZ);
+        targetLookAt.set(startCoord, terrainH, startCoord);
         targetCameraRadius = 110; 
         cameraPhi = Math.PI / 3.8;
         cameraRadius = targetCameraRadius;
         updateCameraPosition();
 
-        showFloatingMsg('بدأت المعركة! الكاميرا الآن فوق معسكرك.');
+        showFloatingMsg('بدأت المعركة! استعد للسيطرة.');
     }
 
     function setupLighting() {
@@ -697,6 +772,10 @@
         let pTankZ = CORNER_OFFSET - 45;
         let eTankX = -CORNER_OFFSET + 45;
         let eTankZ = -CORNER_OFFSET + 45;
+
+        // تحديد الفريق بناءً على ما إذا كان اللاعب هو المضيف أم الضيف
+        let myTeam = isHost ? 'player' : 'enemy';
+        let enemyTeam = isHost ? 'enemy' : 'player';
 
         let playerTank = createTank(pTankX, pTankZ, pColor, 'player', 'normal');
         let enemyTank = createTank(eTankX, eTankZ, eColor, 'enemy', 'normal');
@@ -959,8 +1038,9 @@
             updateEconomyUI();
             playSound('buy');
             let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
-            let pX = CORNER_OFFSET - 50 + (Math.random() - 0.5) * 20;
-            let pZ = CORNER_OFFSET - 50 + (Math.random() - 0.5) * 20;
+            let startCoord = isHost ? CORNER_OFFSET : -CORNER_OFFSET;
+            let pX = startCoord - 50 + (Math.random() - 0.5) * 20;
+            let pZ = startCoord - 50 + (Math.random() - 0.5) * 20;
             let newTank = createTank(pX, pZ, pColor, 'player', type);
             newTank.mesh.rotation.y = -Math.PI / 4;
             
@@ -1504,7 +1584,8 @@
                     }
                 } else {
                     if (!tankData.target || Math.random() < 0.01) {
-                        tankData.target = new THREE.Vector3(CORNER_OFFSET + (Math.random() - 0.5) * 40, 0, CORNER_OFFSET + (Math.random() - 0.5) * 40);
+                        let enemyStartCoord = isHost ? -CORNER_OFFSET : CORNER_OFFSET;
+                        tankData.target = new THREE.Vector3(enemyStartCoord + (Math.random() - 0.5) * 40, 0, enemyStartCoord + (Math.random() - 0.5) * 40);
                         tankData.target.y = getTerrainHeight(tankData.target.x, tankData.target.z);
                     }
                     const dist = tankData.mesh.position.distanceTo(tankData.target);
@@ -1541,8 +1622,9 @@
                 enemyMoney -= cost;
                 enemyBuildCooldown = 1200; 
                 let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
-                let eX = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
-                let eZ = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
+                let enemyStartCoord = isHost ? -CORNER_OFFSET : CORNER_OFFSET;
+                let eX = enemyStartCoord + 50 + (Math.random() - 0.5) * 20;
+                let eZ = enemyStartCoord + 50 + (Math.random() - 0.5) * 20;
                 let newEnemyTank = createTank(eX, eZ, eColor, 'enemy', buyType);
                 newEnemyTank.mesh.rotation.y = -Math.PI / 4;
                 enemyTanks.push(newEnemyTank);
@@ -1617,7 +1699,7 @@
 
         if (playerAtEnemyBase) {
             captureProgress += 0.3;
-            captureText.innerText = `السيطرة على العدو: ${Math.floor(captureProgress)}%`;
+            captureText.innerText = `السيطرة على معسكر الخصم: ${Math.floor(captureProgress)}%`;
             captureFill.style.width = `${Math.min(100, captureProgress)}%`;
             captureFill.style.backgroundColor = '#22c55e';
             
@@ -1699,14 +1781,14 @@
         if (isPlayerWinner) {
             title.innerText = "انتصار ساحق! 🚩"; title.style.color = "#22c55e";
         } else {
-            title.innerText = "هزيمة قاسية! ⚠️ لقد سيطر العدو على معسكرك!"; title.style.color = "#ef4444";
+            title.innerText = "هزيمة قاسية! ⚠️"; title.style.color = "#ef4444";
         }
 
         let activePlayerTanks = playerTanks.filter(t => !t.isDestroyed).length;
         statsBox.innerHTML = `
-            • العلم المنتصر: ${winningFlag === 'green' ? 'الأخضر (3 نجوم)' : 'الأحمر (نجمتان)'}<br>
+            • العلم المنتصر: ${winningFlag === 'green' ? 'الأخضر' : 'الأحمر'}<br>
             • خسائر دباباتك: ${totalTanksLost}<br>
-            • دبابات العدو المدمرة: ${enemyTanksLost}<br>
+            • دبابات الخصم المدمرة: ${enemyTanksLost}<br>
             • إجمالي المال المصروف: ${totalMoneySpent}$<br>
             • الدبابات الحية المتبقية: ${activePlayerTanks}
         `;
