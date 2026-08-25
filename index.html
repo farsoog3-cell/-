@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - النسخة الشاملة أونلاين</title>
+    <title>معركة السيطرة الاستراتيجية - أونلاين حقيقي</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -152,7 +152,7 @@
         <h1>معركة السيطرة أونلاين 🌐</h1>
         <div class="section-title" id="connection-status">جاري الاتصال بالسيرفر...</div>
         <div class="lobbies-list" id="lobbies-container">
-            <div style="text-align:center; color:#94a3b8; font-size:11px; padding:15px;">جاري جلب الغرف...</div>
+            <div style="text-align:center; color:#94a3b8; font-size:11px; padding:15px;">جاري جلب الغرف المتاحة...</div>
         </div>
         <button class="action-btn green" id="create-room-trigger-btn" onclick="playClickSound(); showCreateRoomPanel()" disabled>إنشاء غرفة جديدة ➕</button>
     </div>
@@ -178,7 +178,7 @@
             في انتظار انضمام الخصم...
         </div>
         <div id="host-controls" style="display:none;">
-            <button class="action-btn green" id="start-battle-btn" onclick="playClickSound(); hostStartGame()" disabled>بدء المعركة (في انتظار الخصم)</button>
+            <button class="action-btn green" id="start-battle-btn" onclick="playClickSound(); hostStartGame()" disabled>بدء المعركة (في انتظار انضمام الخصم)</button>
         </div>
         <button class="action-btn" style="background:#ef4444; margin-top:8px;" onclick="playClickSound(); leaveRoom()">مغادرة الغرفة 🚪</button>
     </div>
@@ -188,7 +188,7 @@
     <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
 
     <div class="top-capture-box">
-        <div id="capture-status-text">سيطر على معسكر الخصم لتربح!</div>
+        <div id="capture-status-text">دمر دبابات الخصم وسيطر على الساحة!</div>
         <div class="capture-bar-bg">
             <div id="capture-bar-fill" class="capture-bar-fill"></div>
         </div>
@@ -273,13 +273,13 @@
     socket.on("rooms_list", (rooms) => {
         const container = document.getElementById('lobbies-container');
         if (!rooms || rooms.length === 0) {
-            container.innerHTML = `<div style="text-align:center; color:#94a3b8; font-size:11px; padding:15px;">لا توجد غرف متاحة. أنشئ غرفة!</div>`;
+            container.innerHTML = `<div style="text-align:center; color:#94a3b8; font-size:11px; padding:15px;">لا توجد غرف متاحة. أنشئ غرفة جديدة!</div>`;
             return;
         }
         let html = '';
         rooms.forEach(r => {
             html += `<div class="lobby-item">
-                <span>🏰 ${r.name} (${r.hostFlag === 'green' ? 'أخضر' : 'أحمر'})</span>
+                <span>🏰 ${r.name} (${r.hostFlag === 'green' ? 'الأخضر' : 'الأحمر'})</span>
                 <button onclick="playClickSound(); joinRoom('${r.id}')">انضمام 🎮</button>
             </div>`;
         });
@@ -299,7 +299,7 @@
         
         if (isHost) {
             document.getElementById('host-controls').style.display = 'block';
-            document.getElementById('room-status-box').innerText = "في انتظار انضمام الخصم...";
+            document.getElementById('room-status-box').innerText = "في انتظار انضمام الخصم الحقيقي...";
         } else {
             document.getElementById('host-controls').style.display = 'none';
             document.getElementById('room-status-box').innerText = "انضممت بنجاح! في انتظار بدء المضيف.";
@@ -308,7 +308,7 @@
 
     socket.on("room_update", (roomData) => {
         if (isHost && roomData.guestJoined) {
-            document.getElementById('room-status-box').innerText = "انضم الخصم الحقيقي! 🟢";
+            document.getElementById('room-status-box').innerText = "انضم الخصم الحقيقي بنجاح! 🟢";
             let startBtn = document.getElementById('start-battle-btn');
             startBtn.disabled = false;
             startBtn.innerText = "بدء المعركة الآن 🚀";
@@ -404,13 +404,13 @@
 
     let isDragging = false, previousTouchX = 0, previousTouchY = 0, touchStartX = 0, touchStartY = 0, hasMoved = false;
 
-    let playerTanks = [], enemyTanks = [], bullets = [], animatedRigs = [], activeFlagMeshes = [], obstacles = [];
+    let playerTanks = [], enemyTanks = [], bullets = [], animatedRigs = [], activeFlagMeshes = [];
     let targetMarkerMesh;
     let raycaster = new THREE.Raycaster();
     let mouse = new THREE.Vector2();
     let terrainMesh;
 
-    let selectionMode = 'all'; // وضع التحديد (الكل / فردي) المأخوذ من النسخة الأصلية
+    let selectionMode = 'all';
     let selectedTankIndex = 0;
 
     const CORNER_OFFSET = 380, MAP_LIMIT = 460;
@@ -492,7 +492,7 @@
         targetLookAt.set(startCoord, getTerrainHeight(startCoord, startCoord), startCoord);
         targetCameraRadius = 110; cameraPhi = Math.PI / 3.8; cameraRadius = targetCameraRadius;
         updateCameraPosition();
-        showFloatingMsg('بدأت المعركة الاستراتيجية الحقيقية!');
+        showFloatingMsg('بدأت المعركة أونلاين ضد الخصم الحقيقي!');
     }
 
     function setupLighting() {
@@ -674,7 +674,6 @@
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
                 raycaster.setFromCamera(mouse, camera);
 
-                // ميزة التحديد الفردي أو الجماعي المأخوذة من الكود الأصلي
                 if (selectionMode === 'single') {
                     let clickedTank = null;
                     for (let i = 0; i < playerTanks.length; i++) {
@@ -764,7 +763,6 @@
         gameTick++;
         if (gameTick % 60 === 0) { playerMoney += 10; updateEconomyUI(); }
 
-        // منع التصادم واختلاط الدبابات
         for (let i = 0; i < playerTanks.length; i++) {
             for (let j = i + 1; j < playerTanks.length; j++) {
                 let t1 = playerTanks[i], t2 = playerTanks[j];
@@ -791,7 +789,6 @@
                 }
             }
 
-            // إطلاق النار التلقائي عند وجود عدو قريب
             enemyTanks.forEach(en => {
                 if (!en.isDestroyed && tank.mesh.position.distanceTo(en.mesh.position) < 120 && Date.now() - tank.lastShot > 1500) {
                     tank.lastShot = Date.now();
@@ -809,7 +806,6 @@
             }
         });
 
-        // تحديث الرصاص
         for (let i = bullets.length - 1; i >= 0; i--) {
             let b = bullets[i];
             b.mesh.position.add(b.dir.clone().multiplyScalar(4));
