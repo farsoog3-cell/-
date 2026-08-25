@@ -30,66 +30,51 @@ function playClickSound() {
     const audio = new Audio(soundFiles.click); audio.volume = 0.6; audio.play().catch(e => {});
 }
 
-function playSound(type, volume = 1.0) {
-    if (soundFiles[type]) {
-        const audio = new Audio(soundFiles[type]); audio.volume = volume; audio.play().catch(e => {});
-    }
-}
-
 let scene, camera, renderer, dirLight;
 let playerFlagType = 'green'; let enemyFlagType = 'red';
 let cameraRadius = 280, targetCameraRadius = 280;
 let cameraTheta = Math.PI / 4; let cameraPhi = Math.PI / 3.5;
 let targetLookAt = new THREE.Vector3(0, 0, 0);
 
-let shakeTimer = 0; let shakeIntensity = 0;
-let camInputs = { up: false, down: false, left: false, right: false, zi: false, zo: false };
-let isDragging = false, previousTouchX = 0, previousTouchY = 0, touchStartX = 0, touchStartY = 0, hasMoved = false;
-
-let playerTanks = [], enemyTanks = [], bullets = [], tacticalMissiles = [], shockwaves = [], smokeParticles = [], obstacles = [], rotatingRadars = [], tankTracks = [], animatedRigs = [];
-let selectionMode = 'all', selectedTank = null, playerTargetPos = null;
-let targetMarkerMesh, raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), terrainMesh;
-let enemyPoleFlagMesh, playerPoleFlagMesh, enemyFlagDataRef, playerFlagDataRef;
-let enemyFlagHeight = 38.5, playerFlagHeight = 38.5;
-
-let captureProgress = 0, enemyCaptureProgress = 0, gameOver = false, isCinematicEnding = false, cinematicTargetLook = null;
-const CORNER_OFFSET = 380, MAP_LIMIT = 460, CAPTURE_RADIUS = 38, TANK_RADIUS = 4.5;
-
-let playerMoney = 500, enemyMoney = 500, totalMoneySpent = 0, totalTanksLost = 0, enemyTanksLost = 0;
-let oilRigs = [], gameTick = 0, flagWaveTime = 0, activeFlagMeshes = [];
-let playerBuildCooldown = 0, enemyBuildCooldown = 0, treadTextureCache = null;
-
-function showFloatingMsg(text) {
-    const msg = document.getElementById('floating-msg');
-    msg.innerText = text; msg.style.opacity = '1';
-    setTimeout(() => { msg.style.opacity = '0'; }, 2000);
-}
+let playerTanks = [], enemyTanks = [], obstacles = [], rotatingRadars = [], activeFlagMeshes = [];
+let enemyFlagDataRef, playerFlagDataRef;
+const CORNER_OFFSET = 380;
+let playerMoney = 500, enemyMoney = 500;
 
 function init() {
     const container = document.getElementById('canvas-container');
+    
+    // 1. إنشاء المشهد (Scene)
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x7dd3fc);
+    scene.background = new THREE.Color(0x7dd3fc); // لون سماوي فاتح للخلفية
     scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0018);
 
+    // 2. إنشاء الكاميرا (Camera)
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
     updateCameraPosition();
 
+    // 3. إنشاء الرندر (Renderer)
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+    // 4. الإضاءة (Lights)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    scene.add(ambientLight);
+
     dirLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
     dirLight.position.set(300, 450, 300);
     dirLight.castShadow = true;
     scene.add(dirLight);
 
-    createHillyBrownSoilTerrain();
-    
-    // إنشاء القواعد وأبراج النفط
+    // 5. بناء التضاريس والأرض
+    if (typeof createHillyBrownSoilTerrain === 'function') {
+        createHillyBrownSoilTerrain();
+    }
+
+    // 6. القواعد العسكرية
     const playerBaseGroup = new THREE.Group();
     playerBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
     playerBaseGroup.rotation.y = -(3 * Math.PI) / 4; 
@@ -98,43 +83,51 @@ function init() {
     enemyBaseGroup.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
     enemyBaseGroup.rotation.y = -(3 * Math.PI) / 4;
 
-    createBaseStructure(playerBaseGroup, playerFlagType !== 'green');
-    createBaseStructure(enemyBaseGroup, enemyFlagType === 'green');
-    scene.add(playerBaseGroup); scene.add(enemyBaseGroup);
+    if (typeof createBaseStructure === 'function') {
+        createBaseStructure(playerBaseGroup, false);
+        createBaseStructure(enemyBaseGroup, true);
+    }
+    scene.add(playerBaseGroup); 
+    scene.add(enemyBaseGroup);
 
-    obstacles.push({ x: CORNER_OFFSET, z: CORNER_OFFSET, radius: 22 });
-    obstacles.push({ x: -CORNER_OFFSET, z: -CORNER_OFFSET, radius: 22 });
-
-    playerTanks.push(createTank(CORNER_OFFSET - 45, CORNER_OFFSET - 45, 0x2e3b23, 'player', 'normal'));
-    enemyTanks.push(createTank(-CORNER_OFFSET + 45, -CORNER_OFFSET + 45, 0x6b3a2a, 'enemy', 'normal'));
-
-    enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, enemyFlagType, 'enemy');
-    playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
-
-    updateEconomyUI();
+    // ربط الأحداث لتغيير حجم الشاشة
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
+    // بدء حلقة الرسوم المتحركة فوراً
     animate();
 }
 
 function startGame() {
-    menuBgmAudio.pause(); battleBgmAudio.play().catch(e => {});
+    menuBgmAudio.pause(); 
+    battleBgmAudio.play().catch(e => {});
     document.getElementById('start-menu').style.display = 'none';
     document.getElementById('ui-overlay').style.display = 'block';
     targetLookAt.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
     targetCameraRadius = 110;
 }
 
-function camMove(dir, state) { camInputs[dir] = state; }
-function selectFlag(role, color) {
-    if (role === 'player') playerFlagType = color; else enemyFlagType = color;
+function camMove(dir, state) { 
+    // أزرار التحكم بالكاميرا البسيطة
+    const speed = 15;
+    if (dir === 'up') targetLookAt.z -= speed;
+    if (dir === 'down') targetLookAt.z += speed;
+    if (dir === 'left') targetLookAt.x -= speed;
+    if (dir === 'right') targetLookAt.x += speed;
+    if (dir === 'zi') targetCameraRadius = Math.max(40, targetCameraRadius - 20);
+    if (dir === 'zo') targetCameraRadius = Math.min(500, targetCameraRadius + 20);
+    updateCameraPosition();
 }
+
+function selectFlag(role, color) {
+    if (role === 'player') playerFlagType = color; 
+    else enemyFlagType = color;
+}
+
 function setSelectionMode(mode) {
-    selectionMode = mode;
     document.getElementById('sel-all-btn').classList.toggle('active', mode === 'all');
     document.getElementById('sel-single-btn').classList.toggle('active', mode === 'single');
 }
@@ -149,9 +142,18 @@ function updateCameraPosition() {
     camera.lookAt(targetLookAt);
 }
 
+// حلقة الرسم الأساسية (Game Loop) لضمان ظهور العرض على الشاشة
 function animate() {
     requestAnimationFrame(animate);
+
+    // دوران الرادار للتأكد من أن المشهد حي ويتحرك
+    rotatingRadars.forEach(radar => {
+        radar.rotation.z += 0.02;
+    });
+
+    updateCameraPosition();
     renderer.render(scene, camera);
 }
 
+// تشغيل اللعبة تلقائياً عند تحميل الصفحة
 window.onload = init;
