@@ -13,7 +13,7 @@
         
         #start-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(15, 23, 42, 0.98);
             display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
         }
 
@@ -24,15 +24,18 @@
 
         .menu-card h1 { font-size: 16px; margin-bottom: 10px; color: #38bdf8; }
         .section-title { font-size: 11px; color: #94a3b8; margin: 6px 0 3px 0; text-align: right; }
-        .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
-
-        .flag-btn {
-            flex: 1; padding: 6px; border: 1px solid #475569; border-radius: 6px;
-            background: #1e293b; color: #fff; font-weight: bold; font-size: 11px; cursor: pointer;
+        
+        .rooms-container {
+            max-height: 120px; overflow-y: auto; background: #0f172a; border: 1px solid #334155;
+            border-radius: 6px; margin-bottom: 8px; padding: 4px; text-align: right;
         }
-
-        .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
-        .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
+        .room-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 5px 8px; border-bottom: 1px solid #1e293b; font-size: 11px;
+        }
+        .room-item button {
+            background: #22c55e; border: none; color: white; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 10px;
+        }
 
         .room-inputs { display: flex; gap: 5px; margin-bottom: 8px; }
         .room-input {
@@ -40,14 +43,24 @@
             color: white; border-radius: 6px; font-size: 11px; text-align: center;
         }
         .room-btn {
-            padding: 6px 12px; background: #334155; border: 1px solid #38bdf8;
+            padding: 6px 12px; background: #0284c7; border: none;
             color: white; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer;
         }
 
+        #waiting-room { display: none; margin-top: 8px; font-size: 11px; color: #fbbf24; font-weight: bold; }
+        
         #start-btn {
             width: 100%; margin-top: 10px; padding: 8px; border: none; border-radius: 6px;
-            background: #0284c7; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer;
+            background: #22c55e; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer; display: none;
         }
+
+        .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+        .flag-btn {
+            flex: 1; padding: 6px; border: 1px solid #475569; border-radius: 6px;
+            background: #1e293b; color: #fff; font-weight: bold; font-size: 11px; cursor: pointer;
+        }
+        .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
 
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -154,25 +167,32 @@
     <div class="menu-card">
         <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
         
-        <div class="section-title">إعدادات غرفة الأونلاين:</div>
-        <div class="room-inputs">
-            <input type="text" id="room-input" class="room-input" placeholder="اسم أو رمز الغرفة" value="room1">
-            <button class="room-btn" onclick="playClickSound(); joinRoom()">انضمام</button>
+        <div class="section-title">قائمة الغرف المتاحة في السيرفر:</div>
+        <div id="rooms-list" class="rooms-container">
+            <div style="text-align:center; color:#64748b; padding:10px; font-size:11px;">جاري جلب الغرف...</div>
         </div>
 
-        <div class="section-title">اختر علم معسكرك:</div>
+        <div class="section-title">أو أنشئ غرفة جديدة:</div>
+        <div class="room-inputs">
+            <input type="text" id="room-input" class="room-input" placeholder="اسم أو رمز الغرفة" value="room1">
+            <button class="room-btn" onclick="playClickSound(); createRoom()">إنشاء</button>
+        </div>
+
+        <div id="waiting-room">⏳ في انتظار انضمام صديقك للغرفة...</div>
+
+        <div class="section-title" id="flag-title-1">اختر علم معسكرك:</div>
         <div class="flag-options" id="player-flags">
             <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
             <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
         </div>
 
-        <div class="section-title">اختر علم معسكر العدو:</div>
+        <div class="section-title" id="flag-title-2">اختر علم معسكر العدو:</div>
         <div class="flag-options" id="enemy-flags">
             <button class="flag-btn" onclick="playClickSound(); selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
             <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
         </div>
 
-        <button id="start-btn" onclick="playClickSound(); startGame()">بدء المعركة أونلاين 🚀</button>
+        <button id="start-btn" onclick="playClickSound(); startBattleRequest()">بدء المعركة أونلاين 🚀</button>
     </div>
 </div>
 
@@ -249,18 +269,80 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-    // الاتصال بسيرفر الأونلاين الخاص بك
+    // الاتصال بالسيرفر
     const socket = io("https://tank-game-server-o650.onrender.com");
-    let currentRoom = "room1";
+    let currentRoom = "";
+    let isHost = false;
 
-    function joinRoom() {
-        const roomName = document.getElementById('room-input').value.trim();
-        if (roomName) {
-            currentRoom = roomName;
-            socket.emit('joinRoom', currentRoom);
-            showFloatingMsg(`تم الانضمام للغرفة: ${currentRoom}`);
+    // تحديث قائمة الغرف تلقائياً من السيرفر
+    socket.on('updateRooms', (rooms) => {
+        const listDiv = document.getElementById('rooms-list');
+        listDiv.innerHTML = '';
+        const roomKeys = Object.keys(rooms);
+
+        if (roomKeys.length === 0) {
+            listDiv.innerHTML = '<div style="text-align:center; color:#64748b; padding:8px; font-size:11px;">لا توجد غرف متاحة حالياً</div>';
+            return;
         }
+
+        roomKeys.forEach(roomName => {
+            let roomData = rooms[roomName];
+            if (roomData.status === 'waiting') {
+                listDiv.innerHTML += `
+                    <div class="room-item">
+                        <span>🏷️ ${roomName} (${roomData.players}/2)</span>
+                        <button onclick="joinRoom('${roomName}')">انضمام</button>
+                    </div>
+                `;
+            }
+        });
+    });
+
+    function createRoom() {
+        const roomName = document.getElementById('room-input').value.trim();
+        if (!roomName) { alert('الرجاء إدخال اسم الغرفة'); return; }
+        isHost = true;
+        currentRoom = roomName;
+        socket.emit('createRoom', roomName);
     }
+
+    function joinRoom(roomName) {
+        isHost = false;
+        currentRoom = roomName;
+        socket.emit('joinRoom', roomName);
+    }
+
+    socket.on('roomCreatedSuccess', (name) => {
+        currentRoom = name;
+        showFloatingMsg(`تم إنشاء الغرفة: ${name}`);
+        document.getElementById('waiting-room').style.display = 'block';
+        document.getElementById('waiting-room').innerText = "⏳ في انتظار انضمام صديقك...";
+        document.getElementById('start-btn').style.display = 'block';
+    });
+
+    socket.on('joinedRoomSuccess', (name) => {
+        currentRoom = name;
+        showFloatingMsg(`تم الانضمام للغرفة: ${name}`);
+        document.getElementById('waiting-room').style.display = 'block';
+        document.getElementById('waiting-room').innerText = "✅ انضممت بنجاح! في انتظار المضيف لبدء المعركة...";
+    });
+
+    socket.on('playerJoinedRoom', () => {
+        showFloatingMsg('انضم صديق إلى غرفتك!');
+        document.getElementById('waiting-room').innerText = "👥 انضم صديقك! يمكنك بدء المعركة الآن.";
+    });
+
+    socket.on('roomError', (msg) => {
+        alert(msg);
+    });
+
+    function startBattleRequest() {
+        socket.emit('startBattle', currentRoom);
+    }
+
+    socket.on('launchGame', () => {
+        startGame();
+    });
 
     socket.on('connect', () => {
         console.log("متصل بالسيرفر بنجاح، المعرف:", socket.id);
