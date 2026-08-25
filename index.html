@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - أونلاين حقيقي</title>
+    <title>معركة السيطرة الاستراتيجية - أونلاين حقيقي كامل</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -333,7 +333,6 @@
 
     socket.on("remote_tank_spawn", (data) => {
         let eColor = enemyFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
-        let enemyStartCoord = isHost ? -CORNER_OFFSET : CORNER_OFFSET;
         let newTank = createTank(data.x, data.z, eColor, 'enemy', data.type);
         enemyTanks.push(newTank);
     });
@@ -462,18 +461,12 @@
     let playerTanks = [];
     let enemyTanks = [];
     let bullets = [];
-    let tacticalMissiles = [];
     let shockwaves = [];
     let smokeParticles = [];
     let obstacles = []; 
     let rotatingRadars = [];
-    let tankTracks = [];
-    let treadTextureCache = null;
     let animatedRigs = [];
-
-    let selectionMode = 'all';
-    let selectedTank = null;
-    let playerTargetPos = null;
+    let activeFlagMeshes = [];
 
     let targetMarkerMesh;
     let raycaster = new THREE.Raycaster();
@@ -482,29 +475,18 @@
 
     let enemyPoleFlagMesh, playerPoleFlagMesh;
     let enemyFlagDataRef, playerFlagDataRef;
-    let enemyFlagHeight = 38.5;
-    let playerFlagHeight = 38.5;
+    let flagWaveTime = 0;
 
-    let captureProgress = 0;
-    let enemyCaptureProgress = 0;
     let gameOver = false;
     let isCinematicEnding = false;
     let cinematicTargetLook = null;
 
     const CORNER_OFFSET = 380; 
     const MAP_LIMIT = 460;
-    const CAPTURE_RADIUS = 38;
-    const TANK_RADIUS = 4.5; 
+    const CAPTURE_RADIUS = 45;
 
     let playerMoney = 500;
-    let totalMoneySpent = 0;
-    let totalTanksLost = 0;
-    let enemyTanksLost = 0;
-    let oilRigs = [];
     let gameTick = 0;
-    let flagWaveTime = 0;
-    let activeFlagMeshes = [];
-
     let playerBuildCooldown = 0;
 
     function getTerrainHeight(x, z) {
@@ -570,11 +552,9 @@
     }
 
     function setSelectionMode(mode) {
-        selectionMode = mode;
         document.getElementById('sel-all-btn').classList.toggle('active', mode === 'all');
         document.getElementById('sel-single-btn').classList.toggle('active', mode === 'single');
-        if (mode === 'all') selectedTank = null;
-        showFloatingMsg(mode === 'all' ? 'تم تحديد جميع الدبابات' : 'اضغط على الدبابة لتحديدها');
+        showFloatingMsg(mode === 'all' ? 'تم تحديد جميع الدبابات' : 'اضغط على التضاريس للتحريك');
     }
 
     function startGame() {
@@ -606,14 +586,9 @@
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
         dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 1200;
         let d = 450;
-        dirLight.shadow.camera.left = -d;
-        dirLight.shadow.camera.right = d;
-        dirLight.shadow.camera.top = d;
-        dirLight.shadow.camera.bottom = -d;
-        dirLight.shadow.bias = -0.0005;
+        dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d;
         scene.add(dirLight);
     }
 
@@ -625,8 +600,7 @@
         for (let i = 0; i < positionAttr.count; i++) {
             let px = positionAttr.getX(i);
             let pz = positionAttr.getZ(i);
-            let h = getTerrainHeight(px, pz);
-            positionAttr.setY(i, h);
+            positionAttr.setY(i, getTerrainHeight(px, pz));
         }
         geometry.computeVertexNormals();
 
@@ -711,9 +685,6 @@
         scene.add(playerBaseGroup);
         scene.add(enemyBaseGroup);
 
-        obstacles.push({ x: CORNER_OFFSET, z: CORNER_OFFSET, radius: 22 });
-        obstacles.push({ x: -CORNER_OFFSET, z: -CORNER_OFFSET, radius: 22 });
-
         let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
         let pTankX = (isHost ? CORNER_OFFSET : -CORNER_OFFSET) - 45;
         let pTankZ = (isHost ? CORNER_OFFSET : -CORNER_OFFSET) - 45;
@@ -760,12 +731,6 @@
 
             rigGroup.add(beamGroup);
             scene.add(rigGroup);
-            obstacles.push({ x: pos.x, z: pos.z, radius: 10 });
-            
-            oilRigs.push({
-                x: pos.x, z: pos.z, group: rigGroup,
-                beam: beamGroup, owner: 'none', captureProgress: 0
-            });
             animatedRigs.push(beamGroup);
         });
     }
@@ -802,35 +767,10 @@
         hpLabel.innerText = `${initialHp}`;
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
-        let idleAudio = new Audio(soundFiles.idle); idleAudio.loop = true; idleAudio.volume = 0.25;
-        let moveAudio = new Audio(soundFiles.move); moveAudio.loop = true; moveAudio.volume = 0.45;
-
         return { 
             mesh: tankGroup, hpLabel: hpLabel, target: null, team: team, type: type, 
-            hp: initialHp, maxHp: initialHp, lastShot: 0, isDestroyed: false,
-            destructionTimer: 0, idleAudio: idleAudio, moveAudio: moveAudio,
-            isIdlePlaying: false, isMovePlaying: false, lastTrackPos: new THREE.Vector3(x, terrainY, z)
+            hp: initialHp, maxHp: initialHp, lastShot: 0, isDestroyed: false
         };
-    }
-
-    function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
-        const geo = new THREE.SphereGeometry(0.8 * scale, 6, 6);
-        const mat = new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.7 });
-        const mesh = new THREE.Mesh(geo, mat);
-        let groundH = getTerrainHeight(pos.x, pos.z);
-        mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*2, Math.max(2, groundH + 2), (Math.random()-0.5)*2));
-        scene.add(mesh);
-        smokeParticles.push({ mesh: mesh, life: 35, vy: 0.12 });
-    }
-
-    function updateTanksDamageVisual(tankData) {
-        let healthPercent = tankData.hp / tankData.maxHp;
-        let colorHex = healthPercent > 0.6 ? null : (healthPercent > 0.3 ? 0x555555 : 0x111111);
-        if (colorHex !== null) {
-            tankData.mesh.traverse((child) => {
-                if (child.isMesh && child.material) child.material.color.setHex(colorHex);
-            });
-        }
     }
 
     function buyPlayerTank(type) {
@@ -838,7 +778,6 @@
         let cost = (type === 'rocket') ? 300 : 150;
         if (playerMoney >= cost) {
             playerMoney -= cost;
-            totalMoneySpent += cost;
             playerBuildCooldown = 1200;
             updateEconomyUI();
             playSound('buy');
@@ -849,11 +788,10 @@
             let newTank = createTank(pX, pZ, pColor, 'player', type);
             newTank.mesh.rotation.y = -Math.PI / 4;
             
-            if (playerTargetPos) newTank.target = playerTargetPos.clone();
             playerTanks.push(newTank);
 
             socket.emit("spawn_tank", { roomId: currentRoomId, x: pX, z: pZ, type: type });
-            showFloatingMsg('تم شراء دبابة جديدة');
+            showFloatingMsg('تم شراء دبابة جديدة بنجاح');
         }
     }
 
@@ -869,7 +807,7 @@
         flagMesh.position.set(21, 38.5, 0);
         group.add(flagMesh);
 
-        let flagDataObj = { mesh: flagMesh, baseHeight: 38.5, type: flagType };
+        let flagDataObj = { mesh: flagMesh, baseHeight: 38.5, type: flagType, originalType: flagType };
         activeFlagMeshes.push(flagDataObj);
 
         if (role === 'enemy') enemyFlagDataRef = flagDataObj;
@@ -897,6 +835,22 @@
     function animateFlags() {
         flagWaveTime += 0.15;
         rotatingRadars.forEach(radar => { radar.rotation.y += 0.025; });
+        animatedRigs.forEach((beam, idx) => {
+            beam.rotation.z = Math.sin(flagWaveTime + idx) * 0.25;
+        });
+
+        // حركة رفرفة الأعلام الواقعية
+        activeFlagMeshes.forEach(flagObj => {
+            const posAttr = flagObj.mesh.geometry.attributes.position;
+            for (let i = 0; i < posAttr.count; i++) {
+                let vx = posAttr.getX(i);
+                if (vx > 0) { // موجة على أطراف العلم
+                    let wave = Math.sin(flagWaveTime * 3 + vx * 0.8) * 0.6;
+                    posAttr.setZ(i, wave);
+                }
+            }
+            posAttr.needsUpdate = true;
+        });
     }
 
     function createTargetMarker() {
@@ -910,19 +864,11 @@
         cameraRadius = THREE.MathUtils.lerp(cameraRadius, targetCameraRadius, 0.15);
         let shakeX = 0, shakeY = 0;
         if (shakeTimer > 0) { shakeTimer--; shakeX = (Math.random() - 0.5) * shakeIntensity; shakeY = (Math.random() - 0.5) * shakeIntensity; }
-        if (isCinematicEnding && cinematicTargetLook) {
-            targetLookAt.lerp(cinematicTargetLook, 0.05);
-            cameraRadius = THREE.MathUtils.lerp(cameraRadius, 70, 0.05);
-            cameraTheta += 0.01;
-        }
+        
         camera.position.x = targetLookAt.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta) + shakeX;
         camera.position.y = targetLookAt.y + cameraRadius * Math.cos(cameraPhi) + shakeY;
         camera.position.z = targetLookAt.z + cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
         camera.lookAt(targetLookAt);
-    }
-
-    function triggerCameraShake(intensity = 1.8) {
-        shakeTimer = 18; shakeIntensity = intensity;
     }
 
     function setupInteraction() {
@@ -956,14 +902,14 @@
 
                 const intersects = raycaster.intersectObject(terrainMesh);
                 if (intersects.length > 0) {
-                    playerTargetPos = intersects[0].point;
-                    targetMarkerMesh.position.copy(playerTargetPos);
-                    targetMarkerMesh.position.y = getTerrainHeight(playerTargetPos.x, playerTargetPos.z) + 0.1;
+                    let clickedPoint = intersects[0].point;
+                    targetMarkerMesh.position.copy(clickedPoint);
+                    targetMarkerMesh.position.y = getTerrainHeight(clickedPoint.x, clickedPoint.z) + 0.1;
                     targetMarkerMesh.visible = true;
 
-                    playerTanks.forEach((t, index) => {
+                    playerTanks.forEach(t => {
                         if (t.isDestroyed) return;
-                        t.target = playerTargetPos.clone();
+                        t.target = clickedPoint.clone();
                     });
                 }
             }
@@ -1004,18 +950,6 @@
             if (t.isDestroyed) return;
             ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(w/2 + t.mesh.position.x * scale, h/2 + t.mesh.position.z * scale, 2.5, 0, Math.PI*2); ctx.fill();
         });
-    }
-
-    function fireBullet(fromTank, targetTank) {
-        const now = Date.now();
-        if (now - fromTank.lastShot < 1200) return;
-        fromTank.lastShot = now;
-        playSound('shoot');
-
-        const bulletMesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffcc00 }));
-        bulletMesh.position.copy(fromTank.mesh.position).add(new THREE.Vector3(0, 3, 0));
-        scene.add(bulletMesh);
-        bullets.push({ mesh: bulletMesh, targetTank: targetTank, speed: 2.2, damage: 34 });
     }
 
     function updateTankHpLabels() {
@@ -1066,7 +1000,6 @@
         let buyBtn = document.getElementById('buy-tank-btn');
         let rocketBtn = document.getElementById('buy-rocket-tank-btn');
         if (playerBuildCooldown > 0) {
-            let secs = Math.ceil(playerBuildCooldown / 60);
             buyBtn.disabled = true; rocketBtn.disabled = true;
         } else {
             buyBtn.disabled = (playerMoney < 150); rocketBtn.disabled = (playerMoney < 300);
@@ -1092,6 +1025,7 @@
         updateTanksMovement();
         checkLogicAndEconomy();
         animateFlags();
+        updateTankHpLabels();
         renderMinimap();
         renderer.render(scene, camera);
     }
