@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية الأونلاين</title>
+    <title>معركة المعسكرات والأعلام - أونلاين</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -28,8 +28,8 @@
             flex: 1; padding: 8px; border: 1px solid #475569; border-radius: 6px;
             background: #1e293b; color: #fff; font-weight: bold; font-size: 12px; cursor: pointer;
         }
-
-        .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .flag-btn.active-green { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .flag-btn.active-red { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
 
         #start-btn {
             width: 100%; margin-top: 12px; padding: 10px; border: none; border-radius: 6px;
@@ -56,7 +56,7 @@
             position: absolute; transform: translate(-50%, -100%);
             background: rgba(0, 0, 0, 0.75); padding: 1px 4px; border-radius: 3px;
             font-size: 9px; font-weight: bold; pointer-events: none; white-space: nowrap;
-            border: 1px solid #334155; transition: transform 0.1s linear;
+            border: 1px solid #334155;
         }
         .hp-player { color: #22c55e; border-color: rgba(34, 197, 94, 0.4); }
         .hp-enemy { color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
@@ -66,20 +66,11 @@
             width: 230px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8;
             border-radius: 6px; padding: 6px 10px; text-align: center; color: white; font-size: 11px;
         }
-        .capture-bar-bg { width: 100%; height: 6px; background: #334155; border-radius: 3px; margin-top: 4px; overflow: hidden; }
-        .capture-bar-fill { width: 0%; height: 100%; background: #22c55e; transition: width 0.3s; }
 
         .left-controls-group {
             position: absolute; top: 8px; left: 8px; pointer-events: auto;
             display: flex; flex-direction: column; gap: 6px; width: 130px;
         }
-
-        .selection-controls { display: flex; gap: 4px; width: 100%; }
-        .sel-btn {
-            flex: 1; background: rgba(30, 41, 59, 0.85); border: 1px solid #38bdf8; color: white;
-            padding: 5px 4px; border-radius: 5px; font-size: 10px; font-weight: bold; text-align: center; cursor: pointer;
-        }
-        .sel-btn.active { background: #0284c7; }
 
         .corner-economy {
             background: rgba(15, 23, 42, 0.85); border: 1px solid #f59e0b;
@@ -94,12 +85,11 @@
         }
         .buy-btn-small:disabled { background: #64748b; }
         .buy-btn-rocket { background: #ea580c; }
-        .buy-btn-rocket:disabled { background: #64748b; }
 
         #minimap-container {
             position: absolute; bottom: 65px; left: 8px; width: 110px; height: 110px;
             background: rgba(15, 23, 42, 0.9); border: 2px solid #38bdf8; border-radius: 50%;
-            overflow: hidden; pointer-events: auto; cursor: pointer; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+            overflow: hidden; pointer-events: auto; cursor: pointer;
         }
         #minimap-canvas { width: 100%; height: 100%; }
 
@@ -126,57 +116,43 @@
         .cam-btn.right { grid-column: 3; grid-row: 2; }
         .cam-btn.zoom-in { grid-column: 1; grid-row: 1; font-size: 11px; }
         .cam-btn.zoom-out { grid-column: 3; grid-row: 1; font-size: 11px; }
-
-        .cam-hint {
-            position: absolute; bottom: 8px; left: 125px;
-            background: rgba(15, 23, 42, 0.75); border: 1px solid #38bdf8;
-            color: #93c5fd; padding: 3px 6px; border-radius: 4px; font-size: 9px; pointer-events: none;
-        }
     </style>
 </head>
 <body>
 
 <div id="start-menu">
     <div class="menu-card">
-        <h1>معركة السيطرة الاستراتيجية 🛡️</h1>
-        <div class="section-title">اختر علم معسكرك:</div>
+        <h1>معركة المعسكرات الكبرى 🛡️</h1>
+        <div class="section-title">اختر معسكرك:</div>
         <div class="flag-options" id="player-flags">
-            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('green')">الأخضر</button>
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('red')">الأحمر</button>
+            <button class="flag-btn active-green" onclick="playAudio('click'); selectFlag('green')">المعسكر الأخضر</button>
+            <button class="flag-btn" onclick="playAudio('click'); selectFlag('red')">المعسكر الأحمر</button>
         </div>
-        <button id="start-btn" onclick="playClickSound(); findMatch()">بحث عن صديق للبدء 🔍</button>
+        <button id="start-btn" onclick="playAudio('click'); findMatch()">بحث عن صديق للبدء 🔍</button>
     </div>
 </div>
 
 <div id="waiting-overlay">
     <div class="spinner"></div>
-    <h2>جاري البحث عن الصديق في السيرفر...</h2>
-    <p style="color: #94a3b8; font-size: 12px; margin-top: 8px;">ستبدأ المعركة فور انضمام صديقك للغرفة!</p>
+    <h2>جاري البحث عن الصديق والاتصال بالمعسكر الآخر...</h2>
+    <p style="color: #94a3b8; font-size: 12px; margin-top: 8px;">ستبدأ المعركة والأعلام ترفرف فور دخول صديقك!</p>
 </div>
 
 <div id="ui-overlay">
     <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
 
     <div class="top-capture-box">
-        <div id="capture-status-text">منطقة السيطرة والنفط: نشطة</div>
-        <div class="capture-bar-bg">
-            <div id="capture-bar-fill" class="capture-bar-fill" style="width: 50%;"></div>
-        </div>
+        <div id="capture-status-text">حالة المعسكرات والنفط: نشطة ⚡</div>
     </div>
 
     <div class="left-controls-group">
-        <div class="selection-controls">
-            <button class="sel-btn active" id="sel-all-btn" onclick="playClickSound(); setSelectionMode('all')">الكل</button>
-            <button class="sel-btn" id="sel-single-btn" onclick="playClickSound(); setSelectionMode('single')">فردي</button>
-        </div>
-
         <div class="corner-economy">
             <div class="money-row">
                 <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
                 <div class="money-small"><span id="money-display">500</span>$</div>
             </div>
-            <button class="buy-btn-small" id="buy-tank-btn" onclick="playClickSound(); buyPlayerTank('normal')">عادية (150$)</button>
-            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="playClickSound(); buyPlayerTank('rocket')">صاروخية (300$)</button>
+            <button class="buy-btn-small" id="buy-tank-btn" onclick="playAudio('buy'); buyPlayerTank('normal')">عادية (150$)</button>
+            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-btn" onclick="playAudio('buy'); buyPlayerTank('rocket')">صاروخية (300$)</button>
         </div>
     </div>
 
@@ -187,15 +163,13 @@
     <div id="floating-msg"></div>
 
     <div class="cam-controls">
-        <button class="cam-btn zoom-in" onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)">➕ تقريب</button>
+        <button class="cam-btn zoom-in" onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)">➕</button>
         <button class="cam-btn up" onmousedown="camMove('up', true)" onmouseup="camMove('up', false)">⬆️</button>
-        <button class="cam-btn zoom-out" onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)">➖ إبعاد</button>
+        <button class="cam-btn zoom-out" onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)">➖</button>
         <button class="cam-btn left" onmousedown="camMove('left', true)" onmouseup="camMove('left', false)">⬅️</button>
         <button class="cam-btn down" onmousedown="camMove('down', true)" onmouseup="camMove('down', false)">⬇️</button>
         <button class="cam-btn right" onmousedown="camMove('right', true)" onmouseup="camMove('right', false)">➡️</button>
     </div>
-
-    <div class="cam-hint">اسحب بالشاشة وحرك دباباتك نحو العدو 🎯</div>
 </div>
 
 <div id="canvas-container"></div>
@@ -204,21 +178,22 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
-    // مؤثرات صوتية داخلية افتراضية
-    function playClickSound() {
-        try { let a = new Audio('https://freesound.org/data/previews/608/608688_11861866-lq.mp3'); a.volume = 0.3; a.play(); } catch(e){}
-    }
-    function playSound(type) {
-        try {
-            let url = type === 'shoot' ? 'https://freesound.org/data/previews/394/394595_5121236-lq.mp3' : 'https://freesound.org/data/previews/515/515830_6492306-lq.mp3';
-            let a = new Audio(url); a.volume = 0.4; a.play();
-        } catch(e){}
+    // نظام المؤثرات الصوتية الفعلية
+    const sounds = {
+        click: new Audio('https://freesound.org/data/previews/608/608688_11861866-lq.mp3'),
+        shoot: new Audio('https://freesound.org/data/previews/394/394595_5121236-lq.mp3'),
+        explosion: new Audio('https://freesound.org/data/previews/515/515830_6492306-lq.mp3'),
+        buy: new Audio('https://freesound.org/data/previews/416/416443_5121236-lq.mp3')
+    };
+    function playAudio(name) {
+        if(sounds[name]) { sounds[name].currentTime = 0; sounds[name].volume = 0.5; sounds[name].play().catch(e => {}); }
     }
 
     let scene, camera, renderer, dirLight;
     let playerFlagType = 'green';
     let socket;
     let remotePlayers = {};
+    let wavingFlags = []; // قائمة الأعلام لكي ترفرف بانتظام
 
     let cameraRadius = 280, targetCameraRadius = 280;
     let cameraTheta = Math.PI / 4, cameraPhi = Math.PI / 3.5;
@@ -227,8 +202,6 @@
     let isDragging = false, previousTouchX = 0, previousTouchY = 0;
 
     let playerTanks = [];
-    let bullets = [];
-    let oilWells = []; // آبار النفط الاقتصادية
     let targetMarkerMesh, terrainMesh;
     let raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
 
@@ -266,7 +239,7 @@
 
         setupLighting();
         createTerrain();
-        createBasesAndOilWells(); // إنشاء المعسكرات وأبراج النفط
+        createBasesAndWavingFlags(); // بناء المعسكرات، الأعلام المرفرفة، ومضخات النفط
         createTargetMarker();
         setupInteraction();
 
@@ -282,7 +255,6 @@
         document.getElementById('start-menu').style.display = 'none';
         document.getElementById('waiting-overlay').style.display = 'flex';
 
-        // الاتصال بسيرفر الأอนلاين الخاص بك على Render
         socket = io('https://tank-game-server-o650.onrender.com');
 
         socket.on('connect', () => {
@@ -292,8 +264,8 @@
         socket.on('match_started', () => {
             document.getElementById('waiting-overlay').style.display = 'none';
             document.getElementById('ui-overlay').style.display = 'block';
-            showFloatingMsg('⚔️ انضم الصديق! بدأت المعركة الحقيقية!');
-            playSound('shoot');
+            showFloatingMsg('⚔️ التقى الصديق بالمعسكر الآخر! بدأت الحرب!');
+            playAudio('shoot');
 
             let startX = playerFlagType === 'green' ? -CORNER_OFFSET + 45 : CORNER_OFFSET - 45;
             let startZ = playerFlagType === 'green' ? -CORNER_OFFSET + 45 : CORNER_OFFSET - 45;
@@ -322,21 +294,24 @@
             if (remotePlayers[id]) {
                 scene.remove(remotePlayers[id].mesh);
                 delete remotePlayers[id];
-                showFloatingMsg('غادر اللاعب الآخر المعركة.');
+                showFloatingMsg('غادر اللاعب الآخر المعسكر.');
             }
         });
     }
 
     function createRemoteTank(data) {
         let color = data.team === 'green' ? 0x2e3b23 : 0x6b3a2a;
-        let tank = createTank(data.x, data.z, color, 'enemy', 'normal');
+        let tank = createTank(data.x, data.z, color, 'enemy');
         remotePlayers[data.id] = tank;
     }
 
     function selectFlag(color) {
         playerFlagType = color;
         document.querySelectorAll('#player-flags .flag-btn').forEach(btn => {
-            btn.classList.toggle('active-player', btn.innerText.includes(color === 'green' ? 'الأخضر' : 'الأحمر'));
+            btn.classList.remove('active-green', 'active-red');
+            if(btn.innerText.includes(color === 'green' ? 'الأخضر' : 'الأحمر')) {
+                btn.classList.add(color === 'green' ? 'active-green' : 'active-red');
+            }
         });
     }
 
@@ -357,33 +332,61 @@
         scene.add(terrainMesh);
     }
 
-    function createBasesAndOilWells() {
-        // بناء المعسكر الخاص بك مع العلم
-        let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
-        let startX = playerFlagType === 'green' ? -CORNER_OFFSET + 45 : CORNER_OFFSET - 45;
-        let startZ = playerFlagType === 'green' ? -CORNER_OFFSET + 45 : CORNER_OFFSET - 45;
-        
-        let playerTank = createTank(startX, startZ, pColor, 'player', 'normal');
-        playerTanks.push(playerTank);
+    function createBasesAndWavingFlags() {
+        // إنشاء معسكرين رئيسيين (معسكرك ومعسكر الصديق/الخصم) مع الأعلام التي ترفرف
+        createSingleBase(-CORNER_OFFSET, -CORNER_OFFSET, 0x22c55e, "المعسكر الأخضر الرئيسي");
+        createSingleBase(CORNER_OFFSET, CORNER_OFFSET, 0xef4444, "المعسكر الأحمر الرئيسي");
 
-        // إنشاء أبراج ومضخات النفط في الخريطة لزيادة الموارد
+        // أبراج ومضخات النفط في المنتصف لدعم الاقتصاد وزيادة الرصيد
         [ {x: 0, z: 0}, {x: -200, z: 200}, {x: 200, z: -200} ].forEach(pos => {
             let wellGroup = new THREE.Group();
             let baseMat = new THREE.MeshStandardMaterial({color: 0x334155});
-            let pipeMat = new THREE.MeshStandardMaterial({color: 0xf59e0b}); // لون النفط/الذهب
-
+            let pipeMat = new THREE.MeshStandardMaterial({color: 0xf59e0b});
             let base = new THREE.Mesh(new THREE.CylinderGeometry(8, 9, 3, 12), baseMat);
             let tank = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 8, 8), pipeMat);
             tank.position.y = 5;
             wellGroup.add(base, tank);
-
             wellGroup.position.set(pos.x, getTerrainHeight(pos.x, pos.z), pos.z);
             scene.add(wellGroup);
-            oilWells.push(wellGroup);
         });
+
+        // إنشاء الدبابة الأولى في معسكرك الافتراضي
+        let startX = playerFlagType === 'green' ? -CORNER_OFFSET + 45 : CORNER_OFFSET - 45;
+        let startZ = playerFlagType === 'green' ? -CORNER_OFFSET + 45 : CORNER_OFFSET - 45;
+        let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
+        let playerTank = createTank(startX, startZ, pColor, 'player');
+        playerTanks.push(playerTank);
     }
 
-    function createTank(x, z, colorHex, team, type = 'normal') {
+    function createSingleBase(x, z, colorHex, name) {
+        let baseGroup = new THREE.Group();
+        let y = getTerrainHeight(x, z);
+
+        // منصة المعسكر
+        let platform = new THREE.Mesh(new THREE.CylinderGeometry(35, 38, 4, 16), new THREE.MeshStandardMaterial({color: 0x1e293b, roughness: 0.6}));
+        platform.position.y = 2;
+        baseGroup.add(platform);
+
+        // سارية العلم
+        let pole = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 35, 8), new THREE.MeshStandardMaterial({color: 0x94a3b8}));
+        pole.position.y = 17;
+        baseGroup.add(pole);
+
+        // علم المعسكر الذي يرفرف
+        let flagGeo = new THREE.BoxGeometry(14, 9, 0.5, 8, 4, 1);
+        let flagMat = new THREE.MeshStandardMaterial({color: colorHex, side: THREE.DoubleSide});
+        let flagMesh = new THREE.Mesh(flagGeo, flagMat);
+        flagMesh.position.set(7, 28, 0);
+        baseGroup.add(flagMesh);
+
+        // تخزين العلم لتحريكه بحركة الترفرف في حلقة الـ animate
+        wavingFlags.push({ mesh: flagMesh, baseY: 28 });
+
+        baseGroup.position.set(x, y, z);
+        scene.add(baseGroup);
+    }
+
+    function createTank(x, z, colorHex, team) {
         const tankGroup = new THREE.Group();
         const armorMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.5 });
         const trackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
@@ -408,7 +411,7 @@
 
         const hpLabel = document.createElement('div');
         hpLabel.className = `tank-hp-label ${team === 'player' ? 'hp-player' : 'hp-enemy'}`;
-        hpLabel.innerText = "100";
+        hpLabel.innerText = "100 HP";
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
         return { mesh: tankGroup, hpLabel, target: null, team, hp: 100, isDestroyed: false };
@@ -421,13 +424,13 @@
             playerMoney -= cost;
             playerBuildCooldown = 1200;
             updateEconomyUI();
-            playSound('shoot');
+            playAudio('shoot');
             let startX = playerFlagType === 'green' ? -CORNER_OFFSET + 50 : CORNER_OFFSET - 50;
             let startZ = playerFlagType === 'green' ? -CORNER_OFFSET + 50 : CORNER_OFFSET - 50;
             let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
-            let newTank = createTank(startX + (Math.random()-0.5)*20, startZ + (Math.random()-0.5)*20, pColor, 'player', type);
+            let newTank = createTank(startX + (Math.random()-0.5)*20, startZ + (Math.random()-0.5)*20, pColor, 'player');
             playerTanks.push(newTank);
-            showFloatingMsg('تم نشر دبابة جديدة في المعسكر!');
+            showFloatingMsg('تم نشر دبابة جديدة من المعسكر!');
         }
     }
 
@@ -517,7 +520,7 @@
     function updateEconomyUI() {
         document.getElementById('money-display').innerText = playerMoney;
         let buyBtn = document.getElementById('buy-tank-btn');
-        let rocketBtn = document.getElementById('buy-rocket-tank-btn');
+        let rocketBtn = document.getElementById('buy-rocket-btn');
         if (playerBuildCooldown > 0) {
             buyBtn.innerText = `انتظار (${Math.ceil(playerBuildCooldown/60)}ث)`;
             buyBtn.disabled = true; rocketBtn.disabled = true;
@@ -532,6 +535,14 @@
         processCameraInputs();
         updateCameraPosition();
         updateTanksMovement();
+
+        // حركة ترفرف الأعلام بواقعية
+        let time = Date.now() * 0.005;
+        wavingFlags.forEach((flag, idx) => {
+            flag.mesh.rotation.y = Math.sin(time + idx) * 0.25;
+            flag.mesh.scale.x = 1 + Math.sin(time * 2 + idx) * 0.05;
+        });
+
         renderer.render(scene, camera);
     }
 
