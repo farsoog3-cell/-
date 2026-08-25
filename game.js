@@ -1,4 +1,4 @@
-// ملف منطق اللعبة الرئيسي وتشغيل المحرك والتحكم
+// ملف منطق اللعبة الرئيسي وتشغيل المحرك والتحكم المتطور
 const soundFiles = {
     menuBgm: 'sounds/menu_bgm.mp3',
     battleBgm: 'sounds/battle_bgm.mp3',
@@ -43,35 +43,33 @@ let cameraTheta = Math.PI / 4; let cameraPhi = Math.PI / 3.5;
 let targetLookAt = new THREE.Vector3(0, 0, 0);
 
 let camInputs = { up: false, down: false, left: false, right: false, zi: false, zo: false };
-let isDragging = false, previousTouchX = 0, previousTouchY = 0;
+let isDragging = false, previousTouchX = 0, previousTouchY = 0, touchStartX = 0, touchStartY = 0, hasMoved = false;
 
 let playerTanks = [], enemyTanks = [], rotatingRadars = [], activeFlagMeshes = [];
 let enemyPoleFlagMesh, playerPoleFlagMesh, enemyFlagDataRef, playerFlagDataRef;
-const CORNER_OFFSET = 380;
+let selectionMode = 'all', selectedTank = null, playerTargetPos = null;
+let targetMarkerMesh, raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
 
+const CORNER_OFFSET = 380;
 let playerMoney = 500, enemyMoney = 500;
 let flagWaveTime = 0;
 
 function init() {
     const container = document.getElementById('canvas-container');
     
-    // 1. المشهد والخلفية
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x7dd3fc);
     scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0018);
 
-    // 2. الكاميرا
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
     updateCameraPosition();
 
-    // 3. الرندر
     renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
 
-    // 4. الإضاءة
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
 
@@ -80,12 +78,10 @@ function init() {
     dirLight.castShadow = true;
     scene.add(dirLight);
 
-    // 5. التضاريس
     if (typeof createHillyBrownSoilTerrain === 'function') {
         createHillyBrownSoilTerrain();
     }
 
-    // 6. القواعد العسكرية
     const playerBaseGroup = new THREE.Group();
     playerBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
     playerBaseGroup.rotation.y = -(3 * Math.PI) / 4; 
@@ -101,15 +97,26 @@ function init() {
     scene.add(playerBaseGroup); 
     scene.add(enemyBaseGroup);
 
-    // 7. الأعلام (تم تفعيلها هنا)
     if (typeof createFlagPole === 'function') {
         enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, enemyFlagType, 'enemy');
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
-    // 8. تفعيل اللمس والسحب (Touch & Mouse Dragging) للشاشة
-    setupTouchControls(container);
+    // إنشاء مؤشر الهدف على الأرض
+    const markerGeo = new THREE.RingGeometry(2, 3.5, 32);
+    markerGeo.rotateX(-Math.PI / 2);
+    const markerMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+    targetMarkerMesh = new THREE.Mesh(markerGeo, markerMat);
+    targetMarkerMesh.visible = false;
+    scene.add(targetMarkerMesh);
 
+    // دبابات البداية
+    if (typeof createTank === 'function') {
+        playerTanks.push(createTank(CORNER_OFFSET - 45, CORNER_OFFSET - 45, 0x2e3b23, 'player', 'normal'));
+        enemyTanks.push(createTank(-CORNER_OFFSET + 45, -CORNER_OFFSET + 45, 0x6b3a2a, 'enemy', 'normal'));
+    }
+
+    setupAccurateTouchControls(container);
     updateEconomyUI();
 
     window.addEventListener('resize', () => {
@@ -130,16 +137,12 @@ function startGame() {
     targetCameraRadius = 110;
 }
 
-// التحكم بالأزرار (يمين، يسار، فوق، تحت، تقريب، إبعاد)
-function camMove(dir, state) { 
-    camInputs[dir] = state; 
-}
+function camMove(dir, state) { camInputs[dir] = state; }
 
 function selectFlag(role, color) {
     if (role === 'player') playerFlagType = color; 
     else enemyFlagType = color;
     
-    // تحديث الأزرار النشطة في القائمة
     document.querySelectorAll(`#${role}-flags .flag-btn`).forEach(btn => {
         btn.classList.remove(role === 'player' ? 'active-player' : 'active-enemy');
     });
@@ -147,11 +150,14 @@ function selectFlag(role, color) {
 }
 
 function setSelectionMode(mode) {
+    selectionMode = mode;
     document.getElementById('sel-all-btn').classList.toggle('active', mode === 'all');
     document.getElementById('sel-single-btn').classList.toggle('active', mode === 'single');
+    if (mode === 'all') {
+        playerTanks.forEach(t => { if(t.mesh) t.mesh.userData.selected = true; });
+    }
 }
 
-// دالة شراء الدبابات (تم تفعيلها)
 function buyPlayerTank(type) {
     let cost = (type === 'rocket') ? 300 : 150;
     if (playerMoney >= cost) {
@@ -159,7 +165,6 @@ function buyPlayerTank(type) {
         updateEconomyUI();
         playSound('buy', 0.7);
 
-        // إنشاء دبابة جديدة بالقرب من قاعدة اللاعب
         let spawnX = CORNER_OFFSET - 45 + (Math.random() * 20 - 10);
         let spawnZ = CORNER_OFFSET - 45 + (Math.random() * 20 - 10);
         if (typeof createTank === 'function') {
@@ -187,19 +192,27 @@ function showFloatingMsg(text) {
     setTimeout(() => { msg.style.opacity = '0'; }, 2000);
 }
 
-// إعداد حركة السحب باللمس أو الماوس لتحريك الكاميرا
-function setupTouchControls(container) {
+// التحكم الدقيق باللمس (التمييز بين النقر لإعطاء أوامر للدبابات، والسحب لتحريك الكاميرا)
+function setupAccurateTouchControls(container) {
     container.addEventListener('pointerdown', (e) => {
-        if (e.target.tagName === 'BUTTON' || e.target.closest('#ui-overlay') && e.target.id !== 'canvas-container') return;
+        if (e.target.closest('#ui-overlay') && e.target.id !== 'canvas-container') return;
         isDragging = true;
+        hasMoved = false;
         previousTouchX = e.clientX;
         previousTouchY = e.clientY;
+        touchStartX = e.clientX;
+        touchStartY = e.clientY;
     });
 
-    window.addEventListener('pointermove', (e) => {
+    container.addEventListener('pointermove', (e) => {
         if (!isDragging) return;
         let deltaX = e.clientX - previousTouchX;
         let deltaY = e.clientY - previousTouchY;
+        
+        if (Math.abs(e.clientX - touchStartX) > 5 || Math.abs(e.clientY - touchStartY) > 5) {
+            hasMoved = true;
+        }
+
         previousTouchX = e.clientX;
         previousTouchY = e.clientY;
 
@@ -210,11 +223,48 @@ function setupTouchControls(container) {
         targetLookAt.z -= (deltaX * sin + deltaY * cos) * panSpeed;
     });
 
-    window.addEventListener('pointerup', () => { isDragging = false; });
+    container.addEventListener('pointerup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+
+        // إذا لم يتحرك الإصبع كثيراً، فهذا يعتبر "نقر" لتوجيه الدبابات أو اختيارها
+        if (!hasMoved && terrainMesh) {
+            let rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            
+            if (selectionMode === 'single') {
+                let intersects = raycaster.intersectObjects(playerTanks.map(t => t.mesh), true);
+                if (intersects.length > 0) {
+                    let clickedTankGroup = intersects[0].object.parent;
+                    selectedTank = playerTanks.find(t => t.mesh === clickedTankGroup || t.mesh.children.includes(intersects[0].object));
+                    showFloatingMsg("تم تحديد الدبابة بنجاح!");
+                    return;
+                }
+            }
+
+            // تحديد نقطة على الأرض لتحريك الدبابات إليها
+            let terrainIntersect = raycaster.intersectObject(terrainMesh);
+            if (terrainIntersect.length > 0) {
+                playerTargetPos = terrainIntersect[0].point;
+                targetMarkerMesh.position.copy(playerTargetPos);
+                targetMarkerMesh.position.y = getTerrainHeight(playerTargetPos.x, playerTargetPos.z) + 0.2;
+                targetMarkerMesh.visible = true;
+
+                // تحريك الدبابات المحددة نحو النقطة
+                playerTanks.forEach(tank => {
+                    if (!tank.isDestroyed && (selectionMode === 'all' || tank === selectedTank)) {
+                        tank.targetPos = playerTargetPos.clone();
+                    }
+                });
+            }
+        }
+    });
 }
 
 function updateCameraPosition() {
-    // معالجة حركة الأزرار المستمرة
     let moveSpeed = 6;
     if (camInputs.up) { targetLookAt.x -= moveSpeed * Math.sin(cameraTheta); targetLookAt.z -= moveSpeed * Math.cos(cameraTheta); }
     if (camInputs.down) { targetLookAt.x += moveSpeed * Math.sin(cameraTheta); targetLookAt.z += moveSpeed * Math.cos(cameraTheta); }
@@ -232,28 +282,78 @@ function updateCameraPosition() {
     camera.lookAt(targetLookAt);
 }
 
-// حلقة اللعبة الأساسية
+// رسم الخريطة المصغرة (Minimap)
+function drawMinimap() {
+    const canvas = document.getElementById('minimap-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // خلفية الخريطة
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    let scale = canvas.width / 900;
+    let centerX = canvas.width / 2;
+    let centerZ = canvas.height / 2;
+
+    // رسم دبابات اللاعب (أخضر)
+    ctx.fillStyle = '#22c55e';
+    playerTanks.forEach(t => {
+        if (!t.isDestroyed) {
+            let mx = centerX + t.mesh.position.x * scale;
+            let mz = centerZ + t.mesh.position.z * scale;
+            ctx.beginPath(); ctx.arc(mx, mz, 2.5, 0, Math.PI * 2); ctx.fill();
+        }
+    });
+
+    // رسم دبابات العدو (أحمر)
+    ctx.fillStyle = '#ef4444';
+    enemyTanks.forEach(t => {
+        if (!t.isDestroyed) {
+            let mx = centerX + t.mesh.position.x * scale;
+            let mz = centerZ + t.mesh.position.z * scale;
+            ctx.beginPath(); ctx.arc(mx, mz, 2.5, 0, Math.PI * 2); ctx.fill();
+        }
+    });
+}
+
 function animate() {
     requestAnimationFrame(animate);
 
-    // تموج الأعلام
+    // تحديث حركة وربط الأعلام بالعمود تماماً
     flagWaveTime += 0.05;
-    activeFlagMeshes.forEach((flagObj, idx) => {
+    activeFlagMeshes.forEach((flagObj) => {
         const posAttr = flagObj.mesh.geometry.attributes.position;
         for (let i = 0; i < posAttr.count; i++) {
             let u = posAttr.getX(i);
-            let wave = Math.sin(flagWaveTime + u * 0.4) * 0.8;
+            // جعل القاعدة متصلة بالعمود (عند u = -5) لا تتحرك، والأطراف تتمايل
+            let wave = (u > -4) ? Math.sin(flagWaveTime + u * 0.4) * 0.8 : 0;
             posAttr.setZ(i, wave);
         }
         posAttr.needsUpdate = true;
     });
 
-    // دوران الرادار
-    rotatingRadars.forEach(radar => {
-        radar.rotation.z += 0.02;
+    // تحريك دبابات اللاعب نحو الهدف عند النقر
+    playerTanks.forEach(tank => {
+        if (!tank.isDestroyed && tank.targetPos) {
+            let dx = tank.targetPos.x - tank.mesh.position.x;
+            let dz = tank.targetPos.z - tank.mesh.position.z;
+            let dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > 2) {
+                let speed = 0.8;
+                tank.mesh.position.x += (dx / dist) * speed;
+                tank.mesh.position.z += (dz / dist) * speed;
+                tank.mesh.position.y = getTerrainHeight(tank.mesh.position.x, tank.mesh.position.z);
+                tank.mesh.rotation.y = Math.atan2(dx, dz);
+            }
+        }
     });
 
+    rotatingRadars.forEach(radar => { radar.rotation.z += 0.02; });
+
     updateCameraPosition();
+    drawMinimap();
     renderer.render(scene, camera);
 }
 
