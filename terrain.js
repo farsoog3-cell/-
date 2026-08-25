@@ -19,7 +19,14 @@ function createHillyBrownSoilTerrain() {
     }
     geometry.computeVertexNormals();
 
-    const terrainMat = new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 });
+    // استخدام MeshStandardMaterial مع ضبط الخصائص لتجنب ظهور الأرض باللون الأسود
+    const terrainMat = new THREE.MeshStandardMaterial({ 
+        color: 0x6b4423,      // درجة لون بني واضحة وجميلة
+        roughness: 0.9,       // خشونة عالية لتبدو كأنها أرض ترابية
+        metalness: 0.05,      // إزالة المعدنية لكي لا تعكس الظلام
+        flatShading: false
+    });
+    
     terrainMesh = new THREE.Mesh(geometry, terrainMat);
     terrainMesh.receiveShadow = true;
     scene.add(terrainMesh);
@@ -77,5 +84,9 @@ function createBaseStructure(parentGroup, isEnemy) {
     mainRadarDish.position.set(0, 17.5, -4);
     mainRadarDish.castShadow = true;
     parentGroup.add(mainRadarDish);
-    rotatingRadars.push(mainRadarDish);
+    
+    // تأكد من وجود مصفوفة rotatingRadars في ملف game.js
+    if (typeof rotatingRadars !== 'undefined') {
+        rotatingRadars.push(mainRadarDish);
+    }
 }
