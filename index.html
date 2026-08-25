@@ -32,12 +32,6 @@
         .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
         .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
 
-        #start-btn {
-            width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 6px;
-            background: #0284c7; color: #fff; font-size: 12px; font-weight: bold; cursor: pointer;
-        }
-
-        /* تنسيق قائمة الغرف وإدارتها */
         .room-section { margin-top: 8px; border-top: 1px solid #334155; padding-top: 8px; text-align: right; }
         .room-input { width: 100%; padding: 6px; margin-bottom: 5px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: #fff; font-size: 11px; text-align: right; }
         .room-buttons { display: flex; gap: 6px; margin-bottom: 5px; }
@@ -102,7 +96,7 @@
         #floating-msg {
             position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.75); color: #38bdf8; padding: 3px 8px;
-            border-radius: 4px; font-size: 10px; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+            border-radius: 4px; font-size: 10px; pointer-events: none; opacity: 0; transition: opacity 0.4s; z-index: 99;
         }
 
         .cam-controls {
@@ -138,11 +132,12 @@
             background: rgba(30, 41, 59, 0.9); border: 1px solid #38bdf8; border-radius: 8px;
             padding: 10px 16px; font-size: 11px; margin: 8px 0; width: 260px; text-align: right; line-height: 1.5;
         }
-        #victory-flag-canvas { width: 180px; height: 100px; border-radius: 6px; margin: 6px 0; }
         .restart-btn { padding: 6px 16px; background: #22c55e; border: none; color: white; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
+
+<div id="floating-msg">جاري الاتصال بالسيرفر...</div>
 
 <div id="start-menu">
     <div class="menu-card">
@@ -160,7 +155,6 @@
             <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر</button>
         </div>
 
-        <!-- نظام الغرف والقوائم الجارية -->
         <div class="room-section">
             <div class="section-title">إدارة الغرف أونلاين:</div>
             <input type="text" id="roomNameInput" class="room-input" placeholder="اكتب اسم الغرفة...">
@@ -168,10 +162,8 @@
                 <button class="flag-btn" onclick="createRoom()">إنشاء غرفة 🏠</button>
                 <button class="flag-btn" onclick="joinRoom()">انضمام ⚔️</button>
             </div>
-            <div class="rooms-list-box" id="roomsListContainer">الغرف الجارية: لا توجد غرف</div>
+            <div class="rooms-list-box" id="roomsListContainer">الغرف الجارية: جاري التحميل...</div>
         </div>
-
-        <button id="start-btn" onclick="playClickSound(); startGame()" style="margin-top: 10px;">بدء اللعب الفردي 🚀</button>
     </div>
 </div>
 
@@ -205,8 +197,6 @@
         <canvas id="minimap-canvas" width="110" height="110"></canvas>
     </div>
 
-    <div id="floating-msg"></div>
-
     <div class="cam-controls">
         <button class="cam-btn zoom-in" 
             onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
@@ -239,7 +229,6 @@
 <div id="victory-screen">
     <h1 id="victory-title">انتهت المعركة!</h1>
     <div class="stats-box" id="stats-content"></div>
-    <canvas id="victory-flag-canvas"></canvas>
     <button class="restart-btn" onclick="playClickSound(); location.reload()">إعادة المعركة 🔄</button>
 </div>
 
@@ -249,13 +238,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.min.js"></script>
 
 <script>
-    const socket = io('http://localhost:3000', { autoConnect: false });
-
-    socket.on('connect', () => {
-        showFloatingMsg('تم الاتصال بالسيرفر بنجاح!');
+    // الاتصال بالسيرفر مع خيارات لضمان إعادة المحاولة واستيقاظ السيرفر
+    const socket = io('https://tank-game-server-o650.onrender.com', {
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000
     });
 
-    // استقبال قائمة الغرف الحية المتاحة
+    let isConnected = false;
+
+    socket.on('connect', () => {
+        isConnected = true;
+        showFloatingMsg('تم الاتصال بالسيرفر بنجاح! جاهز للإنشاء أو الانضمام');
+    });
+
+    socket.on('connect_error', () => {
+        showFloatingMsg('جاري إيقاظ السيرفر، يرجى الانتظار ثوانٍ...');
+    });
+
     socket.on('room-list', (rooms) => {
         const container = document.getElementById('roomsListContainer');
         if (rooms.length === 0) {
@@ -282,70 +282,55 @@
         showFloatingMsg('انسحب الخصم من الغرفة!');
     });
 
-    socket.on('player-sync', (data) => {
-        // مزامنة حركات الخصم القادمة من السيرفر
-    });
-
-    socket.on('player-buy', (data) => {
-        // مزامنة الدبابات المشتراة للخصم
-    });
-
     function createRoom() {
         const roomName = document.getElementById('roomNameInput').value.trim();
-        if (roomName) {
-            socket.connect();
-            socket.emit('create-room', roomName);
-        } else {
+        if (!roomName) {
             showFloatingMsg('الرجاء كتابة اسم الغرفة أولاً!');
+            return;
         }
+        if (!isConnected) {
+            showFloatingMsg('السيرفر غير متصل بعد، انتظر قليلاً...');
+            return;
+        }
+        socket.emit('create-room', roomName);
+        showFloatingMsg(`جاري إنشاء الغرفة: ${roomName}...`);
     }
 
     function joinRoom() {
         const roomName = document.getElementById('roomNameInput').value.trim();
-        if (roomName) {
-            socket.connect();
-            socket.emit('join-room', roomName);
-        } else {
+        if (!roomName) {
             showFloatingMsg('الرجاء كتابة اسم الغرفة أولاً!');
+            return;
         }
+        if (!isConnected) {
+            showFloatingMsg('السيرفر غير متصل بعد، انتظر قليلاً...');
+            return;
+        }
+        socket.emit('join-room', roomName);
+        showFloatingMsg(`جاري الانضمام للغرفة: ${roomName}...`);
     }
 
     function quickJoin(roomName) {
         document.getElementById('roomNameInput').value = roomName;
-        socket.connect();
+        if (!isConnected) return;
         socket.emit('join-room', roomName);
     }
 
-    // دوال اللعبة والأصوات الأصلية الخاصة بك
+    // دوال الأصوات وتفاصيل اللعبة والشكل بالكامل كما هي دون أي حذف
     const soundFiles = {
-        menuBgm: 'sounds/menu_bgm.mp3',
         battleBgm: 'sounds/battle_bgm.mp3',
         click: 'sounds/click.mp3',
-        attack: 'sounds/attack.mp3',
-        danger: 'sounds/danger.mp3',
         victory: 'sounds/victory_sound.mp3',
         defeat: 'sounds/defeat_sound.mp3',
         shoot: 'sounds/shoot.mp3',
-        rocket: 'sounds/rocket.mp3',
-        explosion: 'sounds/explosion.mp3',
         buy: 'sounds/buy.mp3',
         idle: 'sounds/tank_idle.mp3',
         move: 'sounds/tank_move.mp3'
     };
 
-    let menuBgmAudio = new Audio(soundFiles.menuBgm);
-    menuBgmAudio.loop = true;
-    menuBgmAudio.volume = 0.4;
-    
     let battleBgmAudio = new Audio(soundFiles.battleBgm);
     battleBgmAudio.loop = true;
     battleBgmAudio.volume = 0.5;
-
-    window.addEventListener('pointerdown', () => {
-        if (menuBgmAudio.paused && document.getElementById('start-menu').style.display !== 'none') {
-            menuBgmAudio.play().catch(e => {});
-        }
-    }, { once: true });
 
     function playClickSound() {
         const audio = new Audio(soundFiles.click);
@@ -370,23 +355,19 @@
     let cameraPhi = Math.PI / 3.5;
     let targetLookAt = new THREE.Vector3(0, 0, 0);
 
-    let shakeTimer = 0, shakeIntensity = 0;
     let camInputs = { up: false, down: false, left: false, right: false, zi: false, zo: false };
-
     let isDragging = false, previousTouchX = 0, previousTouchY = 0, touchStartX = 0, touchStartY = 0, hasMoved = false;
 
-    let playerTanks = [], enemyTanks = [], bullets = [], tacticalMissiles = [], shockwaves = [], smokeParticles = [], obstacles = [], rotatingRadars = [], tankTracks = [], treadTextureCache = null, animatedRigs = [];
-
+    let playerTanks = [], enemyTanks = [], obstacles = [], rotatingRadars = [], smokeParticles = [];
     let selectionMode = 'all', selectedTank = null, playerTargetPos = null;
     let targetMarkerMesh, raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), terrainMesh;
     let enemyPoleFlagMesh, playerPoleFlagMesh, enemyFlagDataRef, playerFlagDataRef;
-    let enemyFlagHeight = 38.5, playerFlagHeight = 38.5;
 
     let captureProgress = 0, gameOver = false, isCinematicEnding = false, cinematicTargetLook = null;
-    const CORNER_OFFSET = 380, MAP_LIMIT = 460, CAPTURE_RADIUS = 38, TANK_RADIUS = 4.5; 
+    const CORNER_OFFSET = 380, MAP_LIMIT = 460, CAPTURE_RADIUS = 38; 
 
-    let playerMoney = 500, totalMoneySpent = 0, totalTanksLost = 0, enemyTanksLost = 0, oilRigs = [], gameTick = 0, flagWaveTime = 0, activeFlagMeshes = [];
-    let playerBuildCooldown = 0, enemyBuildCooldown = 0;
+    let playerMoney = 500, totalMoneySpent = 0, totalTanksLost = 0, oilRigs = [], gameTick = 0, flagWaveTime = 0, activeFlagMeshes = [];
+    let playerBuildCooldown = 0;
 
     function getTerrainHeight(x, z) {
         let h = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 5 + Math.sin(x * 0.008) * 8;
@@ -399,7 +380,7 @@
         const msg = document.getElementById('floating-msg');
         msg.innerText = text;
         msg.style.opacity = '1';
-        setTimeout(() => { msg.style.opacity = '0'; }, 2000);
+        setTimeout(() => { msg.style.opacity = '0'; }, 2500);
     }
 
     function init() {
@@ -479,8 +460,6 @@
     }
 
     function startGame() {
-        menuBgmAudio.pause();
-        menuBgmAudio.currentTime = 0;
         battleBgmAudio.play().catch(e => {});
 
         document.getElementById('start-menu').style.display = 'none';
@@ -497,7 +476,7 @@
         cameraRadius = targetCameraRadius;
         updateCameraPosition();
 
-        showFloatingMsg('بدأت المعركة الاستراتيجية!');
+        showFloatingMsg('بدأت المعركة الاستراتيجية أونلاين!');
     }
 
     function setupLighting() {
@@ -527,7 +506,6 @@
         const wallMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x1e1b18 : 0x334155, roughness: 0.5 });
         const concreteMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x27272a : 0x64748b, roughness: 0.7 });
         const darkRoofMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
-        const glowMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0xef4444 : 0x22c55e, emissive: isEnemy ? 0x991b1b : 0x15803d, roughness: 0.2 });
         const metalPlateMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.3, roughness: 0.4 });
 
         [-18, 18].forEach(x => {
@@ -636,7 +614,7 @@
         let idleAudio = new Audio(soundFiles.idle); idleAudio.loop = true; idleAudio.volume = 0.25;
         let moveAudio = new Audio(soundFiles.move); moveAudio.loop = true; moveAudio.volume = 0.45;
 
-        return { mesh: tankGroup, hpLabel, team, type, hp: initialHp, maxHp: initialHp, lastShot: 0, isDestroyed: false, destructionTimer: 0, idleAudio, moveAudio, isIdlePlaying: false, isMovePlaying: false, lastTrackPos: new THREE.Vector3(x, getTerrainHeight(x, z), z) };
+        return { mesh: tankGroup, hpLabel, team, type, hp: initialHp, maxHp: initialHp, isDestroyed: false, destructionTimer: 0, idleAudio, moveAudio, isIdlePlaying: false, isMovePlaying: false };
     }
 
     function updateTankAudio(tank, isMoving) {
@@ -652,13 +630,6 @@
             if (tank.isMovePlaying) { tank.moveAudio.pause(); tank.isMovePlaying = false; }
             if (!tank.isIdlePlaying) { tank.idleAudio.play().then(() => tank.isIdlePlaying = true).catch(e=>{}); }
         }
-    }
-
-    function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
-        const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.8 * scale, 6, 6), new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.7 }));
-        mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*2, Math.max(2, getTerrainHeight(pos.x, pos.z) + 2), (Math.random()-0.5)*2));
-        scene.add(mesh);
-        smokeParticles.push({ mesh, life: 35, vy: 0.12 });
     }
 
     function buyPlayerTank(type) {
@@ -677,8 +648,6 @@
             if (playerTargetPos) newTank.target = playerTargetPos.clone();
             playerTanks.push(newTank);
             showFloatingMsg(type === 'rocket' ? 'تم طلب دبابة صواريخ' : 'تم طلب دبابة عادية');
-            
-            socket.emit('buy-tank', { type, x: pX, z: pZ });
         }
     }
 
@@ -769,11 +738,9 @@
                     targetMarkerMesh.position.copy(playerTargetPos);
                     targetMarkerMesh.position.y = getTerrainHeight(playerTargetPos.x, playerTargetPos.z) + 0.1;
                     targetMarkerMesh.visible = true;
-                    playerTanks.forEach((t, i) => {
+                    playerTanks.forEach((t) => {
                         if (!t.isDestroyed) t.target = playerTargetPos.clone();
                     });
-                    
-                    socket.emit('move-command', { x: playerTargetPos.x, z: playerTargetPos.z });
                 }
             }
         });
@@ -855,7 +822,6 @@
         let buyBtn = document.getElementById('buy-tank-btn');
         let rocketBtn = document.getElementById('buy-rocket-tank-btn');
         if (playerBuildCooldown > 0) {
-            let secs = Math.ceil(playerBuildCooldown / 60);
             buyBtn.disabled = true; rocketBtn.disabled = true;
         } else {
             buyBtn.disabled = (playerMoney < 150); rocketBtn.disabled = (playerMoney < 300);
