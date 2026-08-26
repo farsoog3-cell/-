@@ -33,6 +33,7 @@
         }
 
         .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
 
         .mode-select-btn {
             width: 100%; padding: 8px; margin-bottom: 6px; border-radius: 6px; border: 1px solid #38bdf8;
@@ -252,16 +253,6 @@
         socket.emit('create_room', { roomName: inputName || 'غرفة معركة', flag: selectedFlag });
     }
 
-    // بمجرد إنشاء الغرفة، تفتح نافذة الانتظار فوراً للمنشئ
-    socket.on('room_created_and_waiting', (room) => {
-        isHost = true;
-        document.getElementById('room-create-area').style.display = 'none';
-        document.getElementById('room-waiting-area').style.display = 'block';
-        document.getElementById('room-status-info').innerText = "أنت منظم الغرفة 👑 (بانتظار انضمام الصديق...)";
-        updatePlayersListUI(room.players);
-        document.getElementById('room-start-btn').style.display = 'block';
-    });
-
     function joinRoom(roomId) {
         socket.emit('join_room', { roomId, flag: selectedFlag === 'green' ? 'red' : 'green' });
     }
@@ -270,9 +261,14 @@
         isHost = data.isHost;
         document.getElementById('room-create-area').style.display = 'none';
         document.getElementById('room-waiting-area').style.display = 'block';
-        document.getElementById('room-status-info').innerText = "انضممت للغرفة بنجاح!";
+        document.getElementById('room-status-info').innerText = isHost ? "أنت منظم الغرفة 👑" : "انضممت للغرفة بنجاح!";
         updatePlayersListUI(data.room.players);
-        document.getElementById('ready-btn').style.display = 'block';
+
+        if (isHost) {
+            document.getElementById('room-start-btn').style.display = 'block';
+        } else {
+            document.getElementById('ready-btn').style.display = 'block';
+        }
     });
 
     socket.on('room_players_update', (room) => {
