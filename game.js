@@ -1,4 +1,4 @@
-// ملف منطق اللعبة الرئيسي - الأثر، الأصوات، والتحكم الكامل
+// ملف منطق اللعبة الرئيسي - الأصوات، آثار الدبابات، والقصف
 const soundFiles = {
     menuBgm: 'sounds/menu_bgm.mp3',
     battleBgm: 'sounds/battle_bgm.mp3',
@@ -26,10 +26,6 @@ window.addEventListener('pointerdown', () => {
     }
 }, { once: true });
 
-function playClickSound() {
-    const audio = new Audio(soundFiles.click); audio.volume = 0.6; audio.play().catch(e => {});
-}
-
 function playSound(type, volume = 1.0) {
     if (soundFiles[type]) {
         const audio = new Audio(soundFiles[type]); 
@@ -47,12 +43,12 @@ let targetLookAt = new THREE.Vector3(0, 0, 0);
 let camInputs = { up: false, down: false, left: false, right: false, zi: false, zo: false };
 let isDragging = false, previousTouchX = 0, previousTouchY = 0, touchStartX = 0, touchStartY = 0, hasMoved = false;
 
-let playerTanks = [], enemyTanks = [], rotatingRadars = [], activeFlagMeshes = [];
+let playerTanks = [], enemyTanks = [], bullets = [], rotatingRadars = [], activeFlagMeshes = [];
 let enemyPoleFlagMesh, playerPoleFlagMesh, enemyFlagDataRef, playerFlagDataRef;
 let selectionMode = 'all', selectedTank = null, playerTargetPos = null;
 let targetMarkerMesh, raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
 
-// مصفوفة لتخزين آثار مسارات الدبابات على الأرض
+// مصفوفة آثار مسارات الدبابات على الأرض
 let tankTracks = [];
 const MAX_TRACKS = 150;
 
@@ -203,7 +199,7 @@ function showFloatingMsg(text) {
     setTimeout(() => { msg.style.opacity = '0'; }, 2000);
 }
 
-// إضافة أثر مسار خلف الدبابة عند تحركها
+// توليد أثر مسار الدبابة على الأرض
 function addTankTrack(x, z, rotationY) {
     const trackGeo = new THREE.PlaneGeometry(1.5, 2.5);
     trackGeo.rotateX(-Math.PI / 2);
@@ -228,6 +224,32 @@ function addTankTrack(x, z, rotationY) {
         oldTrack.geometry.dispose();
         oldTrack.material.dispose();
     }
+}
+
+// دالة إطلاق القذائف والقصف بين الدبابات
+function fireBullet(shooter, targetTank) {
+    if (!shooter || shooter.isDestroyed || !targetTank || targetTank.isDestroyed) return;
+
+    const bulletGeo = new THREE.SphereGeometry(0.6, 8, 8);
+    const bulletMat = new THREE.MeshBasicMaterial({ color: shooter.type === 'player' ? 0x38bdf8 : 0xef4444 });
+    const bulletMesh = new THREE.Mesh(bulletGeo, bulletMat);
+
+    bulletMesh.position.copy(shooter.mesh.position);
+    bulletMesh.position.y += 3;
+    scene.add(bulletMesh);
+
+    if (shooter.tankType === 'rocket') {
+        playSound('rocket', 0.6);
+    } else {
+        playSound('shoot', 0.5);
+    }
+
+    bullets.push({
+        mesh: bulletMesh,
+        target: targetTank,
+        shooterTeam: shooter.type,
+        speed: 2.5
+    });
 }
 
 function setupAccurateTouchControls(container) {
@@ -364,8 +386,8 @@ function animate() {
         posAttr.needsUpdate = true;
     });
 
-    // حركة الدبابات وترك أثر المسارات خلفها
-    playerTanks.forEach((tank, index) => {
+    // حركة دبابات اللاعب وترك آثار المسارات
+    playerTanks.forEach((tank) => {
         if (!tank.isDestroyed && tank.targetPos) {
             let dx = tank.targetPos.x - tank.mesh.position.x;
             let dz = tank.targetPos.z - tank.mesh.position.z;
@@ -380,14 +402,54 @@ function animate() {
                 tank.mesh.position.y = getTerrainHeight(tank.mesh.position.x, tank.mesh.position.z);
                 tank.mesh.rotation.y = Math.atan2(dx, dz);
 
-                // توليد أثر إذا تحركت المسافة كافية
                 let movedDist = Math.hypot(tank.mesh.position.x - oldX, tank.mesh.position.z - oldZ);
                 if (movedDist > 1.5 && Math.random() < 0.4) {
                     addTankTrack(tank.mesh.position.x, tank.mesh.position.z, tank.mesh.rotation.y);
                 }
+            } else {
+                // محاكاة إطلاق قصف تلقائي على أقرب عدو إذا وصلت الدبابة لهدفها
+                if (enemyTanks.length > 0 && Math.random() < 0.02) {
+                    let activeEnemy = enemyTanks.find(e => !e.isDestroyed);
+                    if (activeEnemy) fireBullet(tank, activeEnemy);
+                }
             }
         }
     });
+
+    // تحديث حركة القذائف والقصف في الجو
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        let b = bullets[i];
+        if (!b.target || b.target.isDestroyed) {
+            scene.remove(b.mesh);
+            b.mesh.geometry.dispose();
+            b.mesh.material.dispose();
+            bullets.splice(i, 1);
+            continue;
+        }
+
+        let targetPos = b.target.mesh.position;
+        let dir = new THREE.Vector3().subVectors(targetPos, b.mesh.position);
+        let dist = dir.length();
+
+        if (dist < 3) {
+            playSound('explosion', 0.7);
+            scene.remove(b.mesh);
+            b.mesh.geometry.dispose();
+            b.mesh.material.dispose();
+            bullets.splice(i, 1);
+
+            // إلحاق ضرر بالهدف
+            b.target.health = (b.target.health || 100) - 35;
+            if (b.target.health <= 0 && !b.target.isDestroyed) {
+                b.target.isDestroyed = true;
+                scene.remove(b.target.mesh);
+                showFloatingMsg("تم تدمير وحدة!");
+            }
+        } else {
+            dir.normalize();
+            b.mesh.position.addScaledVector(dir, b.speed);
+        }
+    }
 
     rotatingRadars.forEach(radar => { radar.rotation.z += 0.02; });
 
