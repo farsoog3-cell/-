@@ -18,7 +18,7 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             color: white; text-align: center;
         }
-        #start-menu h1 { font-size: 22px; margin-bottom: 20px; color: #38bdf8; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        #start-menu h1 { font-size: 24px; margin-bottom: 20px; color: #38bdf8; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         .menu-section { background: rgba(30, 41, 59, 0.7); padding: 15px; border-radius: 12px; margin-bottom: 15px; width: 85%; max-width: 350px; border: 1px solid rgba(56, 189, 248, 0.2); }
         .menu-section p { margin: 0 0 10px 0; font-size: 14px; font-weight: bold; }
         .flags-grid { display: flex; justify-content: center; gap: 10px; }
@@ -42,23 +42,23 @@
         
         /* شريط الاقتصاد والأزرار العلوي */
         #top-bar {
-            position: absolute; top: 15px; left: 15px; right: 15px;
-            display: flex; justify-content: space-between; align-items: center; direction: ltr;
+            position: absolute; top: 10px; right: 10px; left: 10px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .panel-box { background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; padding: 8px 14px; border-radius: 8px; color: white; font-size: 14px; font-weight: bold; }
+        .panel-box { background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; padding: 6px 12px; border-radius: 8px; color: white; font-size: 14px; font-weight: bold; }
         
-        /* أزرار الشراء والتحكم بالوحدات في الأسفل */
+        /* أزرار الشراء والتحكم بالوحدات */
         #controls-bar {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: row-reverse; gap: 8px; background: rgba(15, 23, 42, 0.85); padding: 10px; border-radius: 12px; border: 1px solid #334155;
+            display: flex; gap: 10px; background: rgba(15, 23, 42, 0.85); padding: 10px; border-radius: 12px; border: 1px solid #334155;
         }
-        .action-btn { background: #334155; color: white; border: 1px solid #475569; padding: 8px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold; }
+        .action-btn { background: #334155; color: white; border: 1px solid #475569; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; }
         .action-btn.active { background: #0284c7; border-color: #38bdf8; }
-        .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* الخريطة المصغرة */
         #minimap-container {
-            position: absolute; top: 70px; left: 15px; width: 110px; height: 110px;
+            position: absolute; top: 60px; left: 15px; width: 110px; height: 110px;
             background: rgba(15, 23, 42, 0.8); border: 2px solid #334155; border-radius: 8px; overflow: hidden;
         }
         #minimap-canvas { width: 100%; height: 100%; }
@@ -71,9 +71,10 @@
         }
     </style>
 
-    <!-- مكتبة Three.js -->
+    <!-- مكتبة Three.js الأساسية -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- ملف الأصوات -->
+    
+    <!-- ملف الأصوات الجديد -->
     <script src="sound.js"></script>
 </head>
 <body>
@@ -86,26 +87,26 @@
         <div class="menu-section">
             <p>اختر علم معسكرك:</p>
             <div class="flags-grid" id="player-flags">
-                <button class="flag-btn active-player" onclick="selectFlag('player', 'green'); playClickSound();">الأخضر</button>
-                <button class="flag-btn" onclick="selectFlag('player', 'red'); playClickSound();">الأحمر</button>
+                <button class="flag-btn active-player" onclick="selectFlag('player', 'green'); playClickSound();">الأخضر (3 نجوم)</button>
+                <button class="flag-btn" onclick="selectFlag('player', 'red'); playClickSound();">الأحمر (نجمتان)</button>
             </div>
         </div>
 
         <div class="menu-section">
             <p>اختر علم معسكر العدو:</p>
             <div class="flags-grid" id="enemy-flags">
-                <button class="flag-btn" onclick="selectFlag('enemy', 'green'); playClickSound();">الأخضر</button>
-                <button class="flag-btn active-enemy" onclick="selectFlag('enemy', 'red'); playClickSound();">الأحمر</button>
+                <button class="flag-btn" onclick="selectFlag('enemy', 'green'); playClickSound();">الأخضر (3 نجوم)</button>
+                <button class="flag-btn active-enemy" onclick="selectFlag('enemy', 'red'); playClickSound();">الأحمر (نجمتان)</button>
             </div>
         </div>
 
-        <button id="start-btn" onclick="playClickSound(); startBattleMusic(); startGame();">بدء المعركة</button>
+        <button id="start-btn" onclick="playClickSound(); startGame();">بدء المعركة</button>
     </div>
 
     <div id="ui-overlay" class="interactive-ui">
         <div id="top-bar">
-            <div class="panel-box" id="game-timer">00:00</div>
             <div class="panel-box">الرصيد: <span id="money-display">500</span>$ 🪙</div>
+            <div class="panel-box" id="game-timer">00:00</div>
         </div>
 
         <div id="minimap-container">
@@ -113,10 +114,10 @@
         </div>
 
         <div id="controls-bar">
-            <button id="buy-rocket-tank-btn" class="action-btn" onclick="buyPlayerTank('rocket')">دبابة صواريخ ($300)</button>
-            <button id="buy-tank-btn" class="action-btn" onclick="buyPlayerTank('normal')">دبابة عادية ($150)</button>
-            <button id="sel-single-btn" class="action-btn" onclick="setSelectionMode('single'); playClickSound();">فردي</button>
             <button id="sel-all-btn" class="action-btn active" onclick="setSelectionMode('all'); playClickSound();">الكل</button>
+            <button id="sel-single-btn" class="action-btn" onclick="setSelectionMode('single'); playClickSound();">فردي</button>
+            <button id="buy-tank-btn" class="action-btn" onclick="buyPlayerTank('normal')">دبابة عادية (150$)</button>
+            <button id="buy-rocket-tank-btn" class="action-btn" onclick="buyPlayerTank('rocket')">دبابة صواريخ (300$)</button>
         </div>
 
         <div id="floating-msg"></div>
