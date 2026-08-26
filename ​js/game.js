@@ -322,6 +322,63 @@ function animate() {
     processCameraInputs();
     updateCameraPosition();
     renderMinimap();
+
+    if (!gameOver) {
+        gameTick++;
+        if (playerBuildCooldown > 0) { playerBuildCooldown--; if (playerBuildCooldown % 60 === 0) updateEconomyUI(); }
+        if (enemyBuildCooldown > 0) enemyBuildCooldown--;
+        else if (enemyTanks.filter(t=>!t.isDestroyed).length < 6) {
+            enemyBuildCooldown = 1400;
+            let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
+            let eTank = createTank(-CORNER_OFFSET + 50, -CORNER_OFFSET + 50, eColor, 'enemy', Math.random()>0.5?'rocket':'normal');
+            enemyTanks.push(eTank);
+        }
+
+        // تحديث حالة دبابات اللاعب والعدو
+        [...playerTanks, ...enemyTanks].forEach(tank => {
+            if (tank.isDestroyed) return;
+            let isMoving = false;
+            if (tank.target) {
+                let dir = new THREE.Vector3().subVectors(tank.target, tank.mesh.position);
+                let dist = dir.length();
+                if (dist > 3) {
+                    dir.normalize();
+                    tank.mesh.position.addScaledVector(dir, 0.9);
+                    tank.mesh.rotation.y = Math.atan2(dir.x, dir.z);
+                    isMoving = true;
+                } else {
+                    tank.target = null;
+                }
+            }
+            tank.mesh.position.y = getTerrainHeight(tank.mesh.position.x, tank.mesh.position.z);
+            updateTankAudio(tank, isMoving);
+
+            // تحديث مكان ملصق الصحة فوق الدبابة
+            let vector = tank.mesh.position.clone();
+            vector.y += 4;
+            vector.project(camera);
+            let x = (vector.x * .5 + .5) * window.innerWidth;
+            let y = (-(vector.y * .5) + .5) * window.innerHeight;
+            tank.hpLabel.style.transform = `translate(-50%, -100%) translate(${x}px,${y}px)`;
+            tank.hpLabel.style.display = (vector.z < 1) ? 'block' : 'none';
+        });
+
+        // التقاط معسكر العدو لإنهاء اللعبة
+        let activePlayerTanks = playerTanks.filter(t => !t.isDestroyed);
+        let distToEnemyBase = activePlayerTanks.some(t => t.mesh.position.distanceTo(new THREE.Vector3(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET,-CORNER_OFFSET), -CORNER_OFFSET)) < CAPTURE_RADIUS);
+        let barFill = document.getElementById('capture-bar-fill');
+        let currentWidth = parseFloat(barFill.style.width) || 0;
+        if (distToEnemyBase) {
+            currentWidth = Math.min(100, currentWidth + 0.35);
+            barFill.style.width = currentWidth + '%';
+            if (currentWidth >= 100 && !gameOver) {
+                gameOver = true;
+                battleBgmAudio.pause(); playSound('victory');
+                document.getElementById('victory-title').innerText = 'لقد انتصرت وسيطرت على المعسكر! 🏆';
+                document.getElementById('victory-screen').style.display = 'flex';
+            }
+        }
+    }
     
     let time = Date.now() * 0.003;
     animatedRigs.forEach((beam, index) => { beam.rotation.x = Math.sin(time + index) * 0.35; });
