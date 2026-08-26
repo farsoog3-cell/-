@@ -252,9 +252,11 @@
 <div id="canvas-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
 
 <script>
+    let playerFlagType = 'green';
+
     function showBotSetup() {
         document.getElementById('main-mode-select').style.display = 'none';
         document.getElementById('bot-setup-section').style.display = 'block';
@@ -278,13 +280,15 @@
         if (typeof startGame === 'function') startGame();
     }
 
-    // تم ربط السيرفر بالرابط الحقيقي الخاص بك هنا مباشرة
+    // الاتصال بالسيرفر المتطابق مع الكود الخاص بك
     const socket = io('https://tank-game-server-o650.onrender.com');
     let isHost = false;
     let isReady = false;
 
+    // تحديث قائمة الغرف المتاحة
     socket.on('update_rooms_list', (rooms) => {
         const container = document.getElementById('rooms-list-container');
+        if (!container) return;
         if (!rooms || rooms.length === 0) {
             container.innerHTML = '<div style="color: #94a3b8; font-size: 10px; text-align: center;">لا توجد غرف متاحة حالياً</div>';
             return;
@@ -293,83 +297,62 @@
         rooms.forEach(room => {
             const div = document.createElement('div');
             div.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 4px; border-bottom: 1px solid #334155; font-size: 11px; color: white;";
-            div.innerHTML = `<span>${room.name} (${room.playersCount}/2 لاعباً)</span> <button class="flag-btn" style="padding: 2px 8px; background: #22c55e; border:none; cursor:pointer;" onclick="joinRoom('${room.id}')">انضمام</button>`;
+            div.innerHTML = `<span>${room.name} (${room.playersCount}/2)</span> <button class="flag-btn" style="padding: 2px 8px; background: #22c55e; border:none; cursor:pointer;" onclick="joinRoom('${room.id}')">انضمام</button>`;
             container.appendChild(div);
         });
     });
 
     function createRoom() {
         const inputName = document.getElementById('room-name-input').value.trim();
-        socket.emit('create_room', inputName || 'غرفة معركة');
+        socket.emit('create_room', { 
+            roomName: inputName || 'غرفة معركة', 
+            flag: playerFlagType 
+        });
     }
 
-    socket.on('room_created_success', (room) => {
-        isHost = true;
-        transitionToWaitingArea("أنت منظم الغرفة 👑 (بانتظار انضمام صديقك)");
-        updatePlayersListUI(room.players);
-        document.getElementById('room-start-btn').style.display = 'block';
+    socket.on('room_joined_success', (data) => {
+        isHost = data.isHost;
+        transitionToWaitingArea(isHost ? "أنت منظم الغرفة 👑 (انتظر انضمام صديقك)" : "تم انضمامك بنجاح للغرفة!");
+        updatePlayersListUI(data.room.players);
+        
+        const startBtn = document.getElementById('room-start-btn');
+        const readyBtn = document.getElementById('ready-btn');
+        
+        if (startBtn) startBtn.style.display = isHost ? 'block' : 'none';
+        if (readyBtn) readyBtn.style.display = isHost ? 'none' : 'block';
     });
 
     function joinRoom(roomId) {
-        socket.emit('join_room_request', roomId);
+        const chosenFlag = (playerFlagType === 'green') ? 'red' : 'green';
+        socket.emit('join_room', { roomId: roomId, flag: chosenFlag });
     }
-
-    socket.on('request_sent_waiting', () => {
-        alert('تم إرسال طلب الانضمام لمنظم الغرفة، بانتظار الموافقة...');
-    });
-
-    socket.on('join_request', (data) => {
-        if (isHost) {
-            if (confirm(`صديقك (${data.requesterName}) يريد الانضمام إلى غرفتك. هل توافق؟`)) {
-                socket.emit('respond_to_request', { requesterId: data.requesterId, accepted: true });
-            } else {
-                socket.emit('respond_to_request', { requesterId: data.requesterId, accepted: false });
-            }
-        }
-    });
-
-    socket.on('player_joined_room', (room) => {
-        transitionToWaitingArea(isHost ? "انضم صديقك للغرفة!" : "تم انضمامك بنجاح للغرفة!");
-        updatePlayersListUI(room.players);
-        if (!isHost) {
-            document.getElementById('ready-btn').style.display = 'block';
-        }
-    });
 
     socket.on('room_players_update', (room) => {
         updatePlayersListUI(room.players);
     });
 
-    socket.on('join_accepted', (room) => {
-        isHost = false;
-        transitionToWaitingArea("تم قبول انضمامك!");
-        updatePlayersListUI(room.players);
-        document.getElementById('ready-btn').style.display = 'block';
-    });
-
-    socket.on('join_rejected', () => {
-        alert('عذراً، رفض منظم الغرفة طلب انضمامك.');
-    });
-
     function toggleReady() {
         isReady = !isReady;
         const btn = document.getElementById('ready-btn');
-        if (isReady) {
-            btn.style.background = '#22c55e';
-            btn.innerText = "✅ أنت مستعد (اضغط للإلغاء)";
-        } else {
-            btn.style.background = '#eab308';
-            btn.innerText = "⏳ اضغط هنا إذا أصبحت مستعداً";
+        if (btn) {
+            if (isReady) {
+                btn.style.background = '#22c55e';
+                btn.innerText = "✅ أنت مستعد (اضغط للإلغاء)";
+            } else {
+                btn.style.background = '#eab308';
+                btn.innerText = "⏳ اضغط هنا إذا أصبحت مستعداً";
+            }
         }
         socket.emit('toggle_ready');
     }
 
     function updatePlayersListUI(players) {
         const listDiv = document.getElementById('room-players-list');
+        if (!listDiv) return;
         listDiv.innerHTML = "<b>اللاعبون في الغرفة:</b><br>";
         players.forEach((p, index) => {
             let statusText = p.ready ? '✅ مستعد' : '⏳ ينتظر';
-            listDiv.innerHTML += `- لاعب ${index + 1} (${p.id === socket.id ? 'أنت' : 'الصديق'}): ${statusText}<br>`;
+            listDiv.innerHTML += `- لاعب ${index + 1} (${p.id === socket.id ? 'أنت' : 'الصديق'} - علم: ${p.flag}): ${statusText}<br>`;
         });
     }
 
@@ -381,7 +364,7 @@
 
     function startRoomBattleGame() {
         if (isHost) {
-            socket.emit('start_room_game');
+            socket.emit('start_game');
         }
     }
 
@@ -392,6 +375,15 @@
         if (typeof startGame === 'function') {
             startGame();
         }
+    });
+
+    socket.on('error_msg', (msg) => {
+        alert(msg);
+    });
+
+    socket.on('room_closed', () => {
+        alert('تم إغلاق الغرفة من قبل المنظم.');
+        location.reload();
     });
 </script>
 
