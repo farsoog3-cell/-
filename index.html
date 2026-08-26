@@ -47,6 +47,15 @@
             z-index: 5; pointer-events: none; display: none;
         }
 
+        .tank-hp-label {
+            position: absolute; transform: translate(-50%, -100%);
+            background: rgba(0, 0, 0, 0.75); padding: 1px 4px; border-radius: 3px;
+            font-size: 9px; font-weight: bold; pointer-events: none; white-space: nowrap;
+            border: 1px solid #334155; transition: transform 0.1s linear;
+        }
+        .hp-player { color: #22c55e; border-color: rgba(34, 197, 94, 0.4); }
+        .hp-enemy { color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
+
         .top-capture-box {
             position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
             width: 210px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8;
@@ -79,7 +88,9 @@
             background: #22c55e; border: none; color: white; padding: 5px;
             border-radius: 4px; font-weight: bold; font-size: 9px; width: 100%; text-align: center; cursor: pointer;
         }
+        .buy-btn-small:disabled { background: #64748b; }
         .buy-btn-rocket { background: #ea580c; }
+        .buy-btn-rocket:disabled { background: #64748b; }
 
         #minimap-container {
             position: absolute; bottom: 65px; left: 8px; width: 110px; height: 110px;
@@ -87,6 +98,12 @@
             overflow: hidden; pointer-events: auto; cursor: pointer; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
         }
         #minimap-canvas { width: 100%; height: 100%; }
+
+        #floating-msg {
+            position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75); color: #38bdf8; padding: 3px 8px;
+            border-radius: 4px; font-size: 10px; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+        }
 
         .cam-controls {
             position: absolute; bottom: 8px; right: 8px;
@@ -98,12 +115,32 @@
             border: 1px solid #38bdf8; border-radius: 6px; color: white;
             font-size: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
+        .cam-btn:active, .cam-btn.pressed { background: #0284c7; border-color: #7dd3fc; }
         .cam-btn.up { grid-column: 2; grid-row: 1; }
         .cam-btn.left { grid-column: 1; grid-row: 2; }
         .cam-btn.down { grid-column: 2; grid-row: 2; }
         .cam-btn.right { grid-column: 3; grid-row: 2; }
         .cam-btn.zoom-in { grid-column: 1; grid-row: 1; font-size: 12px; }
         .cam-btn.zoom-out { grid-column: 3; grid-row: 1; font-size: 12px; }
+
+        .cam-hint {
+            position: absolute; bottom: 8px; left: 125px;
+            background: rgba(15, 23, 42, 0.75); border: 1px solid #38bdf8;
+            color: #93c5fd; padding: 3px 6px; border-radius: 4px; font-size: 9px; pointer-events: none;
+        }
+
+        #victory-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 200;
+            background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+            pointer-events: auto;
+        }
+        #victory-screen h1 { font-size: 20px; color: #22c55e; margin-bottom: 6px; text-align: center; padding: 0 10px; }
+        .stats-box {
+            background: rgba(30, 41, 59, 0.9); border: 1px solid #38bdf8; border-radius: 8px;
+            padding: 10px 16px; font-size: 11px; margin: 8px 0; width: 260px; text-align: right; line-height: 1.5;
+        }
+        #victory-flag-canvas { width: 180px; height: 100px; border-radius: 6px; margin: 6px 0; }
+        .restart-btn { padding: 6px 16px; background: #22c55e; border: none; color: white; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -119,28 +156,31 @@
 
         <div id="bot-setup-section" style="display: none;">
             <div class="section-title">اختر علم معسكرك:</div>
-            <div class="flag-options">
-                <button class="flag-btn active-player" id="bot-flag-green" onclick="setBotFlag('green')">الأخضر (سوري)</button>
-                <button class="flag-btn" id="bot-flag-red" onclick="setBotFlag('red')">الأحمر</button>
+            <div class="flag-options" id="player-flags">
+                <button class="flag-btn active-player" onclick="selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
+                <button class="flag-btn" onclick="selectFlag('player', 'red')">الأحمر (نجمتان)</button>
             </div>
+
+            <div class="section-title">اختر علم معسكر العدو (البوت):</div>
+            <div class="flag-options" id="enemy-flags">
+                <button class="flag-btn" onclick="selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
+                <button class="flag-btn active-enemy" onclick="selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
+            </div>
+
             <button class="mode-select-btn" style="background: #22c55e; margin-top: 8px;" onclick="startBotGameInternal()">بدء المعركة ضد البوت 🚀</button>
-            <button class="mode-select-btn secondary" onclick="backToMainMode()">⬅ رجوع</button>
+            <button class="mode-select-btn secondary" style="margin-top: 4px;" onclick="backToMainMode()">⬅ رجوع</button>
         </div>
 
         <div id="rooms-lobby-section" style="display: none;">
             <div id="room-create-area">
-                <div class="section-title">اختر علمك للغرفة:</div>
-                <div class="flag-options">
-                    <button class="flag-btn active-player" id="room-flag-green" onclick="setRoomFlag('green')">الأخضر (سوري)</button>
-                    <button class="flag-btn" id="room-flag-red" onclick="setRoomFlag('red')">الأحمر</button>
-                </div>
                 <div class="section-title">إنشاء غرفة جديدة:</div>
                 <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                    <input type="text" id="room-name-input" placeholder="اسم الغرفة..." style="flex: 1; padding: 5px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: white; font-size: 11px;">
+                    <input type="text" id="room-name-input" placeholder="اسم الغرفة..." style="flex: 1; padding: 5px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: white; font-size: 11px; pointer-events: auto;">
                     <button class="flag-btn" onclick="createRoom()" style="background: #0284c7; border: none;">إنشاء 🏠</button>
                 </div>
-                <div class="section-title">الغرف المتاحة:</div>
-                <div id="rooms-list-container" style="max-height: 100px; overflow-y: auto; background: rgba(15,23,42,0.6); border: 1px solid #334155; border-radius: 6px; padding: 5px; margin-bottom: 8px; text-align: right;">
+
+                <div class="section-title">الغرف المتاحة للأصدقاء:</div>
+                <div id="rooms-list-container" style="max-height: 110px; overflow-y: auto; background: rgba(15,23,42,0.6); border: 1px solid #334155; border-radius: 6px; padding: 5px; margin-bottom: 8px; text-align: right; pointer-events: auto;">
                     <div style="color: #94a3b8; font-size: 10px; text-align: center;">جاري البحث عن غرف...</div>
                 </div>
             </div>
@@ -149,8 +189,8 @@
                 <div class="section-title" id="room-status-info" style="color: #38bdf8; text-align: center; margin-bottom: 6px;">غرفة الانتظار</div>
                 <div id="room-players-list" style="background: rgba(15,23,42,0.8); border: 1px solid #334155; border-radius: 6px; padding: 6px; margin-bottom: 8px; font-size: 11px; text-align: right; color: #fff;"></div>
 
-                <button id="ready-btn" class="mode-select-btn" onclick="toggleReady()" style="display:none; background: #eab308; color: #000;">⏳ اضغط هنا لتصبح مستعداً</button>
-                <button id="room-start-btn" onclick="startOnlineGame()" style="display:none; width: 100%; margin-top: 6px; padding: 8px; background: #22c55e; border: none; color: white; font-weight: bold; border-radius: 6px; cursor: pointer;">بدء المعركة مع الصديق 🚀</button>
+                <button id="ready-btn" class="mode-select-btn" onclick="toggleReady()" style="display:none; background: #eab308; color: #000;">⏳ اضغط هنا إذا أصبحت مستعداً</button>
+                <button id="room-start-btn" onclick="startRoomBattleGame()" style="display:none; width: 100%; margin-top: 6px; padding: 8px; background: #22c55e; border: none; color: white; font-weight: bold; border-radius: 6px; cursor: pointer;">بدء المعركة ضد الصديق 🚀</button>
             </div>
 
             <button class="mode-select-btn secondary" style="margin-top: 6px;" onclick="backToMainMode()">⬅ رجوع</button>
@@ -159,33 +199,54 @@
 </div>
 
 <div id="ui-overlay">
+    <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
+
     <div class="top-capture-box">
         <div id="capture-status-text">سيطر على المعسكر لتربح!</div>
-        <div class="capture-bar-bg"><div id="capture-bar-fill" class="capture-bar-fill"></div></div>
+        <div class="capture-bar-bg">
+            <div id="capture-bar-fill" class="capture-bar-fill"></div>
+        </div>
     </div>
+
     <div class="left-controls-group">
         <div class="selection-controls">
-            <button class="sel-btn active" onclick="setSelectionMode('all')">الكل</button>
-            <button class="sel-btn" onclick="setSelectionMode('single')">فردي</button>
+            <button class="sel-btn active" id="sel-all-btn" onclick="setSelectionMode('all')">الكل</button>
+            <button class="sel-btn" id="sel-single-btn" onclick="setSelectionMode('single')">فردي</button>
         </div>
+
         <div class="corner-economy">
             <div class="money-row">
                 <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
                 <div class="money-small"><span id="money-display">500</span>$</div>
             </div>
-            <button class="buy-btn-small" onclick="buyPlayerTank('normal')">عادية (150$)</button>
-            <button class="buy-btn-small buy-btn-rocket" onclick="buyPlayerTank('rocket')">صاروخية (300$)</button>
+            <button class="buy-btn-small" id="buy-tank-btn" onclick="buyPlayerTank('normal')">عادية (150$)</button>
+            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="buyPlayerTank('rocket')">صاروخية (300$)</button>
         </div>
     </div>
-    <div id="minimap-container"><canvas id="minimap-canvas" width="110" height="110"></canvas></div>
-    <div class="cam-controls">
-        <button class="cam-btn zoom-in" onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)">➕</button>
-        <button class="cam-btn up" onmousedown="camMove('up', true)" onmouseup="camMove('up', false)">⬆️</button>
-        <button class="cam-btn zoom-out" onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)">➖</button>
-        <button class="cam-btn left" onmousedown="camMove('left', true)" onmouseup="camMove('left', false)">⬅️</button>
-        <button class="cam-btn down" onmousedown="camMove('down', true)" onmouseup="camMove('down', false)">⬇️</button>
-        <button class="cam-btn right" onmousedown="camMove('right', true)" onmouseup="camMove('right', false)">➡️</button>
+
+    <div id="minimap-container" title="الخريطة المصغرة">
+        <canvas id="minimap-canvas" width="110" height="110"></canvas>
     </div>
+
+    <div id="floating-msg"></div>
+
+    <div class="cam-controls">
+        <button class="cam-btn zoom-in" onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕</button>
+        <button class="cam-btn up" onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+        <button class="cam-btn zoom-out" onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖</button>
+        <button class="cam-btn left" onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+        <button class="cam-btn down" onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+        <button class="cam-btn right" onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+    </div>
+
+    <div class="cam-hint">استخدم الأزرار للتحكم 🎯</div>
+</div>
+
+<div id="victory-screen">
+    <h1 id="victory-title">انتهت المعركة!</h1>
+    <div class="stats-box" id="stats-content"></div>
+    <canvas id="victory-flag-canvas"></canvas>
+    <button class="restart-btn" onclick="location.reload()">إعادة المعركة 🔄</button>
 </div>
 
 <div id="canvas-container"></div>
@@ -210,25 +271,14 @@
         document.getElementById('main-mode-select').style.display = 'block';
     }
 
-    let selectedFlag = 'green';
-    function setBotFlag(flag) {
-        selectedFlag = flag;
-        document.getElementById('bot-flag-green').className = flag === 'green' ? 'flag-btn active-player' : 'flag-btn';
-        document.getElementById('bot-flag-red').className = flag === 'red' ? 'flag-btn active-player' : 'flag-btn';
-    }
-
-    function setRoomFlag(flag) {
-        selectedFlag = flag;
-        document.getElementById('room-flag-green').className = flag === 'green' ? 'flag-btn active-player' : 'flag-btn';
-        document.getElementById('room-flag-red').className = flag === 'red' ? 'flag-btn active-player' : 'flag-btn';
-    }
-
     function startBotGameInternal() {
         document.getElementById('start-menu').style.display = 'none';
-        document.getElementById('ui-overlay').style.display = 'block';
-        if (typeof startGame === 'function') startGame(selectedFlag, 'bot');
+        const ui = document.getElementById('ui-overlay');
+        if (ui) ui.style.display = 'block';
+        if (typeof startGame === 'function') startGame();
     }
 
+    // تم ربط السيرفر بالرابط الحقيقي الخاص بك هنا مباشرة
     const socket = io('https://tank-game-server-o650.onrender.com');
     let isHost = false;
     let isReady = false;
@@ -236,37 +286,52 @@
     socket.on('update_rooms_list', (rooms) => {
         const container = document.getElementById('rooms-list-container');
         if (!rooms || rooms.length === 0) {
-            container.innerHTML = '<div style="color: #94a3b8; font-size: 10px; text-align: center;">لا توجد غرف متاحة</div>';
+            container.innerHTML = '<div style="color: #94a3b8; font-size: 10px; text-align: center;">لا توجد غرف متاحة حالياً</div>';
             return;
         }
         container.innerHTML = '';
         rooms.forEach(room => {
             const div = document.createElement('div');
             div.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 4px; border-bottom: 1px solid #334155; font-size: 11px; color: white;";
-            div.innerHTML = `<span>${room.name} (${room.playersCount}/2)</span> <button class="flag-btn" style="padding: 2px 8px; background: #22c55e; border:none; cursor:pointer;" onclick="joinRoom('${room.id}')">انضمام</button>`;
+            div.innerHTML = `<span>${room.name} (${room.playersCount}/2 لاعباً)</span> <button class="flag-btn" style="padding: 2px 8px; background: #22c55e; border:none; cursor:pointer;" onclick="joinRoom('${room.id}')">انضمام</button>`;
             container.appendChild(div);
         });
     });
 
     function createRoom() {
         const inputName = document.getElementById('room-name-input').value.trim();
-        socket.emit('create_room', { roomName: inputName || 'غرفة معركة', flag: selectedFlag });
+        socket.emit('create_room', inputName || 'غرفة معركة');
     }
+
+    socket.on('room_created_success', (room) => {
+        isHost = true;
+        transitionToWaitingArea("أنت منظم الغرفة 👑 (بانتظار انضمام صديقك)");
+        updatePlayersListUI(room.players);
+        document.getElementById('room-start-btn').style.display = 'block';
+    });
 
     function joinRoom(roomId) {
-        socket.emit('join_room', { roomId, flag: selectedFlag === 'green' ? 'red' : 'green' });
+        socket.emit('join_room_request', roomId);
     }
 
-    socket.on('room_joined_success', (data) => {
-        isHost = data.isHost;
-        document.getElementById('room-create-area').style.display = 'none';
-        document.getElementById('room-waiting-area').style.display = 'block';
-        document.getElementById('room-status-info').innerText = isHost ? "أنت منظم الغرفة 👑" : "انضممت للغرفة بنجاح!";
-        updatePlayersListUI(data.room.players);
+    socket.on('request_sent_waiting', () => {
+        alert('تم إرسال طلب الانضمام لمنظم الغرفة، بانتظار الموافقة...');
+    });
 
+    socket.on('join_request', (data) => {
         if (isHost) {
-            document.getElementById('room-start-btn').style.display = 'block';
-        } else {
+            if (confirm(`صديقك (${data.requesterName}) يريد الانضمام إلى غرفتك. هل توافق؟`)) {
+                socket.emit('respond_to_request', { requesterId: data.requesterId, accepted: true });
+            } else {
+                socket.emit('respond_to_request', { requesterId: data.requesterId, accepted: false });
+            }
+        }
+    });
+
+    socket.on('player_joined_room', (room) => {
+        transitionToWaitingArea(isHost ? "انضم صديقك للغرفة!" : "تم انضمامك بنجاح للغرفة!");
+        updatePlayersListUI(room.players);
+        if (!isHost) {
             document.getElementById('ready-btn').style.display = 'block';
         }
     });
@@ -275,11 +340,27 @@
         updatePlayersListUI(room.players);
     });
 
+    socket.on('join_accepted', (room) => {
+        isHost = false;
+        transitionToWaitingArea("تم قبول انضمامك!");
+        updatePlayersListUI(room.players);
+        document.getElementById('ready-btn').style.display = 'block';
+    });
+
+    socket.on('join_rejected', () => {
+        alert('عذراً، رفض منظم الغرفة طلب انضمامك.');
+    });
+
     function toggleReady() {
         isReady = !isReady;
         const btn = document.getElementById('ready-btn');
-        btn.style.background = isReady ? '#22c55e' : '#eab308';
-        btn.innerText = isReady ? "✅ أنت مستعد" : "⏳ اضغط هنا لتصبح مستعداً";
+        if (isReady) {
+            btn.style.background = '#22c55e';
+            btn.innerText = "✅ أنت مستعد (اضغط للإلغاء)";
+        } else {
+            btn.style.background = '#eab308';
+            btn.innerText = "⏳ اضغط هنا إذا أصبحت مستعداً";
+        }
         socket.emit('toggle_ready');
     }
 
@@ -287,24 +368,29 @@
         const listDiv = document.getElementById('room-players-list');
         listDiv.innerHTML = "<b>اللاعبون في الغرفة:</b><br>";
         players.forEach((p, index) => {
-            let status = p.ready ? '✅ مستعد' : (index === 0 ? '👑 المنظم' : '⏳ ينتظر');
-            listDiv.innerHTML += `- لاعب ${index + 1} (${p.flag === 'green' ? 'الأخضر 🟢' : 'الأحمر 🔴'}): ${status}<br>`;
+            let statusText = p.ready ? '✅ مستعد' : '⏳ ينتظر';
+            listDiv.innerHTML += `- لاعب ${index + 1} (${p.id === socket.id ? 'أنت' : 'الصديق'}): ${statusText}<br>`;
         });
     }
 
-    function startOnlineGame() {
+    function transitionToWaitingArea(statusText) {
+        document.getElementById('room-create-area').style.display = 'none';
+        document.getElementById('room-waiting-area').style.display = 'block';
+        document.getElementById('room-status-info').innerText = statusText;
+    }
+
+    function startRoomBattleGame() {
         if (isHost) {
-            socket.emit('start_game');
+            socket.emit('start_room_game');
         }
     }
 
-    socket.on('game_started', (room) => {
+    socket.on('game_started', () => {
         document.getElementById('start-menu').style.display = 'none';
-        document.getElementById('ui-overlay').style.display = 'block';
-        const myPlayer = room.players.find(p => p.id === socket.id);
-        const myFlag = myPlayer ? myPlayer.flag : 'green';
+        const ui = document.getElementById('ui-overlay');
+        if (ui) ui.style.display = 'block';
         if (typeof startGame === 'function') {
-            startGame(myFlag, 'online', socket);
+            startGame();
         }
     });
 </script>
