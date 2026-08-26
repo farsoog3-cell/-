@@ -280,7 +280,7 @@
         if (typeof startGame === 'function') startGame();
     }
 
-    // الاتصال بالسيرفر المتطابق مع الكود الخاص بك
+    // الاتصال بالسيرفر
     const socket = io('https://tank-game-server-o650.onrender.com');
     let isHost = false;
     let isReady = false;
@@ -312,7 +312,10 @@
 
     socket.on('room_joined_success', (data) => {
         isHost = data.isHost;
+        
+        // الانتقال الفوري لشاشة الانتظار
         transitionToWaitingArea(isHost ? "أنت منظم الغرفة 👑 (انتظر انضمام صديقك)" : "تم انضمامك بنجاح للغرفة!");
+        
         updatePlayersListUI(data.room.players);
         
         const startBtn = document.getElementById('room-start-btn');
