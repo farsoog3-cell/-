@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>معركة السيطرة الاستراتيجية - خريطة مصغرة وتحكم متطور</title>
-    <!-- ربط ملف التنسيقات الخارجي -->
-    <link rel="stylesheet" href="style.css">
+    <!-- استدعاء ملف التصميم الخارجي -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- شاشة القائمة الرئيسية -->
 <div id="start-menu">
     <div class="menu-card">
         <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
@@ -30,7 +29,6 @@
     </div>
 </div>
 
-<!-- واجهة اللعبة أثناء المعركة -->
 <div id="ui-overlay">
     <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
 
@@ -65,18 +63,34 @@
     <div id="floating-msg"></div>
 
     <div class="cam-controls">
-        <button class="cam-btn zoom-in" onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
-        <button class="cam-btn up" onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
-        <button class="cam-btn zoom-out" onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
-        <button class="cam-btn left" onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
-        <button class="cam-btn down" onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
-        <button class="cam-btn right" onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+        <button class="cam-btn zoom-in" 
+            onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
+            ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
+        
+        <button class="cam-btn up" 
+            onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)"
+            ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+        
+        <button class="cam-btn zoom-out" 
+            onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)"
+            ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
+        
+        <button class="cam-btn left" 
+            onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)"
+            ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+        
+        <button class="cam-btn down" 
+            onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)"
+            ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+        
+        <button class="cam-btn right" 
+            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
+            ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
     </div>
 
     <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة المصغرة والتحكم 🎯</div>
 </div>
 
-<!-- شاشة النهاية -->
 <div id="victory-screen">
     <h1 id="victory-title">انتهت المعركة!</h1>
     <div class="stats-box" id="stats-content"></div>
@@ -86,14 +100,14 @@
 
 <div id="canvas-container"></div>
 
-<!-- مكتبة Three.js -->
+<!-- استدعاء مكتبة Three.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-<!-- ربط ملفات الجافا سكريبت بالترتيب الصحيح -->
-<script src="flags.js"></script>
-<script src="terrain.js"></script>
-<script src="tanks.js"></script>
-<script src="game.js"></script>
-
+<!-- استدعاء ملفات اللعبة المقسمة بالترتيب الصحيح -->
+<script src="js/config.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/tanks.js"></script>
+<script src="js/game.js"></script>
 </body>
 </html>
