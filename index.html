@@ -297,7 +297,7 @@
         rooms.forEach(room => {
             const div = document.createElement('div');
             div.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 4px; border-bottom: 1px solid #334155; font-size: 11px; color: white;";
-            div.innerHTML = `<span>${room.name} (${room.playersCount}/2)</span> <button class="flag-btn" style="padding: 2px 8px; background: #22c55e; border:none; cursor:pointer;" onclick="joinRoom('${room.id}')">انضمام</button>`;
+            div.innerHTML = `<span>${room.name} (${room.players.length}/2)</span> <button class="flag-btn" style="padding: 2px 8px; background: #22c55e; border:none; cursor:pointer;" onclick="joinRoom('${room.id}')">انضمام</button>`;
             container.appendChild(div);
         });
     });
@@ -360,9 +360,13 @@
     }
 
     function transitionToWaitingArea(statusText) {
-        document.getElementById('room-create-area').style.display = 'none';
-        document.getElementById('room-waiting-area').style.display = 'block';
-        document.getElementById('room-status-info').innerText = statusText;
+        const createArea = document.getElementById('room-create-area');
+        const waitingArea = document.getElementById('room-waiting-area');
+        const statusInfo = document.getElementById('room-status-info');
+
+        if (createArea) createArea.style.display = 'none';
+        if (waitingArea) waitingArea.style.display = 'block';
+        if (statusInfo) statusInfo.innerText = statusText;
     }
 
     function startRoomBattleGame() {
