@@ -1,4 +1,4 @@
-// ملف منطق اللعبة الشامل - النسخة النهائية والمصححة بالكامل
+// ملف منطق اللعبة الشامل - النسخة الكاملة والمصححة نهائياً
 const soundFiles = {
     menuBgm: 'sounds/menu_bgm.mp3',
     battleBgm: 'sounds/battle_bgm.mp3',
@@ -142,6 +142,7 @@ function startGame() {
     menuBgmAudio.pause(); 
     battleBgmAudio.play().catch(e => {});
     
+    // إخفاء قائمة البداية بالكامل وإظهار واجهة اللعبة
     const menuEl = document.getElementById('start-menu');
     if (menuEl) menuEl.style.display = 'none';
     
@@ -154,7 +155,6 @@ function startGame() {
 
 function camMove(dir, state) { camInputs[dir] = state; }
 
-// استعادة وظيفة اختيار الأعلام المفقودة
 function selectFlag(role, color) {
     if (role === 'player') playerFlagType = color; 
     else enemyFlagType = color;
