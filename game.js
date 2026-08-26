@@ -1,16 +1,16 @@
-// ملف منطق اللعبة الشامل - النسخة الكاملة والمصححة نهائياً
+// ملف منطق اللعبة الشامل: أصوات، ذكاء اصطناعي، اصطدام، وتضاريس
 const soundFiles = {
     menuBgm: 'sounds/menu_bgm.mp3',
     battleBgm: 'sounds/battle_bgm.mp3',
-    click: 'sounds/shoot.mp3',
-    attack: 'sounds/shoot.mp3',
-    danger: 'sounds/battle_bgm.mp3',
+    click: 'sounds/click.mp3',
+    attack: 'sounds/attack.mp3',
+    danger: 'sounds/danger.mp3',
     victory: 'sounds/victory_sound.mp3',
     defeat: 'sounds/defeat_sound.mp3',
     shoot: 'sounds/shoot.mp3',
     rocket: 'sounds/rocket.mp3',
     explosion: 'sounds/explosion.mp3',
-    buy: 'sounds/shoot.mp3',
+    buy: 'sounds/buy.mp3',
     idle: 'sounds/tank_idle.mp3',
     move: 'sounds/tank_move.mp3'
 };
@@ -66,6 +66,7 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     
+    // تفعيل الظلال الواقعية في الرندر
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
@@ -76,6 +77,7 @@ function init() {
     dirLight = new THREE.DirectionalLight(0xfffbeb, 1.3);
     dirLight.position.set(300, 500, 300);
     dirLight.castShadow = true;
+    // جودة الظلال
     dirLight.shadow.mapSize.width = 2048;
     dirLight.shadow.mapSize.height = 2048;
     dirLight.shadow.camera.near = 10;
@@ -91,6 +93,7 @@ function init() {
         createHillyBrownSoilTerrain();
     }
 
+    // القواعد العسكرية مع توليد عوائق الاصطدام الخاصة بها
     const playerBaseGroup = new THREE.Group();
     playerBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
     playerBaseGroup.rotation.y = -(3 * Math.PI) / 4; 
@@ -106,6 +109,7 @@ function init() {
     scene.add(playerBaseGroup); 
     scene.add(enemyBaseGroup);
 
+    // تسجيل الجدران والقواعد كعوائق للاصطدام وتفاديها
     obstacles.push({ x: CORNER_OFFSET, z: CORNER_OFFSET, radius: 25 });
     obstacles.push({ x: -CORNER_OFFSET, z: -CORNER_OFFSET, radius: 25 });
 
@@ -114,6 +118,7 @@ function init() {
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
+    // مؤشر الهدف على الأرض
     const markerGeo = new THREE.RingGeometry(2, 3.5, 32);
     markerGeo.rotateX(-Math.PI / 2);
     const markerMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
@@ -121,6 +126,7 @@ function init() {
     targetMarkerMesh.visible = false;
     scene.add(targetMarkerMesh);
 
+    // دبابات البداية للاعب والعدو
     if (typeof createTank === 'function') {
         playerTanks.push(createTank(CORNER_OFFSET - 55, CORNER_OFFSET - 55, 0x2e3b23, 'player', 'normal'));
         enemyTanks.push(createTank(-CORNER_OFFSET + 55, -CORNER_OFFSET + 55, 0x6b3a2a, 'enemy', 'normal'));
@@ -141,14 +147,8 @@ function init() {
 function startGame() {
     menuBgmAudio.pause(); 
     battleBgmAudio.play().catch(e => {});
-    
-    // إخفاء قائمة البداية بالكامل وإظهار واجهة اللعبة
-    const menuEl = document.getElementById('start-menu');
-    if (menuEl) menuEl.style.display = 'none';
-    
-    const uiEl = document.getElementById('ui-overlay');
-    if (uiEl) uiEl.style.display = 'block';
-
+    document.getElementById('start-menu').style.display = 'none';
+    document.getElementById('ui-overlay').style.display = 'block';
     targetLookAt.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
     targetCameraRadius = 110;
 }
@@ -162,10 +162,7 @@ function selectFlag(role, color) {
     document.querySelectorAll(`#${role}-flags .flag-btn`).forEach(btn => {
         btn.classList.remove(role === 'player' ? 'active-player' : 'active-enemy');
     });
-    
-    if (window.event && window.event.currentTarget) {
-        window.event.currentTarget.classList.add(role === 'player' ? 'active-player' : 'active-enemy');
-    }
+    event.target.classList.add(role === 'player' ? 'active-player' : 'active-enemy');
 }
 
 function setSelectionMode(mode) {
@@ -330,6 +327,7 @@ function drawMinimap() {
 function animate() {
     requestAnimationFrame(animate);
 
+    // حركة الأعلام وربطها بالعمود
     flagWaveTime += 0.05;
     activeFlagMeshes.forEach((flagObj) => {
         const posAttr = flagObj.mesh.geometry.attributes.position;
@@ -341,6 +339,7 @@ function animate() {
         posAttr.needsUpdate = true;
     });
 
+    // ذكاء الدبابات في الحركة، الالتصاق الدقيق بالأرض، وتخطي العوائق والاصطدام بالجدران
     [...playerTanks, ...enemyTanks].forEach(tank => {
         if (!tank.isDestroyed && tank.targetPos) {
             let dx = tank.targetPos.x - tank.mesh.position.x;
@@ -352,6 +351,7 @@ function animate() {
                 let nextX = tank.mesh.position.x + (dx / dist) * speed;
                 let nextZ = tank.mesh.position.z + (dz / dist) * speed;
 
+                // فحص الاصطدام بالعوائق والجدران لمنع اختراقها
                 let collision = false;
                 obstacles.forEach(obs => {
                     let odx = nextX - obs.x;
@@ -364,13 +364,11 @@ function animate() {
                 if (!collision) {
                     tank.mesh.position.x = nextX;
                     tank.mesh.position.z = nextZ;
+                    // ثبات الدبابة على الأرض وتماشيها مع الارتفاع والانخفاض بدقة
                     tank.mesh.position.y = getTerrainHeight(tank.mesh.position.x, tank.mesh.position.z);
                     tank.mesh.rotation.y = Math.atan2(dx, dz);
-                    
-                    if (Math.random() < 0.04) {
-                        playSound('move', 0.2);
-                    }
                 } else {
+                    // تخطي العائق بذكاء بالانحراف جانباً
                     tank.targetPos.x += (Math.random() - 0.5) * 30;
                     tank.targetPos.z += (Math.random() - 0.5) * 30;
                 }
