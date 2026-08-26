@@ -1,4 +1,4 @@
-// ملف منطق اللعبة الرئيسي - game.js (بدون تكرار الأصوات)
+// ملف منطق اللعبة الرئيسي - game.js
 
 let scene, camera, renderer, dirLight;
 let playerFlagType = 'green'; let enemyFlagType = 'red';
@@ -91,12 +91,22 @@ function init() {
 }
 
 function startGame() {
-    // دالة بدء اللعبة وإخفاء القائمة
+    // إخفاء قائمة البداية تماماً وإجبارها على الاختفاء لكي تظهر اللعبة
     const menu = document.getElementById('start-menu');
-    if (menu) menu.style.display = 'none';
+    if (menu) {
+        menu.style.display = 'none';
+        menu.style.visibility = 'hidden';
+        menu.style.opacity = '0';
+    }
     
+    // إظهار واجهة اللعب
     const ui = document.getElementById('ui-overlay');
-    if (ui) ui.style.display = 'block';
+    if (ui) {
+        ui.style.display = 'block';
+    }
+
+    // تشغيل موسيقى المعركة
+    startBattleMusic();
 
     targetLookAt.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
     targetCameraRadius = 110;
