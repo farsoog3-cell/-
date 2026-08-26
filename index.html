@@ -32,6 +32,12 @@
         .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
         .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
 
+        .mode-select-btn {
+            width: 100%; padding: 8px; margin-bottom: 6px; border-radius: 6px; border: 1px solid #38bdf8;
+            background: #0284c7; color: white; font-weight: bold; font-size: 12px; cursor: pointer;
+        }
+        .mode-select-btn.secondary { background: #1e293b; border-color: #475569; }
+
         #start-btn {
             width: 100%; margin-top: 10px; padding: 8px; border: none; border-radius: 6px;
             background: #22c55e; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer;
@@ -142,37 +148,59 @@
     <div class="menu-card">
         <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
         
-        <!-- قسم نظام الغرف المضاف حديثاً -->
-        <div id="room-lobby-section">
-            <div class="section-title">إنشاء غرفة جديدة:</div>
-            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
-                <input type="text" id="room-name-input" placeholder="اسم الغرفة..." style="flex: 1; padding: 5px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: white; font-size: 11px;">
-                <button class="flag-btn" onclick="playClickSound(); createRoom()" style="background: #0284c7; border: none;">إنشاء 🏠</button>
-            </div>
-
-            <div class="section-title">قائمة الغرف المتاحة:</div>
-            <div id="rooms-list-container" style="max-height: 90px; overflow-y: auto; background: rgba(15,23,42,0.6); border: 1px solid #334155; border-radius: 6px; padding: 5px; margin-bottom: 8px; text-align: right;">
-                <div style="color: #94a3b8; font-size: 10px; text-align: center;">جاري البحث عن غرف...</div>
-            </div>
+        <!-- الشاشة الرئيسية لاختيار نمط اللعب -->
+        <div id="main-mode-select">
+            <button class="mode-select-btn" onclick="playClickSound(); showBotSetup()">🤖 اللعب ضد البوت (فردي)</button>
+            <button class="mode-select-btn secondary" onclick="playClickSound(); showRoomsLobby()">👥 اللعب مع صديق (عبر الغرف)</button>
         </div>
 
-        <!-- إعدادات الأعلام والمعركة -->
-        <div id="game-setup-section" style="display: none;">
-            <div class="section-title" id="room-status-info" style="color: #38bdf8; text-align: center; margin-bottom: 6px;">أنت في الغرفة بانتظار البدء...</div>
-            
+        <!-- 1. إعدادات اللعب ضد البوت والأعلام -->
+        <div id="bot-setup-section" style="display: none;">
             <div class="section-title">اختر علم معسكرك:</div>
             <div class="flag-options" id="player-flags">
                 <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
                 <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
             </div>
 
-            <div class="section-title">اختر علم معسكر العدو:</div>
+            <div class="section-title">اختر علم معسكر العدو (البوت):</div>
             <div class="flag-options" id="enemy-flags">
                 <button class="flag-btn" onclick="playClickSound(); selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
                 <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
             </div>
 
-            <button id="start-btn" onclick="playClickSound(); startBattleGame()" style="display:none;">بدء المعركة 🚀</button>
+            <button id="start-btn" onclick="playClickSound(); startBotGameInternal()">بدء المعركة ضد البوت 🚀</button>
+            <button class="mode-select-btn secondary" style="margin-top: 6px;" onclick="playClickSound(); backToMainMode()">⬅ رجوع</button>
+        </div>
+
+        <!-- 2. قائمة الغرف للعب مع صديق -->
+        <div id="rooms-lobby-section" style="display: none;">
+            <div id="room-create-area">
+                <div class="section-title">إنشاء غرفة جديدة لصديقك:</div>
+                <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                    <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثلاً: غرفة أحمد)..." style="flex: 1; padding: 5px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: white; font-size: 11px;">
+                    <button class="flag-btn" onclick="playClickSound(); createRoom()" style="background: #0284c7; border: none;">إنشاء 🏠</button>
+                </div>
+
+                <div class="section-title">الغرف المتاحة للأصدقاء:</div>
+                <div id="rooms-list-container" style="max-height: 90px; overflow-y: auto; background: rgba(15,23,42,0.6); border: 1px solid #334155; border-radius: 6px; padding: 5px; margin-bottom: 8px; text-align: right;">
+                    <div style="color: #94a3b8; font-size: 10px; text-align: center;">جاري البحث عن غرف الأصدقاء...</div>
+                </div>
+            </div>
+
+            <!-- شاشة انتظار الغرفة وبدء القتال -->
+            <div id="room-waiting-area" style="display: none;">
+                <div class="section-title" id="room-status-info" style="color: #38bdf8; text-align: center; margin-bottom: 6px;">أنت في الغرفة...</div>
+                
+                <div class="section-title">اختر علم معسكرك:</div>
+                <div class="flag-options" id="room-player-flags">
+                    <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
+                    <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
+                </div>
+
+                <button id="room-start-btn" onclick="playClickSound(); startRoomBattleGame()" style="display:none; width: 100%; margin-top: 8px; padding: 8px; background: #22c55e; border: none; color: white; font-weight: bold; border-radius: 6px; cursor: pointer;">بدء معركة الأصدقاء 🚀</button>
+            </div>
+
+            <button class="mode-select-btn secondary" style="margin-top: 6px;" onclick="playClickSound(); backToMainMode()">⬅ رجوع</button>
         </div>
     </div>
 </div>
@@ -248,20 +276,42 @@
 <div id="canvas-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<!-- مكتبة الاتصال بالسيرفر Socket.io -->
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-<!-- سكربت إدارة الغرف وتوصيل السيرفر -->
 <script>
-    const socket = io('http://localhost:3000'); // استبدل الرابط برابط سيرفرك عند الرفع أونلاين
+    // التنقل بين قوائم البداية
+    function showBotSetup() {
+        document.getElementById('main-mode-select').style.display = 'none';
+        document.getElementById('bot-setup-section').style.display = 'block';
+    }
+
+    function showRoomsLobby() {
+        document.getElementById('main-mode-select').style.display = 'none';
+        document.getElementById('rooms-lobby-section').style.display = 'block';
+    }
+
+    function backToMainMode() {
+        document.getElementById('bot-setup-section').style.display = 'none';
+        document.getElementById('rooms-lobby-section').style.display = 'none';
+        document.getElementById('main-mode-select').style.display = 'block';
+    }
+
+    function startBotGameInternal() {
+        document.getElementById('start-menu').style.display = 'none';
+        if (typeof startGame === 'function') {
+            startGame(); // الدالة الأصلية في game.js للعب ضد البوت
+        }
+    }
+
+    // اتصال السيرفر ونظام الغرف للأصدقاء
+    const socket = io('http://localhost:3000'); // استبدل الرابط عند الرفع أونلاين
     let currentRoomData = null;
     let isHost = false;
 
-    // استقبال وتحديث قائمة الغرف المتاحة
     socket.on('update_rooms_list', (rooms) => {
         const container = document.getElementById('rooms-list-container');
         if (!rooms || rooms.length === 0) {
-            container.innerHTML = '<div style="color: #94a3b8; font-size: 10px; text-align: center;">لا توجد غرف متاحة حالياً</div>';
+            container.innerHTML = '<div style="color: #94a3b8; font-size: 10px; text-align: center;">لا توجد غرف أصدقاء متاحة حالياً</div>';
             return;
         }
         container.innerHTML = '';
@@ -275,15 +325,15 @@
 
     function createRoom() {
         const inputName = document.getElementById('room-name-input').value.trim();
-        const roomName = inputName !== "" ? inputName : 'غرفة معركة جديدة';
+        const roomName = inputName !== "" ? inputName : 'غرفة الأصدقاء';
         socket.emit('create_room', roomName);
     }
 
     socket.on('room_created_success', (room) => {
         currentRoomData = room;
         isHost = true;
-        transitionToSetup("أنت منظم الغرفة 👑 (يمكنك بدء المعركة)");
-        document.getElementById('start-btn').style.display = 'block'; // المنظم فقط يمكنه بدء المعركة
+        transitionToRoomWaiting("أنت منظم الغرفة 👑 (بانتظار انضمام صديقك)");
+        document.getElementById('room-start-btn').style.display = 'block';
     });
 
     function joinRoom(roomId) {
@@ -291,13 +341,12 @@
     }
 
     socket.on('request_sent_waiting', () => {
-        alert('تم إرسال طلب الانضمام إلى منظم الغرفة، بانتظار الموافقة...');
+        alert('تم إرسال طلب الانضمام إلى صديقك منظم الغرفة، بانتظار الموافقة...');
     });
 
-    // استقبال طلب الانضمام (يظهر لصاحب الغرفة)
     socket.on('join_request', (data) => {
         if (isHost) {
-            if (confirm(`اللاعب (${data.requesterName}) يريد الانضمام إلى غرفتك. هل توافق؟`)) {
+            if (confirm(`صديقك (${data.requesterName}) يريد الانضمام إلى غرفتك. هل توافق؟`)) {
                 socket.emit('respond_to_request', { requesterId: data.requesterId, accepted: true });
             } else {
                 socket.emit('respond_to_request', { requesterId: data.requesterId, accepted: false });
@@ -308,7 +357,7 @@
     socket.on('join_accepted', (room) => {
         currentRoomData = room;
         isHost = false;
-        transitionToSetup("تم قبول انضمامك! بانتظار بدء المعركة من المنظم...");
+        transitionToRoomWaiting("تم انضمامك بنجاح! بانتظار بدء المعركة من صديقك المنظم...");
     });
 
     socket.on('join_rejected', () => {
@@ -316,26 +365,25 @@
     });
 
     socket.on('game_started', () => {
-        // بدء اللعبة الفعلية (يستدعي دالة startGame الموجودة في ملف game.js)
+        document.getElementById('start-menu').style.display = 'none';
         if (typeof startGame === 'function') {
             startGame();
         }
     });
 
-    function transitionToSetup(statusText) {
-        document.getElementById('room-lobby-section').style.display = 'none';
-        document.getElementById('game-setup-section').style.display = 'block';
+    function transitionToRoomWaiting(statusText) {
+        document.getElementById('room-create-area').style.display = 'none';
+        document.getElementById('room-waiting-area').style.display = 'block';
         document.getElementById('room-status-info').innerText = statusText;
     }
 
-    function startBattleGame() {
+    function startRoomBattleGame() {
         if (isHost) {
             socket.emit('start_room_game');
         }
     }
 </script>
 
-<!-- ربط ملف اللعبة الخارجي الخاص بك -->
 <script src="game.js"></script>
 </body>
 </html>
