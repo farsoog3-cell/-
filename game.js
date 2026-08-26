@@ -1,4 +1,4 @@
-// ملف منطق اللعبة الشامل والمحدث
+// ملف منطق اللعبة الشامل والمحدث مع إصلاح استجابة قائمة البداية
 const soundFiles = {
     menuBgm: 'sounds/menu_bgm.mp3',
     battleBgm: 'sounds/battle_bgm.mp3',
@@ -141,8 +141,14 @@ function init() {
 function startGame() {
     menuBgmAudio.pause(); 
     battleBgmAudio.play().catch(e => {});
-    document.getElementById('start-menu').style.display = 'none';
-    document.getElementById('ui-overlay').style.display = 'block';
+    
+    // إخفاء القائمة وتفعيل الواجهة فوراً
+    const menuEl = document.getElementById('start-menu');
+    if (menuEl) menuEl.style.display = 'none';
+    
+    const uiEl = document.getElementById('ui-overlay');
+    if (uiEl) uiEl.style.display = 'block';
+
     targetLookAt.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
     targetCameraRadius = 110;
 }
