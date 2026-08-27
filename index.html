@@ -6,7 +6,6 @@
     <title>معركة الدبابات المتعددة - نظام الغرف</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* تنسيقات إضافية خاصة بنظام الغرف في القائمة */
         .rooms-section {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 8px;
@@ -44,7 +43,6 @@
     <div class="menu-card" style="max-width: 400px; width: 90%;">
         <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
         
-        <!-- الخطوة 1: اختيار إعدادات المعسكر -->
         <div id="setup-area">
             <div class="section-title">اختر علم معسكرك:</div>
             <div class="flag-options" id="player-flags">
@@ -63,18 +61,14 @@
             </div>
         </div>
 
-        <!-- الخطوة 2: صالة الانتظار داخل الغرفة -->
         <div id="game-lobby">
             <h3 id="current-room-title" style="color: #ffeb3b; margin-bottom: 10px;">اسم الغرفة</h3>
-            <div id="players-in-room" style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px;">
-                <!-- يتم تعبئته تلقائياً باللاعبين -->
-            </div>
+            <div id="players-in-room" style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px;"></div>
             
             <button id="ready-btn" onclick="playClickSound(); toggleReady()" style="width: 100%; padding: 10px; background: #ffc107; color: black; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-bottom: 10px; display: none;">أنا مستعد 👍</button>
             
             <button id="start-game-btn" onclick="playClickSound(); startGameServer()" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; display: none;">بدء المعركة 🚀</button>
         </div>
-
     </div>
 </div>
 
@@ -104,7 +98,6 @@
         </div>
     </div>
 
-    <!-- الخريطة المصغرة -->
     <div id="minimap-container" title="الخريطة المصغرة">
         <canvas id="minimap-canvas" width="110" height="110"></canvas>
     </div>
@@ -112,29 +105,12 @@
     <div id="floating-msg"></div>
 
     <div class="cam-controls">
-        <button class="cam-btn zoom-in" 
-            onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
-            ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
-        
-        <button class="cam-btn up" 
-            onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)"
-            ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
-        
-        <button class="cam-btn zoom-out" 
-            onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)"
-            ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
-        
-        <button class="cam-btn left" 
-            onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)"
-            ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
-        
-        <button class="cam-btn down" 
-            onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)"
-            ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
-        
-        <button class="cam-btn right" 
-            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
-            ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+        <button class="cam-btn zoom-in" onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)" ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
+        <button class="cam-btn up" onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)" ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+        <button class="cam-btn zoom-out" onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)" ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
+        <button class="cam-btn left" onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)" ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+        <button class="cam-btn down" onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)" ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+        <button class="cam-btn right" onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)" ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
     </div>
 
     <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة المصغرة والتحكم 🎯</div>
@@ -149,7 +125,6 @@
 
 <div id="canvas-container"></div>
 
-<!-- المكتبات الأساسية وملفات اللعبة -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script src="script.js"></script>
