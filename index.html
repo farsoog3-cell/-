@@ -10,19 +10,20 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <style>
-        /* تنسيق قسم الغرف وأنماط اللعب */
-        .mode-box { display: flex; gap: 8px; margin-bottom: 12px; }
-        .mode-btn { flex: 1; padding: 8px; background: #334155; color: #fff; border: 1px solid #475569; border-radius: 6px; cursor: pointer; }
-        .mode-btn.active { background: #2563eb; border-color: #60a5fa; }
-        
+        /* إخفاء واجهة اللعبة والخلفية حتى بدء المعركة */
+        #ui-overlay, #canvas-container {
+            display: none;
+        }
+
+        /* تنسيق قائمة الغرف المتاحة */
         .rooms-container { 
-            max-height: 110px; 
+            max-height: 120px; 
             overflow-y: auto; 
-            background: rgba(15, 23, 42, 0.6); 
+            background: rgba(15, 23, 42, 0.7); 
             border: 1px solid #334155; 
             border-radius: 6px; 
-            padding: 5px; 
-            margin-bottom: 10px; 
+            padding: 6px; 
+            margin-bottom: 12px; 
         }
         .room-item { 
             display: flex; 
@@ -33,11 +34,14 @@
             color: #fff; 
             font-size: 13px; 
         }
+        .room-item:last-child {
+            border-bottom: none;
+        }
         .room-item button { 
             background: #16a34a; 
             color: white; 
             border: none; 
-            padding: 4px 8px; 
+            padding: 4px 10px; 
             border-radius: 4px; 
             cursor: pointer; 
         }
@@ -45,46 +49,41 @@
 </head>
 <body>
 
+<!-- القائمة الرئيسية -->
 <div id="start-menu">
     <div class="menu-card">
         <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
         
-        <!-- 1. اختيار وضع اللعب -->
-        <div class="section-title">اختر وضع اللعب:</div>
-        <div class="mode-box">
-            <button class="mode-btn active" id="mode-online-btn" onclick="playClickSound(); selectMode('online')">🌐 أونلاين (غرف)</button>
-            <button class="mode-btn" id="mode-bot-btn" onclick="playClickSound(); selectMode('bot')">🤖 ضد البوت</button>
+        <!-- رابط السيرفر مخفي تلقائياً بالخلفية بدون كشفه للاعب -->
+        <input type="hidden" id="server-url" value="https://tank-game-server-o650.onrender.com">
+
+        <!-- إنشاء غرفة جديدة -->
+        <div class="section-title">إنشاء غرفة جديدة:</div>
+        <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+            <input type="text" id="room-code" placeholder="اسم أو رمز الغرفة..." style="flex: 1; padding: 8px; box-sizing: border-box; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: white;">
+            <button onclick="if(typeof playClickSound === 'function') playClickSound(); createCustomRoom();" style="background: #2563eb; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold;">إنشاء ➕</button>
         </div>
 
-        <!-- 2. قسم أونلاين وإنشاء/انضمام للغرف -->
-        <div id="online-section">
-            <div class="section-title">إعدادات الاتصال والغرف:</div>
-            <input type="text" id="server-url" value="https://tank-game-server-o650.onrender.com" placeholder="رابط السيرفر" style="width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box; text-align: left; dir: ltr;">
-            
-            <div style="display: flex; gap: 5px; margin-bottom: 8px;">
-                <input type="text" id="room-code" placeholder="اسم الغرفة الجديدة..." style="flex: 1; padding: 8px; box-sizing: border-box;">
-                <button onclick="playClickSound(); createCustomRoom()" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">إنشاء ➕</button>
-            </div>
-
-            <div class="section-title">الغرف المتاحة:</div>
-            <div class="rooms-container" id="rooms-list">
-                <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 10px;">لا توجد غرف نشطة حالياً</div>
-            </div>
+        <!-- قائمة الغرف المتاحة للانضمام -->
+        <div class="section-title">الغرف المتاحة حالياً (اختر غرفة للتحدي):</div>
+        <div class="rooms-container" id="rooms-list">
+            <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 10px;">جاري تحميل الغرف المتاحة...</div>
         </div>
 
-        <!-- 3. اختيار لون وشعار المعسكر -->
+        <!-- اختيار علم المعسكر -->
         <div class="section-title">اختر علم معسكرك:</div>
         <div class="flag-options" id="player-flags">
-            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
+            <button class="flag-btn active-player" onclick="if(typeof playClickSound === 'function') playClickSound(); selectFlag('player', 'green');">الأخضر (3 نجوم)</button>
+            <button class="flag-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); selectFlag('player', 'red');">الأحمر (نجمتان)</button>
         </div>
 
-        <!-- 4. زر بدء اللعبة -->
-        <button id="start-btn" onclick="playClickSound(); connectAndStartGame()">دخول المعركة 🚀</button>
+        <!-- زر الانضمام/البدء -->
+        <button id="start-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); connectAndStartGame();">دخول المعركة أونلاين 🚀</button>
         <div id="connection-status" style="margin-top: 10px; font-size: 12px; color: #f59e0b;"></div>
     </div>
 </div>
 
+<!-- واجهة اللعب أثناء المعركة -->
 <div id="ui-overlay">
     <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
 
@@ -97,8 +96,8 @@
 
     <div class="left-controls-group">
         <div class="selection-controls">
-            <button class="sel-btn active" id="sel-all-btn" onclick="playClickSound(); setSelectionMode('all')">الكل</button>
-            <button class="sel-btn" id="sel-single-btn" onclick="playClickSound(); setSelectionMode('single')">فردي</button>
+            <button class="sel-btn active" id="sel-all-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); setSelectionMode('all');">الكل</button>
+            <button class="sel-btn" id="sel-single-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); setSelectionMode('single');">فردي</button>
         </div>
 
         <div class="corner-economy">
@@ -106,8 +105,8 @@
                 <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
                 <div class="money-small"><span id="money-display">500</span>$</div>
             </div>
-            <button class="buy-btn-small" id="buy-tank-btn" onclick="playClickSound(); buyPlayerTank('normal')">عادية (150$)</button>
-            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="playClickSound(); buyPlayerTank('rocket')">صاروخية (300$)</button>
+            <button class="buy-btn-small" id="buy-tank-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); buyPlayerTank('normal');">عادية (150$)</button>
+            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); buyPlayerTank('rocket');">صاروخية (300$)</button>
         </div>
     </div>
 
@@ -151,11 +150,12 @@
     <h1 id="victory-title">انتهت المعركة!</h1>
     <div class="stats-box" id="stats-content"></div>
     <canvas id="victory-flag-canvas"></canvas>
-    <button class="restart-btn" onclick="playClickSound(); location.reload()">إعادة المعركة 🔄</button>
+    <button class="restart-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); location.reload();">إعادة المعركة 🔄</button>
 </div>
 
 <div id="canvas-container"></div>
 
+<!-- المكتبات واستدعاء الصوت واللعبة -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="audio.js"></script>
 <script src="game.js"></script>
