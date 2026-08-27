@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>معركة السيطرة الاستراتيجية - خريطة مصغرة وتحكم متطور</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="start-menu">
+    <div class="menu-card">
+        <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
+        
+        <div class="section-title">اختر علم معسكرك:</div>
+        <div class="flag-options" id="player-flags">
+            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
+            <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
+        </div>
+
+        <div class="section-title">اختر علم معسكر العدو:</div>
+        <div class="flag-options" id="enemy-flags">
+            <button class="flag-btn" onclick="playClickSound(); selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
+            <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
+        </div>
+
+        <button id="start-btn" onclick="playClickSound(); startGame()">بدء المعركة 🚀</button>
+    </div>
+</div>
+
+<div id="ui-overlay">
+    <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
+
+    <div class="top-capture-box">
+        <div id="capture-status-text">سيطر على معسكر العدو لتربح!</div>
+        <div class="capture-bar-bg">
+            <div id="capture-bar-fill" class="capture-bar-fill"></div>
+        </div>
+    </div>
+
+    <div class="left-controls-group">
+        <div class="selection-controls">
+            <button class="sel-btn active" id="sel-all-btn" onclick="playClickSound(); setSelectionMode('all')">الكل</button>
+            <button class="sel-btn" id="sel-single-btn" onclick="playClickSound(); setSelectionMode('single')">فردي</button>
+        </div>
+
+        <div class="corner-economy">
+            <div class="money-row">
+                <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
+                <div class="money-small"><span id="money-display">500</span>$</div>
+            </div>
+            <button class="buy-btn-small" id="buy-tank-btn" onclick="playClickSound(); buyPlayerTank('normal')">عادية (150$)</button>
+            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="playClickSound(); buyPlayerTank('rocket')">صاروخية (300$)</button>
+        </div>
+    </div>
+
+    <!-- الخريطة المصغرة -->
+    <div id="minimap-container" title="الخريطة المصغرة">
+        <canvas id="minimap-canvas" width="110" height="110"></canvas>
+    </div>
+
+    <div id="floating-msg"></div>
+
+    <div class="cam-controls">
+        <button class="cam-btn zoom-in" 
+            onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
+            ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
+        
+        <button class="cam-btn up" 
+            onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)"
+            ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+        
+        <button class="cam-btn zoom-out" 
+            onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)"
+            ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
+        
+        <button class="cam-btn left" 
+            onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)"
+            ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+        
+        <button class="cam-btn down" 
+            onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)"
+            ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+        
+        <button class="cam-btn right" 
+            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
+            ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+    </div>
+
+    <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة المصغرة والتحكم 🎯</div>
+</div>
+
+<div id="victory-screen">
+    <h1 id="victory-title">انتهت المعركة!</h1>
+    <div class="stats-box" id="stats-content"></div>
+    <canvas id="victory-flag-canvas"></canvas>
+    <button class="restart-btn" onclick="playClickSound(); location.reload()">إعادة المعركة 🔄</button>
+</div>
+
+<div id="canvas-container"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- تم إدراج مكتبة Socket.io لاتصال الأونلاين -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script src="audio.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
