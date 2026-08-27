@@ -5,35 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>معركة السيطرة الاستراتيجية - أونلاين</title>
     <link rel="stylesheet" href="style.css">
+    
+    <!-- إضافة مكتبة Socket.io للاتصال بالسيرفر -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        /* تحسينات بصرية بسيطة لقائمة الغرف والنمط */
+        .mode-selection { display: flex; gap: 10px; margin-bottom: 12px; }
+        .mode-btn { flex: 1; padding: 10px; border: 1px solid #475569; background: #1e293b; color: #fff; border-radius: 6px; cursor: pointer; }
+        .mode-btn.active { background: #2563eb; border-color: #60a5fa; }
+        .rooms-list-box { max-height: 120px; overflow-y: auto; background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 6px; padding: 6px; margin-bottom: 10px; }
+        .room-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #1e293b; color: #f8fafc; font-size: 13px; }
+        .room-item button { background: #16a34a; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+    </style>
 </head>
 <body>
 
 <div id="start-menu">
     <div class="menu-card">
-        <h1>معركة السيطرة الاستراتيجية ⚔️🌐</h1>
+        <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
+        
+        <!-- اختيار نمط اللعب -->
+        <div class="section-title">اختر وضع اللعب:</div>
+        <div class="mode-selection">
+            <button class="mode-btn active" id="btn-mode-online" onclick="selectMode('online')">🌐 أونلاين (غرف)</button>
+            <button class="mode-btn" id="btn-mode-bot" onclick="selectMode('bot')">🤖 لعب ضد البوت</button>
+        </div>
+
+        <!-- إعدادات الأونلاين -->
+        <div id="online-settings">
+            <input type="text" id="server-url" value="https://tank-game-server-o650.onrender.com" placeholder="رابط السيرفر" style="width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box; text-align: left; direction: ltr;">
+            
+            <div style="display:flex; gap: 5px; margin-bottom: 8px;">
+                <input type="text" id="room-name-input" placeholder="اسم الغرفة الجديدة..." style="flex:1; padding: 8px; box-sizing: border-box;">
+                <button onclick="createCustomRoom()" style="background:#2563eb; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">إنشاء غرفة ➕</button>
+            </div>
+
+            <div class="section-title">الغرف المتاحة حالياً:</div>
+            <div class="rooms-list-box" id="rooms-list">
+                <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 10px;">اضغط "تحديث" لرؤية الغرف النشطة</div>
+            </div>
+            <button onclick="refreshRooms()" style="width:100%; background:#475569; color:white; border:none; padding:6px; border-radius:4px; margin-bottom:10px; cursor:pointer;">تحديث قائمة الغرف 🔄</button>
+        </div>
 
         <div class="section-title">اختر علم معسكرك:</div>
         <div class="flag-options" id="player-flags">
-            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('green')">الأخضر (3 نجوم)</button>
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('red')">الأحمر (نجمتان)</button>
+            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
+            <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
         </div>
 
-        <div class="online-actions">
-            <input type="text" id="room-name-input" placeholder="اسم الغرفة..." maxlength="15">
-            <button id="create-room-btn" onclick="playClickSound(); createRoom()">إنشاء غرفة جديدة ➕</button>
-        </div>
-
-        <div class="section-title">الغرف المتاحة الآن 📡:</div>
-        <div id="rooms-list-container">
-            <div class="no-rooms">جاري البحث عن غرف...</div>
-        </div>
-
-        <button id="refresh-rooms-btn" onclick="playClickSound(); fetchRoomsList()">تحديث القائمة 🔄</button>
+        <button id="start-btn" onclick="playClickSound(); connectAndStartGame()">بدء اللعبة 🚀</button>
+        <div id="connection-status" style="margin-top: 10px; font-size: 12px; color: #f59e0b;"></div>
     </div>
 </div>
 
 <div id="ui-overlay">
-    <div id="hp-labels-container"></div>
+    <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
 
     <div class="top-capture-box">
         <div id="capture-status-text">سيطر على معسكر العدو لتربح!</div>
@@ -58,34 +84,53 @@
         </div>
     </div>
 
-    <div id="minimap-container">
+    <!-- الخريطة المصغرة -->
+    <div id="minimap-container" title="الخريطة المصغرة">
         <canvas id="minimap-canvas" width="110" height="110"></canvas>
     </div>
 
     <div id="floating-msg"></div>
 
     <div class="cam-controls">
-        <button class="cam-btn zoom-in" onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕</button>
-        <button class="cam-btn up" onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
-        <button class="cam-btn zoom-out" onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖</button>
-        <button class="cam-btn left" onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
-        <button class="cam-btn down" onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
-        <button class="cam-btn right" onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+        <button class="cam-btn zoom-in" 
+            onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
+            ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
+        
+        <button class="cam-btn up" 
+            onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)"
+            ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+        
+        <button class="cam-btn zoom-out" 
+            onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)"
+            ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
+        
+        <button class="cam-btn left" 
+            onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)"
+            ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+        
+        <button class="cam-btn down" 
+            onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)"
+            ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+        
+        <button class="cam-btn right" 
+            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
+            ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
     </div>
+
+    <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة المصغرة والتحكم 🎯</div>
 </div>
 
 <div id="victory-screen">
     <h1 id="victory-title">انتهت المعركة!</h1>
     <div class="stats-box" id="stats-content"></div>
     <canvas id="victory-flag-canvas"></canvas>
-    <button class="restart-btn" onclick="playClickSound(); location.reload()">العودة للقائمة 🔄</button>
+    <button class="restart-btn" onclick="playClickSound(); location.reload()">إعادة المعركة 🔄</button>
 </div>
 
 <div id="canvas-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script src="network.js"></script>
+<script src="audio.js"></script>
 <script src="game.js"></script>
 </body>
 </html>
