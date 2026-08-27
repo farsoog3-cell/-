@@ -6,16 +6,41 @@
     <title>معركة السيطرة الاستراتيجية - أونلاين</title>
     <link rel="stylesheet" href="style.css">
     
-    <!-- إضافة مكتبة Socket.io للاتصال بالسيرفر -->
+    <!-- مكتبة Socket.io للاتصال بالسيرفر -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
     <style>
-        /* تحسينات بصرية بسيطة لقائمة الغرف والنمط */
-        .mode-selection { display: flex; gap: 10px; margin-bottom: 12px; }
-        .mode-btn { flex: 1; padding: 10px; border: 1px solid #475569; background: #1e293b; color: #fff; border-radius: 6px; cursor: pointer; }
+        /* تنسيق قسم الغرف وأنماط اللعب */
+        .mode-box { display: flex; gap: 8px; margin-bottom: 12px; }
+        .mode-btn { flex: 1; padding: 8px; background: #334155; color: #fff; border: 1px solid #475569; border-radius: 6px; cursor: pointer; }
         .mode-btn.active { background: #2563eb; border-color: #60a5fa; }
-        .rooms-list-box { max-height: 120px; overflow-y: auto; background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 6px; padding: 6px; margin-bottom: 10px; }
-        .room-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #1e293b; color: #f8fafc; font-size: 13px; }
-        .room-item button { background: #16a34a; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        
+        .rooms-container { 
+            max-height: 110px; 
+            overflow-y: auto; 
+            background: rgba(15, 23, 42, 0.6); 
+            border: 1px solid #334155; 
+            border-radius: 6px; 
+            padding: 5px; 
+            margin-bottom: 10px; 
+        }
+        .room-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 6px; 
+            border-bottom: 1px solid #1e293b; 
+            color: #fff; 
+            font-size: 13px; 
+        }
+        .room-item button { 
+            background: #16a34a; 
+            color: white; 
+            border: none; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
     </style>
 </head>
 <body>
@@ -24,36 +49,38 @@
     <div class="menu-card">
         <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
         
-        <!-- اختيار نمط اللعب -->
+        <!-- 1. اختيار وضع اللعب -->
         <div class="section-title">اختر وضع اللعب:</div>
-        <div class="mode-selection">
-            <button class="mode-btn active" id="btn-mode-online" onclick="selectMode('online')">🌐 أونلاين (غرف)</button>
-            <button class="mode-btn" id="btn-mode-bot" onclick="selectMode('bot')">🤖 لعب ضد البوت</button>
+        <div class="mode-box">
+            <button class="mode-btn active" id="mode-online-btn" onclick="playClickSound(); selectMode('online')">🌐 أونلاين (غرف)</button>
+            <button class="mode-btn" id="mode-bot-btn" onclick="playClickSound(); selectMode('bot')">🤖 ضد البوت</button>
         </div>
 
-        <!-- إعدادات الأونلاين -->
-        <div id="online-settings">
-            <input type="text" id="server-url" value="https://tank-game-server-o650.onrender.com" placeholder="رابط السيرفر" style="width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box; text-align: left; direction: ltr;">
+        <!-- 2. قسم أونلاين وإنشاء/انضمام للغرف -->
+        <div id="online-section">
+            <div class="section-title">إعدادات الاتصال والغرف:</div>
+            <input type="text" id="server-url" value="https://tank-game-server-o650.onrender.com" placeholder="رابط السيرفر" style="width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box; text-align: left; dir: ltr;">
             
-            <div style="display:flex; gap: 5px; margin-bottom: 8px;">
-                <input type="text" id="room-name-input" placeholder="اسم الغرفة الجديدة..." style="flex:1; padding: 8px; box-sizing: border-box;">
-                <button onclick="createCustomRoom()" style="background:#2563eb; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">إنشاء غرفة ➕</button>
+            <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+                <input type="text" id="room-code" placeholder="اسم الغرفة الجديدة..." style="flex: 1; padding: 8px; box-sizing: border-box;">
+                <button onclick="playClickSound(); createCustomRoom()" style="background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">إنشاء ➕</button>
             </div>
 
-            <div class="section-title">الغرف المتاحة حالياً:</div>
-            <div class="rooms-list-box" id="rooms-list">
-                <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 10px;">اضغط "تحديث" لرؤية الغرف النشطة</div>
+            <div class="section-title">الغرف المتاحة:</div>
+            <div class="rooms-container" id="rooms-list">
+                <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 10px;">لا توجد غرف نشطة حالياً</div>
             </div>
-            <button onclick="refreshRooms()" style="width:100%; background:#475569; color:white; border:none; padding:6px; border-radius:4px; margin-bottom:10px; cursor:pointer;">تحديث قائمة الغرف 🔄</button>
         </div>
 
+        <!-- 3. اختيار لون وشعار المعسكر -->
         <div class="section-title">اختر علم معسكرك:</div>
         <div class="flag-options" id="player-flags">
             <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
             <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
         </div>
 
-        <button id="start-btn" onclick="playClickSound(); connectAndStartGame()">بدء اللعبة 🚀</button>
+        <!-- 4. زر بدء اللعبة -->
+        <button id="start-btn" onclick="playClickSound(); connectAndStartGame()">دخول المعركة 🚀</button>
         <div id="connection-status" style="margin-top: 10px; font-size: 12px; color: #f59e0b;"></div>
     </div>
 </div>
