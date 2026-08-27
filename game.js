@@ -106,73 +106,49 @@ function init() {
 
     setupLighting();
     createHillyBrownSoilTerrain();
-    createBases();
-    createOilRigs();
     createTargetMarker();
     setupInteraction();
     setupMinimapInteraction();
 
-    updateEconomyUI();
     window.addEventListener('resize', onWindowResize);
     
-    // الاتصال بالسيرفر تلقائياً عند البدء
-    setupSocketEvents();
+    // الاتصال التلقائي وجلب قائمة الغرف
+    connectSocket();
     animate();
 }
 
 // -------------------------------------------------------------
-// إدارة اتصالات الأونلاين (Socket.io Network Events)
+// إدارة الشبكة وجلب الغرف (Socket.io Network Events)
 // -------------------------------------------------------------
-function connectAndStartGame() {
+function connectSocket() {
     const serverUrlInput = document.getElementById('server-url');
-    const roomCodeInput = document.getElementById('room-code');
-    const statusDiv = document.getElementById('connection-status');
+    let serverUrl = serverUrlInput ? serverUrlInput.value.trim() : 'https://tank-game-server-o650.onrender.com';
 
-    let serverUrl = serverUrlInput.value.trim() || 'https://tank-game-server-o650.onrender.com';
-    let roomCode = roomCodeInput.value.trim();
+    if (typeof io === 'undefined') return;
 
-    if (!socket || !socket.connected) {
-        if (typeof io === 'undefined') {
-            statusDiv.innerText = 'خطأ: لم يتم تحميل مكتبة Socket.io!';
-            return;
-        }
-        statusDiv.innerText = 'جاري الاتصال بالسيرفر...';
-        socket = io(serverUrl);
-        setupSocketListeners();
-    }
-
-    if (roomCode !== "") {
-        statusDiv.innerText = 'جاري الانضمام للغرفة...';
-        socket.emit('joinRoom', { roomId: roomCode, flag: playerFlagType });
-    } else {
-        statusDiv.innerText = 'جاري إنشاء غرفة جديدة...';
-        socket.emit('createRoom', { name: `غرفة ${Math.floor(Math.random()*1000)}`, flag: playerFlagType });
-    }
-}
-
-function setupSocketEvents() {
-    const serverUrlInput = document.getElementById('server-url');
-    if (serverUrlInput && !serverUrlInput.value) {
-        serverUrlInput.value = 'https://tank-game-server-o650.onrender.com';
-    }
-}
-
-function setupSocketListeners() {
-    const statusDiv = document.getElementById('connection-status');
+    socket = io(serverUrl);
 
     socket.on('connect', () => {
-        statusDiv.innerText = 'تم الاتصال بالسيرفر بنجاح!';
+        const statusDiv = document.getElementById('connection-status');
+        if (statusDiv) statusDiv.innerText = 'تم الاتصال بالسيرفر، جاري جلب الغرف...';
+        socket.emit('getRoomsList');
+    });
+
+    socket.on('roomsList', (rooms) => {
+        renderRoomsList(rooms);
     });
 
     socket.on('errorMsg', (msg) => {
-        statusDiv.innerText = msg;
+        const statusDiv = document.getElementById('connection-status');
+        if (statusDiv) statusDiv.innerText = msg;
         alert(msg);
     });
 
     socket.on('roomCreated', (data) => {
         currentRoomId = data.roomId;
         myRole = 'host';
-        statusDiv.innerText = `تم إنشاء الغرفة (${data.roomId})! بانتظار خصمك...`;
+        const statusDiv = document.getElementById('connection-status');
+        if (statusDiv) statusDiv.innerText = `تم إنشاء الغرفة (${data.roomId})! بانتظار خصمك...`;
     });
 
     socket.on('gameStart', (data) => {
@@ -180,13 +156,14 @@ function setupSocketListeners() {
         let myInfo = data.players.find(p => p.id === socket.id);
         if (myInfo) myRole = myInfo.role;
 
-        statusDiv.innerText = 'تم اكتمال الغرفة! تنطلق المعركة الآن...';
+        const statusDiv = document.getElementById('connection-status');
+        if (statusDiv) statusDiv.innerText = 'تم اكتمال الغرفة! تنطلق المعركة الآن...';
         setTimeout(() => {
             startGame();
         }, 800);
     });
 
-    // استقبال تحركات دبابات العدو
+    // استقبال تحركات دبابات العدو من الشبكة
     socket.on('enemyMove', (data) => {
         let enemyTank = enemyTanks.find(t => t.id === data.tankId);
         if (enemyTank && !enemyTank.isDestroyed) {
@@ -194,11 +171,14 @@ function setupSocketListeners() {
         }
     });
 
-    // استقبال شراء العدو لدبابة جديدة
+    // استقبال شراء العدو لدبابة جديدة من الشبكة
     socket.on('enemyBoughtTank', (data) => {
         let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
-        let eX = (myRole === 'host' ? -CORNER_OFFSET : CORNER_OFFSET) + (Math.random() - 0.5) * 20;
-        let eZ = (myRole === 'host' ? -CORNER_OFFSET : CORNER_OFFSET) + (Math.random() - 0.5) * 20;
+        let spawnBaseX = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+        let spawnBaseZ = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+
+        let eX = spawnBaseX + (Math.random() - 0.5) * 20;
+        let eZ = spawnBaseZ + (Math.random() - 0.5) * 20;
         let newEnemyTank = createTank(eX, eZ, eColor, 'enemy', data.type, data.tankId);
         newEnemyTank.mesh.rotation.y = -Math.PI / 4;
         enemyTanks.push(newEnemyTank);
@@ -211,6 +191,54 @@ function setupSocketListeners() {
             location.reload();
         }, 1500);
     });
+}
+
+function renderRoomsList(rooms) {
+    const container = document.getElementById('rooms-list');
+    if (!container) return;
+
+    if (!rooms || rooms.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 10px;">لا يوجد غرف حالياً، أنشئ غرفة جديدة وادعُ صديقك!</div>';
+        return;
+    }
+
+    container.innerHTML = '';
+    rooms.forEach(room => {
+        const item = document.createElement('div');
+        item.className = 'room-item';
+        item.innerHTML = `
+            <span><b>${room.name || room.id}</b> (${room.playersCount}/2)</span>
+            <button onclick="joinSelectedRoom('${room.id}')">${room.playersCount < 2 ? 'انضمام ⚔️' : 'مكتملة 🔒'}</button>
+        `;
+        container.appendChild(item);
+    });
+}
+
+function createCustomRoom() {
+    const roomCodeInput = document.getElementById('room-code');
+    let roomName = roomCodeInput ? roomCodeInput.value.trim() : '';
+    if (!roomName) roomName = `غرفة ${Math.floor(Math.random() * 1000)}`;
+
+    if (socket && socket.connected) {
+        socket.emit('createRoom', { name: roomName, flag: playerFlagType });
+    }
+}
+
+function joinSelectedRoom(roomId) {
+    if (socket && socket.connected) {
+        socket.emit('joinRoom', { roomId: roomId, flag: playerFlagType });
+    }
+}
+
+function connectAndStartGame() {
+    const roomCodeInput = document.getElementById('room-code');
+    let roomCode = roomCodeInput ? roomCodeInput.value.trim() : '';
+
+    if (roomCode !== "") {
+        joinSelectedRoom(roomCode);
+    } else {
+        createCustomRoom();
+    }
 }
 
 function camMove(dir, state) { camInputs[dir] = state; }
@@ -236,9 +264,6 @@ function selectFlag(role, color) {
     if (role === 'player') {
         if (color === enemyFlagType) enemyFlagType = color === 'green' ? 'red' : 'green';
         playerFlagType = color;
-    } else {
-        if (color === playerFlagType) playerFlagType = color === 'green' ? 'red' : 'green';
-        enemyFlagType = color;
     }
     updateFlagButtonsUI();
 }
@@ -258,17 +283,22 @@ function setSelectionMode(mode) {
 }
 
 function startGame() {
-    if (typeof menuBgmAudio !== 'undefined') {
+    if (typeof menuBgmAudio !== 'undefined' && menuBgmAudio) {
         menuBgmAudio.pause();
         menuBgmAudio.currentTime = 0;
     }
-    if (typeof battleBgmAudio !== 'undefined') {
+    if (typeof battleBgmAudio !== 'undefined' && battleBgmAudio) {
         battleBgmAudio.play().catch(e => {});
     }
 
     document.getElementById('start-menu').style.display = 'none';
     document.getElementById('ui-overlay').style.display = 'block';
-    playSound('buy');
+    document.getElementById('canvas-container').style.display = 'block';
+
+    if (typeof playSound === 'function') playSound('buy');
+
+    createBases();
+    createOilRigs();
 
     let playerCampX = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
     let playerCampZ = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
@@ -279,6 +309,7 @@ function startGame() {
     cameraPhi = Math.PI / 3.8;
     cameraRadius = targetCameraRadius;
     updateCameraPosition();
+    updateEconomyUI();
 
     showFloatingMsg('بدأت المعركة الأونلاين! التحدي مباشر الآن.');
 }
@@ -377,35 +408,35 @@ function createBaseStructure(parentGroup, isEnemy) {
 }
 
 function createBases() {
+    let pPosX = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
+    let pPosZ = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
+    let ePosX = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+    let ePosZ = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+
     const playerBaseGroup = new THREE.Group();
-    playerBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
+    playerBaseGroup.position.set(pPosX, getTerrainHeight(pPosX, pPosZ), pPosZ);
     playerBaseGroup.rotation.y = -(3 * Math.PI) / 4; 
 
     const enemyBaseGroup = new THREE.Group();
-    enemyBaseGroup.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
+    enemyBaseGroup.position.set(ePosX, getTerrainHeight(ePosX, ePosZ), ePosZ);
     enemyBaseGroup.rotation.y = -(3 * Math.PI) / 4;
 
-    if (playerFlagType === 'green') {
-        createBaseStructure(playerBaseGroup, false);
-        createBaseStructure(enemyBaseGroup, true);
-    } else {
-        createBaseStructure(playerBaseGroup, true);
-        createBaseStructure(enemyBaseGroup, false);
-    }
+    createBaseStructure(playerBaseGroup, false);
+    createBaseStructure(enemyBaseGroup, true);
 
     scene.add(playerBaseGroup);
     scene.add(enemyBaseGroup);
 
-    obstacles.push({ x: CORNER_OFFSET, z: CORNER_OFFSET, radius: 22 });
-    obstacles.push({ x: -CORNER_OFFSET, z: -CORNER_OFFSET, radius: 22 });
+    obstacles.push({ x: pPosX, z: pPosZ, radius: 22 });
+    obstacles.push({ x: ePosX, z: ePosZ, radius: 22 });
 
     let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
     let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
     
-    let pTankX = CORNER_OFFSET - 45;
-    let pTankZ = CORNER_OFFSET - 45;
-    let eTankX = -CORNER_OFFSET + 45;
-    let eTankZ = -CORNER_OFFSET + 45;
+    let pTankX = pPosX - (myRole === 'host' ? 45 : -45);
+    let pTankZ = pPosZ - (myRole === 'host' ? 45 : -45);
+    let eTankX = ePosX - (myRole === 'host' ? -45 : 45);
+    let eTankZ = ePosZ - (myRole === 'host' ? -45 : 45);
 
     let playerTank = createTank(pTankX, pTankZ, pColor, 'player', 'normal', 'p_init_1');
     let enemyTank = createTank(eTankX, eTankZ, eColor, 'enemy', 'normal', 'e_init_1');
@@ -416,8 +447,8 @@ function createBases() {
     playerTanks.push(playerTank);
     enemyTanks.push(enemyTank);
         
-    enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, enemyFlagType, 'enemy');
-    playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
+    enemyPoleFlagMesh = createFlagPole(new THREE.Group(), ePosX, ePosZ, enemyFlagType, 'enemy');
+    playerPoleFlagMesh = createFlagPole(new THREE.Group(), pPosX, pPosZ, playerFlagType, 'player');
 }
 
 function createOilRigs() {
@@ -669,7 +700,7 @@ function buyPlayerTank(type) {
         totalMoneySpent += cost;
         playerBuildCooldown = 1200;
         updateEconomyUI();
-        playSound('buy');
+        if (typeof playSound === 'function') playSound('buy');
         
         let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
         let pX = (myRole === 'host' ? CORNER_OFFSET : -CORNER_OFFSET) - 50 + (Math.random() - 0.5) * 20;
@@ -684,7 +715,6 @@ function buyPlayerTank(type) {
 
         playerTanks.push(newTank);
 
-        // إرسال كود شراء الدبابة للخصم عبر الشبكة
         if (socket && currentRoomId) {
             socket.emit('buyTank', {
                 roomId: currentRoomId,
@@ -864,7 +894,6 @@ function setupInteraction() {
                         let targetPos = playerTargetPos.clone().add(offset);
                         t.target = targetPos;
 
-                        // إرسال الحركة عبر الـ Socket
                         if (socket && currentRoomId) {
                             socket.emit('tankMove', {
                                 roomId: currentRoomId,
@@ -894,6 +923,7 @@ function setupInteraction() {
 
 function setupMinimapInteraction() {
     const minimap = document.getElementById('minimap-container');
+    if (!minimap) return;
     minimap.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
         const rect = minimap.getBoundingClientRect();
@@ -928,10 +958,15 @@ function renderMinimap() {
     
     const scale = (w / 2) / MAP_LIMIT;
 
+    let pBaseX = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
+    let pBaseZ = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
+    let eBaseX = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+    let eBaseZ = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+
     ctx.fillStyle = '#22c55e';
-    ctx.fillRect(w/2 + CORNER_OFFSET * scale - 3, h/2 + CORNER_OFFSET * scale - 3, 6, 6);
+    ctx.fillRect(w/2 + pBaseX * scale - 3, h/2 + pBaseZ * scale - 3, 6, 6);
     ctx.fillStyle = '#ef4444';
-    ctx.fillRect(w/2 + (-CORNER_OFFSET) * scale - 3, h/2 + (-CORNER_OFFSET) * scale - 3, 6, 6);
+    ctx.fillRect(w/2 + eBaseX * scale - 3, h/2 + eBaseZ * scale - 3, 6, 6);
 
     playerTanks.forEach(t => {
         if (t.isDestroyed) return;
@@ -994,12 +1029,14 @@ function fireBullet(fromTank, targetTank) {
     if (now - fromTank.lastShot < 1200) return;
     fromTank.lastShot = now;
     
-    playSound('shoot', fromTank.team === 'player' ? 1.0 : 0.4);
-    if (fromTank.team === 'player') {
-        playSound('attack', 0.8);
-        triggerCameraShake(1.2);
-    } else {
-        playSound('danger', 0.8);
+    if (typeof playSound === 'function') {
+        playSound('shoot', fromTank.team === 'player' ? 1.0 : 0.4);
+        if (fromTank.team === 'player') {
+            playSound('attack', 0.8);
+            triggerCameraShake(1.2);
+        } else {
+            playSound('danger', 0.8);
+        }
     }
 
     const bulletMesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffcc00 }));
@@ -1013,12 +1050,14 @@ function fireTacticalMissile(fromTank, targetTank) {
     if (now - fromTank.lastShot < 3500) return;
     fromTank.lastShot = now;
 
-    playSound('rocket', fromTank.team === 'player' ? 1.0 : 0.5);
-    if (fromTank.team === 'player') {
-        playSound('attack', 0.9);
-        triggerCameraShake(2.5);
-    } else {
-        playSound('danger', 0.9);
+    if (typeof playSound === 'function') {
+        playSound('rocket', fromTank.team === 'player' ? 1.0 : 0.5);
+        if (fromTank.team === 'player') {
+            playSound('attack', 0.9);
+            triggerCameraShake(2.5);
+        } else {
+            playSound('danger', 0.9);
+        }
     }
 
     const missileGeo = new THREE.ConeGeometry(0.4, 2.5, 6);
@@ -1042,7 +1081,7 @@ function fireTacticalMissile(fromTank, targetTank) {
 }
 
 function createShockwaveAndExplosion(centerPos, fromTeam) {
-    playSound('explosion');
+    if (typeof playSound === 'function') playSound('explosion');
     const ringGeo = new THREE.RingGeometry(0.5, 1, 32);
     ringGeo.rotateX(-Math.PI / 2);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
@@ -1144,7 +1183,7 @@ function updateTanksMovement() {
         let dir = new THREE.Vector3().subVectors(b.targetTank.mesh.position, b.mesh.position);
         if (dir.length() < 2.5) {
             b.targetTank.hp -= b.damage;
-            playSound('explosion');
+            if (typeof playSound === 'function') playSound('explosion');
             addSmokeParticle(b.targetTank.mesh.position);
             updateTanksDamageVisual(b.targetTank);
             if (b.targetTank.hp <= 0 && !b.targetTank.isDestroyed) {
@@ -1292,8 +1331,13 @@ function checkLogicAndEconomy() {
         }
     });
 
-    const enemyBasePos = new THREE.Vector3((myRole === 'host' ? -CORNER_OFFSET : CORNER_OFFSET), getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), (myRole === 'host' ? -CORNER_OFFSET : CORNER_OFFSET));
-    const playerBasePos = new THREE.Vector3((myRole === 'host' ? CORNER_OFFSET : -CORNER_OFFSET), getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), (myRole === 'host' ? CORNER_OFFSET : -CORNER_OFFSET));
+    let eBaseX = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+    let eBaseZ = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+    let pBaseX = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
+    let pBaseZ = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
+
+    const enemyBasePos = new THREE.Vector3(eBaseX, getTerrainHeight(eBaseX, eBaseZ), eBaseZ);
+    const playerBasePos = new THREE.Vector3(pBaseX, getTerrainHeight(pBaseX, pBaseZ), pBaseZ);
 
     let playerAtEnemyBase = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(enemyBasePos) < CAPTURE_RADIUS);
     let enemyAtPlayerBase = enemyTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(playerBasePos) < CAPTURE_RADIUS);
@@ -1363,7 +1407,7 @@ function startCinematicEnding(isPlayerWinner) {
     gameOver = true;
     isCinematicEnding = true;
     
-    if (typeof battleBgmAudio !== 'undefined') {
+    if (typeof battleBgmAudio !== 'undefined' && battleBgmAudio) {
         battleBgmAudio.pause();
         battleBgmAudio.currentTime = 0;
     }
@@ -1371,12 +1415,19 @@ function startCinematicEnding(isPlayerWinner) {
     [...playerTanks, ...enemyTanks].forEach(t => updateTankAudio(t, false));
     document.getElementById('ui-overlay').style.display = 'none';
 
-    if (isPlayerWinner) playSound('victory', 1.0);
-    else playSound('defeat', 1.0);
+    if (typeof playSound === 'function') {
+        if (isPlayerWinner) playSound('victory', 1.0);
+        else playSound('defeat', 1.0);
+    }
+
+    let eBaseX = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+    let eBaseZ = (myRole === 'host') ? -CORNER_OFFSET : CORNER_OFFSET;
+    let pBaseX = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
+    let pBaseZ = (myRole === 'host') ? CORNER_OFFSET : -CORNER_OFFSET;
 
     cinematicTargetLook = isPlayerWinner ? 
-        new THREE.Vector3(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET) + 15, -CORNER_OFFSET) : 
-        new THREE.Vector3(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET) + 15, CORNER_OFFSET);
+        new THREE.Vector3(eBaseX, getTerrainHeight(eBaseX, eBaseZ) + 15, eBaseZ) : 
+        new THREE.Vector3(pBaseX, getTerrainHeight(pBaseX, pBaseZ) + 15, pBaseZ);
 
     setTimeout(() => { triggerVictoryScreen(isPlayerWinner); }, 3000);
 }
@@ -1385,6 +1436,8 @@ function triggerVictoryScreen(isPlayerWinner) {
     const screen = document.getElementById('victory-screen');
     const title = document.getElementById('victory-title');
     const statsBox = document.getElementById('stats-content');
+    if (!screen || !title || !statsBox) return;
+
     screen.style.display = 'flex';
 
     let winningFlag = isPlayerWinner ? playerFlagType : enemyFlagType;
