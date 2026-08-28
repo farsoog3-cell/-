@@ -2,42 +2,45 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>لعبة الدبابات الجماعية</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- خريطة وأرضية اللعبة (تُرسم في الخلفية) -->
+    <!-- 1. أرضية وخريطة اللعبة -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- شاشة اللوبي (اختيار الغرف واللعب ضد البوت) -->
+    <!-- 2. شاشة القائمة اختيار والغرف (تختفي فور بدء اللعبة) -->
     <div id="lobby-container">
-        <h2>🎮 قائمة الغرف والتشغيل</h2>
+        <h2 style="margin-bottom: 20px;">🎮 قائمة الغرف والتشغيل</h2>
         
-        <div class="lobby-inputs">
-            <input type="text" id="room-name-input" placeholder="ادخل اسم الغرفة...">
-            <button id="create-room-btn">إنشاء غرفة ➕</button>
-            <button id="play-bot-btn">لعب ضد البوت 🤖</button>
+        <div class="lobby-inputs" style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <input type="text" id="room-name-input" placeholder="ادخل اسم الغرفة..." style="padding: 10px; border-radius: 6px; border: 1px solid #334155; outline: none;">
+            <button id="create-room-btn" style="padding: 10px 15px; border-radius: 6px; border: none; background: #16a34a; color: white; font-weight: bold; cursor: pointer;">إنشاء غرفة ➕</button>
+            <button id="play-bot-btn" style="padding: 10px 15px; border-radius: 6px; border: none; background: #9333ea; color: white; font-weight: bold; cursor: pointer;">لعب ضد البوت 🤖</button>
         </div>
 
-        <h3>الغرف المتاحة حالياً:</h3>
+        <h3 style="margin-bottom: 10px;">الغرف المتاحة حالياً:</h3>
         <ul id="rooms-list"></ul>
 
-        <div id="waiting-room" style="display: none;">
+        <!-- شاشة الانتظار للغرفة -->
+        <div id="waiting-room" style="display: none; flex-direction: column; align-items: center; margin-top: 15px;">
             <h4 id="current-room-title">انتظار بقية اللاعبين...</h4>
-            <button id="start-game-btn" style="display: none;">بدء اللعبة الان 🔥</button>
+            <button id="start-game-btn" style="display: none; padding: 10px 20px; border-radius: 6px; border: none; background: #dc2626; color: white; font-weight: bold; margin-top: 10px; cursor: pointer;">بدء اللعبة الآن 🔥</button>
         </div>
     </div>
 
-    <!-- واجهة التحكم والشرط والشراء (الظاهرة أثناء اللعب) -->
+    <!-- 3. واجهة التحكم والتسوق (تظهر أثناء اللعب) -->
     <div id="ui-overlay">
+        <!-- الشريط العلوي -->
         <div class="top-bar">
             <button class="mode-btn">الكل</button>
             <button class="mode-btn">فردي</button>
-            <div class="capture-zone">منطقة الاستحواذ</div>
+            <div class="capture-zone">منطقة الاستحواذ: جاري الاستحواذ...</div>
         </div>
 
+        <!-- صندوق المشتريات والرصيد -->
         <div class="shop-box">
             <div class="money-text">المال: <span id="money-val">$ 200</span></div>
             <button class="buy-btn green">شراء دبابة ($100)</button>
@@ -58,9 +61,10 @@
         </div>
     </div>
 
-    <!-- مكتبة Socket.io والاتصال -->
+    <!-- 4. استدعاء المكتبات والملفات بالترتيب الصحيح -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="network.js"></script>
+    <script src="client.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
