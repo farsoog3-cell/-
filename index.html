@@ -226,7 +226,7 @@
         <button class="restart-btn" onclick="location.reload()">العودة للقائمة الرئيسية 🔄</button>
     </div>
 
-    <!-- كود الجافاسكريبت المدمج مع نظام التشغيل الصوتي -->
+    <!-- كود الجافاسكريبت المدمج -->
     <script>
         const SERVER_URL = 'https://tank-game-server-o650.onrender.com/';
         const socket = io(SERVER_URL);
@@ -237,7 +237,6 @@
         let isHost = false;
         let isReady = false;
 
-        // نظام إدارة الأصوات (Sound Manager)
         let soundController = {
             listener: null,
             sounds: {},
@@ -247,7 +246,6 @@
                 cam.add(this.listener);
                 this.audioLoader = new THREE.AudioLoader();
 
-                // تعريف ملفات الأصوات من مجلد sounds
                 const soundFiles = {
                     menu_bgm: 'sounds/menu_bgm.mp3',
                     battle_bgm: 'sounds/battle_bgm.mp3',
@@ -271,30 +269,23 @@
                         } else {
                             sound.setVolume(0.7);
                         }
-                    }, undefined, (err) => {
-                        console.log("خطأ في تحميل الصوت: " + key, err);
-                    });
+                    }, undefined, (err) => {});
                 }
             },
             play: function(key) {
                 if (this.sounds[key] && this.sounds[key].buffer) {
-                    if (this.sounds[key].isPlaying) {
-                        this.sounds[key].stop();
-                    }
+                    if (this.sounds[key].isPlaying) this.sounds[key].stop();
                     this.sounds[key].play();
                 }
             },
             stop: function(key) {
-                if (this.sounds[key] && this.sounds[key].isPlaying) {
-                    this.sounds[key].stop();
-                }
+                if (this.sounds[key] && this.sounds[key].isPlaying) this.sounds[key].stop();
             }
         };
 
         function openModal(id) {
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            // تشغيل موسيقى القائمة عند فتح الواجهات إذا كانت محملة
             if (soundController.sounds.menu_bgm && !soundController.sounds.menu_bgm.isPlaying) {
                 soundController.play('menu_bgm');
             }
@@ -307,7 +298,6 @@
         }
 
         document.addEventListener('click', () => {
-            // تفعيل نظام الصوت عند أول تفاعل للمستخدم مع الصفحة لتخطي قيود المتصفح
             if (soundController.sounds.menu_bgm && !soundController.sounds.menu_bgm.isPlaying) {
                 soundController.play('menu_bgm');
             }
@@ -408,7 +398,6 @@
             document.getElementById('start-menu').style.display = 'none';
             document.getElementById('ui-overlay').style.display = 'block';
             
-            // إيقاف موسيقى القائمة وتشغيل موسيقى المعركة الصحراوية
             soundController.stop('menu_bgm');
             soundController.play('battle_bgm');
 
@@ -418,7 +407,7 @@
 
         socket.on('errorMessage', (msg) => showFloatingMsg(msg));
 
-        /* --- محرك 3D والأصوات التفاعلية --- */
+        /* --- محرك 3D: تلال صحراوية عميقة ومتناسقة ومعسكرات واضحة --- */
         let scene, camera, renderer, playerMoney = 500, myTanks = [], enemyTanks = [];
         let flagCloths = [];
 
@@ -431,13 +420,12 @@
 
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0xd4af37);
-            scene.fog = new THREE.FogExp2(0xd4af37, 0.012);
+            scene.fog = new THREE.FogExp2(0xd4af37, 0.010);
 
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 40, 60);
+            camera.position.set(0, 45, 70);
             camera.lookAt(0, 0, 0);
 
-            // تهيئة الصوت وربطه بكاميرا اللعبة
             soundController.init(camera);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -445,28 +433,31 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffeedd, 0.8));
-            const sun = new THREE.DirectionalLight(0xfffaed, 1.3);
-            sun.position.set(40, 60, 30);
+            scene.add(new THREE.AmbientLight(0xffeedd, 0.85));
+            const sun = new THREE.DirectionalLight(0xfffaed, 1.4);
+            sun.position.set(50, 80, 40);
             scene.add(sun);
 
-            createDesertTerrain();
+            // 1. تضاريس صحراوية واسعة ومرتفعة التلال
+            createDetailedDesertTerrain();
 
+            // منطقة الاستحواذ المركزية
             const capZone = new THREE.Mesh(
-                new THREE.CylinderGeometry(10, 10, 0.3, 32), 
+                new THREE.CylinderGeometry(12, 12, 0.4, 32), 
                 new THREE.MeshBasicMaterial({ color: 0xf59e0b, wireframe: true })
             );
-            capZone.position.y = 0.2;
+            capZone.position.y = 0.3;
             scene.add(capZone);
 
-            createMilitaryBase(-35, -35, 'green');
-            createMilitaryBase(35, 35, 'red');
+            // 2. إنشاء معسكرات متكاملة وواضحة جداً للطرفين
+            createMilitaryBase(-45, -45, 'green', 'معسكر سوريا 3 نجوم');
+            createMilitaryBase(45, 45, 'red', 'معسكر سوريا نجمتان');
 
-            const myPos = (myFlag === 'green') ? { x: -35, z: -35 } : { x: 35, z: 35 };
-            const enPos = (myFlag === 'green') ? { x: 35, z: 35 } : { x: -35, z: -35 };
+            const myPos = (myFlag === 'green') ? { x: -45, z: -45 } : { x: 45, z: 45 };
+            const enPos = (myFlag === 'green') ? { x: 45, z: 45 } : { x: -45, z: -45 };
 
-            spawnTank(myPos.x + 5, myPos.z, myFlag, true);
-            spawnTank(enPos.x - 5, enPos.z, (myFlag === 'green' ? 'red' : 'green'), false);
+            spawnTank(myPos.x + 6, myPos.z, myFlag, true);
+            spawnTank(enPos.x - 6, enPos.z, (myFlag === 'green' ? 'red' : 'green'), false);
 
             let clock = new THREE.Clock();
             function animate() {
@@ -478,7 +469,7 @@
                     for (let i = 0; i < posAttribute.count; i++) {
                         let u = posAttribute.getX(i);
                         if (u > 0) {
-                            let wave = Math.sin(time * 8 + u * 3 + index) * 0.15;
+                            let wave = Math.sin(time * 9 + u * 4 + index) * 0.2;
                             posAttribute.setZ(i, wave);
                         }
                     }
@@ -490,24 +481,31 @@
             animate();
         }
 
-        function createDesertTerrain() {
-            const geometry = new THREE.PlaneGeometry(250, 250, 50, 50);
+        function createDetailedDesertTerrain() {
+            const geometry = new THREE.PlaneGeometry(300, 300, 70, 70);
             const pos = geometry.attributes.position;
             
             for (let i = 0; i < pos.count; i++) {
                 let x = pos.getX(i);
                 let y = pos.getY(i);
-                let z = Math.sin(x * 0.03) * Math.cos(y * 0.03) * 3.5;
-                z += Math.sin(x * 0.08) * 1.2;
+                
+                // تلال صحراوية طبيعية متناسقة وجميلة
+                let z = Math.sin(x * 0.04) * Math.cos(y * 0.04) * 4.5;
+                z += Math.sin(x * 0.1) * Math.cos(y * 0.1) * 1.5;
+                
+                // تسطيح المنطقة الوسطى قليلاً لسهولة الحركة والمعارك
                 let distFromCenter = Math.sqrt(x*x + y*y);
-                z -= (distFromCenter * distFromCenter) * 0.001; 
+                if (distFromCenter < 25) {
+                    z *= (distFromCenter / 25);
+                }
+
                 pos.setZ(i, z);
             }
             geometry.computeVertexNormals();
 
             const material = new THREE.MeshStandardMaterial({ 
-                color: 0xdec68b, 
-                roughness: 0.95,
+                color: 0xcca85c, 
+                roughness: 0.9,
                 metalness: 0.05,
                 flatShading: true 
             });
@@ -517,38 +515,50 @@
             scene.add(terrain);
         }
 
-        function createMilitaryBase(x, z, type) {
+        function createMilitaryBase(x, z, type, label) {
             const group = new THREE.Group();
-            const tentMat = new THREE.MeshStandardMaterial({ color: 0x556b2f, roughness: 0.8 });
             
-            const t1 = new THREE.Mesh(new THREE.ConeGeometry(3.5, 3.5, 4), tentMat); 
-            t1.position.set(-5, 1.75, -5); 
+            // قاعدة خرسانية أرضية للمعسكر لتبدو واضحة وبارزة
+            const basePad = new THREE.Mesh(
+                new THREE.BoxGeometry(18, 0.4, 18),
+                new THREE.MeshStandardMaterial({ color: 0x8c7853, roughness: 0.9 })
+            );
+            basePad.position.y = 0.2;
+            group.add(basePad);
+
+            // خيام عسكرية مميزة
+            const tentMat = new THREE.MeshStandardMaterial({ color: 0x4a5d3f, roughness: 0.7 });
+            const t1 = new THREE.Mesh(new THREE.ConeGeometry(4, 4, 4), tentMat); 
+            t1.position.set(-6, 2, -4); 
             group.add(t1);
             
-            const t2 = new THREE.Mesh(new THREE.ConeGeometry(3.5, 3.5, 4), tentMat); 
-            t2.position.set(5, 1.75, -5); 
+            const t2 = new THREE.Mesh(new THREE.ConeGeometry(4, 4, 4), tentMat); 
+            t2.position.set(6, 2, -4); 
             group.add(t2);
 
-            const wall = new THREE.Mesh(
-                new THREE.BoxGeometry(14, 1.5, 1), 
-                new THREE.MeshStandardMaterial({ color: 0xc2b280 })
-            );
-            wall.position.set(0, 0.75, 6); 
-            group.add(wall);
+            // تحصينات رملية محيطة
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c });
+            for(let i = -6; i <= 6; i += 4) {
+                const barricade = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.2, 1.5), wallMat);
+                barricade.position.set(i, 0.6, 8);
+                group.add(barricade);
+            }
 
+            // ساري العلم طويل وواضح
             const pole = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.18, 0.18, 14), 
-                new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8 })
+                new THREE.CylinderGeometry(0.25, 0.25, 16), 
+                new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.9 })
             );
-            pole.position.set(0, 7, 0); 
+            pole.position.set(0, 8, -7); 
             group.add(pole);
 
-            const flagGeo = new THREE.PlaneGeometry(4.5, 2.8, 10, 5);
+            // علم يرفرف بتموج واقعي
+            const flagGeo = new THREE.PlaneGeometry(5, 3, 12, 6);
             const flagTex = createFlagTexture(type);
             const flagMat = new THREE.MeshBasicMaterial({ map: flagTex, side: THREE.DoubleSide });
             const flagMesh = new THREE.Mesh(flagGeo, flagMat);
             
-            flagMesh.position.set(2.25, 12, 0);
+            flagMesh.position.set(2.5, 13.5, -7);
             group.add(flagMesh);
             flagCloths.push(flagMesh);
 
@@ -594,25 +604,25 @@
         function spawnTank(x, z, color, isMine) {
             const group = new THREE.Group();
             const body = new THREE.Mesh(
-                new THREE.BoxGeometry(2.2, 1, 3.2), 
-                new THREE.MeshStandardMaterial({ color: color === 'green' ? 0x2e5a1c : 0xa63a2a })
+                new THREE.BoxGeometry(2.4, 1.1, 3.5), 
+                new THREE.MeshStandardMaterial({ color: color === 'green' ? 0x2e5a1c : 0xa63a2a, roughness: 0.6 })
             );
-            body.position.y = 0.5; 
+            body.position.y = 0.55; 
             group.add(body);
 
             const turret = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.9, 0.9, 0.7, 16), 
-                new THREE.MeshStandardMaterial({ color: 0x333333 })
+                new THREE.CylinderGeometry(1, 1, 0.8, 16), 
+                new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 })
             );
-            turret.position.set(0, 1.35, 0); 
+            turret.position.set(0, 1.45, 0); 
             group.add(turret);
 
             const cannon = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.15, 0.15, 1.8, 8), 
+                new THREE.CylinderGeometry(0.16, 0.16, 2, 8), 
                 new THREE.MeshStandardMaterial({ color: 0x111111 })
             );
             cannon.rotation.x = Math.PI / 2; 
-            cannon.position.set(0, 1.35, 1.1); 
+            cannon.position.set(0, 1.45, 1.2); 
             group.add(cannon);
 
             group.position.set(x, 0, z);
@@ -625,19 +635,15 @@
             if (playerMoney >= cost) {
                 playerMoney -= cost;
                 document.getElementById('player-money-display').innerText = `${playerMoney} $`;
-                const pos = (myFlag === 'green') ? { x: -35, z: -35 } : { x: 35, z: 35 };
+                const pos = (myFlag === 'green') ? { x: -45, z: -45 } : { x: 45, z: 45 };
                 spawnTank(pos.x + (Math.random() * 6 - 3), pos.z + (Math.random() * 6 - 3), myFlag, true);
                 
-                // تشغيل صوت إطلاق النار أو الصاروخ عند الشراء/التعزيز
-                if(type === 'rocket') {
-                    soundController.play('rocket');
-                } else {
-                    soundController.play('shoot');
-                }
+                if(type === 'rocket') soundController.play('rocket');
+                else soundController.play('shoot');
                 
                 showFloatingMsg("تم تعزيز معسكرك بدبابة جديدة 🛡️");
             } else { 
-                soundController.play('explosion'); // صوت تنبيهي عند رفض الشراء
+                soundController.play('explosion');
                 showFloatingMsg("المال غير كافٍ!"); 
             }
         }
@@ -648,7 +654,7 @@
         }
 
         function moveCam(dx, dz) { if (camera) { camera.position.x += dx; camera.position.z += dz; } }
-        function zoomCam(amt) { if (camera) { camera.position.y = Math.max(20, Math.min(75, camera.position.y + amt)); } }
+        function zoomCam(amt) { if (camera) { camera.position.y = Math.max(20, Math.min(80, camera.position.y + amt)); } }
     </script>
 </body>
 </html>
