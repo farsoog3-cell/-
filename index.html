@@ -3,805 +3,472 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة الدبابات الاحترافية - Tank Game 3D</title>
+    <title>معركة السيطرة الاستراتيجية - خريطة مصغرة وتحكم متطور</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; font-family: system-ui, -apple-system, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        #canvas-container canvas { width: 100% !important; height: 100% !important; display: block; }
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        #start-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+        }
 
-        #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: rgba(15, 23, 42, 0.95); display: flex; align-items: center; justify-content: center; color: #fff; }
-        .menu-card { background: #1e293b; border: 1px solid #38bdf8; border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; text-align: center; }
-        .menu-card h1 { font-size: 20px; color: #38bdf8; margin-bottom: 10px; }
-        .main-buttons-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        .main-menu-btn { padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; }
-        .btn-primary { background: #0284c7; }
-        .btn-secondary { background: #475569; }
+        .menu-card {
+            background: rgba(30, 41, 59, 0.95); border: 1px solid #38bdf8;
+            border-radius: 12px; padding: 16px 20px; width: 90%; max-width: 380px; text-align: center;
+        }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 100; }
-        .modal-overlay.active { display: flex; }
-        .modal-card { background: #1e293b; border: 2px solid #38bdf8; border-radius: 12px; padding: 16px; width: 90%; max-width: 380px; color: #fff; text-align: right; }
-        .modal-card h2 { text-align: center; color: #38bdf8; font-size: 16px; margin-bottom: 10px; }
-        .input-label { font-size: 11px; color: #94a3b8; margin: 8px 0 4px; display: block; }
+        .menu-card h1 { font-size: 16px; margin-bottom: 10px; color: #38bdf8; }
+        .section-title { font-size: 11px; color: #94a3b8; margin: 6px 0 3px 0; text-align: right; }
+        .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
 
-        #create-room-name { width: 100%; padding: 8px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #fff; text-align: center; outline: none; }
-        .options-grid { display: flex; gap: 6px; margin-bottom: 8px; }
-        .opt-btn { flex: 1; padding: 6px; background: #0f172a; border: 1px solid #475569; border-radius: 6px; color: #fff; font-size: 11px; cursor: pointer; }
-        .opt-btn.active { border-color: #38bdf8; background: #0284c7; }
+        .flag-btn {
+            flex: 1; padding: 6px; border: 1px solid #475569; border-radius: 6px;
+            background: #1e293b; color: #fff; font-weight: bold; font-size: 11px; cursor: pointer;
+        }
 
-        #rooms-list-container { max-height: 180px; overflow-y: auto; margin: 8px 0; }
-        .room-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 8px; margin-bottom: 6px; border-radius: 6px; font-size: 12px; }
-        .room-badge-playing { background: #ef4444; color: white; padding: 4px 6px; border-radius: 4px; font-size: 10px; }
-        .room-badge-ready { background: #22c55e; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px; border: none; cursor: pointer; }
+        .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
 
-        .lobby-info { text-align: center; font-size: 11px; color: #fbbf24; margin-bottom: 6px; }
-        .players-status-box { background: #0f172a; padding: 8px; border-radius: 6px; margin: 8px 0; }
-        .player-slot { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; }
+        #start-btn {
+            width: 100%; margin-top: 10px; padding: 8px; border: none; border-radius: 6px;
+            background: #0284c7; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer;
+        }
 
-        .modal-actions { display: flex; gap: 6px; margin-top: 12px; }
-        .btn-action { flex: 1; padding: 8px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-confirm { background: #22c55e; color: #fff; }
-        .btn-cancel { background: #64748b; color: #fff; }
-        .btn-ready { background: #eab308; color: #000; }
-        .btn-start { background: #22c55e; color: #fff; }
-        .btn-start:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
+        #ui-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5; pointer-events: none; display: none;
+        }
 
-        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; display: none; }
-        .top-capture-box { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 180px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 6px; padding: 4px 8px; text-align: center; color: white; font-size: 10px; pointer-events: auto; }
+        .tank-hp-label {
+            position: absolute; transform: translate(-50%, -100%);
+            background: rgba(0, 0, 0, 0.75); padding: 1px 4px; border-radius: 3px;
+            font-size: 9px; font-weight: bold; pointer-events: none; white-space: nowrap;
+            border: 1px solid #334155; transition: transform 0.1s linear;
+        }
+        .hp-player { color: #22c55e; border-color: rgba(34, 197, 94, 0.4); }
+        .hp-enemy { color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
 
-        .left-controls-group { position: absolute; top: 45px; left: 8px; pointer-events: auto; display: flex; flex-direction: column; gap: 6px; width: 120px; }
-        .selection-controls { display: flex; gap: 4px; }
-        .sel-btn { flex: 1; background: rgba(30, 41, 59, 0.85); border: 1px solid #38bdf8; color: white; padding: 5px 2px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .top-capture-box {
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            width: 210px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8;
+            border-radius: 6px; padding: 4px 8px; text-align: center; color: white; font-size: 10px;
+        }
+        .capture-bar-bg { width: 100%; height: 5px; background: #334155; border-radius: 3px; margin-top: 2px; overflow: hidden; }
+        .capture-bar-fill { width: 0%; height: 100%; background: #22c55e; }
+
+        .left-controls-group {
+            position: absolute; top: 8px; left: 8px; pointer-events: auto;
+            display: flex; flex-direction: column; gap: 6px; width: 130px;
+        }
+
+        .selection-controls { display: flex; gap: 4px; width: 100%; }
+        .sel-btn {
+            flex: 1; background: rgba(30, 41, 59, 0.85); border: 1px solid #38bdf8; color: white;
+            padding: 5px 4px; border-radius: 5px; font-size: 10px; font-weight: bold; text-align: center; cursor: pointer;
+        }
         .sel-btn.active { background: #0284c7; }
 
-        .corner-economy { background: rgba(15, 23, 42, 0.85); border: 1px solid #f59e0b; border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
-        .money-row { display: flex; justify-content: space-between; font-size: 11px; color: #fff; }
-        .money-small { color: #fbbf24; font-weight: bold; }
-        .buy-btn-small { background: #22c55e; border: none; color: white; padding: 5px; border-radius: 4px; font-weight: bold; font-size: 9px; cursor: pointer; }
+        .corner-economy {
+            background: rgba(15, 23, 42, 0.85); border: 1px solid #f59e0b;
+            border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 5px; width: 100%;
+        }
+        .money-row { display: flex; justify-content: space-between; align-items: center; }
+        .money-small { color: #fbbf24; font-weight: bold; font-size: 11px; }
+        
+        .buy-btn-small {
+            background: #22c55e; border: none; color: white; padding: 5px;
+            border-radius: 4px; font-weight: bold; font-size: 9px; width: 100%; text-align: center; cursor: pointer;
+        }
+        .buy-btn-small:disabled { background: #64748b; }
         .buy-btn-rocket { background: #ea580c; }
-        .buy-btn-ballistic { background: #9333ea; }
+        .buy-btn-rocket:disabled { background: #64748b; }
 
-        .camera-control-panel { position: absolute; bottom: 15px; right: 15px; pointer-events: auto; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-        .cam-row { display: flex; gap: 6px; }
-        .cam-btn { width: 36px; height: 36px; background: #1e293b; border: 1px solid #38bdf8; color: #38bdf8; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .cam-btn:active { background: #0284c7; color: #fff; }
-        .zoom-row { display: flex; gap: 6px; margin-top: 2px; width: 100%; }
-        .zoom-btn { flex: 1; padding: 4px; background: #0f172a; border: 1px solid #f59e0b; color: #f59e0b; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 12px; text-align: center; }
+        #minimap-container {
+            position: absolute; bottom: 65px; left: 8px; width: 110px; height: 110px;
+            background: rgba(15, 23, 42, 0.9); border: 2px solid #38bdf8; border-radius: 50%;
+            overflow: hidden; pointer-events: auto; cursor: pointer; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        }
+        #minimap-canvas { width: 100%; height: 100%; }
 
-        #minimap-container { position: absolute; bottom: 15px; left: 15px; width: 100px; height: 100px; background: rgba(15, 23, 42, 0.9); border: 2px solid #38bdf8; border-radius: 50%; overflow: hidden; pointer-events: auto; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
-        #minimap-canvas { width: 100%; height: 100%; display: block; }
-        #floating-msg { position: absolute; top: 45px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85); color: #38bdf8; padding: 4px 10px; border-radius: 4px; font-size: 11px; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 50; }
+        #floating-msg {
+            position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75); color: #38bdf8; padding: 3px 8px;
+            border-radius: 4px; font-size: 10px; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+        }
+
+        .cam-controls {
+            position: absolute; bottom: 8px; right: 8px;
+            display: grid; grid-template-columns: repeat(3, 42px); gap: 4px;
+            pointer-events: auto;
+        }
+        .cam-btn {
+            width: 42px; height: 42px; background: rgba(30, 41, 59, 0.85);
+            border: 1px solid #38bdf8; border-radius: 6px; color: white;
+            font-size: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+        .cam-btn:active, .cam-btn.pressed { background: #0284c7; border-color: #7dd3fc; }
+        .cam-btn.up { grid-column: 2; grid-row: 1; }
+        .cam-btn.left { grid-column: 1; grid-row: 2; }
+        .cam-btn.down { grid-column: 2; grid-row: 2; }
+        .cam-btn.right { grid-column: 3; grid-row: 2; }
+        .cam-btn.zoom-in { grid-column: 1; grid-row: 1; font-size: 12px; }
+        .cam-btn.zoom-out { grid-column: 3; grid-row: 1; font-size: 12px; }
+
+        .cam-hint {
+            position: absolute; bottom: 8px; left: 125px;
+            background: rgba(15, 23, 42, 0.75); border: 1px solid #38bdf8;
+            color: #93c5fd; padding: 3px 6px; border-radius: 4px; font-size: 9px; pointer-events: none;
+        }
+
+        #victory-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
+            background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+        }
+        #victory-screen h1 { font-size: 20px; color: #22c55e; margin-bottom: 6px; text-align: center; padding: 0 10px; }
+        .stats-box {
+            background: rgba(30, 41, 59, 0.9); border: 1px solid #38bdf8; border-radius: 8px;
+            padding: 10px 16px; font-size: 11px; margin: 8px 0; width: 260px; text-align: right; line-height: 1.5;
+        }
+        #victory-flag-canvas { width: 180px; height: 100px; border-radius: 6px; margin: 6px 0; }
+        .restart-btn { padding: 6px 16px; background: #22c55e; border: none; color: white; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
-<body>
-
-    <div id="canvas-container"></div>
-    <div id="floating-msg"></div>
-
-    <audio id="bg-music" src="sounds/battle_bg.mp3" loop preload="auto"></audio>
-    <audio id="shoot-sound" src="sounds/shoot.mp3" preload="auto"></audio>
-    <audio id="explosion-sound" src="sounds/explosion.mp3" preload="auto"></audio>
-    <audio id="rocket-sound" src="sounds/rocket.mp3" preload="auto"></audio>
+<body onload="init()">
 
     <div id="start-menu">
         <div class="menu-card">
-            <h1>معركة الدبابات الاحترافية ⚔️</h1>
-            <div class="main-buttons-group">
-                <button class="main-menu-btn btn-primary" onclick="openModal('create-modal'); playMenuAudio();">🎮 إنشاء غرفة (أونلاين)</button>
-                <button class="main-menu-btn btn-secondary" onclick="openModal('rooms-modal'); fetchRoomsList(); playMenuAudio();">🌐 الغرف المتاحة</button>
+            <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
+            
+            <div class="section-title">اختر علم معسكرك:</div>
+            <div class="flag-options" id="player-flags">
+                <button class="flag-btn active-player" onclick="selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
+                <button class="flag-btn" onclick="selectFlag('player', 'red')">الأحمر (نجمتان)</button>
             </div>
-        </div>
 
-        <div class="modal-overlay" id="create-modal">
-            <div class="modal-card">
-                <h2>إنشاء غرفة جديدة</h2>
-                <label class="input-label">اسم الغرفة:</label>
-                <input type="text" id="create-room-name" placeholder="أدخل اسم الغرفة..." autocomplete="off">
-
-                <label class="input-label">مال الحرب الابتدائي:</label>
-                <div class="options-grid">
-                    <button class="opt-btn money-opt active" data-money="300">300 $</button>
-                    <button class="opt-btn money-opt" data-money="500">500 $</button>
-                    <button class="opt-btn money-opt" data-money="800">800 $</button>
-                </div>
-
-                <div class="modal-actions">
-                    <button class="btn-action btn-confirm" onclick="submitCreateRoom()">إنشاء الغرفة 🚀</button>
-                    <button class="btn-action btn-cancel" onclick="closeModal('create-modal')">إلغاء</button>
-                </div>
+            <div class="section-title">اختر علم معسكر العدو:</div>
+            <div class="flag-options" id="enemy-flags">
+                <button class="flag-btn" onclick="selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
+                <button class="flag-btn active-enemy" onclick="selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
             </div>
-        </div>
 
-        <div class="modal-overlay" id="rooms-modal">
-            <div class="modal-card">
-                <h2>الغرف المتاحة 🌐</h2>
-                <div id="rooms-list-container"></div>
-                <div class="modal-actions">
-                    <button class="btn-action btn-cancel" onclick="closeModal('rooms-modal')">إغلاق</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal-overlay" id="lobby-modal">
-            <div class="modal-card">
-                <h2 id="lobby-room-title">غرفة الانتظار</h2>
-                <p id="lobby-room-info" class="lobby-info">المال الابتدائي: 500 $</p>
-
-                <div class="players-status-box">
-                    <div class="player-slot" id="slot-host">
-                        <span class="p-name">👑 المضيف (جاري الانتظار...)</span>
-                        <span class="p-status">غير مستعد ❌</span>
-                    </div>
-                    <div class="player-slot" id="slot-guest">
-                        <span class="p-name">⚔️ الصديق (جاري الانتظار...)</span>
-                        <span class="p-status">غير مستعد ❌</span>
-                    </div>
-                </div>
-
-                <div class="modal-actions">
-                    <button id="ready-toggle-btn" class="btn-action btn-ready" onclick="toggleReady()">أنا مستعد ✋</button>
-                    <button id="start-game-btn" class="btn-action btn-start" disabled onclick="requestStartGame()">بدء المعركة ⚔️</button>
-                </div>
-            </div>
+            <button id="start-btn" onclick="startGame()">بدء المعركة 🚀</button>
         </div>
     </div>
 
     <div id="ui-overlay">
+        <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
+
         <div class="top-capture-box">
-            <div id="capture-status-text">منطقة الاستحواذ: معسكر نشط</div>
+            <div id="capture-status-text">سيطر على معسكر العدو لتربح!</div>
+            <div class="capture-bar-bg">
+                <div id="capture-bar-fill" class="capture-bar-fill"></div>
+            </div>
         </div>
 
         <div class="left-controls-group">
             <div class="selection-controls">
-                <button class="sel-btn active" id="btn-select-all" onclick="setSelectMode('all')">الكل</button>
-                <button class="sel-btn" id="btn-select-single" onclick="setSelectMode('single')">فردي</button>
+                <button class="sel-btn active" id="sel-all-btn" onclick="setSelectionMode('all')">الكل</button>
+                <button class="sel-btn" id="sel-single-btn" onclick="setSelectionMode('single')">فردي</button>
             </div>
 
             <div class="corner-economy">
                 <div class="money-row">
-                    <span>المال:</span>
-                    <span id="player-money-display" class="money-small">500 $</span>
+                    <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
+                    <div class="money-small"><span id="money-display">500</span>$</div>
                 </div>
-                <button class="buy-btn-small" onclick="buyTank('normal')">دبابة عادية (100$)</button>
-                <button class="buy-btn-small buy-btn-rocket" onclick="buyTank('rocket')">دبابة صاروخية (180$)</button>
-                <button class="buy-btn-small buy-btn-ballistic" onclick="buyTank('ballistic')">صاروخ باليستي (300$)</button>
+                <button class="buy-btn-small" id="buy-tank-btn" onclick="buyPlayerTank('normal')">عادية (150$)</button>
+                <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="buyPlayerTank('rocket')">صاروخية (300$)</button>
             </div>
         </div>
 
-        <div id="minimap-container"><canvas id="minimap-canvas"></canvas></div>
-
-        <div class="camera-control-panel">
-            <div class="cam-row">
-                <button class="cam-btn" ontouchstart="startCamMove(0, -1)" onmousedown="startCamMove(0, -1)" onmouseup="stopCamMove()" ontouchend="stopCamMove()">⬆️</button>
-            </div>
-            <div class="cam-row">
-                <button class="cam-btn" ontouchstart="startCamMove(-1, 0)" onmousedown="startCamMove(-1, 0)" onmouseup="stopCamMove()" ontouchend="stopCamMove()">⬅️</button>
-                <button class="cam-btn" ontouchstart="startCamMove(0, 1)" onmousedown="startCamMove(0, 1)" onmouseup="stopCamMove()" ontouchend="stopCamMove()">⬇️</button>
-                <button class="cam-btn" ontouchstart="startCamMove(1, 0)" onmousedown="startCamMove(1, 0)" onmouseup="stopCamMove()" ontouchend="stopCamMove()">➡️</button>
-            </div>
-            <div class="zoom-row">
-                <button class="zoom-btn" onclick="zoomCamera(-5)">زوم +</button>
-                <button class="zoom-btn" onclick="zoomCamera(5)">زوم -</button>
-            </div>
+        <div id="minimap-container" title="الخريطة المصغرة">
+            <canvas id="minimap-canvas" width="110" height="110"></canvas>
         </div>
+
+        <div id="floating-msg"></div>
+
+        <div class="cam-controls">
+            <button class="cam-btn zoom-in" onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕</button>
+            <button class="cam-btn up" onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+            <button class="cam-btn zoom-out" onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖</button>
+            <button class="cam-btn left" onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+            <button class="cam-btn down" onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+            <button class="cam-btn right" onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+        </div>
+
+        <div class="cam-hint">استخدم الأزرار أو السحب لتحريك الكاميرا 🎯</div>
     </div>
 
+    <div id="victory-screen">
+        <h1 id="victory-title">انتهت المعركة!</h1>
+        <div class="stats-box" id="stats-content"></div>
+        <canvas id="victory-flag-canvas" width="180" height="100"></canvas>
+        <button class="restart-btn" onclick="location.reload()">إعادة المعركة 🔄</button>
+    </div>
+
+    <div id="canvas-container"></div>
+
     <script>
-        const SERVER_URL = 'https://tank-game-server-o650.onrender.com/';
-        const socket = io(SERVER_URL);
+        let scene, camera, renderer;
+        let playerFlagType = 'green';
+        let enemyFlagType = 'red';
 
-        let currentRoom = null;
-        let myPlayerId = null;
-        let isHost = false;
-        let isReady = false;
+        let cameraRadius = 280, targetCameraRadius = 280;
+        let cameraTheta = Math.PI / 4;
+        let cameraPhi = Math.PI / 3.5;
+        let targetLookAt = new THREE.Vector3(0, 0, 0);
+        let camInputs = { up: false, down: false, left: false, right: false, zi: false, zo: false };
 
-        function playMenuAudio() {
-            const bgMusic = document.getElementById('bg-music');
-            if (bgMusic) {
-                bgMusic.volume = 0.4;
-                bgMusic.play().catch(e => console.log("Audio autoplay restricted"));
-            }
+        let playerTanks = [];
+        let enemyTanks = [];
+        let bullets = [];
+        let obstacles = [];
+        let rotatingRadars = [];
+
+        let selectionMode = 'all';
+        let selectedTank = null;
+        let terrainMesh;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+
+        let captureProgress = 0;
+        let enemyCaptureProgress = 0;
+        let gameOver = false;
+
+        const CORNER_OFFSET = 380;
+        const MAP_LIMIT = 460;
+        let playerMoney = 500;
+        let enemyMoney = 500;
+
+        function getTerrainHeight(x, z) {
+            let h = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 5 + Math.sin(x * 0.008) * 8;
+            let distFromCenter = Math.sqrt(x * x + z * z);
+            if (distFromCenter < 140) h *= 0.2;
+            return h;
         }
 
-        function openModal(id) {
-            document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-        function showFloatingMsg(msg) {
-            const el = document.getElementById('floating-msg');
-            el.innerText = msg; el.style.opacity = '1';
-            setTimeout(() => el.style.opacity = '0', 3000);
+        function showFloatingMsg(text) {
+            const msg = document.getElementById('floating-msg');
+            msg.innerText = text;
+            msg.style.opacity = '1';
+            setTimeout(() => { msg.style.opacity = '0'; }, 2000);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.money-opt').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.money-opt').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                });
-            });
-        });
-
-        function submitCreateRoom() {
-            const roomName = document.getElementById('create-room-name').value.trim();
-            if (!roomName) return showFloatingMsg("الرجاء إدخال اسم الغرفة!");
-            const initialMoney = parseInt(document.querySelector('.money-opt.active').dataset.money);
-            socket.emit('createRoom', { roomName, initialMoney });
-        }
-
-        function fetchRoomsList() { socket.emit('getRoomsList'); }
-        function joinRoom(id) { socket.emit('joinRoom', { roomId: id }); }
-
-        function toggleReady() {
-            isReady = !isReady;
-            const btn = document.getElementById('ready-toggle-btn');
-            btn.innerText = isReady ? "مستعد ✅" : "أنا مستعد ✋";
-            btn.style.background = isReady ? "#22c55e" : "#eab308";
-            if (currentRoom) socket.emit('playerReadyState', { roomId: currentRoom.id, ready: isReady });
-        }
-
-        function requestStartGame() {
-            if (currentRoom && isHost) socket.emit('startGameRequest', { roomId: currentRoom.id });
-        }
-
-        socket.on('connect', () => { myPlayerId = socket.id; });
-        socket.on('updateRoomsList', (rooms) => {
-            const container = document.getElementById('rooms-list-container');
-            container.innerHTML = '';
-            if (!rooms || Object.keys(rooms).length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#94a3b8; font-size:12px;">لا توجد غرف متاحة</p>';
-                return;
-            }
-            for (let id in rooms) {
-                let r = rooms[id];
-                let item = document.createElement('div');
-                item.className = 'room-item';
-                let badge = r.isPlaying ? '<span class="room-badge-playing">جاري اللعب 🔴</span>' :
-                            (r.playersCount >= 2 ? '<span class="room-badge-playing">مكتملة 🔒</span>' :
-                            `<button class="room-badge-ready" onclick="joinRoom('${id}')">انضمام ⚔️</button>`);
-                item.innerHTML = `<div><strong>${r.name}</strong> (${r.initialMoney}$)</div>${badge}`;
-                container.appendChild(item);
-            }
-        });
-
-        socket.on('roomJoined', (data) => {
-            currentRoom = data; isHost = (data.hostId === myPlayerId);
-            closeModal('create-modal'); closeModal('rooms-modal'); openModal('lobby-modal');
-            updateLobbyUI(data);
-        });
-
-        socket.on('lobbyUpdated', (data) => { currentRoom = data; updateLobbyUI(data); });
-
-        function updateLobbyUI(room) {
-            document.getElementById('lobby-room-title').innerText = `غرفة: ${room.name}`;
-            document.getElementById('lobby-room-info').innerText = `مال الحرب: ${room.initialMoney} $`;
-            if (room.host) {
-                document.getElementById('slot-host').innerHTML = `<span class="p-name">👑 المضيف (🟢 علم الاستقلال)</span><span class="p-status" style="color:${room.host.ready ? '#22c55e' : '#ef4444'}">${room.host.ready ? 'مستعد ✅' : 'غير مستعد ❌'}</span>`;
-            }
-            if (room.guest) {
-                document.getElementById('slot-guest').innerHTML = `<span class="p-name">⚔️ الصديق (🟢 علم الاستقلال)</span><span class="p-status" style="color:${room.guest.ready ? '#22c55e' : '#ef4444'}">${room.guest.ready ? 'مستعد ✅' : 'غير مستعد ❌'}</span>`;
-            } else {
-                document.getElementById('slot-guest').innerHTML = `<span class="p-name" style="color:#64748b">بانتظار انضمام الصديق...</span>`;
-            }
-            const startBtn = document.getElementById('start-game-btn');
-            if (isHost) {
-                startBtn.style.display = 'block';
-                startBtn.disabled = !(room.host && room.guest && room.host.ready && room.guest.ready);
-            } else { startBtn.style.display = 'none'; }
-        }
-
-        socket.on('gameStarted', (state) => {
-            closeModal('lobby-modal');
-            document.getElementById('start-menu').style.display = 'none';
-            document.getElementById('ui-overlay').style.display = 'block';
-            showFloatingMsg("بدأت المعركة الصحراوية المشتركة! 🚀");
-            playMenuAudio();
-            startGameEngine(state);
-        });
-
-        socket.on('serverSpawnTank', (data) => {
-            spawnTankAtServer(data.x, data.z, data.playerId === myPlayerId, data.tankType, data.tankId);
-        });
-
-        socket.on('serverMoveTank', (data) => {
-            let tank = allTanksMap[data.tankId];
-            if (tank) {
-                tank.userData.targetPos = new THREE.Vector3(data.targetX, 0, data.targetZ);
-            }
-        });
-
-        socket.on('serverFire', (data) => {
-            let shooter = allTanksMap[data.tankId];
-            if (shooter) {
-                fireProjectileVisual(shooter, data.targetPos, data.isRocket);
-            }
-        });
-
-        socket.on('serverBallistic', (data) => {
-            fireBallisticRocketVisual(data.targetPos, data.isMine);
-        });
-
-        socket.on('serverTankDamaged', (data) => {
-            let tank = allTanksMap[data.tankId];
-            if (tank) {
-                tank.userData.health = data.newHealth;
-                updateTankHealthBar(tank);
-                createExplosionEffect(tank.position, 1.5);
-                playAudio('explosion-sound');
-                if (data.destroyed) {
-                    scene.remove(tank);
-                    delete allTanksMap[data.tankId];
-                }
-            }
-        });
-
-        socket.on('errorMessage', (msg) => showFloatingMsg(msg));
-
-        let scene, camera, renderer, playerMoney = 500, allTanksMap = {};
-        let isDragging = false, previousTouchPosition = { x: 0, y: 0 };
-        let flagMeshes = [], radarDishes = [], militaryBases = [];
-        let selectedTank = null, raycaster, mouse, groundMesh;
-        let activeProjectiles = [], ballisticRockets = [];
-        let camMoveDir = { x: 0, z: 0 };
-        let minimapCtx, minimapCanvas;
-
-        function startGameEngine(state) {
-            playerMoney = state.initialMoney;
-            document.getElementById('player-money-display').innerText = `${playerMoney} $`;
-
+        function init() {
             const container = document.getElementById('canvas-container');
-            container.innerHTML = '';
-
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x38bdf8);
-            scene.fog = new THREE.FogExp2(0xd8c29d, 0.005);
+            scene.background = new THREE.Color(0x7dd3fc);
+            scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0018);
 
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
-            isHost = (socket.id === state.hostId);
-            const myPos = isHost ? { x: -45, z: -45 } : { x: 45, z: 45 };
-
-            camera.position.set(myPos.x, 30, myPos.z + 25);
-            camera.lookAt(myPos.x, 0, myPos.z);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
+            updateCameraPosition();
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            raycaster = new THREE.Raycaster();
-            mouse = new THREE.Vector2();
-
-            minimapCanvas = document.getElementById('minimap-canvas');
-            minimapCanvas.width = minimapCanvas.parentElement.clientWidth;
-            minimapCanvas.height = minimapCanvas.parentElement.clientHeight;
-            minimapCtx = minimapCanvas.getContext('2d');
-
-            setupTouchCameraControls(renderer.domElement);
-            setupGameInteractions(renderer.domElement);
-
             scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-            const sun = new THREE.DirectionalLight(0xfffbeb, 1.2);
-            sun.position.set(60, 120, 60);
-            scene.add(sun);
+            const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+            dirLight.position.set(300, 450, 300);
+            dirLight.castShadow = true;
+            scene.add(dirLight);
 
-            const floorGeo = new THREE.PlaneGeometry(400, 400, 32, 32);
-            const floorMat = new THREE.MeshLambertMaterial({ color: 0xc2a678 });
-            groundMesh = new THREE.Mesh(floorGeo, floorMat);
-            groundMesh.rotation.x = -Math.PI / 2;
-            scene.add(groundMesh);
+            createTerrain();
+            createBases();
+            setupInteraction();
 
-            let base1 = createAdvancedMilitaryBase(-45, -45);
-            let base2 = createAdvancedMilitaryBase(45, 45);
-            militaryBases.push(base1, base2);
+            // إنشاء دبابات ابتدائية لكل فريق
+            spawnTank(CORNER_OFFSET - 20, CORNER_OFFSET - 20, playerFlagType, true, 'normal');
+            spawnTank(-CORNER_OFFSET + 20, -CORNER_OFFSET + 20, enemyFlagType, false, 'normal');
 
-            let clock = new THREE.Clock();
-            function animate() {
-                requestAnimationFrame(animate);
-                let delta = clock.getDelta();
-                let time = clock.getElapsedTime();
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
 
-                if (camMoveDir.x !== 0 || camMoveDir.z !== 0) {
-                    camera.position.x += camMoveDir.x * 1.0;
-                    camera.position.z += camMoveDir.z * 1.0;
-                }
-
-                radarDishes.forEach(dish => { dish.rotation.y += delta * 1.5; });
-
-                flagMeshes.forEach(f => {
-                    const posAttr = f.geometry.attributes.position;
-                    for (let i = 0; i < posAttr.count; i++) {
-                        let u = posAttr.getX(i);
-                        if (u > 0) {
-                            let wave = Math.sin(time * 12 + u * 4) * 0.25;
-                            posAttr.setZ(i, wave);
-                        }
-                    }
-                    posAttr.needsUpdate = true;
-                });
-
-                for (let id in allTanksMap) {
-                    let tank = allTanksMap[id];
-                    if (tank.userData.targetPos) {
-                        let dir = new THREE.Vector3().subVectors(tank.userData.targetPos, tank.position);
-                        let dist = dir.length();
-                        if (dist > 0.6) {
-                            dir.normalize();
-                            tank.position.addScaledVector(dir, tank.userData.speed * delta);
-                            tank.lookAt(tank.userData.targetPos.x, tank.position.y, tank.userData.targetPos.z);
-                            if (Math.random() < 0.25) createTrackMark(tank.position);
-                        } else {
-                            tank.userData.targetPos = null;
-                        }
-                    }
-                }
-
-                for (let i = ballisticRockets.length - 1; i >= 0; i--) {
-                    let r = ballisticRockets[i];
-                    r.progress += delta * 0.8;
-                    let currentPos = new THREE.Vector3().lerpVectors(r.startPos, r.targetPos, r.progress);
-                    currentPos.y = Math.sin(r.progress * Math.PI) * 45;
-                    r.mesh.position.copy(currentPos);
-                    r.mesh.lookAt(r.targetPos);
-
-                    if (r.progress >= 1.0) {
-                        scene.remove(r.mesh);
-                        createExplosionEffect(r.targetPos, 4.0);
-                        playAudio('explosion-sound');
-                        ballisticRockets.splice(i, 1);
-                    }
-                }
-
-                for (let i = activeProjectiles.length - 1; i >= 0; i--) {
-                    let p = activeProjectiles[i];
-                    p.mesh.position.addScaledVector(p.dir, p.speed * delta);
-                    p.life -= delta;
-
-                    if (p.mesh.position.distanceTo(p.targetPos) < 1.5 || p.life <= 0) {
-                        scene.remove(p.mesh);
-                        activeProjectiles.splice(i, 1);
-                    }
-                }
-
-                drawMinimap(myPos);
-                renderer.render(scene, camera);
-            }
             animate();
         }
 
-        function playAudio(id) {
-            const snd = document.getElementById(id);
-            if (snd) { snd.currentTime = 0; snd.play().catch(e => {}); }
+        function createTerrain() {
+            const geometry = new THREE.PlaneGeometry(1100, 1100, 40, 40);
+            geometry.rotateX(-Math.PI / 2);
+            const pos = geometry.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+                pos.setY(i, getTerrainHeight(pos.getX(i), pos.getZ(i)));
+            }
+            geometry.computeVertexNormals();
+            terrainMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 }));
+            terrainMesh.receiveShadow = true;
+            scene.add(terrainMesh);
         }
 
-        function drawMinimap(myPos) {
-            if (!minimapCtx) return;
-            let w = minimapCanvas.width;
-            let h = minimapCanvas.height;
-            minimapCtx.clearRect(0, 0, w, h);
+        function createBases() {
+            // معسكر اللاعب
+            const pGroup = new THREE.Group();
+            pGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
+            scene.add(pGroup);
 
-            minimapCtx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            minimapCtx.fillRect(0, 0, w, h);
+            // معسكر العدو
+            const eGroup = new THREE.Group();
+            eGroup.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
+            scene.add(eGroup);
+        }
 
-            minimapCtx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
-            minimapCtx.lineWidth = 1;
-            minimapCtx.beginPath();
-            minimapCtx.arc(w/2, h/2, w/2 - 4, 0, Math.PI * 2);
-            minimapCtx.stroke();
-
-            let scaleFactor = (w / 2) / 120;
-
-            militaryBases.forEach(b => {
-                let rx = w/2 + (b.position.x) * scaleFactor;
-                let rz = h/2 + (b.position.z) * scaleFactor;
-                minimapCtx.fillStyle = '#f59e0b';
-                minimapCtx.fillRect(rx - 3, rz - 3, 6, 6);
+        function selectFlag(role, color) {
+            if (role === 'player') playerFlagType = color;
+            else enemyFlagType = color;
+            
+            document.querySelectorAll('#player-flags .flag-btn').forEach(btn => {
+                btn.classList.toggle('active-player', btn.innerText.includes(playerFlagType === 'green' ? 'الأخضر' : 'الأحمر'));
             });
+            document.querySelectorAll('#enemy-flags .flag-btn').forEach(btn => {
+                btn.classList.toggle('active-enemy', btn.innerText.includes(enemyFlagType === 'green' ? 'الأخضر' : 'الأحمر'));
+            });
+        }
 
-            for (let id in allTanksMap) {
-                let t = allTanksMap[id];
-                let rx = w/2 + (t.position.x) * scaleFactor;
-                let rz = h/2 + (t.position.z) * scaleFactor;
-                minimapCtx.fillStyle = t.userData.isMine ? '#22c55e' : '#ef4444';
-                minimapCtx.beginPath();
-                minimapCtx.arc(rx, rz, 3, 0, Math.PI * 2);
-                minimapCtx.fill();
+        function setSelectionMode(mode) {
+            selectionMode = mode;
+            document.getElementById('sel-all-btn').classList.toggle('active', mode === 'all');
+            document.getElementById('sel-single-btn').classList.toggle('active', mode === 'single');
+            if (mode === 'all') selectedTank = null;
+            showFloatingMsg(mode === 'all' ? 'تم تحديد جميع الدبابات' : 'اضغط على الدبابة لتحديدها');
+        }
+
+        function startGame() {
+            document.getElementById('start-menu').style.display = 'none';
+            document.getElementById('ui-overlay').style.display = 'block';
+            targetLookAt.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
+            targetCameraRadius = 120;
+            showFloatingMsg('بدأت المعركة!');
+        }
+
+        function camMove(dir, state) { camInputs[dir] = state; }
+
+        function updateCameraPosition() {
+            camera.position.x = targetLookAt.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+            camera.position.y = targetLookAt.y + cameraRadius * Math.cos(cameraPhi);
+            camera.position.z = targetLookAt.z + cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+            camera.lookAt(targetLookAt);
+        }
+
+        function spawnTank(x, z, flagColor, isPlayer, type) {
+            const group = new THREE.Group();
+            const colorCode = flagColor === 'green' ? 0x007a3d : 0xcc0000;
+            
+            // جسم الدبابة
+            const body = new THREE.Mesh(
+                new THREE.BoxGeometry(6, 3, 10),
+                new THREE.MeshStandardMaterial({ color: colorCode })
+            );
+            body.position.y = 1.5;
+            body.castShadow = true;
+            group.add(body);
+
+            // برج المدفع
+            const turret = new THREE.Mesh(
+                new THREE.BoxGeometry(4, 2, 5),
+                new THREE.MeshStandardMaterial({ color: 0x334155 })
+            );
+            turret.position.y = 3.5;
+            group.add(turret);
+
+            // المدفع
+            const cannon = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.3, 0.3, 5),
+                new THREE.MeshStandardMaterial({ color: 0x111111 })
+            );
+            cannon.rotation.x = Math.PI / 2;
+            cannon.position.set(0, 3.8, 3.5);
+            group.add(cannon);
+
+            group.position.set(x, getTerrainHeight(x, z), z);
+            group.userData = { hp: 100, maxHp: 100, type: type, isPlayer: isPlayer, targetPos: null };
+            scene.add(group);
+
+            if (isPlayer) playerTanks.push(group);
+            else enemyTanks.push(group);
+        }
+
+        function buyPlayerTank(type) {
+            const cost = type === 'normal' ? 150 : 300;
+            if (playerMoney >= cost) {
+                playerMoney -= cost;
+                document.getElementById('money-display').innerText = playerMoney;
+                spawnTank(CORNER_OFFSET + (Math.random() * 10 - 5), CORNER_OFFSET + (Math.random() * 10 - 5), playerFlagType, true, type);
+                showFloatingMsg("تم تعزيز معسكرك بدبابة جديدة 🛡️");
+            } else {
+                showFloatingMsg("الرصيد غير كافٍ!");
             }
         }
 
-        function startCamMove(x, z) { camMoveDir = { x, z }; }
-        function stopCamMove() { camMoveDir = { x: 0, z: 0 }; }
-        function zoomCamera(amount) { camera.position.y = Math.max(12, Math.min(80, camera.position.y + amount)); }
-
-        function setupTouchCameraControls(domElement) {
-            domElement.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    isDragging = true;
-                    previousTouchPosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                }
-            });
-            domElement.addEventListener('touchmove', (e) => {
-                if (!isDragging || e.touches.length !== 1) return;
-                const deltaX = e.touches[0].clientX - previousTouchPosition.x;
-                const deltaY = e.touches[0].clientY - previousTouchPosition.y;
-                camera.position.x -= deltaX * 0.08;
-                camera.position.z -= deltaY * 0.08;
-                previousTouchPosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            });
-            domElement.addEventListener('touchend', () => { isDragging = false; });
-
-            domElement.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                previousTouchPosition = { x: e.clientX, y: e.clientY };
-            });
-            window.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                const deltaX = e.clientX - previousTouchPosition.x;
-                const deltaY = e.clientY - previousTouchPosition.y;
-                camera.position.x -= deltaX * 0.08;
-                camera.position.z -= deltaY * 0.08;
-                previousTouchPosition = { x: e.clientX, y: e.clientY };
-            });
-            window.addEventListener('mouseup', () => { isDragging = false; });
-        }
-
-        function setupGameInteractions(domElement) {
-            domElement.addEventListener('click', (event) => {
-                if (event.target.tagName === 'BUTTON' || event.target.closest('.camera-control-panel') || event.target.closest('.left-controls-group')) return;
-
-                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        function setupInteraction() {
+            window.addEventListener('pointerdown', (e) => {
+                if (e.target.tagName !== 'CANVAS') return;
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
                 raycaster.setFromCamera(mouse, camera);
 
-                let intersectsTanks = raycaster.intersectObjects(Object.values(allTanksMap), true);
-                if (intersectsTanks.length > 0) {
-                    let rootTank = intersectsTanks[0].object.parent;
-                    if (rootTank.userData.isMine) {
-                        selectedTank = rootTank;
-                        showFloatingMsg("تم تحديد الدبابة! انقر على الأرض لتحريكها 🎯");
+                if (selectionMode === 'single') {
+                    const intersects = raycaster.intersectObjects(playerTanks, true);
+                    if (intersects.length > 0) {
+                        let obj = intersects[0].object;
+                        while (obj.parent && !playerTanks.includes(obj)) obj = obj.parent;
+                        selectedTank = obj;
+                        showFloatingMsg("تم اختيار دبابة محددة");
                         return;
                     }
                 }
 
-                if (selectedTank) {
-                    let intersectsGround = raycaster.intersectObject(groundMesh);
-                    if (intersectsGround.length > 0) {
-                        let targetPoint = intersectsGround[0].point;
-                        socket.emit('moveTank', { roomId: currentRoom.id, tankId: selectedTank.userData.id, targetX: targetPoint.x, targetZ: targetPoint.z });
-                        selectedTank = null;
+                const terrainIntersect = raycaster.intersectObject(terrainMesh);
+                if (terrainIntersect.length > 0) {
+                    const pt = terrainIntersect[0].point;
+                    if (selectionMode === 'all') {
+                        playerTanks.forEach(t => t.userData.targetPos = pt.clone());
+                    } else if (selectedTank) {
+                        selectedTank.userData.targetPos = pt.clone();
                     }
+                    showFloatingMsg("تم إرسال أمر الحركة للأهداف");
                 }
             });
         }
 
-        function createTrackMark(pos) {
-            const trackGeo = new THREE.PlaneGeometry(0.6, 0.9);
-            const trackMat = new THREE.MeshBasicMaterial({ color: 0x3d2817, transparent: true, opacity: 0.6 });
-            const track = new THREE.Mesh(trackGeo, trackMat);
-            track.rotation.x = -Math.PI / 2;
-            track.position.set(pos.x, 0.03, pos.z);
-            scene.add(track);
-            setTimeout(() => scene.remove(track), 4000);
-        }
+        function animate() {
+            requestAnimationFrame(animate);
 
-        // تصميم المعسكر مع علم الاستقلال السوري ثلاثي النجمات المصمم باحترافية تامة
-        function createAdvancedMilitaryBase(x, z) {
-            const group = new THREE.Group();
+            // حركة الكاميرا بالأسهم
+            const moveSpeed = 6.0;
+            if (camInputs.up) { targetLookAt.x -= Math.sin(cameraTheta) * moveSpeed; targetLookAt.z -= Math.cos(cameraTheta) * moveSpeed; }
+            if (camInputs.down) { targetLookAt.x += Math.sin(cameraTheta) * moveSpeed; targetLookAt.z += Math.cos(cameraTheta) * moveSpeed; }
+            if (camInputs.left) { targetLookAt.x -= Math.cos(cameraTheta) * moveSpeed; targetLookAt.z += Math.sin(cameraTheta) * moveSpeed; }
+            if (camInputs.right) { targetLookAt.x += Math.cos(cameraTheta) * moveSpeed; targetLookAt.z -= Math.sin(cameraTheta) * moveSpeed; }
+            if (camInputs.zi) cameraRadius = Math.max(60, cameraRadius - 4);
+            if (camInputs.zo) cameraRadius = Math.min(550, cameraRadius + 4);
 
-            const mainBuildingGeo = new THREE.BoxGeometry(12, 5, 8);
-            const mainBuildingMat = new THREE.MeshLambertMaterial({ color: 0x57534e });
-            const mainBuilding = new THREE.Mesh(mainBuildingGeo, mainBuildingMat);
-            mainBuilding.position.set(0, 2.5, 0);
-            group.add(mainBuilding);
+            updateCameraPosition();
 
-            const windowMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
-            for (let i = -3; i <= 3; i += 3) {
-                const win = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 0.2), windowMat);
-                win.position.set(i, 3.5, 4.1);
-                group.add(win);
-            }
-
-            const doorMat = new THREE.MeshLambertMaterial({ color: 0x1c1917 });
-            const door = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3, 0.3), doorMat);
-            door.position.set(0, 1.5, 4.1);
-            group.add(door);
-
-            const dishBase = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 1.5), new THREE.MeshLambertMaterial({ color: 0x292524 }));
-            dishBase.position.set(4, 5.75, 0);
-            group.add(dishBase);
-
-            const dishGeo = new THREE.SphereGeometry(1.8, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2);
-            const dishMat = new THREE.MeshLambertMaterial({ color: 0xe5e7eb, side: THREE.DoubleSide });
-            const dish = new THREE.Mesh(dishGeo, dishMat);
-            dish.rotation.x = -Math.PI / 4;
-            dish.position.set(4, 6.8, 0);
-            group.add(dish);
-            radarDishes.push(dish);
-
-            const towerGeo = new THREE.CylinderGeometry(1.5, 2, 7, 16);
-            const towerMat = new THREE.MeshLambertMaterial({ color: 0x44403c });
-            
-            const t1 = new THREE.Mesh(towerGeo, towerMat);
-            t1.position.set(-8, 3.5, -5);
-            group.add(t1);
-
-            const t2 = new THREE.Mesh(towerGeo, towerMat);
-            t2.position.set(8, 3.5, -5);
-            group.add(t2);
-
-            const poleGeo = new THREE.CylinderGeometry(0.18, 0.18, 10);
-            const poleMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-            const pole = new THREE.Mesh(poleGeo, poleMat);
-            pole.position.set(-8, 9, -5);
-            group.add(pole);
-
-            // علم الاستقلال السوري الأخضر (ثلاث نجمات خضراء حمراء سوداء وبيضاء) بدقة فائقة
-            const flagGeo = new THREE.PlaneGeometry(4.0, 2.5, 14, 7);
-            const flagTex = createSyrianIndependenceFlagTexture();
-            const flagMat = new THREE.MeshBasicMaterial({ map: flagTex, side: THREE.DoubleSide });
-            const flagMesh = new THREE.Mesh(flagGeo, flagMat);
-            flagMesh.position.set(-5.8, 9.8, -5);
-            group.add(flagMesh);
-            flagMeshes.push(flagMesh);
-
-            group.position.set(x, 0, z);
-            scene.add(group);
-            return group;
-        }
-
-        function createSyrianIndependenceFlagTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 341;
-            const ctx = canvas.getContext('2d');
-            const h = canvas.height / 3;
-
-            // الشريط الأخضر العلوي
-            ctx.fillStyle = '#007a3d'; ctx.fillRect(0, 0, canvas.width, h);
-            // الشريط الأبيض الوسطي
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, h, canvas.width, h);
-            // الشريط الأسود السفلي
-            ctx.fillStyle = '#000000'; ctx.fillRect(0, h * 2, canvas.width, h);
-
-            // النجمات الثلاث الحمراء في الشريط الأبيض الوسطي
-            ctx.fillStyle = '#ce1126';
-            drawStar(ctx, canvas.width * 0.25, h + h/2, 5, 22, 10);
-            drawStar(ctx, canvas.width * 0.50, h + h/2, 5, 22, 10);
-            drawStar(ctx, canvas.width * 0.75, h + h/2, 5, 22, 10);
-
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        function drawStar(ctx, cx, cy, spikes, outer, inner) {
-            let rot = Math.PI / 2 * 3, x = cx, y = cy, step = Math.PI / spikes;
-            ctx.beginPath(); ctx.moveTo(cx, cy - outer);
-            for (let i = 0; i < spikes; i++) {
-                x = cx + Math.cos(rot) * outer; y = cy + Math.sin(rot) * outer; ctx.lineTo(x, y); rot += step;
-                x = cx + Math.cos(rot) * inner; y = cy + Math.sin(rot) * inner; ctx.lineTo(x, y); rot += step;
-            }
-            ctx.lineTo(cx, cy - outer); ctx.closePath(); ctx.fill();
-        }
-
-        function spawnTankAtServer(x, z, isMine, tankType, tankId) {
-            const group = new THREE.Group();
-            let maxHp = tankType === 'rocket' ? 80 : 120;
-            group.userData = { health: maxHp, maxHealth: maxHp, speed: tankType === 'rocket' ? 7 : 8.5, targetPos: null, isMine: isMine, id: tankId, type: tankType };
-
-            const treadsMat = new THREE.MeshLambertMaterial({ color: 0x18181b });
-            const leftTread = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 3.6), treadsMat);
-            leftTread.position.set(-1.2, 0.3, 0);
-            group.add(leftTread);
-
-            const rightTread = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 3.6), treadsMat);
-            rightTread.position.set(1.2, 0.3, 0);
-            group.add(rightTread);
-
-            const bodyColor = isMine ? 0x27272a : 0x3f3f46;
-            const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.2, 3.4), new THREE.MeshLambertMaterial({ color: bodyColor }));
-            body.position.y = 0.75;
-            group.add(body);
-
-            const turret = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.2, 0.9, 16), new THREE.MeshLambertMaterial({ color: 0x52525b }));
-            turret.position.set(0, 1.6, 0);
-            group.add(turret);
-
-            if (tankType === 'rocket') {
-                const launcherBox = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 2.0), new THREE.MeshLambertMaterial({ color: 0x78716c }));
-                launcherBox.position.set(0, 2.3, 0);
-                group.add(launcherBox);
-            } else {
-                const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.8, 8), new THREE.MeshLambertMaterial({ color: 0x111111 }));
-                cannon.rotation.x = Math.PI / 2;
-                cannon.position.set(0, 1.6, 1.4);
-                group.add(cannon);
-            }
-
-            const healthBarGeo = new THREE.PlaneGeometry(2.4, 0.3);
-            const healthBarMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide });
-            const healthBar = new THREE.Mesh(healthBarGeo, healthBarMat);
-            healthBar.position.set(0, 3.0, 0);
-            healthBar.name = "healthBar";
-            group.add(healthBar);
-
-            group.position.set(x, 0, z);
-            scene.add(group);
-            allTanksMap[tankId] = group;
-        }
-
-        function updateTankHealthBar(tank) {
-            let bar = tank.getObjectByName("healthBar");
-            if (bar) {
-                let p = tank.userData.health / tank.userData.maxHealth;
-                bar.scale.x = Math.max(0.01, p);
-                bar.material.color.setHex(p > 0.5 ? 0x22c55e : (p > 0.2 ? 0xeab308 : 0xef4444));
-            }
-        }
-
-        function fireProjectileVisual(shooter, targetPos, isRocket) {
-            playAudio(isRocket ? 'rocket-sound' : 'shoot-sound');
-            let pGeo = new THREE.SphereGeometry(isRocket ? 0.45 : 0.3, 8, 8);
-            let pMat = new THREE.MeshBasicMaterial({ color: isRocket ? 0xf97316 : 0xfacc15 });
-            let pMesh = new THREE.Mesh(pGeo, pMat);
-            
-            pMesh.position.copy(shooter.position);
-            pMesh.position.y += 1.8;
-            scene.add(pMesh);
-
-            let tVec = new THREE.Vector3(targetPos.x, targetPos.y || 0, targetPos.z);
-            let dir = new THREE.Vector3().subVectors(tVec, pMesh.position).normalize();
-            activeProjectiles.push({
-                mesh: pMesh,
-                dir: dir,
-                speed: isRocket ? 28 : 38,
-                targetPos: tVec,
-                life: 2.5
+            // تحريك الدبابات البسيط نحو وجهتها
+            [...playerTanks, ...enemyTanks].forEach(tank => {
+                const target = tank.userData.targetPos;
+                if (target) {
+                    const dx = target.x - tank.position.x;
+                    const dz = target.z - tank.position.z;
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    if (dist > 2) {
+                        tank.position.x += (dx / dist) * 0.8;
+                        tank.position.z += (dz / dist) * 0.8;
+                        tank.position.y = getTerrainHeight(tank.position.x, tank.position.z);
+                        tank.rotation.y = Math.atan2(dx, dz);
+                    }
+                }
             });
-        }
 
-        function fireBallisticRocketVisual(targetPos, isMine) {
-            playAudio('rocket-sound');
-            const pos = isMine ? (isHost ? { x: -45, z: -45 } : { x: 45, z: 45 }) : (isHost ? { x: 45, z: 45 } : { x: -45, z: -45 });
-
-            let rGeo = new THREE.ConeGeometry(0.6, 2.5, 8);
-            let rMat = new THREE.MeshLambertMaterial({ color: 0x9333ea });
-            let rMesh = new THREE.Mesh(rGeo, rMat);
-            rMesh.position.set(pos.x, 0, pos.z);
-            scene.add(rMesh);
-
-            ballisticRockets.push({
-                mesh: rMesh,
-                startPos: new THREE.Vector3(pos.x, 0, pos.z),
-                targetPos: new THREE.Vector3(targetPos.x, 0, targetPos.z),
-                progress: 0
-            });
-        }
-
-        function createExplosionEffect(pos, size = 1.5) {
-            let fxGeo = new THREE.SphereGeometry(size, 8, 8);
-            let fxMat = new THREE.MeshBasicMaterial({ color: 0xff5722, transparent: true, opacity: 0.9 });
-            let fx = new THREE.Mesh(fxGeo, fxMat);
-            fx.position.copy(pos);
-            scene.add(fx);
-            setTimeout(() => scene.remove(fx), 600);
-        }
-
-        function buyTank(type) {
-            const cost = type === 'normal' ? 100 : (type === 'rocket' ? 180 : 300);
-            if (playerMoney >= cost) {
-                playerMoney -= cost;
-                document.getElementById('player-money-display').innerText = `${playerMoney} $`;
-                const pos = isHost ? { x: -45, z: -45 } : { x: 45, z: 45 };
-                socket.emit('buyTank', { roomId: currentRoom.id, tankType: type, x: pos.x + (Math.random() * 8 - 4), z: pos.z + (Math.random() * 8 - 4) });
-            } else {
-                showFloatingMsg("المال غير كافٍ لشراء هذه الوحدة!");
-            }
-        }
-
-        function setSelectMode(mode) {
-            document.getElementById('btn-select-all').classList.toggle('active', mode === 'all');
-            document.getElementById('btn-select-single').classList.toggle('active', mode === 'single');
+            renderer.render(scene, camera);
         }
     </script>
 </body>
