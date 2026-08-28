@@ -2,7 +2,6 @@
  * network.js - إدارة الاتصال والغرف التفاعلية
  * =================================================== */
 
-// الربط مع السيرفر الحقيقي Direct Connection
 const SERVER_URL = 'https://tank-game-server-o650.onrender.com/';
 const socket = io(SERVER_URL);
 
@@ -149,12 +148,16 @@ socket.on('updateRoomsList', (rooms) => {
     }
 });
 
+// هذا الحدث يعمل لدى المضيف والصديق عند الانضمام مباشرة
 socket.on('roomJoined', (roomData) => {
     currentRoom = roomData;
     isHost = (roomData.hostId === myPlayerId);
 
+    // إغلاق نوافذ الإنشاء والغرف
     closeModal('create-modal');
     closeModal('rooms-modal');
+    
+    // فتح نافذة الانتظار فوراً
     openModal('lobby-modal');
 
     updateLobbyUI(roomData);
