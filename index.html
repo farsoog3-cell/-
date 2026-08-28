@@ -13,28 +13,53 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
             background: rgba(15, 23, 42, 0.95);
             display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+            overflow-y: auto; padding: 10px;
         }
 
         .menu-card {
             background: rgba(30, 41, 59, 0.95); border: 1px solid #38bdf8;
-            border-radius: 12px; padding: 16px 20px; width: 90%; max-width: 380px; text-align: center;
+            border-radius: 12px; padding: 14px 18px; width: 90%; max-width: 400px; text-align: center;
         }
 
-        .menu-card h1 { font-size: 16px; margin-bottom: 10px; color: #38bdf8; }
-        .section-title { font-size: 11px; color: #94a3b8; margin: 6px 0 3px 0; text-align: right; }
-        .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+        .menu-card h1 { font-size: 15px; margin-bottom: 8px; color: #38bdf8; }
+        .section-title { font-size: 11px; color: #94a3b8; margin: 5px 0 2px 0; text-align: right; }
+        .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
 
         .flag-btn {
-            flex: 1; padding: 6px; border: 1px solid #475569; border-radius: 6px;
-            background: #1e293b; color: #fff; font-weight: bold; font-size: 11px; cursor: pointer;
+            flex: 1; padding: 5px; border: 1px solid #475569; border-radius: 6px;
+            background: #1e293b; color: #fff; font-weight: bold; font-size: 10px; cursor: pointer;
         }
 
         .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
         .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
 
+        .multiplayer-box {
+            background: rgba(15, 23, 42, 0.8); border: 1px solid #38bdf8; border-radius: 8px;
+            padding: 8px; margin-top: 8px; text-align: right;
+        }
+        .multiplayer-box input {
+            width: 100%; padding: 6px; background: #0f172a; border: 1px solid #475569;
+            color: #fff; border-radius: 4px; font-size: 11px; margin-bottom: 6px; outline: none;
+        }
+        .multiplayer-box button {
+            width: 100%; padding: 6px; background: #0284c7; border: none; color: white;
+            border-radius: 4px; font-weight: bold; font-size: 11px; cursor: pointer; margin-bottom: 6px;
+        }
+        .rooms-container {
+            max-height: 90px; overflow-y: auto; background: #0b0f19; border: 1px solid #334155;
+            border-radius: 4px; padding: 4px; margin-top: 4px;
+        }
+        .room-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 3px 6px; border-bottom: 1px solid #1e293b; font-size: 10px; color: #e2e8f0;
+        }
+        .room-item button {
+            background: #22c55e; border: none; padding: 2px 6px; border-radius: 3px; color: white; font-size: 9px; cursor: pointer; width: auto; margin: 0;
+        }
+
         #start-btn {
-            width: 100%; margin-top: 10px; padding: 8px; border: none; border-radius: 6px;
-            background: #0284c7; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer;
+            width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 6px;
+            background: #22c55e; color: #fff; font-size: 12px; font-weight: bold; cursor: pointer;
         }
 
         #ui-overlay {
@@ -154,6 +179,16 @@
             <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
         </div>
 
+        <div class="multiplayer-box">
+            <div class="section-title" style="margin-top:0;">إعدادات اللعب مع الأصدقاء:</div>
+            <input type="text" id="room-name-input" placeholder="اكتب اسم الغرفة للاتصال...">
+            <button onclick="playClickSound(); createRoom()">إنشاء غرفة جديدة 🏠</button>
+            <div class="section-title">الغرف المتاحة للأصدقاء:</div>
+            <div class="rooms-container" id="rooms-list-container">
+                <div style="text-align:center; color:#64748b; font-size:10px; padding:5px;">جاري الاتصال بالسيرفر...</div>
+            </div>
+        </div>
+
         <button id="start-btn" onclick="playClickSound(); startGame()">بدء المعركة 🚀</button>
     </div>
 </div>
@@ -229,8 +264,42 @@
 <div id="canvas-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://tank-game-server-o650.onrender.com/socket.io/socket.io.js"></script>
 
 <script>
+    // ربط السيرفر عبر Socket.IO
+    const socket = io('https://tank-game-server-o650.onrender.com/');
+    let currentRoomName = null;
+
+    socket.on('rooms_list', (rooms) => {
+        const container = document.getElementById('rooms-list-container');
+        if (!rooms || rooms.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#64748b; font-size:10px; padding:5px;">لا توجد غرف متاحة حالياً</div>';
+            return;
+        }
+        container.innerHTML = '';
+        rooms.forEach(r => {
+            const item = document.createElement('div');
+            item.className = 'room-item';
+            item.innerHTML = `<span>${r.name} (${r.playersCount || 1}/2)</span> <button onclick="joinRoom('${r.name}')">انضمام</button>`;
+            container.appendChild(item);
+        });
+    });
+
+    function createRoom() {
+        const name = document.getElementById('room-name-input').value.trim();
+        if (!name) return alert('الرجاء كتابة اسم الغرفة أولاً');
+        currentRoomName = name;
+        socket.emit('create_room', { room: name, flag: playerFlagType });
+        showFloatingMsg('تم إنشاء الغرفة بنجاح وبانتظار صديقك!');
+    }
+
+    function joinRoom(name) {
+        currentRoomName = name;
+        socket.emit('join_room', { room: name });
+        showFloatingMsg('انضممت إلى الغرفة بنجاح!');
+    }
+
     const soundFiles = {
         menuBgm: 'sounds/menu_bgm.mp3',
         battleBgm: 'sounds/battle_bgm.mp3',
@@ -999,6 +1068,15 @@
                         });
                     } else if (selectedTank && !selectedTank.isDestroyed) {
                         selectedTank.target = playerTargetPos.clone();
+                    }
+
+                    // إرسال إحداثيات الحركة عبر السيرفر إن وجد غرفة مفعلة
+                    if (currentRoomName) {
+                        socket.emit('tank_move', {
+                            room: currentRoomName,
+                            x: playerTargetPos.x,
+                            z: playerTargetPos.z
+                        });
                     }
                 }
             }
