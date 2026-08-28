@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة الدبابات - Tank Game Online</title>
+    <title>معركة الدبابات المحسنة - Tank Game 3D</title>
     <!-- مكتبات Three.js و Socket.IO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -70,8 +70,6 @@
             border-radius: 6px; padding: 4px 8px; text-align: center; color: white; font-size: 10px; 
             pointer-events: auto;
         }
-        .capture-bar-bg { width: 100%; height: 5px; background: #334155; border-radius: 3px; margin-top: 3px; overflow: hidden; }
-        .capture-bar-fill { width: 0%; height: 100%; background: #22c55e; transition: width 0.3s; }
 
         .left-controls-group { position: absolute; top: 45px; left: 8px; pointer-events: auto; display: flex; flex-direction: column; gap: 6px; width: 120px; }
         .selection-controls { display: flex; gap: 4px; }
@@ -84,25 +82,30 @@
         .buy-btn-small { background: #22c55e; border: none; color: white; padding: 5px; border-radius: 4px; font-weight: bold; font-size: 9px; cursor: pointer; }
         .buy-btn-rocket { background: #ea580c; }
 
+        /* لوحة تحكم الكاميرا الجديدة (أسهم + زوم) */
+        .camera-control-panel {
+            position: absolute; bottom: 15px; right: 15px; pointer-events: auto;
+            background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 12px;
+            padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+        }
+        .cam-row { display: flex; gap: 6px; }
+        .cam-btn {
+            width: 36px; height: 36px; background: #1e293b; border: 1px solid #38bdf8;
+            color: #38bdf8; font-size: 14px; font-weight: bold; border-radius: 6px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .cam-btn:active { background: #0284c7; color: #fff; }
+        .zoom-row { display: flex; gap: 6px; margin-top: 2px; width: 100%; }
+        .zoom-btn { flex: 1; padding: 4px; background: #0f172a; border: 1px solid #f59e0b; color: #f59e0b; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 12px; text-align: center; }
+
         #minimap-container { position: absolute; bottom: 10px; left: 10px; width: 85px; height: 85px; background: rgba(15, 23, 42, 0.85); border: 2px solid #38bdf8; border-radius: 50%; overflow: hidden; pointer-events: auto; }
         #minimap-canvas { width: 100%; height: 100%; }
-
-        .camera-joystick-hint {
-            position: absolute; bottom: 15px; right: 15px;
-            background: rgba(15, 23, 42, 0.8); border: 1px solid #38bdf8;
-            color: #38bdf8; padding: 8px 12px; border-radius: 20px; font-size: 11px;
-            pointer-events: auto; text-align: center;
-        }
 
         #floating-msg { 
             position: absolute; top: 45px; left: 50%; transform: translateX(-50%); 
             background: rgba(0, 0, 0, 0.85); color: #38bdf8; padding: 4px 10px; 
             border-radius: 4px; font-size: 11px; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 50; 
         }
-
-        #victory-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 200; background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff; }
-        #victory-screen h1 { font-size: 24px; color: #22c55e; margin-bottom: 8px; }
-        .restart-btn { padding: 10px 20px; background: #22c55e; border: none; color: white; font-weight: bold; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -187,10 +190,7 @@
 
     <div id="ui-overlay">
         <div class="top-capture-box">
-            <div id="capture-status-text">منطقة الاستحواذ: محايدة</div>
-            <div class="capture-bar-bg">
-                <div id="capture-bar-fill" class="capture-bar-fill"></div>
-            </div>
+            <div id="capture-status-text">منطقة الاستحواذ: معسكر نشط</div>
         </div>
 
         <div class="left-controls-group">
@@ -211,14 +211,21 @@
 
         <div id="minimap-container"><canvas id="minimap-canvas"></canvas></div>
 
-        <div class="camera-joystick-hint">
-            👆 انقر الدبابة ثم الأرض لتحريكها | اسحب الشاشة للكاميرا
+        <!-- لوحة تحكم الكاميرا المتكاملة (أسهم يمين/يسار/أعلى/أسفل + زوم + تدوير باللمس) -->
+        <div class="camera-control-panel">
+            <div class="cam-row">
+                <button class="cam-btn" ontouchstart="startCamMove(0, -1)" onmousedown="startCamMove(0, -1)" onmouseup="stopCamMove()" ontouchend="stopCamMove()">⬆️</button>
+            </div>
+            <div class="cam-row">
+                <button class="cam-btn" ontouchstart="startCamMove(-1, 0)" onmousedown="startCamMove(-1, 0)" onmouseup="stopCamMove()" ontouchend="stopCamMove()">⬅️</button>
+                <button class="cam-btn" ontouchstart="startCamMove(0, 1)" onmousedown="startCamMove(0, 1)" onmouseup="stopCamMove()" ontouchend="stopCamMove()">⬇️</button>
+                <button class="cam-btn" ontouchstart="startCamMove(1, 0)" onmousedown="startCamMove(1, 0)" onmouseup="stopCamMove()" ontouchend="stopCamMove()">➡️</button>
+            </div>
+            <div class="zoom-row">
+                <button class="zoom-btn" onclick="zoomCamera(-5)">زوم +</button>
+                <button class="zoom-btn" onclick="zoomCamera(5)">زوم -</button>
+            </div>
         </div>
-    </div>
-
-    <div id="victory-screen">
-        <h1 id="victory-title">لقد انتصرت! 🎉</h1>
-        <button class="restart-btn" onclick="location.reload()">العودة للقائمة الرئيسية 🔄</button>
     </div>
 
     <script>
@@ -231,56 +238,9 @@
         let isHost = false;
         let isReady = false;
 
-        let soundController = {
-            listener: null,
-            sounds: {},
-            audioLoader: null,
-            init: function(cam) {
-                this.listener = new THREE.AudioListener();
-                cam.add(this.listener);
-                this.audioLoader = new THREE.AudioLoader();
-
-                const soundFiles = {
-                    menu_bgm: 'sounds/menu_bgm.mp3',
-                    battle_bgm: 'sounds/battle_bgm.mp3',
-                    shoot: 'sounds/shoot.mp3',
-                    rocket: 'sounds/rocket.mp3',
-                    explosion: 'sounds/explosion.mp3',
-                    victory: 'sounds/victory_sound.mp3',
-                    defeat: 'sounds/defeat_sound.mp3'
-                };
-
-                for (let key in soundFiles) {
-                    let sound = new THREE.Audio(this.listener);
-                    this.sounds[key] = sound;
-                    this.audioLoader.load(soundFiles[key], (buffer) => {
-                        sound.setBuffer(buffer);
-                        if (key.includes('bgm')) {
-                            sound.setLoop(true);
-                            sound.setVolume(0.4);
-                        } else {
-                            sound.setVolume(0.7);
-                        }
-                    }, undefined, (err) => {});
-                }
-            },
-            play: function(key) {
-                if (this.sounds[key] && this.sounds[key].buffer) {
-                    if (this.sounds[key].isPlaying) this.sounds[key].stop();
-                    this.sounds[key].play();
-                }
-            },
-            stop: function(key) {
-                if (this.sounds[key] && this.sounds[key].isPlaying) this.sounds[key].stop();
-            }
-        };
-
         function openModal(id) {
             document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            if (soundController.sounds.menu_bgm && !soundController.sounds.menu_bgm.isPlaying) {
-                soundController.play('menu_bgm');
-            }
         }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function showFloatingMsg(msg) {
@@ -288,12 +248,6 @@
             el.innerText = msg; el.style.opacity = '1';
             setTimeout(() => el.style.opacity = '0', 3000);
         }
-
-        document.addEventListener('click', () => {
-            if (soundController.sounds.menu_bgm && !soundController.sounds.menu_bgm.isPlaying) {
-                soundController.play('menu_bgm');
-            }
-        }, { once: true });
 
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.money-opt').forEach(btn => {
@@ -389,22 +343,18 @@
             closeModal('lobby-modal');
             document.getElementById('start-menu').style.display = 'none';
             document.getElementById('ui-overlay').style.display = 'block';
-            
-            soundController.stop('menu_bgm');
-            soundController.play('battle_bgm');
-
             showFloatingMsg("بدأت المعركة الصحراوية الكبرى! 🚀");
             startGameEngine(state);
         });
 
         socket.on('errorMessage', (msg) => showFloatingMsg(msg));
 
-        /* --- محرك 3D متقدم: توجيه الكاميرا للمعسكر، أعلام مرفرفة حقيقية، حركة دبابات باللمس مع آثار وأضرار ونيران ودخان --- */
+        /* --- محرك 3D متطور: معسكرات ثلاثية الأبعاد، دبابات محسنة، علم ثلاثي الأبعاد مرفرف، وتحكم كامل بالكاميرا (أسهم + زوم + لمس) --- */
         let scene, camera, renderer, playerMoney = 500, myTanks = [], enemyTanks = [];
         let isDragging = false, previousTouchPosition = { x: 0, y: 0 };
-        let cameraAngleX = 0, cameraAngleY = 0, cameraDistance = 45;
         let flagMeshes = [], selectedTank = null, raycaster, mouse;
-        let groundMesh, activeProjectiles = [], activeEffects = [];
+        let groundMesh, activeProjectiles = [];
+        let camMoveDir = { x: 0, z: 0 }, camMoveInterval = null;
 
         function startGameEngine(state) {
             playerMoney = state.initialMoney;
@@ -414,21 +364,17 @@
             container.innerHTML = '';
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x52b8ff);
+            scene.background = new THREE.Color(0x4aa3df);
 
-            camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
             
             const hostFlag = (state.host && state.host.flag) ? state.host.flag : 'green';
             const guestFlag = (state.guest && state.guest.flag) ? state.guest.flag : 'red';
             const myPos = (myFlag === hostFlag) ? { x: -35, z: -35 } : { x: 35, z: 35 };
 
-            // توجيه الكاميرا فوراً فوق معسكر اللاعب المختار
-            cameraAngleX = (myFlag === hostFlag) ? -Math.PI / 4 : Math.PI / 4;
-            cameraAngleY = 10;
-            camera.position.set(myPos.x, 30, myPos.z + 25);
+            // توجيه الكاميرا فوراً فوق معسكر اللاعب المختار وبشكل ثلاثي الأبعاد جميل
+            camera.position.set(myPos.x, 25, myPos.z + 20);
             camera.lookAt(myPos.x, 0, myPos.z);
-
-            soundController.init(camera);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -442,19 +388,19 @@
             setupTankMovementControls(renderer.domElement);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-            const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-            sun.position.set(40, 90, 50);
+            const sun = new THREE.DirectionalLight(0xffffff, 1.3);
+            sun.position.set(50, 100, 50);
             scene.add(sun);
 
-            // أرض صحراوية مسطحة
+            // أرض صحراوية مسطحة عالية الجودة
             const floorGeo = new THREE.PlaneGeometry(300, 300);
-            const floorMat = new THREE.MeshBasicMaterial({ color: 0xded0bc });
+            const floorMat = new THREE.MeshLambertMaterial({ color: 0xd8c29d });
             groundMesh = new THREE.Mesh(floorGeo, floorMat);
             groundMesh.rotation.x = -Math.PI / 2;
             scene.add(groundMesh);
 
-            createExactMilitaryBase(-35, -35, hostFlag);
-            createExactMilitaryBase(35, 35, guestFlag);
+            createAdvancedMilitaryBase(-35, -35, hostFlag);
+            createAdvancedMilitaryBase(35, 35, guestFlag);
 
             const enPos = (myFlag === hostFlag) ? { x: 35, z: 35 } : { x: -35, z: -35 };
 
@@ -467,13 +413,19 @@
                 let delta = clock.getDelta();
                 let time = clock.getElapsedTime();
 
-                // تحديث رفرفة الأعلام الواقعية
+                // تحديث حركة الكاميرا عند النقر المستمر على الأسهم
+                if (camMoveDir.x !== 0 || camMoveDir.z !== 0) {
+                    camera.position.x += camMoveDir.x * 0.8;
+                    camera.position.z += camMoveDir.z * 0.8;
+                }
+
+                // تحديث رفرفة الأعلام الواقعية ثلاثية الأبعاد
                 flagMeshes.forEach(f => {
                     const posAttr = f.geometry.attributes.position;
                     for (let i = 0; i < posAttr.count; i++) {
                         let u = posAttr.getX(i);
-                        if (u > 0) { // الأجزاء البعيدة عن العامود ترفرف أكثر
-                            let wave = Math.sin(time * 8 + u * 2) * 0.15;
+                        if (u > 0) {
+                            let wave = Math.sin(time * 10 + u * 3) * 0.2;
                             posAttr.setZ(i, wave);
                         }
                     }
@@ -489,15 +441,11 @@
                             dir.normalize();
                             tank.position.addScaledVector(dir, tank.userData.speed * delta);
                             tank.lookAt(tank.userData.targetPos.x, tank.position.y, tank.userData.targetPos.z);
-
-                            // توليد آثار المشي (جنزير الدبابة) خلفها
                             if (Math.random() < 0.3) createTrackMark(tank.position);
                         } else {
                             tank.userData.targetPos = null;
                         }
                     }
-
-                    // إطلاق نار تلقائي نحو العدو القريب مع تقصف ونار ودخان
                     findAndAttackTarget(tank);
                 });
 
@@ -507,7 +455,6 @@
                     p.mesh.position.addScaledVector(p.dir, p.speed * delta);
                     p.life -= delta;
 
-                    // فحص الاصطدام بالعدو
                     let targets = p.isMineTank ? enemyTanks : myTanks;
                     let hit = false;
                     for (let t of targets) {
@@ -516,7 +463,6 @@
                             t.userData.health -= p.damage;
                             updateTankHealthBar(t);
                             createExplosionEffect(t.position);
-                            soundController.play('explosion');
 
                             if (t.userData.health <= 0) {
                                 scene.remove(t);
@@ -541,8 +487,15 @@
             animate();
         }
 
-        function updateCameraPosition() {
-            camera.position.x += 0; // يتم التحكم عبر السحب المباشر
+        /* --- وظائف تحكم الكاميرا (أسهم، زوم، لمس يمين ويسار) --- */
+        function startCamMove(x, z) {
+            camMoveDir = { x, z };
+        }
+        function stopCamMove() {
+            camMoveDir = { x: 0, z: 0 };
+        }
+        function zoomCamera(amount) {
+            camera.position.y = Math.max(10, Math.min(70, camera.position.y + amount));
         }
 
         function setupTouchCameraControls(domElement) {
@@ -560,8 +513,8 @@
                 const deltaX = currentX - previousTouchPosition.x;
                 const deltaY = currentY - previousTouchPosition.y;
 
-                camera.position.x -= deltaX * 0.05;
-                camera.position.z -= deltaY * 0.05;
+                camera.position.x -= deltaX * 0.06;
+                camera.position.z -= deltaY * 0.06;
 
                 previousTouchPosition = { x: currentX, y: currentY };
             });
@@ -577,8 +530,8 @@
                 const deltaX = e.clientX - previousTouchPosition.x;
                 const deltaY = e.clientY - previousTouchPosition.y;
 
-                camera.position.x -= deltaX * 0.05;
-                camera.position.z -= deltaY * 0.05;
+                camera.position.x -= deltaX * 0.06;
+                camera.position.z -= deltaY * 0.06;
 
                 previousTouchPosition = { x: e.clientX, y: e.clientY };
             });
@@ -587,12 +540,14 @@
 
         function setupTankMovementControls(domElement) {
             domElement.addEventListener('click', (event) => {
+                // منع التداخل مع أزرار التحكم
+                if (event.target.tagName === 'BUTTON' || event.target.closest('.camera-control-panel') || event.target.closest('.left-controls-group')) return;
+
                 mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
                 raycaster.setFromCamera(mouse, camera);
 
-                // فحص النقر على دبابات اللاعب
                 let intersectsTanks = raycaster.intersectObjects(myTanks, true);
                 if (intersectsTanks.length > 0) {
                     let rootTank = intersectsTanks[0].object.parent;
@@ -603,7 +558,6 @@
                     }
                 }
 
-                // إذا كانت الدبابة محددة والنقر على الأرض، يتم تحريكها نحو الموقع المطلوبة
                 if (selectedTank) {
                     let intersectsGround = raycaster.intersectObject(groundMesh);
                     if (intersectsGround.length > 0) {
@@ -617,71 +571,58 @@
         }
 
         function createTrackMark(pos) {
-            const trackGeo = new THREE.PlaneGeometry(0.5, 0.8);
-            const trackMat = new THREE.MeshBasicMaterial({ color: 0x332211, transparent: true, opacity: 0.5 });
+            const trackGeo = new THREE.PlaneGeometry(0.6, 0.9);
+            const trackMat = new THREE.MeshBasicMaterial({ color: 0x3d2817, transparent: true, opacity: 0.6 });
             const track = new THREE.Mesh(trackGeo, trackMat);
             track.rotation.x = -Math.PI / 2;
-            track.position.set(pos.x, 0.02, pos.z);
+            track.position.set(pos.x, 0.03, pos.z);
             scene.add(track);
-            setTimeout(() => scene.remove(track), 4000); // تختفي تدريجياً
+            setTimeout(() => scene.remove(track), 4000);
         }
 
-        function createExactMilitaryBase(x, z, flagType) {
+        /* --- تصميم معسكر ثلاثي الأبعاد احترافي ومتطور --- */
+        function createAdvancedMilitaryBase(x, z, flagType) {
             const group = new THREE.Group();
 
-            const buildingGeo = new THREE.BoxGeometry(8, 3, 5);
-            const buildingMat = new THREE.MeshBasicMaterial({ color: 0xb5a388 });
-            const building = new THREE.Mesh(buildingGeo, buildingMat);
-            building.position.set(0, 1.5, 0);
-            group.add(building);
+            // المبنى الرئيسي العسكري
+            const mainBuildingGeo = new THREE.BoxGeometry(10, 4, 6);
+            const mainBuildingMat = new THREE.MeshLambertMaterial({ color: 0xc2b280 });
+            const mainBuilding = new THREE.Mesh(mainBuildingGeo, mainBuildingMat);
+            mainBuilding.position.set(0, 2, 0);
+            group.add(mainBuilding);
 
-            const doorGeo = new THREE.BoxGeometry(1.2, 1.8, 0.2);
-            const doorMat = new THREE.MeshBasicMaterial({ color: 0x333333 });
-            const door = new THREE.Mesh(doorGeo, doorMat);
-            door.position.set(0, 0.9, 2.51);
-            group.add(door);
-
-            const towerGeo = new THREE.CylinderGeometry(1.5, 1.8, 4, 16);
-            const towerMat = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+            // أبراج المراقبة المحيطة
+            const towerGeo = new THREE.CylinderGeometry(1.5, 2, 6, 16);
+            const towerMat = new THREE.MeshLambertMaterial({ color: 0x8c7853 });
             
-            const leftTower = new THREE.Mesh(towerGeo, towerMat);
-            leftTower.position.set(-6, 2, 2);
-            group.add(leftTower);
+            const t1 = new THREE.Mesh(towerGeo, towerMat);
+            t1.position.set(-7, 3, -4);
+            group.add(t1);
 
-            const rightTower = new THREE.Mesh(towerGeo, towerMat);
-            rightTower.position.set(6, 2, 2);
-            group.add(rightTower);
+            const t2 = new THREE.Mesh(towerGeo, towerMat);
+            t2.position.set(7, 3, -4);
+            group.add(t2);
 
-            const roofGeo = new THREE.ConeGeometry(1.8, 1, 16);
-            const roofMat = new THREE.MeshBasicMaterial({ color: 0x8c7853 });
-            
-            const leftRoof = new THREE.Mesh(roofGeo, roofMat);
-            leftRoof.position.set(-6, 4.5, 2);
-            group.add(leftRoof);
+            // أسوار الدفاع
+            const wallGeo = new THREE.BoxGeometry(18, 1.5, 1);
+            const wallMat = new THREE.MeshLambertMaterial({ color: 0x6e6552 });
+            const wall = new THREE.Mesh(wallGeo, wallMat);
+            wall.position.set(0, 0.75, 5);
+            group.add(wall);
 
-            const rightRoof = new THREE.Mesh(roofGeo, roofMat);
-            rightRoof.position.set(6, 4.5, 2);
-            group.add(rightRoof);
-
-            const wallGeo = new THREE.BoxGeometry(16, 1.2, 0.8);
-            const wallMat = new THREE.MeshBasicMaterial({ color: 0x8fa8c7 });
-            const frontWall = new THREE.Mesh(wallGeo, wallMat);
-            frontWall.position.set(0, 0.6, 6);
-            group.add(frontWall);
-
-            // عامود العلم المربوط به العلم بشكل صحيح
-            const poleGeo = new THREE.CylinderGeometry(0.12, 0.12, 7);
-            const poleMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+            // عامود العلم المربوط به العلم بشكل صحيح وصحي
+            const poleGeo = new THREE.CylinderGeometry(0.15, 0.15, 9);
+            const poleMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
             const pole = new THREE.Mesh(poleGeo, poleMat);
-            pole.position.set(-6, 7.5, 2);
+            pole.position.set(-7, 8.5, -4);
             group.add(pole);
 
-            // علم مضلع لتمكين الرفرفة الحقيقية
-            const flagGeo = new THREE.PlaneGeometry(3, 1.8, 10, 5);
+            // علم ثلاثي الأبعاد مرفرف حقيقي
+            const flagGeo = new THREE.PlaneGeometry(3.5, 2.2, 12, 6);
             const flagTex = createFlagTexture(flagType);
             const flagMat = new THREE.MeshBasicMaterial({ map: flagTex, side: THREE.DoubleSide });
             const flagMesh = new THREE.Mesh(flagGeo, flagMat);
-            flagMesh.position.set(-4.4, 8, 2);
+            flagMesh.position.set(-5.15, 9.2, -4);
             group.add(flagMesh);
             flagMeshes.push(flagMesh);
 
@@ -724,37 +665,51 @@
             ctx.lineTo(cx, cy - outer); ctx.closePath(); ctx.fill();
         }
 
+        /* --- تصميم دبابات ثلاثية الأبعاد متطورة مع خط الدمج والنار والدخان --- */
         function spawnTank(x, z, color, isMine) {
             const group = new THREE.Group();
-            group.userData = { health: 100, maxHealth: 100, speed: 8, targetPos: null, isMine: isMine, lastShot: 0 };
+            group.userData = { health: 100, maxHealth: 100, speed: 9, targetPos: null, isMine: isMine, lastShot: 0 };
 
+            // جنزير الدبابة السفلي
+            const treadsMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+            const leftTread = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 3.4), treadsMat);
+            leftTread.position.set(-1.1, 0.3, 0);
+            group.add(leftTread);
+
+            const rightTread = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 3.4), treadsMat);
+            rightTread.position.set(1.1, 0.3, 0);
+            group.add(rightTread);
+
+            // هيكل الدبابة الأساسي
             const body = new THREE.Mesh(
-                new THREE.BoxGeometry(2.2, 1.0, 3.2), 
-                new THREE.MeshBasicMaterial({ color: color === 'green' ? 0x33691e : 0xb71c1c })
+                new THREE.BoxGeometry(2.0, 1.1, 3.2), 
+                new THREE.MeshLambertMaterial({ color: color === 'green' ? 0x2e5e1e : 0xa61c1c })
             );
-            body.position.y = 0.5; 
+            body.position.y = 0.7; 
             group.add(body);
 
+            // برج الدبابة الدوّار
             const turret = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.9, 0.9, 0.7, 16), 
-                new THREE.MeshBasicMaterial({ color: 0x333333 })
+                new THREE.CylinderGeometry(1.0, 1.1, 0.8, 16), 
+                new THREE.MeshLambertMaterial({ color: 0x3d3d3d })
             );
-            turret.position.set(0, 1.35, 0); 
+            turret.position.set(0, 1.55, 0); 
             group.add(turret);
 
+            // ماسورة المدفع
             const cannon = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.15, 0.15, 2, 8), 
-                new THREE.MeshBasicMaterial({ color: 0x111111 })
+                new THREE.CylinderGeometry(0.18, 0.18, 2.5, 8), 
+                new THREE.MeshLambertMaterial({ color: 0x111111 })
             );
             cannon.rotation.x = Math.PI / 2; 
-            cannon.position.set(0, 1.35, 1.1); 
+            cannon.position.set(0, 1.55, 1.3); 
             group.add(cannon);
 
-            // خط الدمج الخاص بكل دبابة فوقها مباشرة
-            const healthBarGeo = new THREE.PlaneGeometry(2, 0.3);
+            // خط الدمج (Health Bar) الخاص بكل دبابة فوقها
+            const healthBarGeo = new THREE.PlaneGeometry(2.2, 0.32);
             const healthBarMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide });
             const healthBar = new THREE.Mesh(healthBarGeo, healthBarMat);
-            healthBar.position.set(0, 2.5, 0);
+            healthBar.position.set(0, 2.8, 0);
             healthBar.name = "healthBar";
             group.add(healthBar);
 
@@ -775,11 +730,11 @@
         function findAndAttackTarget(tank) {
             let enemies = tank.userData.isMine ? enemyTanks : myTanks;
             let now = Date.now();
-            if (now - tank.userData.lastShot < 2000) return; // معدل إطلاق النار كل ثانيتين
+            if (now - tank.userData.lastShot < 1800) return;
 
             for (let en of enemies) {
                 let dist = tank.position.distanceTo(en.position);
-                if (dist < 25) { // مدى الرؤية والرمي
+                if (dist < 28) {
                     tank.userData.lastShot = now;
                     fireProjectile(tank, en);
                     break;
@@ -788,36 +743,33 @@
         }
 
         function fireProjectile(shooter, target) {
-            let pGeo = new THREE.SphereGeometry(0.3, 8, 8);
-            let pMat = new THREE.MeshBasicMaterial({ color: 0xffa500 });
+            let pGeo = new THREE.SphereGeometry(0.35, 8, 8);
+            let pMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
             let pMesh = new THREE.Mesh(pGeo, pMat);
             
             pMesh.position.copy(shooter.position);
-            pMesh.position.y += 1.35;
+            pMesh.position.y += 1.55;
             scene.add(pMesh);
 
             let dir = new THREE.Vector3().subVectors(target.position, shooter.position).normalize();
             activeProjectiles.push({
                 mesh: pMesh,
                 dir: dir,
-                speed: 30,
+                speed: 35,
                 life: 2.0,
                 isMineTank: shooter.userData.isMine,
                 damage: 25
             });
-
-            if (shooter.userData.isMine) soundController.play('shoot');
         }
 
         function createExplosionEffect(pos) {
-            // تأثير نار ودخان مبسط
-            let smokeGeo = new THREE.SphereGeometry(1.5, 8, 8);
-            let smokeMat = new THREE.MeshBasicMaterial({ color: 0xff4500, transparent: true, opacity: 0.8 });
-            let smoke = new THREE.Mesh(smokeGeo, smokeMat);
-            smoke.position.copy(pos);
-            scene.add(smoke);
-
-            setTimeout(() => scene.remove(smoke), 600);
+            // تأثير انفجار ونار ودخان بصري مميز
+            let fxGeo = new THREE.SphereGeometry(1.8, 8, 8);
+            let fxMat = new THREE.MeshBasicMaterial({ color: 0xff3300, transparent: true, opacity: 0.9 });
+            let fx = new THREE.Mesh(fxGeo, fxMat);
+            fx.position.copy(pos);
+            scene.add(fx);
+            setTimeout(() => scene.remove(fx), 500);
         }
 
         function buyTank(type) {
@@ -827,14 +779,9 @@
                 document.getElementById('player-money-display').innerText = `${playerMoney} $`;
                 const pos = (myFlag === 'green') ? { x: -35, z: -35 } : { x: 35, z: 35 };
                 spawnTank(pos.x + (Math.random() * 6 - 3), pos.z + (Math.random() * 6 - 3), myFlag, true);
-                
-                if(type === 'rocket') soundController.play('rocket');
-                else soundController.play('shoot');
-                
-                showFloatingMsg("تم تعزيز معسكرك بدبابة جديدة 🛡️");
+                showFloatingMsg("تم تعزيز معسكرك بدبابة قتالية جديدة 🛡️");
             } else { 
-                soundController.play('explosion');
-                showFloatingMsg("المال غير كافٍ!"); 
+                showFloatingMsg("المال غير كافٍ لشراء دبابة!"); 
             }
         }
 
