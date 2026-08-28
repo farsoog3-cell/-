@@ -87,7 +87,6 @@
         #minimap-container { position: absolute; bottom: 10px; left: 10px; width: 85px; height: 85px; background: rgba(15, 23, 42, 0.85); border: 2px solid #38bdf8; border-radius: 50%; overflow: hidden; pointer-events: auto; }
         #minimap-canvas { width: 100%; height: 100%; }
 
-        /* لوحة التحكم الجديدة المريحة بالأسفل */
         .camera-joystick-hint {
             position: absolute; bottom: 15px; right: 15px;
             background: rgba(15, 23, 42, 0.8); border: 1px solid #38bdf8;
@@ -111,7 +110,6 @@
     <div id="canvas-container"></div>
     <div id="floating-msg"></div>
 
-    <!-- القائمة الرئيسية -->
     <div id="start-menu">
         <div class="menu-card" id="main-menu-card">
             <h1>معركة الدبابات ⚔️</h1>
@@ -121,7 +119,6 @@
             </div>
         </div>
 
-        <!-- نافذة إنشاء غرفة -->
         <div class="modal-overlay" id="create-modal">
             <div class="modal-card">
                 <h2>إنشاء غرفة جديدة</h2>
@@ -148,7 +145,6 @@
             </div>
         </div>
 
-        <!-- نافذة الغرف المتاحة -->
         <div class="modal-overlay" id="rooms-modal">
             <div class="modal-card">
                 <h2>الغرف المتاحة 🌐</h2>
@@ -159,7 +155,6 @@
             </div>
         </div>
 
-        <!-- نافذة غرفة الانتظار -->
         <div class="modal-overlay" id="lobby-modal">
             <div class="modal-card">
                 <h2 id="lobby-room-title">غرفة الانتظار</h2>
@@ -190,7 +185,6 @@
         </div>
     </div>
 
-    <!-- واجهة اللعب -->
     <div id="ui-overlay">
         <div class="top-capture-box">
             <div id="capture-status-text">منطقة الاستحواذ: محايدة</div>
@@ -218,7 +212,7 @@
         <div id="minimap-container"><canvas id="minimap-canvas"></canvas></div>
 
         <div class="camera-joystick-hint">
-            👆 اسحب الشاشة لتحريك الكاميرا يميناً ويساراً
+            👆 انقر الدبابة ثم الأرض لتحريكها | اسحب الشاشة للكاميرا
         </div>
     </div>
 
@@ -227,7 +221,6 @@
         <button class="restart-btn" onclick="location.reload()">العودة للقائمة الرئيسية 🔄</button>
     </div>
 
-    <!-- كود الجافاسكريبت المدمج -->
     <script>
         const SERVER_URL = 'https://tank-game-server-o650.onrender.com/';
         const socket = io(SERVER_URL);
@@ -406,10 +399,12 @@
 
         socket.on('errorMessage', (msg) => showFloatingMsg(msg));
 
-        /* --- محرك 3D مع تحكم كاميرا باللمس وإزالة الغيوم بالكامل --- */
+        /* --- محرك 3D متقدم: توجيه الكاميرا للمعسكر، أعلام مرفرفة حقيقية، حركة دبابات باللمس مع آثار وأضرار ونيران ودخان --- */
         let scene, camera, renderer, playerMoney = 500, myTanks = [], enemyTanks = [];
         let isDragging = false, previousTouchPosition = { x: 0, y: 0 };
-        let cameraAngleX = 0, cameraAngleY = 0, cameraDistance = 65;
+        let cameraAngleX = 0, cameraAngleY = 0, cameraDistance = 45;
+        let flagMeshes = [], selectedTank = null, raycaster, mouse;
+        let groundMesh, activeProjectiles = [], activeEffects = [];
 
         function startGameEngine(state) {
             playerMoney = state.initialMoney;
@@ -422,7 +417,16 @@
             scene.background = new THREE.Color(0x52b8ff);
 
             camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
-            updateCameraPosition();
+            
+            const hostFlag = (state.host && state.host.flag) ? state.host.flag : 'green';
+            const guestFlag = (state.guest && state.guest.flag) ? state.guest.flag : 'red';
+            const myPos = (myFlag === hostFlag) ? { x: -35, z: -35 } : { x: 35, z: 35 };
+
+            // توجيه الكاميرا فوراً فوق معسكر اللاعب المختار
+            cameraAngleX = (myFlag === hostFlag) ? -Math.PI / 4 : Math.PI / 4;
+            cameraAngleY = 10;
+            camera.position.set(myPos.x, 30, myPos.z + 25);
+            camera.lookAt(myPos.x, 0, myPos.z);
 
             soundController.init(camera);
 
@@ -431,46 +435,114 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // تفعيل نظام التحكم باللمس لتحريك الكاميرا في جميع الاتجاهات
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
             setupTouchCameraControls(renderer.domElement);
+            setupTankMovementControls(renderer.domElement);
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.9));
             const sun = new THREE.DirectionalLight(0xffffff, 1.2);
             sun.position.set(40, 90, 50);
             scene.add(sun);
 
-            // أرض صحراوية مسطحة نظيفة
+            // أرض صحراوية مسطحة
             const floorGeo = new THREE.PlaneGeometry(300, 300);
             const floorMat = new THREE.MeshBasicMaterial({ color: 0xded0bc });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
-            floor.rotation.x = -Math.PI / 2;
-            scene.add(floor);
-
-            // بناء المعسكرات حسب العلم المختار للطرفين
-            const hostFlag = (state.host && state.host.flag) ? state.host.flag : 'green';
-            const guestFlag = (state.guest && state.guest.flag) ? state.guest.flag : 'red';
+            groundMesh = new THREE.Mesh(floorGeo, floorMat);
+            groundMesh.rotation.x = -Math.PI / 2;
+            scene.add(groundMesh);
 
             createExactMilitaryBase(-35, -35, hostFlag);
             createExactMilitaryBase(35, 35, guestFlag);
 
-            const myPos = (myFlag === hostFlag) ? { x: -35, z: -35 } : { x: 35, z: 35 };
             const enPos = (myFlag === hostFlag) ? { x: 35, z: 35 } : { x: -35, z: -35 };
 
             spawnTank(myPos.x + 5, myPos.z + 5, myFlag, true);
             spawnTank(enPos.x - 5, enPos.z - 5, (myFlag === hostFlag ? guestFlag : hostFlag), false);
 
+            let clock = new THREE.Clock();
             function animate() {
                 requestAnimationFrame(animate);
+                let delta = clock.getDelta();
+                let time = clock.getElapsedTime();
+
+                // تحديث رفرفة الأعلام الواقعية
+                flagMeshes.forEach(f => {
+                    const posAttr = f.geometry.attributes.position;
+                    for (let i = 0; i < posAttr.count; i++) {
+                        let u = posAttr.getX(i);
+                        if (u > 0) { // الأجزاء البعيدة عن العامود ترفرف أكثر
+                            let wave = Math.sin(time * 8 + u * 2) * 0.15;
+                            posAttr.setZ(i, wave);
+                        }
+                    }
+                    posAttr.needsUpdate = true;
+                });
+
+                // تحديث حركة الدبابات نحو الوجهة
+                [...myTanks, ...enemyTanks].forEach(tank => {
+                    if (tank.userData.targetPos) {
+                        let dir = new THREE.Vector3().subVectors(tank.userData.targetPos, tank.position);
+                        let dist = dir.length();
+                        if (dist > 0.5) {
+                            dir.normalize();
+                            tank.position.addScaledVector(dir, tank.userData.speed * delta);
+                            tank.lookAt(tank.userData.targetPos.x, tank.position.y, tank.userData.targetPos.z);
+
+                            // توليد آثار المشي (جنزير الدبابة) خلفها
+                            if (Math.random() < 0.3) createTrackMark(tank.position);
+                        } else {
+                            tank.userData.targetPos = null;
+                        }
+                    }
+
+                    // إطلاق نار تلقائي نحو العدو القريب مع تقصف ونار ودخان
+                    findAndAttackTarget(tank);
+                });
+
+                // تحديث القذائف
+                for (let i = activeProjectiles.length - 1; i >= 0; i--) {
+                    let p = activeProjectiles[i];
+                    p.mesh.position.addScaledVector(p.dir, p.speed * delta);
+                    p.life -= delta;
+
+                    // فحص الاصطدام بالعدو
+                    let targets = p.isMineTank ? enemyTanks : myTanks;
+                    let hit = false;
+                    for (let t of targets) {
+                        if (p.mesh.position.distanceTo(t.position) < 2.5) {
+                            hit = true;
+                            t.userData.health -= p.damage;
+                            updateTankHealthBar(t);
+                            createExplosionEffect(t.position);
+                            soundController.play('explosion');
+
+                            if (t.userData.health <= 0) {
+                                scene.remove(t);
+                                if (p.isMineTank) {
+                                    enemyTanks = enemyTanks.filter(item => item !== t);
+                                } else {
+                                    myTanks = myTanks.filter(item => item !== t);
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                    if (hit || p.life <= 0) {
+                        scene.remove(p.mesh);
+                        activeProjectiles.splice(i, 1);
+                    }
+                }
+
                 renderer.render(scene, camera);
             }
             animate();
         }
 
         function updateCameraPosition() {
-            camera.position.x = Math.sin(cameraAngleX) * cameraDistance;
-            camera.position.y = Math.max(15, Math.min(80, cameraDistance - cameraAngleY));
-            camera.position.z = Math.cos(cameraAngleX) * cameraDistance;
-            camera.lookAt(0, 0, 0);
+            camera.position.x += 0; // يتم التحكم عبر السحب المباشر
         }
 
         function setupTouchCameraControls(domElement) {
@@ -488,16 +560,14 @@
                 const deltaX = currentX - previousTouchPosition.x;
                 const deltaY = currentY - previousTouchPosition.y;
 
-                cameraAngleX -= deltaX * 0.008;
-                cameraAngleY += deltaY * 0.008;
+                camera.position.x -= deltaX * 0.05;
+                camera.position.z -= deltaY * 0.05;
 
-                updateCameraPosition();
                 previousTouchPosition = { x: currentX, y: currentY };
             });
 
             domElement.addEventListener('touchend', () => { isDragging = false; });
 
-            // دعم الماوس أيضاً لأجهزة الكمبيوتر
             domElement.addEventListener('mousedown', (e) => {
                 isDragging = true;
                 previousTouchPosition = { x: e.clientX, y: e.clientY };
@@ -507,13 +577,53 @@
                 const deltaX = e.clientX - previousTouchPosition.x;
                 const deltaY = e.clientY - previousTouchPosition.y;
 
-                cameraAngleX -= deltaX * 0.008;
-                cameraAngleY += deltaY * 0.008;
+                camera.position.x -= deltaX * 0.05;
+                camera.position.z -= deltaY * 0.05;
 
-                updateCameraPosition();
                 previousTouchPosition = { x: e.clientX, y: e.clientY };
             });
             window.addEventListener('mouseup', () => { isDragging = false; });
+        }
+
+        function setupTankMovementControls(domElement) {
+            domElement.addEventListener('click', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+
+                // فحص النقر على دبابات اللاعب
+                let intersectsTanks = raycaster.intersectObjects(myTanks, true);
+                if (intersectsTanks.length > 0) {
+                    let rootTank = intersectsTanks[0].object.parent;
+                    if (myTanks.includes(rootTank)) {
+                        selectedTank = rootTank;
+                        showFloatingMsg("تم تحديد الدبابة! انقر على الأرض لتحريكها 🎯");
+                        return;
+                    }
+                }
+
+                // إذا كانت الدبابة محددة والنقر على الأرض، يتم تحريكها نحو الموقع المطلوبة
+                if (selectedTank) {
+                    let intersectsGround = raycaster.intersectObject(groundMesh);
+                    if (intersectsGround.length > 0) {
+                        let targetPoint = intersectsGround[0].point;
+                        selectedTank.userData.targetPos = targetPoint;
+                        showFloatingMsg("الدبابة تتحرك نحو الموقع المطلوبة 🚀");
+                        selectedTank = null;
+                    }
+                }
+            });
+        }
+
+        function createTrackMark(pos) {
+            const trackGeo = new THREE.PlaneGeometry(0.5, 0.8);
+            const trackMat = new THREE.MeshBasicMaterial({ color: 0x332211, transparent: true, opacity: 0.5 });
+            const track = new THREE.Mesh(trackGeo, trackMat);
+            track.rotation.x = -Math.PI / 2;
+            track.position.set(pos.x, 0.02, pos.z);
+            scene.add(track);
+            setTimeout(() => scene.remove(track), 4000); // تختفي تدريجياً
         }
 
         function createExactMilitaryBase(x, z, flagType) {
@@ -559,18 +669,21 @@
             frontWall.position.set(0, 0.6, 6);
             group.add(frontWall);
 
+            // عامود العلم المربوط به العلم بشكل صحيح
             const poleGeo = new THREE.CylinderGeometry(0.12, 0.12, 7);
             const poleMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
             const pole = new THREE.Mesh(poleGeo, poleMat);
             pole.position.set(-6, 7.5, 2);
             group.add(pole);
 
-            const flagGeo = new THREE.PlaneGeometry(3, 1.8);
+            // علم مضلع لتمكين الرفرفة الحقيقية
+            const flagGeo = new THREE.PlaneGeometry(3, 1.8, 10, 5);
             const flagTex = createFlagTexture(flagType);
             const flagMat = new THREE.MeshBasicMaterial({ map: flagTex, side: THREE.DoubleSide });
             const flagMesh = new THREE.Mesh(flagGeo, flagMat);
             flagMesh.position.set(-4.4, 8, 2);
             group.add(flagMesh);
+            flagMeshes.push(flagMesh);
 
             group.position.set(x, 0, z);
             scene.add(group);
@@ -613,6 +726,8 @@
 
         function spawnTank(x, z, color, isMine) {
             const group = new THREE.Group();
+            group.userData = { health: 100, maxHealth: 100, speed: 8, targetPos: null, isMine: isMine, lastShot: 0 };
+
             const body = new THREE.Mesh(
                 new THREE.BoxGeometry(2.2, 1.0, 3.2), 
                 new THREE.MeshBasicMaterial({ color: color === 'green' ? 0x33691e : 0xb71c1c })
@@ -635,9 +750,74 @@
             cannon.position.set(0, 1.35, 1.1); 
             group.add(cannon);
 
+            // خط الدمج الخاص بكل دبابة فوقها مباشرة
+            const healthBarGeo = new THREE.PlaneGeometry(2, 0.3);
+            const healthBarMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide });
+            const healthBar = new THREE.Mesh(healthBarGeo, healthBarMat);
+            healthBar.position.set(0, 2.5, 0);
+            healthBar.name = "healthBar";
+            group.add(healthBar);
+
             group.position.set(x, 0, z);
             scene.add(group);
             if (isMine) myTanks.push(group); else enemyTanks.push(group);
+        }
+
+        function updateTankHealthBar(tank) {
+            let bar = tank.getObjectByName("healthBar");
+            if (bar) {
+                let p = tank.userData.health / tank.userData.maxHealth;
+                bar.scale.x = Math.max(0.01, p);
+                bar.material.color.setHex(p > 0.5 ? 0x22c55e : (p > 0.2 ? 0xeab308 : 0xef4444));
+            }
+        }
+
+        function findAndAttackTarget(tank) {
+            let enemies = tank.userData.isMine ? enemyTanks : myTanks;
+            let now = Date.now();
+            if (now - tank.userData.lastShot < 2000) return; // معدل إطلاق النار كل ثانيتين
+
+            for (let en of enemies) {
+                let dist = tank.position.distanceTo(en.position);
+                if (dist < 25) { // مدى الرؤية والرمي
+                    tank.userData.lastShot = now;
+                    fireProjectile(tank, en);
+                    break;
+                }
+            }
+        }
+
+        function fireProjectile(shooter, target) {
+            let pGeo = new THREE.SphereGeometry(0.3, 8, 8);
+            let pMat = new THREE.MeshBasicMaterial({ color: 0xffa500 });
+            let pMesh = new THREE.Mesh(pGeo, pMat);
+            
+            pMesh.position.copy(shooter.position);
+            pMesh.position.y += 1.35;
+            scene.add(pMesh);
+
+            let dir = new THREE.Vector3().subVectors(target.position, shooter.position).normalize();
+            activeProjectiles.push({
+                mesh: pMesh,
+                dir: dir,
+                speed: 30,
+                life: 2.0,
+                isMineTank: shooter.userData.isMine,
+                damage: 25
+            });
+
+            if (shooter.userData.isMine) soundController.play('shoot');
+        }
+
+        function createExplosionEffect(pos) {
+            // تأثير نار ودخان مبسط
+            let smokeGeo = new THREE.SphereGeometry(1.5, 8, 8);
+            let smokeMat = new THREE.MeshBasicMaterial({ color: 0xff4500, transparent: true, opacity: 0.8 });
+            let smoke = new THREE.Mesh(smokeGeo, smokeMat);
+            smoke.position.copy(pos);
+            scene.add(smoke);
+
+            setTimeout(() => scene.remove(smoke), 600);
         }
 
         function buyTank(type) {
