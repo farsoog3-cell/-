@@ -1,18 +1,43 @@
-/* ===================================================
- * client.js - محرك العرض والحسابات (Client Engine)
- * =================================================== */
+// client.js - إدارة مدخلات اللاعب والتحكم
 
-let playerMoney = 500;
+// كائن لحفظ حالة الأزرار المضغوطة
+const keys = {
+    up: false,
+    down: false,
+    left: false,
+    right: false
+};
 
-function startGameEngine(gameState) {
-    console.log("تم تشغيل محرك المعركة بمال ابتدائي:", gameState.initialMoney);
-    
-    playerMoney = gameState.initialMoney;
-    
-    const moneyDisplay = document.getElementById('player-money-display');
-    if (moneyDisplay) {
-        moneyDisplay.innerText = `${playerMoney} $`;
+// الاستجابة لأزرار الشاشة (D-Pad الظاهرة في الصورة)
+document.addEventListener('DOMContentLoaded', () => {
+    const btnUp = document.querySelector('.dbtn.up');
+    const btnDown = document.querySelector('.dbtn.down');
+    const btnLeft = document.querySelector('.dbtn.left');
+    const btnRight = document.querySelector('.dbtn.right');
+
+    if (btnUp) {
+        btnUp.addEventListener('touchstart', () => keys.up = true);
+        btnUp.addEventListener('touchend', () => keys.up = false);
     }
+    if (btnDown) {
+        btnDown.addEventListener('touchstart', () => keys.down = true);
+        btnDown.addEventListener('touchend', () => keys.down = false);
+    }
+    if (btnLeft) {
+        btnLeft.addEventListener('touchstart', () => keys.left = true);
+        btnLeft.addEventListener('touchend', () => keys.left = false);
+    }
+    if (btnRight) {
+        btnRight.addEventListener('touchstart', () => keys.right = true);
+        btnRight.addEventListener('touchend', () => keys.right = false);
+    }
+});
 
-    // هنا يتم إضافة الأبعاد والـ Three.js Canvas الخاصة بالدبابات
-}
+// إرسال مدخلات الحركة إلى السيرفر دورياً
+setInterval(() => {
+    if (typeof socket !== 'undefined' && socket.connected) {
+        if (keys.up || keys.down || keys.left || keys.right) {
+            socket.emit('player-move', keys);
+        }
+    }
+}, 1000 / 30); // 30 مرة في الثانية
