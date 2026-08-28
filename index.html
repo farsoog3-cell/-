@@ -70,7 +70,6 @@
         }
         #start-btn:disabled { background: #475569; cursor: not-allowed; box-shadow: none; }
 
-        /* نافذة الانتظار الحديثة المنبثقة */
         #waiting-modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30;
             background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(5px);
@@ -194,8 +193,8 @@
         
         <div class="section-title">اختر علم معسكرك:</div>
         <div class="flag-options" id="player-flags">
-            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
+            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('green')">الأخضر (3 نجوم)</button>
+            <button class="flag-btn" onclick="playClickSound(); selectFlag('red')">الأحمر (نجمتان)</button>
         </div>
 
         <div class="multiplayer-box">
@@ -212,7 +211,6 @@
     </div>
 </div>
 
-<!-- نافذة الانتظار المنبثقة الحديثة -->
 <div id="waiting-modal">
     <div class="waiting-card">
         <div class="spinner"></div>
@@ -299,7 +297,9 @@
     const socket = io('https://tank-game-server-o650.onrender.com/');
     let currentRoomName = null;
     let isConnectedWithFriend = false;
-    let enemyFlagType = 'none'; // يبدأ بعلم أبيض إن لم ينضم صديق
+    let playerFlagType = 'green';
+    let enemyFlagType = 'red';
+    let isHost = false;
 
     socket.on('rooms_list', (rooms) => {
         const container = document.getElementById('rooms-list-container');
@@ -319,17 +319,27 @@
     socket.on('room_joined_success', (data) => {
         currentRoomName = data.room;
         isConnectedWithFriend = true;
-        enemyFlagType = data.enemyFlag || 'red';
+        isHost = false;
+        enemyFlagType = data.hostFlag;
+        // إذا اختار الصديق نفس علم المضيف، نقوم بتغيير علم الخصم تلقائياً لتمييز الدولتين
+        if (playerFlagType === enemyFlagType) {
+            playerFlagType = (enemyFlagType === 'green') ? 'red' : 'green';
+            updateFlagButtonsUI();
+        }
         document.getElementById('waiting-modal').style.display = 'none';
         let startBtn = document.getElementById('start-btn');
         startBtn.disabled = false;
-        startBtn.innerText = "بدء المعركة 🚀";
-        showFloatingMsg('انضم صديقك بنجاح وتم مزامنة المعسكرات!');
+        startBtn.innerText = "بانتظار بدء المضيف للمعركة... ⏳";
+        showFloatingMsg('انضممت للغرفة بنجاح وتم مزامنة الأعلام!');
     });
 
     socket.on('player_joined_your_room', (data) => {
         isConnectedWithFriend = true;
-        enemyFlagType = data.flag || 'red';
+        enemyFlagType = data.flag;
+        if (playerFlagType === enemyFlagType) {
+            playerFlagType = (enemyFlagType === 'green') ? 'red' : 'green';
+            updateFlagButtonsUI();
+        }
         document.getElementById('waiting-modal').style.display = 'none';
         let startBtn = document.getElementById('start-btn');
         startBtn.disabled = false;
@@ -337,14 +347,35 @@
         showFloatingMsg('انضم الصديق إلى غرفتك!');
     });
 
-    socket.on('start_multiplayer_battle', () => {
+    socket.on('start_multiplayer_battle', (data) => {
+        if (data && data.flags) {
+            if (isHost) {
+                playerFlagType = data.flags.hostFlag;
+                enemyFlagType = data.flags.joinerFlag;
+            } else {
+                playerFlagType = data.flags.joinerFlag;
+                enemyFlagType = data.flags.hostFlag;
+            }
+        }
         startGame();
     });
+
+    function selectFlag(color) {
+        playerFlagType = color;
+        updateFlagButtonsUI();
+    }
+
+    function updateFlagButtonsUI() {
+        document.querySelectorAll('#player-flags .flag-btn').forEach(btn => {
+            btn.classList.toggle('active-player', btn.innerText.includes(playerFlagType === 'green' ? 'الأخضر' : 'الأحمر'));
+        });
+    }
 
     function createRoom() {
         const name = document.getElementById('room-name-input').value.trim();
         if (!name) return alert('الرجاء كتابة اسم الغرفة أولاً');
         currentRoomName = name;
+        isHost = true;
         socket.emit('create_room', { room: name, flag: playerFlagType });
         document.getElementById('waiting-modal').style.display = 'flex';
         document.getElementById('waiting-msg').innerText = `تم إنشاء الغرفة "${name}". بانتظار انضمام الصديق...`;
@@ -352,6 +383,7 @@
 
     function joinRoom(name) {
         currentRoomName = name;
+        isHost = false;
         socket.emit('join_room', { room: name, flag: playerFlagType });
         showFloatingMsg('جاري الانضمام للغرفة...');
     }
@@ -360,7 +392,6 @@
         document.getElementById('waiting-modal').style.display = 'none';
         currentRoomName = null;
         isConnectedWithFriend = false;
-        enemyFlagType = 'none';
     }
 
     const soundFiles = {
@@ -408,39 +439,23 @@
     }
 
     let scene, camera, renderer, dirLight;
-    let playerFlagType = 'green';
-
     let cameraRadius = 280, targetCameraRadius = 280;
     let cameraTheta = Math.PI / 4;
     let cameraPhi = Math.PI / 3.5;
     let targetLookAt = new THREE.Vector3(0, 0, 0);
 
-    let shakeTimer = 0;
-    let shakeIntensity = 0;
+    let shakeTimer = 0, shakeIntensity = 0;
     let camInputs = { up: false, down: false, left: false, right: false, zi: false, zo: false };
 
     let isDragging = false;
-    let previousTouchX = 0;
-    let previousTouchY = 0;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let hasMoved = false;
+    let previousTouchX = 0, previousTouchY = 0;
+    let touchStartX = 0, touchStartY = 0, hasMoved = false;
 
     let playerTanks = [];
-    let bullets = [];
-    let tacticalMissiles = [];
-    let shockwaves = [];
-    let smokeParticles = [];
-    let obstacles = []; 
-    let rotatingRadars = [];
-    let tankTracks = [];
-    let treadTextureCache = null;
-    let animatedRigs = [];
+    let bullets = [], tacticalMissiles = [], shockwaves = [], smokeParticles = [], obstacles = []; 
+    let rotatingRadars = [], tankTracks = [], animatedRigs = [];
 
-    let selectionMode = 'all';
-    let selectedTank = null;
-    let playerTargetPos = null;
-
+    let selectionMode = 'all', selectedTank = null, playerTargetPos = null;
     let targetMarkerMesh;
     let raycaster = new THREE.Raycaster();
     let mouse = new THREE.Vector2();
@@ -448,27 +463,17 @@
 
     let enemyPoleFlagMesh, playerPoleFlagMesh;
     let enemyFlagDataRef, playerFlagDataRef;
-    let enemyFlagHeight = 38.5;
-    let playerFlagHeight = 38.5;
+    let enemyFlagHeight = 38.5, playerFlagHeight = 38.5;
 
-    let captureProgress = 0;
-    let gameOver = false;
-    let isCinematicEnding = false;
-    let cinematicTargetLook = null;
+    let captureProgress = 0, gameOver = false, isCinematicEnding = false, cinematicTargetLook = null;
 
     const CORNER_OFFSET = 380; 
     const MAP_LIMIT = 460;
     const CAPTURE_RADIUS = 38;
     const TANK_RADIUS = 4.5; 
 
-    let playerMoney = 500;
-    let totalMoneySpent = 0;
-    let totalTanksLost = 0;
-    let oilRigs = [];
-    let gameTick = 0;
-    let flagWaveTime = 0;
-    let activeFlagMeshes = [];
-
+    let playerMoney = 500, totalMoneySpent = 0, totalTanksLost = 0;
+    let oilRigs = [], gameTick = 0, flagWaveTime = 0, activeFlagMeshes = [];
     let playerBuildCooldown = 0;
 
     function getTerrainHeight(x, z) {
@@ -512,7 +517,6 @@
         updateEconomyUI();
         window.addEventListener('resize', onWindowResize);
         
-        // السماح بالبدء فوراً للتجربة أو الانتظار بحسب الرغبة
         document.getElementById('start-btn').disabled = false;
         document.getElementById('start-btn').innerText = "بدء المعركة 🚀";
 
@@ -538,19 +542,6 @@
         if (camInputs.zo) targetCameraRadius = Math.min(550, targetCameraRadius + 5);
     }
 
-    function selectFlag(role, color) {
-        if (role === 'player') {
-            playerFlagType = color;
-        }
-        updateFlagButtonsUI();
-    }
-
-    function updateFlagButtonsUI() {
-        document.querySelectorAll('#player-flags .flag-btn').forEach(btn => {
-            btn.classList.toggle('active-player', btn.innerText.includes(playerFlagType === 'green' ? 'الأخضر' : 'الأحمر'));
-        });
-    }
-
     function setSelectionMode(mode) {
         selectionMode = mode;
         document.getElementById('sel-all-btn').classList.toggle('active', mode === 'all');
@@ -560,8 +551,11 @@
     }
 
     function startGame() {
-        if (currentRoomName && isConnectedWithFriend) {
-            socket.emit('start_battle', { room: currentRoomName });
+        if (currentRoomName && isConnectedWithFriend && isHost) {
+            socket.emit('start_battle', { 
+                room: currentRoomName, 
+                flags: { hostFlag: playerFlagType, joinerFlag: enemyFlagType } 
+            });
         }
 
         menuBgmAudio.pause();
@@ -572,6 +566,7 @@
         document.getElementById('ui-overlay').style.display = 'block';
         playSound('buy');
 
+        // توجيه الكاميرا فوراً نحو معسكر اللاعب وعلمه المختار
         let playerCampX = CORNER_OFFSET;
         let playerCampZ = CORNER_OFFSET;
         let terrainH = getTerrainHeight(playerCampX, playerCampZ);
@@ -582,7 +577,7 @@
         cameraRadius = targetCameraRadius;
         updateCameraPosition();
 
-        showFloatingMsg('بدأت المعركة! الكاميرا الآن فوق معسكرك.');
+        showFloatingMsg(`بدأت المعركة! تم توجيه الكاميرا نحو معسكر علم الدولة المختار.`);
     }
 
     function setupLighting() {
@@ -704,7 +699,6 @@
         playerTank.mesh.rotation.y = -Math.PI / 4;
         playerTanks.push(playerTank);
             
-        // إذا لم ينضم صديق، يظهر علم العدو أبيض (محايد) تماماً كما طلبت
         enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, enemyFlagType, 'enemy');
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
@@ -853,85 +847,6 @@
         };
     }
 
-    function getRealisticTreadTexture() {
-        if (treadTextureCache) return treadTextureCache;
-        const canvas = document.createElement('canvas');
-        canvas.width = 64; canvas.height = 128;
-        const ctx = canvas.getContext('2d');
-        
-        ctx.fillStyle = '#261408';
-        ctx.fillRect(0, 0, 64, 128);
-        
-        ctx.fillStyle = '#110a04';
-        for (let y = 8; y < 128; y += 16) {
-            ctx.fillRect(6, y, 52, 6);
-            ctx.fillStyle = '#3a2211';
-            ctx.fillRect(6, y + 6, 52, 2);
-            ctx.fillStyle = '#110a04';
-        }
-
-        treadTextureCache = new THREE.CanvasTexture(canvas);
-        treadTextureCache.wrapS = THREE.RepeatWrapping;
-        treadTextureCache.wrapT = THREE.RepeatWrapping;
-        treadTextureCache.repeat.set(1, 3);
-        return treadTextureCache;
-    }
-
-    function spawnRealisticTankTracks(centerPos, rotationY, bodyWidth) {
-        const halfWidth = bodyWidth / 2 + 0.3;
-        const trackGeo = new THREE.PlaneGeometry(1.2, 3.2);
-        trackGeo.rotateX(-Math.PI / 2);
-
-        const trackMat = new THREE.MeshBasicMaterial({ 
-            map: getRealisticTreadTexture(), 
-            transparent: true, 
-            opacity: 0.9 
-        });
-
-        const offsetX = Math.cos(rotationY) * halfWidth;
-        const offsetZ = Math.sin(rotationY) * halfWidth;
-
-        let terrainH = getTerrainHeight(centerPos.x - offsetX, centerPos.z + offsetZ);
-        const leftMesh = new THREE.Mesh(trackGeo, trackMat);
-        leftMesh.position.set(centerPos.x - offsetX, terrainH + 0.04, centerPos.z + offsetZ);
-        leftMesh.rotation.y = rotationY;
-        scene.add(leftMesh);
-        tankTracks.push({ mesh: leftMesh, life: 350 });
-
-        let terrainH2 = getTerrainHeight(centerPos.x + offsetX, centerPos.z - offsetZ);
-        const rightMesh = new THREE.Mesh(trackGeo, trackMat.clone());
-        rightMesh.position.set(centerPos.x + offsetX, terrainH2 + 0.04, centerPos.z - offsetZ);
-        rightMesh.rotation.y = rotationY;
-        scene.add(rightMesh);
-        tankTracks.push({ mesh: rightMesh, life: 350 });
-    }
-
-    function updateTankAudio(tank, isMoving) {
-        if (gameOver || tank.isDestroyed) {
-            if (tank.isIdlePlaying) { tank.idleAudio.pause(); tank.idleAudio.currentTime = 0; tank.isIdlePlaying = false; }
-            if (tank.isMovePlaying) { tank.moveAudio.pause(); tank.moveAudio.currentTime = 0; tank.isMovePlaying = false; }
-            return;
-        }
-
-        if (isMoving) {
-            if (tank.isIdlePlaying) { tank.idleAudio.pause(); tank.idleAudio.currentTime = 0; tank.isIdlePlaying = false; }
-            if (!tank.isMovePlaying) { tank.moveAudio.play().then(() => { tank.isMovePlaying = true; }).catch(e => {}); }
-        } else {
-            if (tank.isMovePlaying) { tank.moveAudio.pause(); tank.moveAudio.currentTime = 0; tank.isMovePlaying = false; }
-            if (!tank.isIdlePlaying) { tank.idleAudio.play().then(() => { tank.isIdlePlaying = true; }).catch(e => {}); }
-        }
-    }
-
-    function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
-        const geo = new THREE.SphereGeometry(0.8 * scale, 6, 6);
-        const mat = new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.7 });
-        const mesh = new THREE.Mesh(geo, mat);
-        let groundH = getTerrainHeight(pos.x, pos.z);
-        mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*2, Math.max(2, groundH + 2), (Math.random()-0.5)*2));
-        scene.add(mesh);
-        smokeParticles.push({ mesh: mesh, life: 35, vy: 0.12 });
-    }
-
     function buyPlayerTank(type) {
         if (playerBuildCooldown > 0) return;
         let cost = (type === 'rocket') ? 300 : 150;
@@ -992,10 +907,9 @@
             ctx.fillStyle = '#000000'; ctx.fillRect(0, 43, 128, 21);
             drawStar(ctx, 50, 32, '#007a3d'); drawStar(ctx, 78, 32, '#007a3d');
         } else {
-            // العلم الأبيض الافتراضي عند عدم دخول صديق
             ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, 128, 64);
             ctx.fillStyle = '#64748b'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText('بانتظار خصم', 64, 36);
+            ctx.fillText('معسكر', 64, 36);
         }
         return new THREE.CanvasTexture(canvas);
     }
@@ -1163,7 +1077,7 @@
         const scale = (w / 2) / MAP_LIMIT;
         ctx.fillStyle = '#22c55e';
         ctx.fillRect(w/2 + CORNER_OFFSET * scale - 3, h/2 + CORNER_OFFSET * scale - 3, 6, 6);
-        ctx.fillStyle = isConnectedWithFriend ? '#ef4444' : '#cbd5e1';
+        ctx.fillStyle = '#ef4444';
         ctx.fillRect(w/2 + (-CORNER_OFFSET) * scale - 3, h/2 + (-CORNER_OFFSET) * scale - 3, 6, 6);
 
         playerTanks.forEach(t => {
@@ -1261,11 +1175,6 @@
                     tankData.target = null; 
                 }
             }
-
-            if (isMoving && tankData.mesh.position.distanceTo(tankData.lastTrackPos) > 2.8) {
-                spawnRealisticTankTracks(tankData.mesh.position, tankData.mesh.rotation.y, tankData.type === 'rocket' ? 7 : 6);
-                tankData.lastTrackPos.copy(tankData.mesh.position);
-            }
             updateTankAudio(tankData, isMoving);
         });
         updateTankHpLabels();
@@ -1310,9 +1219,6 @@
                 }
             }
         });
-
-        // إذا لم ينضم صديق، لا يمكن السيطرة على معسكر العدو (لأنه محايد/أبيض)
-        if (!isConnectedWithFriend) return;
 
         const enemyBasePos = new THREE.Vector3(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
         let playerAtEnemyBase = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(enemyBasePos) < CAPTURE_RADIUS);
@@ -1372,7 +1278,7 @@
         title.style.color = isPlayerWinner ? "#22c55e" : "#ef4444";
 
         statsBox.innerHTML = `
-            • العلم المنتصر: ${winningFlag === 'green' ? 'الأخضر' : (winningFlag === 'red' ? 'الأحمر' : 'محايد')}<br>
+            • العلم المنتصر: ${winningFlag === 'green' ? 'الأخضر' : 'الأحمر'}<br>
             • خسائر دباباتك: ${totalTanksLost}<br>
             • إجمالي المال المصروف: ${totalMoneySpent}$<br>
             • الدبابات الحية: ${playerTanks.filter(t => !t.isDestroyed).length}
@@ -1389,15 +1295,11 @@
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 33, 180, 34);
             ctx.fillStyle = '#000000'; ctx.fillRect(0, 67, 180, 33);
             drawStar(ctx, 50, 50, '#cc0000'); drawStar(ctx, 90, 50, '#cc0000'); drawStar(ctx, 130, 50, '#cc0000');
-        } else if (flagType === 'red') {
+        } else {
             ctx.fillStyle = '#cc0000'; ctx.fillRect(0, 0, 180, 33);
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 33, 180, 34);
             ctx.fillStyle = '#000000'; ctx.fillRect(0, 67, 180, 33);
             drawStar(ctx, 70, 50, '#007a3d'); drawStar(ctx, 110, 50, '#007a3d');
-        } else {
-            ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, 180, 100);
-            ctx.fillStyle = '#64748b'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText('لا يوجد خصم', 90, 55);
         }
     }
 
