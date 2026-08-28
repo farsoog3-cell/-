@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>معركة الدبابات - Tank Game Online</title>
-    <!-- CSS الخاص باللعبة والواجهات -->
+    <!-- تنسيقات الواجهات -->
     <link rel="stylesheet" href="style.css">
-    <!-- مكتبة Socket.IO للربط مع السيرفر -->
+    <!-- مكتبة Socket.IO -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body>
 
-    <!-- حاوية عرض اللعبة ثلاثية الأبعاد 3D -->
+    <!-- حاوية محرك اللعبة Three.js -->
     <div id="canvas-container"></div>
 
     <!-- رسائل التنبيه العائمة -->
@@ -26,7 +26,6 @@
             <div class="main-buttons-group">
                 <button class="main-menu-btn btn-primary" onclick="openModal('create-modal')">🎮 إنشاء غرفة (أونلاين)</button>
                 <button class="main-menu-btn btn-secondary" onclick="openModal('rooms-modal'); fetchRoomsList();">🌐 الغرف المتاحة</button>
-                <button class="main-menu-btn btn-bot" onclick="playWithBot()">🤖 لعب ضد البوت</button>
             </div>
         </div>
 
@@ -63,7 +62,7 @@
             <div class="modal-card">
                 <h2>الغرف المتاحة 🌐</h2>
                 <div id="rooms-list-container">
-                    <!-- يتم جلب قائمة الغرف وحالتها تلقائياً عبر JS -->
+                    <!-- يتم تحميل الغرف تلقائياً -->
                 </div>
                 <div class="modal-actions">
                     <button class="btn-action btn-cancel" onclick="closeModal('rooms-modal')">إغلاق</button>
@@ -106,10 +105,9 @@
     <!-- ------------------ واجهة اللعب أثناء المعركة (UI Overlay) ------------------ -->
     <div id="ui-overlay">
         
-        <!-- ملصقات نقاط الحياة فوق الدبابات -->
         <div id="hp-labels-container"></div>
 
-        <!-- شريط الاستحواذ بالمنتصف ------------------ -->
+        <!-- شريط الاستحواذ بالمنتصف -->
         <div class="top-capture-box">
             <div id="capture-status-text">منطقة الاستحواذ: محايدة</div>
             <div class="capture-bar-bg">
@@ -117,7 +115,7 @@
             </div>
         </div>
 
-        <!-- أدوات التحكم والترقية اليسارية -->
+        <!-- أدوات التحكم والترقية -->
         <div class="left-controls-group">
             <div class="selection-controls">
                 <button class="sel-btn active" id="btn-select-all">الكل</button>
@@ -139,7 +137,7 @@
             <canvas id="minimap-canvas"></canvas>
         </div>
 
-        <!-- أزرار التحكم بالكاميرا (اليمين أسفل) -->
+        <!-- أزرار التحكم بالكاميرا -->
         <div class="cam-controls">
             <button class="cam-btn" id="cam-up">⬆️</button>
             <button class="cam-btn" id="cam-zoom-in">➕</button>
@@ -153,15 +151,12 @@
     <!-- ------------------ شاشة النتيجة والفوز ------------------ -->
     <div id="victory-screen">
         <h1 id="victory-title">لقد انتصرت! 🎉</h1>
-        <canvas id="victory-flag-canvas"></canvas>
-        <div class="stats-box" id="victory-stats">
-            <!-- تفاصيل الإحصائيات بعد المعركة -->
-        </div>
+        <div class="stats-box" id="victory-stats"></div>
         <button class="restart-btn" onclick="location.reload()">العودة للقائمة الرئيسية 🔄</button>
     </div>
 
-    <!-- ملفات JavaScript الخاصة باللعبة -->
-    <!-- تأكد من استدعاء مكتبة Three.js ومحرك اللعبة إذا كانت في ملفات منفصلة -->
+    <!-- استدعاء الملفات بالترتيب الصحيح لضمان عمل الواجهة والشبكة -->
+    <script src="network.js"></script>
     <script src="client.js"></script>
 </body>
 </html>
