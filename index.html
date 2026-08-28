@@ -4,21 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>معركة الدبابات - Tank Game Online</title>
-    <!-- مكتبة Three.js للرسوميات الثلاثية الأبعاد -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- مكتبة Socket.IO للشبكة -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- حاوية محرك اللعبة 3D -->
     <div id="canvas-container"></div>
-
-    <!-- الرسائل العائمة -->
     <div id="floating-msg"></div>
 
-    <!-- ------------------ القائمة الرئيسية ------------------ -->
+    <!-- القائمة الرئيسية -->
     <div id="start-menu">
         <div class="menu-card" id="main-menu-card">
             <h1>معركة الدبابات ⚔️</h1>
@@ -42,10 +37,10 @@
                     <button class="opt-btn money-opt" data-money="600">600 $</button>
                 </div>
 
-                <label class="input-label">اختر معسكرك ودولتك:</label>
+                <label class="input-label">اختر دولتك ومعسكرك:</label>
                 <div class="options-grid">
-                    <button class="opt-btn flag-opt active" data-flag="green">🟢 سوريا 3 نجوم (الأخضر)</button>
-                    <button class="opt-btn flag-opt" data-flag="red">🔴 سوريا نجمتان (الأحمر)</button>
+                    <button class="opt-btn flag-opt active" data-flag="green">🟢 سوريا 3 نجوم</button>
+                    <button class="opt-btn flag-opt" data-flag="red">🔴 سوريا نجمتان</button>
                 </div>
 
                 <div class="modal-actions">
@@ -66,7 +61,7 @@
             </div>
         </div>
 
-        <!-- نافذة غرفة الانتظار (Lobby) -->
+        <!-- نافذة غرفة الانتظار -->
         <div class="modal-overlay" id="lobby-modal">
             <div class="modal-card">
                 <h2 id="lobby-room-title">غرفة الانتظار</h2>
@@ -83,7 +78,7 @@
                     </div>
                 </div>
 
-                <label class="input-label">تغيير علم المعسكر:</label>
+                <label class="input-label">تغيير علم الدولة:</label>
                 <div class="options-grid">
                     <button class="opt-btn my-flag-btn active" data-flag="green" onclick="selectMyFlag('green')">🟢 الأخضر (3 نجوم)</button>
                     <button class="opt-btn my-flag-btn" data-flag="red" onclick="selectMyFlag('red')">🔴 الأحمر (نجمتان)</button>
@@ -97,10 +92,8 @@
         </div>
     </div>
 
-    <!-- ------------------ واجهة اللعب ------------------ -->
+    <!-- واجهة اللعب والشراء والأسهم -->
     <div id="ui-overlay">
-        <div id="hp-labels-container"></div>
-
         <div class="top-capture-box">
             <div id="capture-status-text">منطقة الاستحواذ: محايدة</div>
             <div class="capture-bar-bg">
@@ -109,40 +102,38 @@
         </div>
 
         <div class="left-controls-group">
-            <div class="selection-controls">
-                <button class="sel-btn active" id="btn-select-all" onclick="setSelectMode('all')">الكل</button>
-                <button class="sel-btn" id="btn-select-single" onclick="setSelectMode('single')">فردي</button>
-            </div>
-
             <div class="corner-economy">
                 <div class="money-row">
                     <span>المال:</span>
                     <span id="player-money-display" class="money-small">500 $</span>
                 </div>
-                <button class="buy-btn-small" id="buy-normal-btn" onclick="buyTank('normal')">شراء دبابة (100$)</button>
-                <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-btn" onclick="buyTank('rocket')">شراء صاروخية (200$)</button>
+                <button class="buy-btn-small" onclick="buyTank('normal')">دبابة مصفحة (100$)</button>
+                <button class="buy-btn-small buy-btn-rocket" onclick="buyTank('rocket')">راجمة صواريخ (200$)</button>
             </div>
         </div>
 
-        <div id="minimap-container">
-            <canvas id="minimap-canvas"></canvas>
-        </div>
-
+        <!-- أزرار أسهم التحكم بالكاميرا المباشرة -->
         <div class="cam-controls">
-            <button class="cam-btn" onclick="moveCam(0, -5)">⬆️</button>
-            <button class="cam-btn" onclick="zoomCam(-5)">➕</button>
-            <button class="cam-btn" onclick="moveCam(5, 0)">⬅️</button>
-            <button class="cam-btn" onclick="moveCam(0, 5)">⬇️</button>
-            <button class="cam-btn" onclick="zoomCam(5)">➖</button>
-            <button class="cam-btn" onclick="moveCam(-5, 0)">➡️</button>
+            <div></div>
+            <button class="cam-btn" onclick="moveCam('up')">⬆️</button>
+            <div></div>
+            <button class="cam-btn" onclick="moveCam('left')">⬅️</button>
+            <button class="cam-btn" onclick="zoomCam(-5)">🔍+</button>
+            <button class="cam-btn" onclick="moveCam('right')">➡️</button>
+            <div></div>
+            <button class="cam-btn" onclick="moveCam('down')">⬇️</button>
+            <button class="cam-btn" onclick="zoomCam(5)">🔍-</button>
         </div>
     </div>
 
-    <!-- شاشة الفوز -->
+    <!-- شاشة الإحصائيات والفوز والخروج -->
     <div id="victory-screen">
-        <h1 id="victory-title">لقد انتصرت! 🎉</h1>
+        <h1 id="victory-title">انتهاء المعركة!</h1>
         <div class="stats-box" id="victory-stats"></div>
-        <button class="restart-btn" onclick="location.reload()">العودة للقائمة الرئيسية 🔄</button>
+        <div class="victory-actions">
+            <button class="restart-btn" onclick="location.reload()">معاودة الدخول 🔄</button>
+            <button class="exit-btn" onclick="location.reload()">خروج من الغرفة 🚪</button>
+        </div>
     </div>
 
     <script src="network.js"></script>
