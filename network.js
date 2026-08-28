@@ -1,55 +1,89 @@
 const socket = io('https://tank-game-server-o650.onrender.com');
 
-const lobbyContainer = document.getElementById('lobby-container');
-const roomNameInput = document.getElementById('room-name-input');
-const createRoomBtn = document.getElementById('create-room-btn');
-const playBotBtn = document.getElementById('play-bot-btn');
-const roomsList = document.getElementById('rooms-list');
-const waitingRoom = document.getElementById('waiting-room');
-const startGameBtn = document.getElementById('start-game-btn');
+// العناصر
+const modalMain = document.getElementById('modal-main');
+const modalCreate = document.getElementById('modal-create');
+const modalList = document.getElementById('modal-list');
+const modalRoom = document.getElementById('modal-room');
+const uiOverlay = document.getElementById('ui-overlay');
 
-// 1. إنشاء غرفة
-createRoomBtn.onclick = () => {
-    const name = roomNameInput.value.trim() || 'غرفة جديدة';
-    socket.emit('create-room', { roomName: name });
+let selectedMoney = 200;
+let selectedFlag = 'green';
+let isReady = false;
+
+// التنقل بين النوافذ
+document.getElementById('btn-open-create').onclick = () => { modalMain.style.display = 'none'; modalCreate.style.display = 'flex'; };
+document.getElementById('btn-cancel-create').onclick = () => { modalCreate.style.display = 'none'; modalMain.style.display = 'flex'; };
+document.getElementById('btn-open-list').onclick = () => { modalMain.style.display = 'none'; modalList.style.display = 'flex'; };
+document.getElementById('btn-close-list').onclick = () => { modalList.style.display = 'none'; modalMain.style.display = 'flex'; };
+
+// اختيار المال والعلم
+document.querySelectorAll('.money-opt').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.money-opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedMoney = parseInt(btn.dataset.val);
+    };
+});
+
+document.querySelectorAll('.flag-opt').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.flag-opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedFlag = btn.dataset.color;
+    };
+});
+
+// تأكيد إنشاء الغرفة
+document.getElementById('btn-confirm-create').onclick = () => {
+    const name = document.getElementById('input-room-name').value.trim() || 'غرفة جديدة';
+    socket.emit('create-room', { roomName: name, money: selectedMoney, flag: selectedFlag });
 };
 
-// 2. لعب ضد البوت
-playBotBtn.onclick = () => {
-    socket.emit('play-with-bot');
-    lobbyContainer.style.display = 'none';
-};
+// الاستجابة للانضمام للغرفة
+socket.on('room-joined', (data) => {
+    modalCreate.style.display = 'none';
+    modalList.style.display = 'none';
+    modalRoom.style.display = 'flex';
 
-// 3. تحديث القائمة فوراً
+    document.getElementById('room-title-display').textContent = `غرفة: ${data.roomName}`;
+    document.getElementById('room-money-display').textContent = `مال الحرب: ${data.money} $`;
+    document.getElementById('game-money-val').textContent = `$ ${data.money}`;
+});
+
+// تحديث قائمة الغرف
 socket.on('update-room-list', (rooms) => {
-    roomsList.innerHTML = '';
-    rooms.forEach(room => {
-        const li = document.createElement('li');
-        li.style.cssText = "display:flex; justify-between; align-center; margin-bottom:5px;";
-        li.innerHTML = `<span>${room.name} (${room.playersCount}/4)</span>`;
+    const container = document.getElementById('rooms-container');
+    container.innerHTML = '';
+    
+    if (rooms.length === 0) {
+        container.innerHTML = '<p class="empty-msg">لا توجد غرف متاحة حالياً</p>';
+        return;
+    }
+
+    rooms.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'player-row';
+        item.style.cssText = "background:#0b111e; padding:10px; border-radius:8px; margin-bottom:8px;";
+        item.innerHTML = `<span>${r.name} ($${r.money})</span>`;
         
         const joinBtn = document.createElement('button');
-        joinBtn.textContent = 'انضمام';
-        joinBtn.style.cssText = "background:#3b82f6; color:white; border:none; padding:3px 8px; border-radius:4px;";
-        joinBtn.onclick = () => socket.emit('join-room', room.id);
+        joinBtn.className = r.isFull ? 'btn-disabled' : 'btn-green';
+        joinBtn.textContent = r.isFull ? 'مكتملة 🔒' : 'انضمام';
+        if(!r.isFull) joinBtn.onclick = () => socket.emit('join-room', r.id);
         
-        li.appendChild(joinBtn);
-        roomsList.appendChild(li);
+        item.appendChild(joinBtn);
+        container.appendChild(item);
     });
 });
 
-socket.on('room-joined', (data) => {
-    waitingRoom.style.display = 'block';
-    if (data.isHost) startGameBtn.style.display = 'block';
-});
-
-startGameBtn.onclick = () => socket.emit('start-game-signal');
+// البدء
+document.getElementById('btn-toggle-ready').onclick = () => {
+    isReady = !isReady;
+    socket.emit('toggle-ready', { isReady });
+};
 
 socket.on('game-started', () => {
-    lobbyContainer.style.display = 'none';
-});
-
-// تحديث مواقع اللاعبين من السيرفر
-socket.on('state-update', (serverPlayers) => {
-    players = serverPlayers;
+    modalRoom.style.display = 'none';
+    uiOverlay.style.display = 'block';
 });
