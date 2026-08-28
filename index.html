@@ -226,7 +226,7 @@
         <button class="restart-btn" onclick="location.reload()">العودة للقائمة الرئيسية 🔄</button>
     </div>
 
-    <!-- كود الجافاسكريبت المدمج (الشبكة ومحرك 3D والصحراء والأعلام) -->
+    <!-- كود الجافاسكريبت للاتصال والمحرك ثلاثي الأبعاد -->
     <script>
         const SERVER_URL = 'https://tank-game-server-o650.onrender.com/';
         const socket = io(SERVER_URL);
@@ -348,7 +348,7 @@
 
         socket.on('errorMessage', (msg) => showFloatingMsg(msg));
 
-        /* --- محرك اللعبة الثلاثي الأبعاد (Three.js) والبيئة الرملية والمعسكرات --- */
+        /* --- محرك اللعبة الثلاثي الأبعاد (Three.js) والبيئة الصحراوية والأعلام --- */
         let scene, camera, renderer, playerMoney = 500, myTanks = [], enemyTanks = [];
 
         function startGameEngine(state) {
