@@ -3,161 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - أونلاين</title>
+    <title>معركة الدبابات - Tank Game Online</title>
+    <!-- CSS الخاص باللعبة والواجهات -->
     <link rel="stylesheet" href="style.css">
-    
-    <!-- مكتبة Socket.io للاتصال بالسيرفر -->
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
-    <style>
-        /* إخفاء واجهة اللعبة والخلفية حتى بدء المعركة */
-        #ui-overlay, #canvas-container {
-            display: none;
-        }
-
-        /* تنسيق قائمة الغرف المتاحة */
-        .rooms-container { 
-            max-height: 120px; 
-            overflow-y: auto; 
-            background: rgba(15, 23, 42, 0.7); 
-            border: 1px solid #334155; 
-            border-radius: 6px; 
-            padding: 6px; 
-            margin-bottom: 12px; 
-        }
-        .room-item { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            padding: 6px; 
-            border-bottom: 1px solid #1e293b; 
-            color: #fff; 
-            font-size: 13px; 
-        }
-        .room-item:last-child {
-            border-bottom: none;
-        }
-        .room-item button { 
-            background: #16a34a; 
-            color: white; 
-            border: none; 
-            padding: 4px 10px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-        }
-    </style>
+    <!-- مكتبة Socket.IO للربط مع السيرفر -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </head>
 <body>
 
-<!-- القائمة الرئيسية -->
-<div id="start-menu">
-    <div class="menu-card">
-        <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
-        
-        <!-- رابط السيرفر مخفي تلقائياً بالخلفية بدون كشفه للاعب -->
-        <input type="hidden" id="server-url" value="https://tank-game-server-o650.onrender.com">
+    <!-- حاوية عرض اللعبة ثلاثية الأبعاد 3D -->
+    <div id="canvas-container"></div>
 
-        <!-- إنشاء غرفة جديدة -->
-        <div class="section-title">إنشاء غرفة جديدة:</div>
-        <div style="display: flex; gap: 6px; margin-bottom: 12px;">
-            <input type="text" id="room-code" placeholder="اسم أو رمز الغرفة..." style="flex: 1; padding: 8px; box-sizing: border-box; border-radius: 4px; border: 1px solid #475569; background: #0f172a; color: white;">
-            <button onclick="if(typeof playClickSound === 'function') playClickSound(); createCustomRoom();" style="background: #2563eb; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: bold;">إنشاء ➕</button>
-        </div>
-
-        <!-- قائمة الغرف المتاحة للانضمام -->
-        <div class="section-title">الغرف المتاحة حالياً (اختر غرفة للتحدي):</div>
-        <div class="rooms-container" id="rooms-list">
-            <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 10px;">جاري تحميل الغرف المتاحة...</div>
-        </div>
-
-        <!-- اختيار علم المعسكر -->
-        <div class="section-title">اختر علم معسكرك:</div>
-        <div class="flag-options" id="player-flags">
-            <button class="flag-btn active-player" onclick="if(typeof playClickSound === 'function') playClickSound(); selectFlag('player', 'green');">الأخضر (3 نجوم)</button>
-            <button class="flag-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); selectFlag('player', 'red');">الأحمر (نجمتان)</button>
-        </div>
-
-        <!-- زر الانضمام/البدء -->
-        <button id="start-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); connectAndStartGame();">دخول المعركة أونلاين 🚀</button>
-        <div id="connection-status" style="margin-top: 10px; font-size: 12px; color: #f59e0b;"></div>
-    </div>
-</div>
-
-<!-- واجهة اللعب أثناء المعركة -->
-<div id="ui-overlay">
-    <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
-
-    <div class="top-capture-box">
-        <div id="capture-status-text">سيطر على معسكر العدو لتربح!</div>
-        <div class="capture-bar-bg">
-            <div id="capture-bar-fill" class="capture-bar-fill"></div>
-        </div>
-    </div>
-
-    <div class="left-controls-group">
-        <div class="selection-controls">
-            <button class="sel-btn active" id="sel-all-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); setSelectionMode('all');">الكل</button>
-            <button class="sel-btn" id="sel-single-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); setSelectionMode('single');">فردي</button>
-        </div>
-
-        <div class="corner-economy">
-            <div class="money-row">
-                <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
-                <div class="money-small"><span id="money-display">500</span>$</div>
-            </div>
-            <button class="buy-btn-small" id="buy-tank-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); buyPlayerTank('normal');">عادية (150$)</button>
-            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); buyPlayerTank('rocket');">صاروخية (300$)</button>
-        </div>
-    </div>
-
-    <!-- الخريطة المصغرة -->
-    <div id="minimap-container" title="الخريطة المصغرة">
-        <canvas id="minimap-canvas" width="110" height="110"></canvas>
-    </div>
-
+    <!-- رسائل التنبيه العائمة -->
     <div id="floating-msg"></div>
 
-    <div class="cam-controls">
-        <button class="cam-btn zoom-in" 
-            onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
-            ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
+    <!-- ------------------ القائمة الرئيسية (Start Menu) ------------------ -->
+    <div id="start-menu">
         
-        <button class="cam-btn up" 
-            onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)"
-            ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
-        
-        <button class="cam-btn zoom-out" 
-            onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)"
-            ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
-        
-        <button class="cam-btn left" 
-            onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)"
-            ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
-        
-        <button class="cam-btn down" 
-            onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)"
-            ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
-        
-        <button class="cam-btn right" 
-            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
-            ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+        <!-- اللوحة الرئيسية -->
+        <div class="menu-card" id="main-menu-card">
+            <h1>معركة الدبابات ⚔️</h1>
+            <div class="main-buttons-group">
+                <button class="main-menu-btn btn-primary" onclick="openModal('create-modal')">🎮 إنشاء غرفة (أونلاين)</button>
+                <button class="main-menu-btn btn-secondary" onclick="openModal('rooms-modal'); fetchRoomsList();">🌐 الغرف المتاحة</button>
+                <button class="main-menu-btn btn-bot" onclick="playWithBot()">🤖 لعب ضد البوت</button>
+            </div>
+        </div>
+
+        <!-- 1. نافذة إنشاء غرفة منبثقة -->
+        <div class="modal-overlay" id="create-modal">
+            <div class="modal-card">
+                <h2>إنشاء غرفة جديدة</h2>
+                
+                <label class="input-label">اسم الغرفة:</label>
+                <input type="text" id="create-room-name" placeholder="أدخل اسم الغرفة..." autocomplete="off">
+
+                <label class="input-label">مال الحرب الابتدائي:</label>
+                <div class="options-grid">
+                    <button class="opt-btn money-opt active" data-money="200">200 $</button>
+                    <button class="opt-btn money-opt" data-money="500">500 $</button>
+                    <button class="opt-btn money-opt" data-money="600">600 $</button>
+                </div>
+
+                <label class="input-label">اختر علمك:</label>
+                <div class="options-grid">
+                    <button class="opt-btn flag-opt active" data-flag="green">🟢 الأخضر</button>
+                    <button class="opt-btn flag-opt" data-flag="red">🔴 الأحمر</button>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn-action btn-confirm" onclick="submitCreateRoom()">إنشاء الغرفة 🚀</button>
+                    <button class="btn-action btn-cancel" onclick="closeModal('create-modal')">إلغاء</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. نافذة الغرف المتاحة المنبثقة -->
+        <div class="modal-overlay" id="rooms-modal">
+            <div class="modal-card">
+                <h2>الغرف المتاحة 🌐</h2>
+                <div id="rooms-list-container">
+                    <!-- يتم جلب قائمة الغرف وحالتها تلقائياً عبر JS -->
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-action btn-cancel" onclick="closeModal('rooms-modal')">إغلاق</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. نافذة غرفة الانتظار (Lobby Modal) -->
+        <div class="modal-overlay" id="lobby-modal">
+            <div class="modal-card">
+                <h2 id="lobby-room-title">غرفة الانتظار</h2>
+                <p id="lobby-room-info" class="lobby-info">المال الابتدائي: 500 $</p>
+
+                <div class="players-status-box">
+                    <div class="player-slot" id="slot-host">
+                        <span class="p-name">👑 المضيف (جاري الانتظار...)</span>
+                        <span class="p-status">غير مستعد ❌</span>
+                    </div>
+                    <div class="player-slot" id="slot-guest">
+                        <span class="p-name">⚔️ الصديق (جاري الانتظار...)</span>
+                        <span class="p-status">غير مستعد ❌</span>
+                    </div>
+                </div>
+
+                <label class="input-label">تغيير علمك:</label>
+                <div class="options-grid">
+                    <button class="opt-btn my-flag-btn" data-flag="green" onclick="selectMyFlag('green')">🟢 الأخضر</button>
+                    <button class="opt-btn my-flag-btn" data-flag="red" onclick="selectMyFlag('red')">🔴 الأحمر</button>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="ready-toggle-btn" class="btn-action btn-ready" onclick="toggleReady()">أنا مستعد ✋</button>
+                    <button id="start-game-btn" class="btn-action btn-start" disabled onclick="requestStartGame()">بدء المعركة ⚔️</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة المصغرة والتحكم 🎯</div>
-</div>
+    <!-- ------------------ واجهة اللعب أثناء المعركة (UI Overlay) ------------------ -->
+    <div id="ui-overlay">
+        
+        <!-- ملصقات نقاط الحياة فوق الدبابات -->
+        <div id="hp-labels-container"></div>
 
-<div id="victory-screen">
-    <h1 id="victory-title">انتهت المعركة!</h1>
-    <div class="stats-box" id="stats-content"></div>
-    <canvas id="victory-flag-canvas"></canvas>
-    <button class="restart-btn" onclick="if(typeof playClickSound === 'function') playClickSound(); location.reload();">إعادة المعركة 🔄</button>
-</div>
+        <!-- شريط الاستحواذ بالمنتصف ------------------ -->
+        <div class="top-capture-box">
+            <div id="capture-status-text">منطقة الاستحواذ: محايدة</div>
+            <div class="capture-bar-bg">
+                <div id="capture-bar-fill" class="capture-bar-fill"></div>
+            </div>
+        </div>
 
-<div id="canvas-container"></div>
+        <!-- أدوات التحكم والترقية اليسارية -->
+        <div class="left-controls-group">
+            <div class="selection-controls">
+                <button class="sel-btn active" id="btn-select-all">الكل</button>
+                <button class="sel-btn" id="btn-select-single">فردي</button>
+            </div>
 
-<!-- المكتبات واستدعاء الصوت واللعبة -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="audio.js"></script>
-<script src="game.js"></script>
+            <div class="corner-economy">
+                <div class="money-row">
+                    <span>المال:</span>
+                    <span id="player-money-display" class="money-small">500 $</span>
+                </div>
+                <button class="buy-btn-small" id="buy-normal-btn">شراء دبابة (100$)</button>
+                <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-btn">شراء صاروخية (200$)</button>
+            </div>
+        </div>
+
+        <!-- الخريطة المصغرة Minimap -->
+        <div id="minimap-container">
+            <canvas id="minimap-canvas"></canvas>
+        </div>
+
+        <!-- أزرار التحكم بالكاميرا (اليمين أسفل) -->
+        <div class="cam-controls">
+            <button class="cam-btn" id="cam-up">⬆️</button>
+            <button class="cam-btn" id="cam-zoom-in">➕</button>
+            <button class="cam-btn" id="cam-left">⬅️</button>
+            <button class="cam-btn" id="cam-down">⬇️</button>
+            <button class="cam-btn" id="cam-zoom-out">➖</button>
+            <button class="cam-btn" id="cam-right">➡️</button>
+        </div>
+    </div>
+
+    <!-- ------------------ شاشة النتيجة والفوز ------------------ -->
+    <div id="victory-screen">
+        <h1 id="victory-title">لقد انتصرت! 🎉</h1>
+        <canvas id="victory-flag-canvas"></canvas>
+        <div class="stats-box" id="victory-stats">
+            <!-- تفاصيل الإحصائيات بعد المعركة -->
+        </div>
+        <button class="restart-btn" onclick="location.reload()">العودة للقائمة الرئيسية 🔄</button>
+    </div>
+
+    <!-- ملفات JavaScript الخاصة باللعبة -->
+    <!-- تأكد من استدعاء مكتبة Three.js ومحرك اللعبة إذا كانت في ملفات منفصلة -->
+    <script src="client.js"></script>
 </body>
 </html>
