@@ -1,89 +1,182 @@
-const socket = io('https://tank-game-server-o650.onrender.com');
+/* ===================================================
+ * network.js - إدارة اتصالات الغرف والأنلاين
+ * =================================================== */
 
-// العناصر
-const modalMain = document.getElementById('modal-main');
-const modalCreate = document.getElementById('modal-create');
-const modalList = document.getElementById('modal-list');
-const modalRoom = document.getElementById('modal-room');
-const uiOverlay = document.getElementById('ui-overlay');
+const SERVER_URL = 'https://tank-game-server-o650.onrender.com/';
+const socket = io(SERVER_URL);
 
-let selectedMoney = 200;
-let selectedFlag = 'green';
+let currentRoom = null;
+let myPlayerId = null;
+let myFlag = 'green';
+let isHost = false;
 let isReady = false;
 
-// التنقل بين النوافذ
-document.getElementById('btn-open-create').onclick = () => { modalMain.style.display = 'none'; modalCreate.style.display = 'flex'; };
-document.getElementById('btn-cancel-create').onclick = () => { modalCreate.style.display = 'none'; modalMain.style.display = 'flex'; };
-document.getElementById('btn-open-list').onclick = () => { modalMain.style.display = 'none'; modalList.style.display = 'flex'; };
-document.getElementById('btn-close-list').onclick = () => { modalList.style.display = 'none'; modalMain.style.display = 'flex'; };
+function openModal(modalId) {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.add('active');
+}
 
-// اختيار المال والعلم
-document.querySelectorAll('.money-opt').forEach(btn => {
-    btn.onclick = () => {
-        document.querySelectorAll('.money-opt').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedMoney = parseInt(btn.dataset.val);
-    };
-});
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.classList.remove('active');
+}
 
-document.querySelectorAll('.flag-opt').forEach(btn => {
-    btn.onclick = () => {
-        document.querySelectorAll('.flag-opt').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedFlag = btn.dataset.color;
-    };
-});
+function showFloatingMsg(msg) {
+    const msgEl = document.getElementById('floating-msg');
+    if (!msgEl) return;
+    msgEl.innerText = msg;
+    msgEl.style.opacity = '1';
+    setTimeout(() => { msgEl.style.opacity = '0'; }, 3000);
+}
 
-// تأكيد إنشاء الغرفة
-document.getElementById('btn-confirm-create').onclick = () => {
-    const name = document.getElementById('input-room-name').value.trim() || 'غرفة جديدة';
-    socket.emit('create-room', { roomName: name, money: selectedMoney, flag: selectedFlag });
-};
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.money-opt').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.money-opt').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+        });
+    });
 
-// الاستجابة للانضمام للغرفة
-socket.on('room-joined', (data) => {
-    modalCreate.style.display = 'none';
-    modalList.style.display = 'none';
-    modalRoom.style.display = 'flex';
-
-    document.getElementById('room-title-display').textContent = `غرفة: ${data.roomName}`;
-    document.getElementById('room-money-display').textContent = `مال الحرب: ${data.money} $`;
-    document.getElementById('game-money-val').textContent = `$ ${data.money}`;
-});
-
-// تحديث قائمة الغرف
-socket.on('update-room-list', (rooms) => {
-    const container = document.getElementById('rooms-container');
-    container.innerHTML = '';
-    
-    if (rooms.length === 0) {
-        container.innerHTML = '<p class="empty-msg">لا توجد غرف متاحة حالياً</p>';
-        return;
-    }
-
-    rooms.forEach(r => {
-        const item = document.createElement('div');
-        item.className = 'player-row';
-        item.style.cssText = "background:#0b111e; padding:10px; border-radius:8px; margin-bottom:8px;";
-        item.innerHTML = `<span>${r.name} ($${r.money})</span>`;
-        
-        const joinBtn = document.createElement('button');
-        joinBtn.className = r.isFull ? 'btn-disabled' : 'btn-green';
-        joinBtn.textContent = r.isFull ? 'مكتملة 🔒' : 'انضمام';
-        if(!r.isFull) joinBtn.onclick = () => socket.emit('join-room', r.id);
-        
-        item.appendChild(joinBtn);
-        container.appendChild(item);
+    document.querySelectorAll('.flag-opt').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.flag-opt').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+        });
     });
 });
 
-// البدء
-document.getElementById('btn-toggle-ready').onclick = () => {
-    isReady = !isReady;
-    socket.emit('toggle-ready', { isReady });
-};
+function submitCreateRoom() {
+    const roomNameInput = document.getElementById('create-room-name');
+    const roomName = roomNameInput ? roomNameInput.value.trim() : '';
+    if (!roomName) {
+        showFloatingMsg("الرجاء إدخال اسم الغرفة!");
+        return;
+    }
+    const activeMoneyBtn = document.querySelector('.money-opt.active');
+    const initialMoney = activeMoneyBtn ? parseInt(activeMoneyBtn.dataset.money) : 500;
+    const activeFlagBtn = document.querySelector('.flag-opt.active');
+    myFlag = activeFlagBtn ? activeFlagBtn.dataset.flag : 'green';
 
-socket.on('game-started', () => {
-    modalRoom.style.display = 'none';
-    uiOverlay.style.display = 'block';
+    socket.emit('createRoom', { roomName, initialMoney, flag: myFlag });
+}
+
+function fetchRoomsList() {
+    socket.emit('getRoomsList');
+}
+
+function joinRoom(roomId) {
+    socket.emit('joinRoom', { roomId });
+}
+
+function selectMyFlag(flagColor) {
+    myFlag = flagColor;
+    document.querySelectorAll('.my-flag-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.flag === flagColor);
+    });
+    if (currentRoom) {
+        socket.emit('updatePlayerFlag', { roomId: currentRoom.id, flag: flagColor });
+    }
+}
+
+function toggleReady() {
+    isReady = !isReady;
+    const readyBtn = document.getElementById('ready-toggle-btn');
+    if (readyBtn) {
+        readyBtn.innerText = isReady ? "مستعد ✅" : "أنا مستعد ✋";
+        readyBtn.style.background = isReady ? "#22c55e" : "#eab308";
+    }
+    if (currentRoom) {
+        socket.emit('playerReadyState', { roomId: currentRoom.id, ready: isReady });
+    }
+}
+
+function requestStartGame() {
+    if (currentRoom && isHost) {
+        socket.emit('startGameRequest', { roomId: currentRoom.id });
+    }
+}
+
+socket.on('connect', () => {
+    myPlayerId = socket.id;
+    console.log("متصل بالسيرفر:", myPlayerId);
 });
+
+socket.on('updateRoomsList', (rooms) => {
+    const listContainer = document.getElementById('rooms-list-container');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '';
+    if (!rooms || Object.keys(rooms).length === 0) {
+        listContainer.innerHTML = '<p style="text-align:center; color:#94a3b8; font-size:12px;">لا توجد غرف متاحة</p>';
+        return;
+    }
+
+    for (let id in rooms) {
+        const room = rooms[id];
+        const item = document.createElement('div');
+        item.className = 'room-item';
+
+        let badge = room.isPlaying ? '<span class="room-badge-playing">جاري اللعب 🔴</span>' :
+                    (room.playersCount >= 2 ? '<span class="room-badge-playing">مكتملة 🔒</span>' :
+                    `<button class="room-badge-ready" onclick="joinRoom('${id}')">انضمام ⚔️</button>`);
+
+        item.innerHTML = `<div><strong>${room.name}</strong> (${room.initialMoney}$)</div>${badge}`;
+        listContainer.appendChild(item);
+    }
+});
+
+socket.on('roomJoined', (roomData) => {
+    currentRoom = roomData;
+    isHost = (roomData.hostId === myPlayerId);
+    closeModal('create-modal');
+    closeModal('rooms-modal');
+    openModal('lobby-modal');
+    updateLobbyUI(roomData);
+});
+
+socket.on('lobbyUpdated', (roomData) => {
+    currentRoom = roomData;
+    updateLobbyUI(roomData);
+});
+
+function updateLobbyUI(room) {
+    document.getElementById('lobby-room-title').innerText = `غرفة: ${room.name}`;
+    document.getElementById('lobby-room-info').innerText = `مال الحرب: ${room.initialMoney} $`;
+
+    const hostSlot = document.getElementById('slot-host');
+    const guestSlot = document.getElementById('slot-guest');
+    const startBtn = document.getElementById('start-game-btn');
+
+    if (room.host) {
+        hostSlot.innerHTML = `<span class="p-name">👑 المضيف (${room.host.flag === 'green' ? '🟢' : '🔴'})</span>
+                              <span class="p-status" style="color:${room.host.ready ? '#22c55e' : '#ef4444'}">${room.host.ready ? 'مستعد ✅' : 'غير مستعد ❌'}</span>`;
+    }
+    if (room.guest) {
+        guestSlot.innerHTML = `<span class="p-name">⚔️ الصديق (${room.guest.flag === 'green' ? '🟢' : '🔴'})</span>
+                               <span class="p-status" style="color:${room.guest.ready ? '#22c55e' : '#ef4444'}">${room.guest.ready ? 'مستعد ✅' : 'غير مستعد ❌'}</span>`;
+    } else {
+        guestSlot.innerHTML = `<span class="p-name" style="color:#64748b">بانتظار انضمام الصديق...</span>`;
+    }
+
+    if (startBtn) {
+        if (isHost) {
+            startBtn.style.display = 'block';
+            startBtn.disabled = !(room.host && room.guest && room.host.ready && room.guest.ready);
+        } else {
+            startBtn.style.display = 'none';
+        }
+    }
+}
+
+socket.on('gameStarted', (gameState) => {
+    closeModal('lobby-modal');
+    document.getElementById('start-menu').style.display = 'none';
+    document.getElementById('ui-overlay').style.display = 'block';
+    showFloatingMsg("بدأت المعركة! 🚀");
+    if (typeof startGameEngine === 'function') {
+        startGameEngine(gameState);
+    }
+});
+
+socket.on('errorMessage', (msg) => showFloatingMsg(msg));
