@@ -4,38 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>معركة الدبابات الاحترافية - Tank Game 3D</title>
-    <!-- مكتبات Three.js و Socket.IO -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        * { 
-            box-sizing: border-box; margin: 0; padding: 0; 
-            user-select: none; -webkit-user-select: none; 
-            touch-action: none; font-family: system-ui, -apple-system, sans-serif; 
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; font-family: system-ui, -apple-system, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
         #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         #canvas-container canvas { width: 100% !important; height: 100% !important; display: block; }
 
-        #start-menu { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            z-index: 10; background: rgba(15, 23, 42, 0.95); 
-            display: flex; align-items: center; justify-content: center; color: #fff; 
-        }
-        .menu-card { 
-            background: #1e293b; border: 1px solid #38bdf8; 
-            border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; text-align: center; 
-        }
+        #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; background: rgba(15, 23, 42, 0.95); display: flex; align-items: center; justify-content: center; color: #fff; }
+        .menu-card { background: #1e293b; border: 1px solid #38bdf8; border-radius: 12px; padding: 20px; width: 90%; max-width: 400px; text-align: center; }
         .menu-card h1 { font-size: 20px; color: #38bdf8; margin-bottom: 10px; }
         .main-buttons-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
         .main-menu-btn { padding: 12px; border: none; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; }
         .btn-primary { background: #0284c7; }
         .btn-secondary { background: #475569; }
 
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 100;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 100; }
         .modal-overlay.active { display: flex; }
         .modal-card { background: #1e293b; border: 2px solid #38bdf8; border-radius: 12px; padding: 16px; width: 90%; max-width: 380px; color: #fff; text-align: right; }
         .modal-card h2 { text-align: center; color: #38bdf8; font-size: 16px; margin-bottom: 10px; }
@@ -64,12 +49,7 @@
         .btn-start:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
 
         #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; display: none; }
-        .top-capture-box { 
-            position: absolute; top: 8px; left: 50%; transform: translateX(-50%); 
-            width: 180px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; 
-            border-radius: 6px; padding: 4px 8px; text-align: center; color: white; font-size: 10px; 
-            pointer-events: auto;
-        }
+        .top-capture-box { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 180px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 6px; padding: 4px 8px; text-align: center; color: white; font-size: 10px; pointer-events: auto; }
 
         .left-controls-group { position: absolute; top: 45px; left: 8px; pointer-events: auto; display: flex; flex-direction: column; gap: 6px; width: 120px; }
         .selection-controls { display: flex; gap: 4px; }
@@ -83,34 +63,16 @@
         .buy-btn-rocket { background: #ea580c; }
         .buy-btn-ballistic { background: #9333ea; }
 
-        /* لوحة التحكم بالكاميرا (أسهم + زوم) */
-        .camera-control-panel {
-            position: absolute; bottom: 15px; right: 15px; pointer-events: auto;
-            background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 12px;
-            padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px;
-        }
+        .camera-control-panel { position: absolute; bottom: 15px; right: 15px; pointer-events: auto; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
         .cam-row { display: flex; gap: 6px; }
-        .cam-btn {
-            width: 36px; height: 36px; background: #1e293b; border: 1px solid #38bdf8;
-            color: #38bdf8; font-size: 14px; font-weight: bold; border-radius: 6px;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-        }
+        .cam-btn { width: 36px; height: 36px; background: #1e293b; border: 1px solid #38bdf8; color: #38bdf8; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .cam-btn:active { background: #0284c7; color: #fff; }
         .zoom-row { display: flex; gap: 6px; margin-top: 2px; width: 100%; }
         .zoom-btn { flex: 1; padding: 4px; background: #0f172a; border: 1px solid #f59e0b; color: #f59e0b; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 12px; text-align: center; }
 
-        #minimap-container { 
-            position: absolute; bottom: 15px; left: 15px; width: 100px; height: 100px; 
-            background: rgba(15, 23, 42, 0.9); border: 2px solid #38bdf8; border-radius: 50%; 
-            overflow: hidden; pointer-events: auto; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); 
-        }
+        #minimap-container { position: absolute; bottom: 15px; left: 15px; width: 100px; height: 100px; background: rgba(15, 23, 42, 0.9); border: 2px solid #38bdf8; border-radius: 50%; overflow: hidden; pointer-events: auto; box-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
         #minimap-canvas { width: 100%; height: 100%; display: block; }
-
-        #floating-msg { 
-            position: absolute; top: 45px; left: 50%; transform: translateX(-50%); 
-            background: rgba(0, 0, 0, 0.85); color: #38bdf8; padding: 4px 10px; 
-            border-radius: 4px; font-size: 11px; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 50; 
-        }
+        #floating-msg { position: absolute; top: 45px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.85); color: #38bdf8; padding: 4px 10px; border-radius: 4px; font-size: 11px; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 50; }
     </style>
 </head>
 <body>
@@ -118,14 +80,13 @@
     <div id="canvas-container"></div>
     <div id="floating-msg"></div>
 
-    <!-- مشغل الصوت الخارجي من ملفات sounds -->
     <audio id="bg-music" src="sounds/battle_bg.mp3" loop preload="auto"></audio>
     <audio id="shoot-sound" src="sounds/shoot.mp3" preload="auto"></audio>
     <audio id="explosion-sound" src="sounds/explosion.mp3" preload="auto"></audio>
     <audio id="rocket-sound" src="sounds/rocket.mp3" preload="auto"></audio>
 
     <div id="start-menu">
-        <div class="menu-card" id="main-menu-card">
+        <div class="menu-card">
             <h1>معركة الدبابات الاحترافية ⚔️</h1>
             <div class="main-buttons-group">
                 <button class="main-menu-btn btn-primary" onclick="openModal('create-modal'); playMenuAudio();">🎮 إنشاء غرفة (أونلاين)</button>
@@ -144,12 +105,6 @@
                     <button class="opt-btn money-opt active" data-money="300">300 $</button>
                     <button class="opt-btn money-opt" data-money="500">500 $</button>
                     <button class="opt-btn money-opt" data-money="800">800 $</button>
-                </div>
-
-                <label class="input-label">اختر علم الدولة:</label>
-                <div class="options-grid">
-                    <button class="opt-btn flag-opt active" data-flag="syria">🟢 الجمهورية السورية</button>
-                    <button class="opt-btn flag-opt" data-flag="egypt">🦅 جمهورية مصر</button>
                 </div>
 
                 <div class="modal-actions">
@@ -185,12 +140,6 @@
                     </div>
                 </div>
 
-                <label class="input-label">اختر علمك:</label>
-                <div class="options-grid">
-                    <button class="opt-btn my-flag-btn active" data-flag="syria" onclick="selectMyFlag('syria')">🟢 سوريا</button>
-                    <button class="opt-btn my-flag-btn" data-flag="egypt" onclick="selectMyFlag('egypt')">🦅 مصر</button>
-                </div>
-
                 <div class="modal-actions">
                     <button id="ready-toggle-btn" class="btn-action btn-ready" onclick="toggleReady()">أنا مستعد ✋</button>
                     <button id="start-game-btn" class="btn-action btn-start" disabled onclick="requestStartGame()">بدء المعركة ⚔️</button>
@@ -223,7 +172,6 @@
 
         <div id="minimap-container"><canvas id="minimap-canvas"></canvas></div>
 
-        <!-- لوحة تحكم الكاميرا الاحترافية -->
         <div class="camera-control-panel">
             <div class="cam-row">
                 <button class="cam-btn" ontouchstart="startCamMove(0, -1)" onmousedown="startCamMove(0, -1)" onmouseup="stopCamMove()" ontouchend="stopCamMove()">⬆️</button>
@@ -246,7 +194,6 @@
 
         let currentRoom = null;
         let myPlayerId = null;
-        let myFlag = 'syria';
         let isHost = false;
         let isReady = false;
 
@@ -276,30 +223,17 @@
                     e.target.classList.add('active');
                 });
             });
-            document.querySelectorAll('.flag-opt').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    document.querySelectorAll('.flag-opt').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    myFlag = e.target.dataset.flag;
-                });
-            });
         });
 
         function submitCreateRoom() {
             const roomName = document.getElementById('create-room-name').value.trim();
             if (!roomName) return showFloatingMsg("الرجاء إدخال اسم الغرفة!");
             const initialMoney = parseInt(document.querySelector('.money-opt.active').dataset.money);
-            socket.emit('createRoom', { roomName, initialMoney, flag: myFlag });
+            socket.emit('createRoom', { roomName, initialMoney });
         }
 
         function fetchRoomsList() { socket.emit('getRoomsList'); }
         function joinRoom(id) { socket.emit('joinRoom', { roomId: id }); }
-
-        function selectMyFlag(flag) {
-            myFlag = flag;
-            document.querySelectorAll('.my-flag-btn').forEach(b => b.classList.toggle('active', b.dataset.flag === flag));
-            if (currentRoom) socket.emit('updatePlayerFlag', { roomId: currentRoom.id, flag });
-        }
 
         function toggleReady() {
             isReady = !isReady;
@@ -345,10 +279,10 @@
             document.getElementById('lobby-room-title').innerText = `غرفة: ${room.name}`;
             document.getElementById('lobby-room-info').innerText = `مال الحرب: ${room.initialMoney} $`;
             if (room.host) {
-                document.getElementById('slot-host').innerHTML = `<span class="p-name">👑 المضيف (${room.host.flag === 'syria' ? '🟢 سوريا' : '🦅 مصر'})</span><span class="p-status" style="color:${room.host.ready ? '#22c55e' : '#ef4444'}">${room.host.ready ? 'مستعد ✅' : 'غير مستعد ❌'}</span>`;
+                document.getElementById('slot-host').innerHTML = `<span class="p-name">👑 المضيف (🟢 علم الاستقلال)</span><span class="p-status" style="color:${room.host.ready ? '#22c55e' : '#ef4444'}">${room.host.ready ? 'مستعد ✅' : 'غير مستعد ❌'}</span>`;
             }
             if (room.guest) {
-                document.getElementById('slot-guest').innerHTML = `<span class="p-name">⚔️ الصديق (${room.guest.flag === 'syria' ? '🟢 سوريا' : '🦅 مصر'})</span><span class="p-status" style="color:${room.guest.ready ? '#22c55e' : '#ef4444'}">${room.guest.ready ? 'مستعد ✅' : 'غير مستعد ❌'}</span>`;
+                document.getElementById('slot-guest').innerHTML = `<span class="p-name">⚔️ الصديق (🟢 علم الاستقلال)</span><span class="p-status" style="color:${room.guest.ready ? '#22c55e' : '#ef4444'}">${room.guest.ready ? 'مستعد ✅' : 'غير مستعد ❌'}</span>`;
             } else {
                 document.getElementById('slot-guest').innerHTML = `<span class="p-name" style="color:#64748b">بانتظار انضمام الصديق...</span>`;
             }
@@ -363,19 +297,54 @@
             closeModal('lobby-modal');
             document.getElementById('start-menu').style.display = 'none';
             document.getElementById('ui-overlay').style.display = 'block';
-            showFloatingMsg("بدأت المعركة الصحراوية الكبرى! 🚀");
+            showFloatingMsg("بدأت المعركة الصحراوية المشتركة! 🚀");
             playMenuAudio();
             startGameEngine(state);
         });
 
+        socket.on('serverSpawnTank', (data) => {
+            spawnTankAtServer(data.x, data.z, data.playerId === myPlayerId, data.tankType, data.tankId);
+        });
+
+        socket.on('serverMoveTank', (data) => {
+            let tank = allTanksMap[data.tankId];
+            if (tank) {
+                tank.userData.targetPos = new THREE.Vector3(data.targetX, 0, data.targetZ);
+            }
+        });
+
+        socket.on('serverFire', (data) => {
+            let shooter = allTanksMap[data.tankId];
+            if (shooter) {
+                fireProjectileVisual(shooter, data.targetPos, data.isRocket);
+            }
+        });
+
+        socket.on('serverBallistic', (data) => {
+            fireBallisticRocketVisual(data.targetPos, data.isMine);
+        });
+
+        socket.on('serverTankDamaged', (data) => {
+            let tank = allTanksMap[data.tankId];
+            if (tank) {
+                tank.userData.health = data.newHealth;
+                updateTankHealthBar(tank);
+                createExplosionEffect(tank.position, 1.5);
+                playAudio('explosion-sound');
+                if (data.destroyed) {
+                    scene.remove(tank);
+                    delete allTanksMap[data.tankId];
+                }
+            }
+        });
+
         socket.on('errorMessage', (msg) => showFloatingMsg(msg));
 
-        /* --- محرك 3D متطور واحترافي --- */
-        let scene, camera, renderer, playerMoney = 500, myTanks = [], enemyTanks = [];
+        let scene, camera, renderer, playerMoney = 500, allTanksMap = {};
         let isDragging = false, previousTouchPosition = { x: 0, y: 0 };
         let flagMeshes = [], radarDishes = [], militaryBases = [];
-        let selectedTank = null, raycaster, mouse;
-        let groundMesh, activeProjectiles = [], ballisticRockets = [];
+        let selectedTank = null, raycaster, mouse, groundMesh;
+        let activeProjectiles = [], ballisticRockets = [];
         let camMoveDir = { x: 0, z: 0 };
         let minimapCtx, minimapCanvas;
 
@@ -387,15 +356,13 @@
             container.innerHTML = '';
 
             scene = new THREE.Scene();
-            // خلفية سماوية صحراوية متناسقة
             scene.background = new THREE.Color(0x38bdf8);
             scene.fog = new THREE.FogExp2(0xd8c29d, 0.005);
 
             camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
             
-            const hostFlag = (state.host && state.host.flag) ? state.host.flag : 'syria';
-            const guestFlag = (state.guest && state.guest.flag) ? state.guest.flag : 'egypt';
-            const myPos = (myFlag === hostFlag) ? { x: -45, z: -45 } : { x: 45, z: 45 };
+            isHost = (socket.id === state.hostId);
+            const myPos = isHost ? { x: -45, z: -45 } : { x: 45, z: 45 };
 
             camera.position.set(myPos.x, 30, myPos.z + 25);
             camera.lookAt(myPos.x, 0, myPos.z);
@@ -421,22 +388,15 @@
             sun.position.set(60, 120, 60);
             scene.add(sun);
 
-            // أرض صحراوية منسقة ومتطورة مع تلال طبيعية خفيفة
             const floorGeo = new THREE.PlaneGeometry(400, 400, 32, 32);
             const floorMat = new THREE.MeshLambertMaterial({ color: 0xc2a678 });
             groundMesh = new THREE.Mesh(floorGeo, floorMat);
             groundMesh.rotation.x = -Math.PI / 2;
             scene.add(groundMesh);
 
-            // بناء معسكرات عسكرية متطورة مع نوافذ وأبواب وصحن صناعي يدور
-            let base1 = createAdvancedMilitaryBase(-45, -45, hostFlag);
-            let base2 = createAdvancedMilitaryBase(45, 45, guestFlag);
+            let base1 = createAdvancedMilitaryBase(-45, -45);
+            let base2 = createAdvancedMilitaryBase(45, 45);
             militaryBases.push(base1, base2);
-
-            const enPos = (myFlag === hostFlag) ? { x: 45, z: 45 } : { x: -45, z: -45 };
-
-            spawnTank(myPos.x + 8, myPos.z + 8, myFlag, true, 'normal');
-            spawnTank(enPos.x - 8, enPos.z - 8, (myFlag === hostFlag ? guestFlag : hostFlag), false, 'normal');
 
             let clock = new THREE.Clock();
             function animate() {
@@ -449,12 +409,8 @@
                     camera.position.z += camMoveDir.z * 1.0;
                 }
 
-                // دوران الصحن الصناعي على سطح المعسكرات
-                radarDishes.forEach(dish => {
-                    dish.rotation.y += delta * 1.5;
-                });
+                radarDishes.forEach(dish => { dish.rotation.y += delta * 1.5; });
 
-                // رفرفة الأعلام بشكل واقعي واحترافي
                 flagMeshes.forEach(f => {
                     const posAttr = f.geometry.attributes.position;
                     for (let i = 0; i < posAttr.count; i++) {
@@ -467,8 +423,8 @@
                     posAttr.needsUpdate = true;
                 });
 
-                // تحديث حركة الدبابات
-                [...myTanks, ...enemyTanks].forEach(tank => {
+                for (let id in allTanksMap) {
+                    let tank = allTanksMap[id];
                     if (tank.userData.targetPos) {
                         let dir = new THREE.Vector3().subVectors(tank.userData.targetPos, tank.position);
                         let dist = dir.length();
@@ -481,16 +437,12 @@
                             tank.userData.targetPos = null;
                         }
                     }
-                    findAndAttackTarget(tank);
-                });
+                }
 
-                // تحديث الصواريخ البالستية (التي تطير للأعلى وتنزل للهدف وتدمر)
                 for (let i = ballisticRockets.length - 1; i >= 0; i--) {
                     let r = ballisticRockets[i];
                     r.progress += delta * 0.8;
-                    
                     let currentPos = new THREE.Vector3().lerpVectors(r.startPos, r.targetPos, r.progress);
-                    // مسار قوس صعود وهبوط حقيقي
                     currentPos.y = Math.sin(r.progress * Math.PI) * 45;
                     r.mesh.position.copy(currentPos);
                     r.mesh.lookAt(r.targetPos);
@@ -499,51 +451,16 @@
                         scene.remove(r.mesh);
                         createExplosionEffect(r.targetPos, 4.0);
                         playAudio('explosion-sound');
-
-                        // تدمير الأهداف القريبة من نقطة السقوط
-                        let targets = r.isMine ? enemyTanks : myTanks;
-                        targets.forEach(t => {
-                            if (t.position.distanceTo(r.targetPos) < 12) {
-                                t.userData.health -= 100;
-                                updateTankHealthBar(t);
-                                if (t.userData.health <= 0) {
-                                    scene.remove(t);
-                                    if (r.isMine) enemyTanks = enemyTanks.filter(item => item !== t);
-                                    else myTanks = myTanks.filter(item => item !== t);
-                                }
-                            }
-                        });
-
                         ballisticRockets.splice(i, 1);
                     }
                 }
 
-                // تحديث القذائف العادية والصاروخية
                 for (let i = activeProjectiles.length - 1; i >= 0; i--) {
                     let p = activeProjectiles[i];
                     p.mesh.position.addScaledVector(p.dir, p.speed * delta);
                     p.life -= delta;
 
-                    let targets = p.isMineTank ? enemyTanks : myTanks;
-                    let hit = false;
-                    for (let t of targets) {
-                        if (p.mesh.position.distanceTo(t.position) < 2.5) {
-                            hit = true;
-                            t.userData.health -= p.damage;
-                            updateTankHealthBar(t);
-                            createExplosionEffect(t.position, 1.5);
-                            playAudio('explosion-sound');
-
-                            if (t.userData.health <= 0) {
-                                scene.remove(t);
-                                if (p.isMineTank) enemyTanks = enemyTanks.filter(item => item !== t);
-                                else myTanks = myTanks.filter(item => item !== t);
-                            }
-                            break;
-                        }
-                    }
-
-                    if (hit || p.life <= 0) {
+                    if (p.mesh.position.distanceTo(p.targetPos) < 1.5 || p.life <= 0) {
                         scene.remove(p.mesh);
                         activeProjectiles.splice(i, 1);
                     }
@@ -557,31 +474,24 @@
 
         function playAudio(id) {
             const snd = document.getElementById(id);
-            if (snd) {
-                snd.currentTime = 0;
-                snd.play().catch(e => {});
-            }
+            if (snd) { snd.currentTime = 0; snd.play().catch(e => {}); }
         }
 
-        // رسم الخريطة المصغرة النشطة بدقة
         function drawMinimap(myPos) {
             if (!minimapCtx) return;
             let w = minimapCanvas.width;
             let h = minimapCanvas.height;
             minimapCtx.clearRect(0, 0, w, h);
 
-            // خلفية الرادار
             minimapCtx.fillStyle = 'rgba(15, 23, 42, 0.9)';
             minimapCtx.fillRect(0, 0, w, h);
 
-            // شبكة الرادار
             minimapCtx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
             minimapCtx.lineWidth = 1;
             minimapCtx.beginPath();
             minimapCtx.arc(w/2, h/2, w/2 - 4, 0, Math.PI * 2);
             minimapCtx.stroke();
 
-            // رسم المعسكرات والدبابات على الخريطة المصغرة
             let scaleFactor = (w / 2) / 120;
 
             militaryBases.forEach(b => {
@@ -591,30 +501,20 @@
                 minimapCtx.fillRect(rx - 3, rz - 3, 6, 6);
             });
 
-            myTanks.forEach(t => {
+            for (let id in allTanksMap) {
+                let t = allTanksMap[id];
                 let rx = w/2 + (t.position.x) * scaleFactor;
                 let rz = h/2 + (t.position.z) * scaleFactor;
-                minimapCtx.fillStyle = '#22c55e';
+                minimapCtx.fillStyle = t.userData.isMine ? '#22c55e' : '#ef4444';
                 minimapCtx.beginPath();
                 minimapCtx.arc(rx, rz, 3, 0, Math.PI * 2);
                 minimapCtx.fill();
-            });
-
-            enemyTanks.forEach(t => {
-                let rx = w/2 + (t.position.x) * scaleFactor;
-                let rz = h/2 + (t.position.z) * scaleFactor;
-                minimapCtx.fillStyle = '#ef4444';
-                minimapCtx.beginPath();
-                minimapCtx.arc(rx, rz, 3, 0, Math.PI * 2);
-                minimapCtx.fill();
-            });
+            }
         }
 
         function startCamMove(x, z) { camMoveDir = { x, z }; }
         function stopCamMove() { camMoveDir = { x: 0, z: 0 }; }
-        function zoomCamera(amount) {
-            camera.position.y = Math.max(12, Math.min(80, camera.position.y + amount));
-        }
+        function zoomCamera(amount) { camera.position.y = Math.max(12, Math.min(80, camera.position.y + amount)); }
 
         function setupTouchCameraControls(domElement) {
             domElement.addEventListener('touchstart', (e) => {
@@ -625,15 +525,11 @@
             });
             domElement.addEventListener('touchmove', (e) => {
                 if (!isDragging || e.touches.length !== 1) return;
-                const currentX = e.touches[0].clientX;
-                const currentY = e.touches[0].clientY;
-                const deltaX = currentX - previousTouchPosition.x;
-                const deltaY = currentY - previousTouchPosition.y;
-
+                const deltaX = e.touches[0].clientX - previousTouchPosition.x;
+                const deltaY = e.touches[0].clientY - previousTouchPosition.y;
                 camera.position.x -= deltaX * 0.08;
                 camera.position.z -= deltaY * 0.08;
-
-                previousTouchPosition = { x: currentX, y: currentY };
+                previousTouchPosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
             });
             domElement.addEventListener('touchend', () => { isDragging = false; });
 
@@ -645,10 +541,8 @@
                 if (!isDragging) return;
                 const deltaX = e.clientX - previousTouchPosition.x;
                 const deltaY = e.clientY - previousTouchPosition.y;
-
                 camera.position.x -= deltaX * 0.08;
                 camera.position.z -= deltaY * 0.08;
-
                 previousTouchPosition = { x: e.clientX, y: e.clientY };
             });
             window.addEventListener('mouseup', () => { isDragging = false; });
@@ -660,20 +554,12 @@
 
                 mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
                 raycaster.setFromCamera(mouse, camera);
 
-                // فحص النقر على المعسكر لإنتاج دبابات أو شراء مباشر
-                let intersectsBases = raycaster.intersectObjects(militaryBases, true);
-                if (intersectsBases.length > 0) {
-                    showFloatingMsg("تم النقر على المعسكر العسكري! استخدم قائمة الشراء الجانبية لتعزيز قواتك ⚡");
-                    return;
-                }
-
-                let intersectsTanks = raycaster.intersectObjects(myTanks, true);
+                let intersectsTanks = raycaster.intersectObjects(Object.values(allTanksMap), true);
                 if (intersectsTanks.length > 0) {
                     let rootTank = intersectsTanks[0].object.parent;
-                    if (myTanks.includes(rootTank)) {
+                    if (rootTank.userData.isMine) {
                         selectedTank = rootTank;
                         showFloatingMsg("تم تحديد الدبابة! انقر على الأرض لتحريكها 🎯");
                         return;
@@ -684,8 +570,7 @@
                     let intersectsGround = raycaster.intersectObject(groundMesh);
                     if (intersectsGround.length > 0) {
                         let targetPoint = intersectsGround[0].point;
-                        selectedTank.userData.targetPos = targetPoint;
-                        showFloatingMsg("الدبابة تتحرك نحو الموقع المطلوب 🚀");
+                        socket.emit('moveTank', { roomId: currentRoom.id, tankId: selectedTank.userData.id, targetX: targetPoint.x, targetZ: targetPoint.z });
                         selectedTank = null;
                     }
                 }
@@ -702,18 +587,16 @@
             setTimeout(() => scene.remove(track), 4000);
         }
 
-        /* --- تصميم المعسكرات العسكرية بشكل عسكري متطور (مع أبواب، نوافذ، صحن صناعي يدور) --- */
-        function createAdvancedMilitaryBase(x, z, flagType) {
+        // تصميم المعسكر مع علم الاستقلال السوري ثلاثي النجمات المصمم باحترافية تامة
+        function createAdvancedMilitaryBase(x, z) {
             const group = new THREE.Group();
 
-            // المبنى العسكري الرئيسي المحصن
             const mainBuildingGeo = new THREE.BoxGeometry(12, 5, 8);
             const mainBuildingMat = new THREE.MeshLambertMaterial({ color: 0x57534e });
             const mainBuilding = new THREE.Mesh(mainBuildingGeo, mainBuildingMat);
             mainBuilding.position.set(0, 2.5, 0);
             group.add(mainBuilding);
 
-            // النوافذ العسكرية
             const windowMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
             for (let i = -3; i <= 3; i += 3) {
                 const win = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 0.2), windowMat);
@@ -721,13 +604,11 @@
                 group.add(win);
             }
 
-            // باب المعسكر المحصن
             const doorMat = new THREE.MeshLambertMaterial({ color: 0x1c1917 });
             const door = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3, 0.3), doorMat);
             door.position.set(0, 1.5, 4.1);
             group.add(door);
 
-            // صحن صناعي (رادار) يدور على سطح المعسكر
             const dishBase = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 1.5), new THREE.MeshLambertMaterial({ color: 0x292524 }));
             dishBase.position.set(4, 5.75, 0);
             group.add(dishBase);
@@ -740,7 +621,6 @@
             group.add(dish);
             radarDishes.push(dish);
 
-            // أبراج الدفاع الجانبية (جراد ودفاعات)
             const towerGeo = new THREE.CylinderGeometry(1.5, 2, 7, 16);
             const towerMat = new THREE.MeshLambertMaterial({ color: 0x44403c });
             
@@ -752,16 +632,15 @@
             t2.position.set(8, 3.5, -5);
             group.add(t2);
 
-            // عامود العلم
             const poleGeo = new THREE.CylinderGeometry(0.18, 0.18, 10);
             const poleMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
             const pole = new THREE.Mesh(poleGeo, poleMat);
             pole.position.set(-8, 9, -5);
             group.add(pole);
 
-            // علم ثلاثي الأبعاد متميز ومرفرف
+            // علم الاستقلال السوري الأخضر (ثلاث نجمات خضراء حمراء سوداء وبيضاء) بدقة فائقة
             const flagGeo = new THREE.PlaneGeometry(4.0, 2.5, 14, 7);
-            const flagTex = createFlagTexture(flagType);
+            const flagTex = createSyrianIndependenceFlagTexture();
             const flagMat = new THREE.MeshBasicMaterial({ map: flagTex, side: THREE.DoubleSide });
             const flagMesh = new THREE.Mesh(flagGeo, flagMat);
             flagMesh.position.set(-5.8, 9.8, -5);
@@ -773,26 +652,25 @@
             return group;
         }
 
-        function createFlagTexture(type) {
+        function createSyrianIndependenceFlagTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 341;
             const ctx = canvas.getContext('2d');
             const h = canvas.height / 3;
 
-            if (type === 'syria') {
-                ctx.fillStyle = '#ce1126'; ctx.fillRect(0, 0, canvas.width, h);
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, h, canvas.width, h);
-                ctx.fillStyle = '#000000'; ctx.fillRect(0, h * 2, canvas.width, h);
-                ctx.fillStyle = '#007a3d';
-                drawStar(ctx, 170, h + h/2, 5, 24, 11);
-                drawStar(ctx, 342, h + h/2, 5, 24, 11);
-            } else {
-                ctx.fillStyle = '#ce1126'; ctx.fillRect(0, 0, canvas.width, h);
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, h, canvas.width, h);
-                ctx.fillStyle = '#000000'; ctx.fillRect(0, h * 2, canvas.width, h);
-                ctx.fillStyle = '#ffb612'; // نسر مصر الذهبي التوضيحي
-                ctx.beginPath(); ctx.arc(canvas.width/2, h + h/2, 22, 0, Math.PI*2); ctx.fill();
-            }
+            // الشريط الأخضر العلوي
+            ctx.fillStyle = '#007a3d'; ctx.fillRect(0, 0, canvas.width, h);
+            // الشريط الأبيض الوسطي
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, h, canvas.width, h);
+            // الشريط الأسود السفلي
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, h * 2, canvas.width, h);
+
+            // النجمات الثلاث الحمراء في الشريط الأبيض الوسطي
+            ctx.fillStyle = '#ce1126';
+            drawStar(ctx, canvas.width * 0.25, h + h/2, 5, 22, 10);
+            drawStar(ctx, canvas.width * 0.50, h + h/2, 5, 22, 10);
+            drawStar(ctx, canvas.width * 0.75, h + h/2, 5, 22, 10);
+
             return new THREE.CanvasTexture(canvas);
         }
 
@@ -806,11 +684,10 @@
             ctx.lineTo(cx, cy - outer); ctx.closePath(); ctx.fill();
         }
 
-        // تصميم الدبابات وأنواعها (دبابة عادية، صاروخية بعيدة المدى، وصاروخ باليستي يطير للأعلى وينزل للهدف)
-        function spawnTank(x, z, color, isMine, tankType) {
+        function spawnTankAtServer(x, z, isMine, tankType, tankId) {
             const group = new THREE.Group();
             let maxHp = tankType === 'rocket' ? 80 : 120;
-            group.userData = { health: maxHp, maxHealth: maxHp, speed: tankType === 'rocket' ? 7 : 8.5, targetPos: null, isMine: isMine, lastShot: 0, type: tankType };
+            group.userData = { health: maxHp, maxHealth: maxHp, speed: tankType === 'rocket' ? 7 : 8.5, targetPos: null, isMine: isMine, id: tankId, type: tankType };
 
             const treadsMat = new THREE.MeshLambertMaterial({ color: 0x18181b });
             const leftTread = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 3.6), treadsMat);
@@ -821,7 +698,7 @@
             rightTread.position.set(1.2, 0.3, 0);
             group.add(rightTread);
 
-            const bodyColor = color === 'syria' ? 0x27272a : 0x3f3f46;
+            const bodyColor = isMine ? 0x27272a : 0x3f3f46;
             const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.2, 3.4), new THREE.MeshLambertMaterial({ color: bodyColor }));
             body.position.y = 0.75;
             group.add(body);
@@ -831,7 +708,6 @@
             group.add(turret);
 
             if (tankType === 'rocket') {
-                // منصة صواريخ جراد فوق الدبابة
                 const launcherBox = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.0, 2.0), new THREE.MeshLambertMaterial({ color: 0x78716c }));
                 launcherBox.position.set(0, 2.3, 0);
                 group.add(launcherBox);
@@ -851,7 +727,7 @@
 
             group.position.set(x, 0, z);
             scene.add(group);
-            if (isMine) myTanks.push(group); else enemyTanks.push(group);
+            allTanksMap[tankId] = group;
         }
 
         function updateTankHealthBar(tank) {
@@ -863,27 +739,8 @@
             }
         }
 
-        function findAndAttackTarget(tank) {
-            let enemies = tank.userData.isMine ? enemyTanks : myTanks;
-            let now = Date.now();
-            let fireDelay = tank.userData.type === 'rocket' ? 2200 : 1500;
-            if (now - tank.userData.lastShot < fireDelay) return;
-
-            for (let en of enemies) {
-                let dist = tank.position.distanceTo(en.position);
-                let range = tank.userData.type === 'rocket' ? 45 : 30;
-                if (dist < range) {
-                    tank.userData.lastShot = now;
-                    fireProjectile(tank, en);
-                    break;
-                }
-            }
-        }
-
-        function fireProjectile(shooter, target) {
-            let isRocket = shooter.userData.type === 'rocket';
+        function fireProjectileVisual(shooter, targetPos, isRocket) {
             playAudio(isRocket ? 'rocket-sound' : 'shoot-sound');
-
             let pGeo = new THREE.SphereGeometry(isRocket ? 0.45 : 0.3, 8, 8);
             let pMat = new THREE.MeshBasicMaterial({ color: isRocket ? 0xf97316 : 0xfacc15 });
             let pMesh = new THREE.Mesh(pGeo, pMat);
@@ -892,20 +749,20 @@
             pMesh.position.y += 1.8;
             scene.add(pMesh);
 
-            let dir = new THREE.Vector3().subVectors(target.position, shooter.position).normalize();
+            let tVec = new THREE.Vector3(targetPos.x, targetPos.y || 0, targetPos.z);
+            let dir = new THREE.Vector3().subVectors(tVec, pMesh.position).normalize();
             activeProjectiles.push({
                 mesh: pMesh,
                 dir: dir,
                 speed: isRocket ? 28 : 38,
-                life: 2.5,
-                isMineTank: shooter.userData.isMine,
-                damage: isRocket ? 40 : 25
+                targetPos: tVec,
+                life: 2.5
             });
         }
 
-        function fireBallisticRocket(targetPos) {
+        function fireBallisticRocketVisual(targetPos, isMine) {
             playAudio('rocket-sound');
-            const pos = (myFlag === 'syria') ? { x: -45, z: -45 } : { x: 45, z: 45 };
+            const pos = isMine ? (isHost ? { x: -45, z: -45 } : { x: 45, z: 45 }) : (isHost ? { x: 45, z: 45 } : { x: -45, z: -45 });
 
             let rGeo = new THREE.ConeGeometry(0.6, 2.5, 8);
             let rMat = new THREE.MeshLambertMaterial({ color: 0x9333ea });
@@ -916,11 +773,9 @@
             ballisticRockets.push({
                 mesh: rMesh,
                 startPos: new THREE.Vector3(pos.x, 0, pos.z),
-                targetPos: targetPos,
-                progress: 0,
-                isMine: true
+                targetPos: new THREE.Vector3(targetPos.x, 0, targetPos.z),
+                progress: 0
             });
-            showFloatingMsg("تم إطلاق الصاروخ البالستي العابر نحو الهدف! 🚀💥");
         }
 
         function createExplosionEffect(pos, size = 1.5) {
@@ -934,27 +789,13 @@
 
         function buyTank(type) {
             const cost = type === 'normal' ? 100 : (type === 'rocket' ? 180 : 300);
-            if (type === 'ballistic') {
-                if (playerMoney >= cost) {
-                    playerMoney -= cost;
-                    document.getElementById('player-money-display').innerText = `${playerMoney} $`;
-                    // استهداف عشوائي لدبابة العدو أو منتصف الخريطة
-                    let targetPos = enemyTanks.length > 0 ? enemyTanks[0].position : new THREE.Vector3(0, 0, 0);
-                    fireBallisticRocket(targetPos);
-                } else {
-                    showFloatingMsg("المال غير كافٍ لشراء الصاروخ البالستي!");
-                }
-                return;
-            }
-
             if (playerMoney >= cost) {
                 playerMoney -= cost;
                 document.getElementById('player-money-display').innerText = `${playerMoney} $`;
-                const pos = (myFlag === 'syria') ? { x: -45, z: -45 } : { x: 45, z: 45 };
-                spawnTank(pos.x + (Math.random() * 8 - 4), pos.z + (Math.random() * 8 - 4), myFlag, true, type);
-                showFloatingMsg(type === 'rocket' ? "تم تعزيز المعسكر بدبابة صاروخية جراد 🚀" : "تم شراء دبابة قتالية جديدة 🛡️");
-            } else { 
-                showFloatingMsg("المال غير كافٍ لشراء هذه الوحدة!"); 
+                const pos = isHost ? { x: -45, z: -45 } : { x: 45, z: 45 };
+                socket.emit('buyTank', { roomId: currentRoom.id, tankType: type, x: pos.x + (Math.random() * 8 - 4), z: pos.z + (Math.random() * 8 - 4) });
+            } else {
+                showFloatingMsg("المال غير كافٍ لشراء هذه الوحدة!");
             }
         }
 
