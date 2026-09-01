@@ -135,7 +135,7 @@
         <div class="lobbies-list" id="lobbies-container">
             <div style="text-align:center; color:#94a3b8; font-size:11px; padding:15px;">جاري جلب الغرف...</div>
         </div>
-        <button class="action-btn green" id="create-room-trigger-btn" onclick="playClickSound(); showCreateRoomPanel()" disabled>إنشاء غرفة جديدة ➕</button>
+        <button class="action-btn green" id="create-room-trigger-btn" onclick="showCreateRoomPanel()" disabled>إنشاء غرفة جديدة ➕</button>
     </div>
 
     <div class="menu-card" id="create-room-view" style="display: none;">
@@ -145,12 +145,12 @@
         
         <div class="section-title">اختر علم معسكرك:</div>
         <div class="flag-options" id="player-flags">
-            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('green')">الأخضر السوري</button>
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('red')">الأحمر السوري</button>
+            <button class="flag-btn active-player" onclick="selectFlag('green')">الأخضر السوري</button>
+            <button class="flag-btn" onclick="selectFlag('red')">الأحمر السوري</button>
         </div>
 
-        <button class="action-btn green" onclick="playClickSound(); createRoomAction()">تأكيد وإنشاء الغرفة 🚀</button>
-        <button class="action-btn" style="background:#475569;" onclick="playClickSound(); showLobbySelection()">العودة للقائمة</button>
+        <button class="action-btn green" onclick="createRoomAction()">تأكيد وإنشاء الغرفة 🚀</button>
+        <button class="action-btn" style="background:#475569;" onclick="showLobbySelection()">العودة للقائمة</button>
     </div>
 
     <div class="menu-card" id="waiting-room-view" style="display: none;">
@@ -159,9 +159,9 @@
             في انتظار انضمام الخصم...
         </div>
         <div id="host-controls" style="display:none;">
-            <button class="action-btn green" id="start-battle-btn" onclick="playClickSound(); hostStartGame()" disabled>بدء المعركة (في انتظار الخصم)</button>
+            <button class="action-btn green" id="start-battle-btn" onclick="hostStartGame()" disabled>بدء المعركة (في انتظار الخصم)</button>
         </div>
-        <button class="action-btn" style="background:#ef4444; margin-top:8px;" onclick="playClickSound(); leaveRoom()">مغادرة الغرفة 🚪</button>
+        <button class="action-btn" style="background:#ef4444; margin-top:8px;" onclick="leaveRoom()">مغادرة الغرفة 🚪</button>
     </div>
 </div>
 
@@ -181,8 +181,8 @@
                 <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
                 <div class="money-small"><span id="money-display">500</span>$</div>
             </div>
-            <button class="buy-btn-small" id="buy-tank-btn" onclick="playClickSound(); buyPlayerTank('normal')">عادية (150$)</button>
-            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="playClickSound(); buyPlayerTank('rocket')">صاروخية (300$)</button>
+            <button class="buy-btn-small" id="buy-tank-btn" onclick="buyPlayerTank('normal')">عادية (150$)</button>
+            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="buyPlayerTank('rocket')">صاروخية (300$)</button>
         </div>
     </div>
 
@@ -250,7 +250,7 @@
         rooms.forEach(r => {
             html += `<div class="lobby-item">
                 <span>🏰 ${r.name} (${r.hostFlag === 'green' ? 'الأخضر السوري' : 'الأحمر السوري'})</span>
-                <button onclick="playClickSound(); joinRoom('${r.id}')">انضمام 🎮</button>
+                <button onclick="joinRoom('${r.id}')">انضمام 🎮</button>
             </div>`;
         });
         container.innerHTML = html;
@@ -314,28 +314,9 @@
         }
     });
 
-    const soundFiles = {
-        menuBgm: 'sounds/menu_bgm.mp3',
-        battleBgm: 'sounds/battle_bgm.mp3',
-        click: 'sounds/click.mp3',
-        shoot: 'sounds/shoot.mp3',
-        explosion: 'sounds/explosion.mp3',
-        buy: 'sounds/buy.mp3'
-    };
-
-    let menuBgmAudio = new Audio(soundFiles.menuBgm);
-    menuBgmAudio.loop = true; menuBgmAudio.volume = 0.4;
-    let battleBgmAudio = new Audio(soundFiles.battleBgm);
+    // تشغيل موسيقى المعركة فقط عند اللعب وحذف باقي الأصوات
+    const battleBgmAudio = new Audio('sounds/battle_bgm.mp3');
     battleBgmAudio.loop = true; battleBgmAudio.volume = 0.5;
-
-    window.addEventListener('pointerdown', () => {
-        if (menuBgmAudio.paused && document.getElementById('start-menu').style.display !== 'none') {
-            menuBgmAudio.play().catch(e => {});
-        }
-    }, { once: true });
-
-    function playClickSound() { const a = new Audio(soundFiles.click); a.volume = 0.6; a.play().catch(e => {}); }
-    function playSound(type, vol = 1.0) { if (soundFiles[type]) { const a = new Audio(soundFiles[type]); a.volume = vol; a.play().catch(e => {}); } }
 
     let currentRoomId = null;
     let isHost = false;
@@ -450,12 +431,10 @@
     }
 
     function startGame() {
-        menuBgmAudio.pause(); menuBgmAudio.currentTime = 0;
         battleBgmAudio.play().catch(e => {});
 
         document.getElementById('start-menu').style.display = 'none';
         document.getElementById('ui-overlay').style.display = 'block';
-        playSound('buy');
 
         let startCoord = isHost ? CORNER_OFFSET : -CORNER_OFFSET;
         targetLookAt.set(startCoord, getTerrainHeight(startCoord, startCoord), startCoord);
@@ -509,17 +488,19 @@
             windowMesh.position.set(wx, 7, 5.1); parentGroup.add(windowMesh);
         });
 
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 42, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
-        pole.position.set(0, 21, -12); parentGroup.add(pole);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 30, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
+        pole.position.set(0, 15, -12); parentGroup.add(pole);
 
         let flagMesh = createWavingFlagMesh(flagType);
-        flagMesh.position.set(7, 36, -12);
+        flagMesh.position.set(4, 25, -12);
         parentGroup.add(flagMesh);
+        parentGroup.userData.flagMesh = flagMesh;
     }
 
     function createWavingFlagMesh(flagType) {
-        const flagWidth = 14, flagHeight = 9;
-        const flagGeo = new THREE.PlaneGeometry(flagWidth, flagHeight, 12, 8);
+        // حجم أصغر وأدق للعلم (7 عرض × 4.5 ارتفاع)
+        const flagWidth = 7, flagHeight = 4.5;
+        const flagGeo = new THREE.PlaneGeometry(flagWidth, flagHeight, 8, 6);
         let flagCanvas = document.createElement('canvas');
         flagCanvas.width = 128; flagCanvas.height = 64;
         let ctx = flagCanvas.getContext('2d');
@@ -535,8 +516,8 @@
             ctx.fillStyle = '#000000'; ctx.fillRect(0, 43, 128, 21);
             ctx.fillStyle = '#007a3d'; ctx.font = 'bold 16px Arial'; ctx.fillText('★ ★ ★', 38, 37);
         } else {
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 128, 64);
-            ctx.fillStyle = '#64748b'; ctx.font = 'bold 14px Arial'; ctx.fillText('NEUTRAL', 30, 36);
+            ctx.fillStyle = '#94a3b8'; ctx.fillRect(0, 0, 128, 64);
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 12px Arial'; ctx.fillText('NEUTRAL', 32, 36);
         }
 
         let flagTexture = new THREE.CanvasTexture(flagCanvas);
@@ -551,19 +532,20 @@
         rig.owner = newOwner;
         rig.group.remove(rig.flagMesh);
         rig.flagMesh = createWavingFlagMesh(newOwner);
-        rig.flagMesh.position.set(6, 26, 0);
+        rig.flagMesh.position.set(3.5, 18, 0); // موضع متناسب مع العمود المصغر
         rig.group.add(rig.flagMesh);
     }
 
+    let pBaseGroup, eBaseGroup;
     function createBases() {
-        const pBase = new THREE.Group();
-        pBase.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
-        const eBase = new THREE.Group();
-        eBase.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
+        pBaseGroup = new THREE.Group();
+        pBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
+        eBaseGroup = new THREE.Group();
+        eBaseGroup.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
 
-        createBaseStructure(pBase, playerFlagType);
-        createBaseStructure(eBase, enemyFlagType);
-        scene.add(pBase); scene.add(eBase);
+        createBaseStructure(pBaseGroup, playerFlagType);
+        createBaseStructure(eBaseGroup, enemyFlagType);
+        scene.add(pBaseGroup); scene.add(eBaseGroup);
 
         let pColor = playerFlagType === 'green' ? 0x15803d : 0xb91c1c;
         let startCoord = isHost ? CORNER_OFFSET : -CORNER_OFFSET;
@@ -587,11 +569,12 @@
             rigGroup.add(beam);
             animatedRigs.push(beam);
 
-            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 20, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
-            pole.position.set(0, 16, 0); rigGroup.add(pole);
+            // عمود علم مصغر ومتناسق
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 22, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
+            pole.position.set(0, 12, 0); rigGroup.add(pole);
 
             let flagMesh = createWavingFlagMesh('neutral');
-            flagMesh.position.set(6, 26, 0);
+            flagMesh.position.set(3.5, 18, 0);
             rigGroup.add(flagMesh);
 
             scene.add(rigGroup);
@@ -617,28 +600,50 @@
         return new THREE.CanvasTexture(canvas);
     }
 
+    // تصميم محسن وأنيق للدبابات بمظهر عسكري واقعي
     function createTank(x, z, colorHex, team, type = 'normal', flagType = 'green') {
         const group = new THREE.Group();
         let isRocket = (type === 'rocket');
         
-        let body = new THREE.Mesh(
-            new THREE.BoxGeometry(isRocket ? 7.5 : 6.5, 2.4, isRocket ? 11 : 9.5),
-            new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 })
-        );
-        body.position.y = 1.2; body.castShadow = true; body.receiveShadow = true; group.add(body);
+        let bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.35, metalness: 0.2 });
+        let darkMetal = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
 
+        // هيكل الدبابة الرئيسي
+        let body = new THREE.Mesh(
+            new THREE.BoxGeometry(isRocket ? 7.2 : 6.2, 2.2, isRocket ? 10.5 : 9.0),
+            bodyMat
+        );
+        body.position.y = 1.3; body.castShadow = true; body.receiveShadow = true; group.add(body);
+
+        // دروع وجوانب مجنزرة محسنة
+        [-3.4, 3.4].forEach(tx => {
+            let track = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.0, isRocket ? 10.8 : 9.2), darkMetal);
+            track.position.set(tx, 1.1, 0); track.castShadow = true; group.add(track);
+        });
+
+        // شارات الأعلام الجانبية المصغرة
         let badgeTex = createTankBadge(flagType);
         let badgeMat = new THREE.MeshBasicMaterial({ map: badgeTex });
-        let leftBadge = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 2), badgeMat);
-        leftBadge.position.set(-3.3, 1.2, 0); leftBadge.rotateY(-Math.PI/2); group.add(leftBadge);
-        let rightBadge = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 2), badgeMat);
-        rightBadge.position.set(3.3, 1.2, 0); rightBadge.rotateY(Math.PI/2); group.add(rightBadge);
+        let leftBadge = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.6), badgeMat);
+        leftBadge.position.set(-3.51, 1.4, 0); leftBadge.rotateY(-Math.PI/2); group.add(leftBadge);
+        let rightBadge = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.6), badgeMat);
+        rightBadge.position.set(3.51, 1.4, 0); rightBadge.rotateY(Math.PI/2); group.add(rightBadge);
 
-        let turret = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.8, 1.6, 12), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
-        turret.position.y = 2.9; turret.castShadow = true; group.add(turret);
+        // برج الدبابة المطور
+        let turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 14), darkMetal);
+        turret.position.y = 2.7; turret.castShadow = true; group.add(turret);
 
-        let barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, isRocket ? 8 : 6, 8), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
-        barrel.rotateX(Math.PI / 2); barrel.position.set(0, 2.9, isRocket ? 4.5 : 3.5); group.add(barrel);
+        // سبطانة المدفع أو قاذف الصواريخ
+        let barrelGeo = isRocket ? new THREE.BoxGeometry(1.4, 1.4, 8.5) : new THREE.CylinderGeometry(0.45, 0.45, 6.5, 8);
+        let barrel = new THREE.Mesh(barrelGeo, new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.4 }));
+        if (!isRocket) barrel.rotateX(Math.PI / 2);
+        barrel.position.set(0, 2.7, isRocket ? 4.2 : 3.6); barrel.castShadow = true; group.add(barrel);
+
+        // عادم مزدوج خلفي لإعطاء طابع حقيقي
+        [-1.8, 1.8].forEach(ex => {
+            let exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.5, 6), darkMetal);
+            exhaust.position.set(ex, 1.8, -4.8); group.add(exhaust);
+        });
 
         group.position.set(x, getTerrainHeight(x, z), z);
         scene.add(group);
@@ -661,7 +666,7 @@
         let cost = (type === 'rocket') ? 300 : 150;
         if (playerMoney >= cost) {
             playerMoney -= cost; playerBuildCooldown = 1200;
-            updateEconomyUI(); playSound('buy');
+            updateEconomyUI();
             let pColor = playerFlagType === 'green' ? 0x15803d : 0xb91c1c;
             let startCoord = isHost ? CORNER_OFFSET : -CORNER_OFFSET;
             let px = startCoord - 50 + (Math.random() - 0.5) * 20;
@@ -697,11 +702,10 @@
     }
 
     function fireBullet(tank) {
-        playSound('shoot', 0.6);
-        const bMesh = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+        const bMesh = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
         let worldPos = new THREE.Vector3();
         tank.mesh.getWorldPosition(worldPos);
-        bMesh.position.set(worldPos.x, worldPos.y + 3, worldPos.z);
+        bMesh.position.set(worldPos.x, worldPos.y + 2.8, worldPos.z);
         
         let dir = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), tank.mesh.rotation.y);
         bullets.push({ mesh: bMesh, dir: dir, team: tank.team, damage: tank.type === 'rocket' ? 50 : 25 });
@@ -790,7 +794,7 @@
         [...playerTanks, ...enemyTanks].forEach(t => {
             if (t.isDestroyed) { t.hpLabel.style.display = 'none'; return; }
             t.hpLabel.style.display = 'block';
-            t.mesh.getWorldPosition(v); v.y += 4; v.project(camera);
+            t.mesh.getWorldPosition(v); v.y += 3.5; v.project(camera);
             t.hpLabel.style.left = `${(v.x * .5 + .5) * window.innerWidth}px`;
             t.hpLabel.style.top = `${(-(v.y * .5) + .5) * window.innerHeight}px`;
             t.hpLabel.innerText = `${t.hp}`;
@@ -812,7 +816,7 @@
             for (let i = 0; i < posAttr.count; i++) {
                 let x = posAttr.getX(i);
                 if (x > 0) {
-                    let wave = Math.sin(t + x * 0.5) * 0.6;
+                    let wave = Math.sin(t + x * 0.5) * 0.4;
                     posAttr.setZ(i, wave);
                 }
             }
@@ -886,7 +890,6 @@
             for (let t of targetList) {
                 if (!t.isDestroyed && b.mesh.position.distanceTo(t.mesh.position) < 3.5) {
                     t.hp -= b.damage; hit = true;
-                    playSound('explosion', 0.5);
                     if (t.hp <= 0) { t.isDestroyed = true; scene.remove(t.mesh); t.hpLabel.remove(); }
                     break;
                 }
