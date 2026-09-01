@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - النسخة الكاملة نهائياً</title>
+    <title>معركة السيطرة الاستراتيجية - النسخة المطورة والنهائية</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -132,17 +132,6 @@
             background: rgba(15, 23, 42, 0.75); border: 1px solid #38bdf8;
             color: #93c5fd; padding: 3px 6px; border-radius: 4px; font-size: 9px; pointer-events: none;
         }
-
-        #victory-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
-            background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff;
-        }
-        #victory-screen h1 { font-size: 20px; color: #22c55e; margin-bottom: 6px; text-align: center; }
-        .stats-box {
-            background: rgba(30, 41, 59, 0.9); border: 1px solid #38bdf8; border-radius: 8px;
-            padding: 10px 16px; font-size: 11px; margin: 8px 0; width: 260px; text-align: right; line-height: 1.5;
-        }
-        .restart-btn { padding: 6px 16px; background: #22c55e; border: none; color: white; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -174,7 +163,7 @@
 
     <div class="menu-card" id="waiting-room-view" style="display: none;">
         <h1 id="room-title-display">غرفة المعركة</h1>
-        <div class="stats-box" id="room-status-box" style="width:100%; text-align:center;">
+        <div class="stats-box" id="room-status-box" style="width:100%; text-align:center; background:rgba(30,41,59,0.9); padding:10px; border-radius:6px; margin:8px 0; font-size:11px;">
             في انتظار انضمام الخصم...
         </div>
         <div id="host-controls" style="display:none;">
@@ -245,12 +234,6 @@
     <div class="cam-hint">اضغط لتحريك دباباتك فقط 🎯</div>
 </div>
 
-<div id="victory-screen">
-    <h1 id="victory-title">انتهت المعركة!</h1>
-    <div class="stats-box" id="stats-content"></div>
-    <button class="restart-btn" onclick="playClickSound(); location.reload()">العودة للقائمة الرئيسية 🔄</button>
-</div>
-
 <div id="canvas-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -319,20 +302,23 @@
 
     socket.on("remote_tank_spawn", (data) => {
         let eColor = enemyFlagType === 'green' ? 0x22c55e : 0xef4444;
-        let newTank = createTank(-data.x, -data.z, eColor, 'enemy', data.type);
+        let newTank = createTank(-data.x, -data.z, eColor, 'enemy', data.type, enemyFlagType);
         enemyTanks.push(newTank);
     });
 
     socket.on("remote_tank_move", (data) => {
         if (enemyTanks[data.index] && !enemyTanks[data.index].isDestroyed) {
-            enemyTanks[data.index].mesh.position.set(-data.x, data.y, -data.z);
+            let oldPos = enemyTanks[data.index].mesh.position.clone();
+            let newPos = new THREE.Vector3(-data.x, data.y, -data.z);
+            enemyTanks[data.index].mesh.position.copy(newPos);
             enemyTanks[data.index].mesh.rotation.y = data.rotY + Math.PI;
+            if (oldPos.distanceTo(newPos) > 0.5) createTrackMark(newPos);
         }
     });
 
     socket.on("remote_shoot", (data) => {
         if (enemyTanks[data.tankIndex]) {
-            fireBullet(enemyTanks[data.tankIndex], playerTanks);
+            fireBullet(enemyTanks[data.tankIndex]);
         }
     });
 
@@ -404,7 +390,7 @@
 
     let isDragging = false, previousTouchX = 0, previousTouchY = 0, touchStartX = 0, touchStartY = 0, hasMoved = false;
 
-    let playerTanks = [], enemyTanks = [], bullets = [], animatedRigs = [], activeFlagMeshes = [];
+    let playerTanks = [], enemyTanks = [], bullets = [], animatedRigs = [], wavingFlags = [], trackMarks = [];
     let targetMarkerMesh;
     let raycaster = new THREE.Raycaster();
     let mouse = new THREE.Vector2();
@@ -429,8 +415,8 @@
     function init() {
         const container = document.getElementById('canvas-container');
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x7dd3fc);
-        scene.fog = new THREE.FogExp2(0x7dd3fc, 0.0018);
+        scene.background = new THREE.Color(0x87ceeb); // سماء نهارية ساطعة وجميلة
+        scene.fog = new THREE.FogExp2(0x87ceeb, 0.0015);
 
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
         updateCameraPosition();
@@ -492,12 +478,12 @@
     }
 
     function setupLighting() {
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        dirLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
-        dirLight.position.set(300, 450, 300);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.85)); // إضاءة نهارية عامة قوية
+        dirLight = new THREE.DirectionalLight(0xffffff, 1.4); // شمس نهارية ساطعة
+        dirLight.position.set(400, 600, 400);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048;
-        let d = 450;
+        let d = 500;
         dirLight.shadow.camera.left = -d; dirLight.shadow.camera.right = d;
         dirLight.shadow.camera.top = d; dirLight.shadow.camera.bottom = -d;
         scene.add(dirLight);
@@ -511,74 +497,71 @@
             posAttr.setY(i, getTerrainHeight(posAttr.getX(i), posAttr.getZ(i)));
         }
         geo.computeVertexNormals();
-        terrainMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x3b2f2f, roughness: 0.9 }));
+        terrainMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x4a5d4e, roughness: 0.85 })); // أرضية عشبية / رملية عسكرية نهارية
         terrainMesh.receiveShadow = true;
         scene.add(terrainMesh);
     }
 
     function createBaseStructure(parentGroup, flagType) {
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.4 });
-        const concreteMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 });
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.5 });
+        const concreteMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });
         
+        // الجدران الجانبية للمعسكر
         [-18, 18].forEach(x => {
-            const sideWall = new THREE.Mesh(new THREE.BoxGeometry(3, 8, 36), wallMat);
-            sideWall.position.set(x, 4, 0); sideWall.castShadow = true; sideWall.receiveShadow = true; parentGroup.add(sideWall);
+            const sideWall = new THREE.Mesh(new THREE.BoxGeometry(3, 10, 38), wallMat);
+            sideWall.position.set(x, 5, 0); sideWall.castShadow = true; sideWall.receiveShadow = true; parentGroup.add(sideWall);
         });
-        const hqBase = new THREE.Mesh(new THREE.BoxGeometry(20, 9, 16), concreteMat);
-        hqBase.position.set(0, 4.5, -4); hqBase.castShadow = true; hqBase.receiveShadow = true; parentGroup.add(hqBase);
 
-        // إنشاء علم المعسكر السوري الأصلي مع ألوانه الحقيقية (الأخضر/الأحمر مع نجوم)
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 40, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
-        pole.position.set(0, 20, -12); parentGroup.add(pole);
+        // المبنى الرئيسي (مقر القيادة مع شبابيك وباب)
+        const hqBase = new THREE.Mesh(new THREE.BoxGeometry(22, 11, 18), concreteMat);
+        hqBase.position.set(0, 5.5, -4); hqBase.castShadow = true; hqBase.receiveShadow = true; parentGroup.add(hqBase);
 
-        const flagGroup = new THREE.Group();
-        flagGroup.position.set(0, 36, -12);
+        // إضافة باب المعسكر الرئيسي
+        const door = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 0.6), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+        door.position.set(0, 3, 5.1); parentGroup.add(door);
+
+        // إضافة شبابيك مضيئة للمعسكر
+        [-6, 6].forEach(wx => {
+            const windowMesh = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 0.5), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+            windowMesh.position.set(wx, 7, 5.1); parentGroup.add(windowMesh);
+        });
+
+        // سارية العلم
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 42, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
+        pole.position.set(0, 21, -12); parentGroup.add(pole);
+
+        // علم سوري يرفرف بجمال (باستخدام شبكة مضلعة PlaneGeometry)
+        const flagWidth = 14, flagHeight = 9;
+        const flagGeo = new THREE.PlaneGeometry(flagWidth, flagHeight, 12, 8);
+        
+        // تلوين علم الرفرفة (أخضر أو أحمر سوري أصيل)
+        let flagCanvas = document.createElement('canvas');
+        flagCanvas.width = 128; flagCanvas.height = 64;
+        let ctx = flagCanvas.getContext('2d');
         
         if (flagType === 'green') {
-            // العلم السوري الأخضر (خطوط أخضر، أبيض، أسود مع نجمتين حمراوين)
-            const stripeH = 2.2;
-            const greenMat = new THREE.MeshBasicMaterial({ color: 0x007a3d, side: THREE.DoubleSide });
-            const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-            const blackMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
-            
-            const topStripe = new THREE.Mesh(new THREE.PlaneGeometry(12, stripeH), greenMat);
-            topStripe.position.set(6, stripeH, 0); flagGroup.add(topStripe);
-            const midStripe = new THREE.Mesh(new THREE.PlaneGeometry(12, stripeH), whiteMat);
-            midStripe.position.set(6, 0, 0); flagGroup.add(midStripe);
-            const botStripe = new THREE.Mesh(new THREE.PlaneGeometry(12, stripeH), blackMat);
-            botStripe.position.set(6, -stripeH, 0); flagGroup.add(botStripe);
-
-            // النجمتان الحمراوان
-            const starGeo = new THREE.ConeGeometry(0.8, 0.2, 5);
-            starGeo.rotateX(Math.PI/2);
-            const starMat = new THREE.MeshBasicMaterial({ color: 0xce1126 });
-            const star1 = new THREE.Mesh(starGeo, starMat); star1.position.set(4, 0, 0.2); flagGroup.add(star1);
-            const star2 = new THREE.Mesh(starGeo, starMat); star2.position.set(8, 0, 0.2); flagGroup.add(star2);
+            ctx.fillStyle = '#007a3d'; ctx.fillRect(0, 0, 128, 21);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 21, 128, 22);
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 43, 128, 21);
+            // رسم النجمتين الحمراوين
+            ctx.fillStyle = '#ce1126';
+            ctx.font = 'bold 20px Arial'; ctx.fillText('★ ★', 44, 37);
         } else {
-            // العلم السوري الأحمر/الاستقلال
-            const stripeH = 2.2;
-            const redMat = new THREE.MeshBasicMaterial({ color: 0xce1126, side: THREE.DoubleSide });
-            const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-            const blackMat = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
-            
-            const topStripe = new THREE.Mesh(new THREE.PlaneGeometry(12, stripeH), redMat);
-            topStripe.position.set(6, stripeH, 0); flagGroup.add(topStripe);
-            const midStripe = new THREE.Mesh(new THREE.PlaneGeometry(12, stripeH), whiteMat);
-            midStripe.position.set(6, 0, 0); flagGroup.add(midStripe);
-            const botStripe = new THREE.Mesh(new THREE.PlaneGeometry(12, stripeH), blackMat);
-            botStripe.position.set(6, -stripeH, 0); flagGroup.add(botStripe);
-
-            // النجوم الثلاث الخضراء
-            const starGeo = new THREE.ConeGeometry(0.7, 0.2, 5);
-            starGeo.rotateX(Math.PI/2);
-            const starMat = new THREE.MeshBasicMaterial({ color: 0x007a3d });
-            const star1 = new THREE.Mesh(starGeo, starMat); star1.position.set(3, 0, 0.2); flagGroup.add(star1);
-            const star2 = new THREE.Mesh(starGeo, starMat); star2.position.set(6, 0, 0.2); flagGroup.add(star2);
-            const star3 = new THREE.Mesh(starGeo, starMat); star3.position.set(9, 0, 0.2); flagGroup.add(star3);
+            ctx.fillStyle = '#ce1126'; ctx.fillRect(0, 0, 128, 21);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 21, 128, 22);
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 43, 128, 21);
+            // رسم النجوم الثلاث الخضراء
+            ctx.fillStyle = '#007a3d';
+            ctx.font = 'bold 16px Arial'; ctx.fillText('★ ★ ★', 38, 37);
         }
 
-        parentGroup.add(flagGroup);
-        activeFlagMeshes.push(flagGroup);
+        let flagTexture = new THREE.CanvasTexture(flagCanvas);
+        let flagMat = new THREE.MeshStandardMaterial({ map: flagTexture, side: THREE.DoubleSide, roughness: 0.4 });
+        let flagMesh = new THREE.Mesh(flagGeo, flagMat);
+        flagMesh.position.set(7, 36, -12);
+        parentGroup.add(flagMesh);
+
+        wavingFlags.push({ mesh: flagMesh, origGeo: flagGeo.clone(), timeOffset: Math.random() * 10 });
     }
 
     function createBases() {
@@ -593,25 +576,21 @@
 
         let pColor = playerFlagType === 'green' ? 0x15803d : 0xb91c1c;
         let startCoord = isHost ? CORNER_OFFSET : -CORNER_OFFSET;
-        let playerTank = createTank(startCoord - 45, startCoord - 45, pColor, 'player', 'normal');
+        let playerTank = createTank(startCoord - 45, startCoord - 45, pColor, 'player', 'normal', playerFlagType);
         playerTanks.push(playerTank);
     }
 
     function createOilRigs() {
-        // تصميم حفرة نفط واقعية ومصممة بدقة (مضخة هيكلية تتحرك)
         [{ x: 50, z: -50 }, { x: -50, z: 50 }, { x: -70, z: -70 }, { x: 70, z: 70 }].forEach(pos => {
             const rig = new THREE.Group();
             rig.position.set(pos.x, getTerrainHeight(pos.x, pos.z), pos.z);
             
-            // قاعدة منصة النفط الإسمنتية
-            const base = new THREE.Mesh(new THREE.BoxGeometry(14, 2.5, 14), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 }));
+            const base = new THREE.Mesh(new THREE.BoxGeometry(14, 2.5, 14), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 }));
             base.position.y = 1.25; base.castShadow = true; base.receiveShadow = true; rig.add(base);
 
-            // هيكل المضخة العمودي
             const tower = new THREE.Mesh(new THREE.BoxGeometry(3, 10, 3), new THREE.MeshStandardMaterial({ color: 0x64748b }));
             tower.position.set(0, 6, -3); tower.castShadow = true; rig.add(tower);
 
-            // ذراع المضخة المتحرك (المحور الذي يتحرك صعوداً وهبوطاً لإنتاج النفط)
             const beam = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 18), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
             beam.position.set(0, 11, 2); beam.castShadow = true;
             rig.add(beam);
@@ -621,14 +600,41 @@
         });
     }
 
-    function createTank(x, z, colorHex, team, type = 'normal') {
+    function createTankBadge(flagType) {
+        let canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 32;
+        let ctx = canvas.getContext('2d');
+        if (flagType === 'green') {
+            ctx.fillStyle = '#007a3d'; ctx.fillRect(0, 0, 64, 10);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 10, 64, 12);
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 22, 64, 10);
+            ctx.fillStyle = '#ce1126'; ctx.font = 'bold 10px Arial'; ctx.fillText('★ ★', 22, 19);
+        } else {
+            ctx.fillStyle = '#ce1126'; ctx.fillRect(0, 0, 64, 10);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 10, 64, 12);
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 22, 64, 10);
+            ctx.fillStyle = '#007a3d'; ctx.font = 'bold 8px Arial'; ctx.fillText('★ ★ ★', 18, 19);
+        }
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    function createTank(x, z, colorHex, team, type = 'normal', flagType = 'green') {
         const group = new THREE.Group();
         let isRocket = (type === 'rocket');
+        
         let body = new THREE.Mesh(
             new THREE.BoxGeometry(isRocket ? 7.5 : 6.5, 2.4, isRocket ? 11 : 9.5),
             new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 })
         );
         body.position.y = 1.2; body.castShadow = true; body.receiveShadow = true; group.add(body);
+
+        // رسم العلم على جانبي هيكل الدبابة
+        let badgeTex = createTankBadge(flagType);
+        let badgeMat = new THREE.MeshBasicMaterial({ map: badgeTex });
+        let leftBadge = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 2), badgeMat);
+        leftBadge.position.set(-3.3, 1.2, 0); leftBadge.rotateY(-Math.PI/2); group.add(leftBadge);
+        let rightBadge = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 2), badgeMat);
+        rightBadge.position.set(3.3, 1.2, 0); rightBadge.rotateY(Math.PI/2); group.add(rightBadge);
 
         let turret = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.8, 1.6, 12), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
         turret.position.y = 2.9; turret.castShadow = true; group.add(turret);
@@ -645,7 +651,7 @@
         hpLabel.innerText = `${maxHp}`;
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
-        return { mesh: group, hpLabel: hpLabel, target: null, team: team, type: type, hp: maxHp, maxHp: maxHp, lastShot: 0, isDestroyed: false };
+        return { mesh: group, hpLabel: hpLabel, target: null, team: team, type: type, hp: maxHp, maxHp: maxHp, lastShot: 0, isDestroyed: false, flagType: flagType };
     }
 
     function buyPlayerTank(type) {
@@ -658,7 +664,7 @@
             let startCoord = isHost ? CORNER_OFFSET : -CORNER_OFFSET;
             let px = startCoord - 50 + (Math.random() - 0.5) * 20;
             let pz = startCoord - 50 + (Math.random() - 0.5) * 20;
-            let newTank = createTank(px, pz, pColor, 'player', type);
+            let newTank = createTank(px, pz, pColor, 'player', type, playerFlagType);
             playerTanks.push(newTank);
 
             socket.emit("spawn_tank", { roomId: currentRoomId, x: px, z: pz, type: type });
@@ -673,7 +679,22 @@
         scene.add(targetMarkerMesh);
     }
 
-    function fireBullet(tank, targetsList) {
+    function createTrackMark(pos) {
+        const markGeo = new THREE.PlaneGeometry(1.8, 1.8);
+        markGeo.rotateX(-Math.PI / 2);
+        const markMat = new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.5 });
+        const markMesh = new THREE.Mesh(markGeo, markMat);
+        markMesh.position.set(pos.x, getTerrainHeight(pos.x, pos.z) + 0.05, pos.z);
+        scene.add(markMesh);
+        trackMarks.push({ mesh: markMesh, time: Date.now() });
+
+        if (trackMarks.length > 50) {
+            let old = trackMarks.shift();
+            scene.remove(old.mesh);
+        }
+    }
+
+    function fireBullet(tank) {
         playSound('shoot', 0.6);
         const bMesh = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
         let worldPos = new THREE.Vector3();
@@ -779,9 +800,24 @@
         gameTick++;
         if (gameTick % 60 === 0) { playerMoney += 12; updateEconomyUI(); }
 
-        // حركة ومحاكاة ذراع منصات النفط
+        // تحريك ذراع منصات النفط
         animatedRigs.forEach((beam, idx) => {
             beam.rotation.z = Math.sin(gameTick * 0.05 + idx) * 0.25;
+        });
+
+        // حركة ومحاكاة رفرفة الأعلام
+        wavingFlags.forEach(f => {
+            const posAttr = f.mesh.geometry.attributes.position;
+            const t = gameTick * 0.1 + f.timeOffset;
+            for (let i = 0; i < posAttr.count; i++) {
+                let x = posAttr.getX(i);
+                if (x > 0) { // الأطراف ترفرف بحرية
+                    let y = posAttr.getY(i);
+                    let wave = Math.sin(t + x * 0.5) * 0.6;
+                    posAttr.setZ(i, wave);
+                }
+            }
+            posAttr.needsUpdate = true;
         });
 
         for (let i = 0; i < playerTanks.length; i++) {
@@ -797,6 +833,8 @@
         playerTanks.forEach((tank, idx) => {
             if (tank.isDestroyed) return;
             let isMoving = false;
+            let oldPos = tank.mesh.position.clone();
+
             if (tank.target) {
                 let dist = tank.mesh.position.distanceTo(tank.target);
                 if (dist > 1.5) {
@@ -810,10 +848,14 @@
                 }
             }
 
+            if (isMoving && oldPos.distanceTo(tank.mesh.position) > 1.5) {
+                createTrackMark(tank.mesh.position);
+            }
+
             enemyTanks.forEach(en => {
                 if (!en.isDestroyed && tank.mesh.position.distanceTo(en.mesh.position) < 120 && Date.now() - tank.lastShot > 1500) {
                     tank.lastShot = Date.now();
-                    fireBullet(tank, enemyTanks);
+                    fireBullet(tank);
                     if (currentRoomId) socket.emit("shoot", { roomId: currentRoomId, tankIndex: idx });
                 }
             });
