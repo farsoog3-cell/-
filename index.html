@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - النسخة المطورة والنهائية</title>
+    <title>معركة السيطرة الاستراتيجية - النسخة الفورية والمطورة</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -37,7 +37,6 @@
         }
         .action-btn:disabled { background: #64748b; cursor: not-allowed; }
         .action-btn.green { background: #22c55e; }
-        .action-btn.red { background: #ef4444; }
 
         .lobbies-list {
             max-height: 140px; overflow-y: auto; background: #0f172a; border: 1px solid #334155;
@@ -75,13 +74,6 @@
             position: absolute; top: 8px; left: 8px; pointer-events: auto;
             display: flex; flex-direction: column; gap: 6px; width: 130px;
         }
-
-        .selection-controls { display: flex; gap: 4px; width: 100%; }
-        .sel-btn {
-            flex: 1; background: rgba(30, 41, 59, 0.85); border: 1px solid #38bdf8; color: white;
-            padding: 5px 4px; border-radius: 5px; font-size: 10px; font-weight: bold; text-align: center; cursor: pointer;
-        }
-        .sel-btn.active { background: #0284c7; }
 
         .corner-economy {
             background: rgba(15, 23, 42, 0.85); border: 1px solid #f59e0b;
@@ -177,18 +169,13 @@
     <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
 
     <div class="top-capture-box">
-        <div id="capture-status-text">سيطر على معسكر الخصم لتربح!</div>
+        <div id="capture-status-text">سيطر على آبار النفط ومعسكر الخصم!</div>
         <div class="capture-bar-bg">
             <div id="capture-bar-fill" class="capture-bar-fill"></div>
         </div>
     </div>
 
     <div class="left-controls-group">
-        <div class="selection-controls">
-            <button class="sel-btn active" id="sel-all-btn" onclick="playClickSound(); setSelectionMode('all')">الكل</button>
-            <button class="sel-btn" id="sel-single-btn" onclick="playClickSound(); setSelectionMode('single')">فردي</button>
-        </div>
-
         <div class="corner-economy">
             <div class="money-row">
                 <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
@@ -231,7 +218,7 @@
             ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
     </div>
 
-    <div class="cam-hint">اضغط لتحريك دباباتك فقط 🎯</div>
+    <div class="cam-hint">اضغط لتحريك دباباتك 🎯</div>
 </div>
 
 <div id="canvas-container"></div>
@@ -291,7 +278,7 @@
 
     socket.on("room_update", (roomData) => {
         if (isHost && roomData.guestJoined) {
-            document.getElementById('room-status-box').innerText = "انضم الخصم الحقيقي! 🟢";
+            document.getElementById('room-status-box').innerText = "انضم الخصم! 🟢";
             let startBtn = document.getElementById('start-battle-btn');
             startBtn.disabled = false;
             startBtn.innerText = "بدء المعركة الآن 🚀";
@@ -308,17 +295,22 @@
 
     socket.on("remote_tank_move", (data) => {
         if (enemyTanks[data.index] && !enemyTanks[data.index].isDestroyed) {
-            let oldPos = enemyTanks[data.index].mesh.position.clone();
-            let newPos = new THREE.Vector3(-data.x, data.y, -data.z);
-            enemyTanks[data.index].mesh.position.copy(newPos);
-            enemyTanks[data.index].mesh.rotation.y = data.rotY + Math.PI;
-            if (oldPos.distanceTo(newPos) > 0.5) createTrackMark(newPos);
+            let tank = enemyTanks[data.index];
+            tank.targetPos.set(-data.x, data.y, -data.z);
+            tank.targetRotY = data.rotY + Math.PI;
+            if (tank.mesh.position.distanceTo(tank.targetPos) > 0.5) createTrackMark(tank.targetPos);
         }
     });
 
     socket.on("remote_shoot", (data) => {
         if (enemyTanks[data.tankIndex]) {
             fireBullet(enemyTanks[data.tankIndex]);
+        }
+    });
+
+    socket.on("rig_captured", (data) => {
+        if (oilRigs[data.rigIndex]) {
+            updateRigFlag(oilRigs[data.rigIndex], data.owner);
         }
     });
 
@@ -390,7 +382,7 @@
 
     let isDragging = false, previousTouchX = 0, previousTouchY = 0, touchStartX = 0, touchStartY = 0, hasMoved = false;
 
-    let playerTanks = [], enemyTanks = [], bullets = [], animatedRigs = [], wavingFlags = [], trackMarks = [];
+    let playerTanks = [], enemyTanks = [], bullets = [], animatedRigs = [], wavingFlags = [], trackMarks = [], oilRigs = [];
     let targetMarkerMesh;
     let raycaster = new THREE.Raycaster();
     let mouse = new THREE.Vector2();
@@ -415,7 +407,7 @@
     function init() {
         const container = document.getElementById('canvas-container');
         scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb); // سماء نهارية ساطعة وجميلة
+        scene.background = new THREE.Color(0x87ceeb);
         scene.fog = new THREE.FogExp2(0x87ceeb, 0.0015);
 
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
@@ -457,11 +449,6 @@
         if (camInputs.zo) targetCameraRadius = Math.min(550, targetCameraRadius + 5);
     }
 
-    function setSelectionMode(mode) {
-        document.getElementById('sel-all-btn').classList.toggle('active', mode === 'all');
-        document.getElementById('sel-single-btn').classList.toggle('active', mode === 'single');
-    }
-
     function startGame() {
         menuBgmAudio.pause(); menuBgmAudio.currentTime = 0;
         battleBgmAudio.play().catch(e => {});
@@ -474,12 +461,12 @@
         targetLookAt.set(startCoord, getTerrainHeight(startCoord, startCoord), startCoord);
         targetCameraRadius = 110; cameraPhi = Math.PI / 3.8; cameraRadius = targetCameraRadius;
         updateCameraPosition();
-        showFloatingMsg('بدأت المعركة الاستراتيجية الحقيقية!');
+        showFloatingMsg('بدأت المعركة الاستراتيجية الفورية!');
     }
 
     function setupLighting() {
-        scene.add(new THREE.AmbientLight(0xffffff, 0.85)); // إضاءة نهارية عامة قوية
-        dirLight = new THREE.DirectionalLight(0xffffff, 1.4); // شمس نهارية ساطعة
+        scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+        dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
         dirLight.position.set(400, 600, 400);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048; dirLight.shadow.mapSize.height = 2048;
@@ -497,7 +484,7 @@
             posAttr.setY(i, getTerrainHeight(posAttr.getX(i), posAttr.getZ(i)));
         }
         geo.computeVertexNormals();
-        terrainMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x4a5d4e, roughness: 0.85 })); // أرضية عشبية / رملية عسكرية نهارية
+        terrainMesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x4a5d4e, roughness: 0.85 }));
         terrainMesh.receiveShadow = true;
         scene.add(terrainMesh);
     }
@@ -506,35 +493,33 @@
         const wallMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.5 });
         const concreteMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });
         
-        // الجدران الجانبية للمعسكر
         [-18, 18].forEach(x => {
             const sideWall = new THREE.Mesh(new THREE.BoxGeometry(3, 10, 38), wallMat);
             sideWall.position.set(x, 5, 0); sideWall.castShadow = true; sideWall.receiveShadow = true; parentGroup.add(sideWall);
         });
 
-        // المبنى الرئيسي (مقر القيادة مع شبابيك وباب)
         const hqBase = new THREE.Mesh(new THREE.BoxGeometry(22, 11, 18), concreteMat);
         hqBase.position.set(0, 5.5, -4); hqBase.castShadow = true; hqBase.receiveShadow = true; parentGroup.add(hqBase);
 
-        // إضافة باب المعسكر الرئيسي
         const door = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 0.6), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
         door.position.set(0, 3, 5.1); parentGroup.add(door);
 
-        // إضافة شبابيك مضيئة للمعسكر
         [-6, 6].forEach(wx => {
             const windowMesh = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 0.5), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
             windowMesh.position.set(wx, 7, 5.1); parentGroup.add(windowMesh);
         });
 
-        // سارية العلم
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 42, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
         pole.position.set(0, 21, -12); parentGroup.add(pole);
 
-        // علم سوري يرفرف بجمال (باستخدام شبكة مضلعة PlaneGeometry)
+        let flagMesh = createWavingFlagMesh(flagType);
+        flagMesh.position.set(7, 36, -12);
+        parentGroup.add(flagMesh);
+    }
+
+    function createWavingFlagMesh(flagType) {
         const flagWidth = 14, flagHeight = 9;
         const flagGeo = new THREE.PlaneGeometry(flagWidth, flagHeight, 12, 8);
-        
-        // تلوين علم الرفرفة (أخضر أو أحمر سوري أصيل)
         let flagCanvas = document.createElement('canvas');
         flagCanvas.width = 128; flagCanvas.height = 64;
         let ctx = flagCanvas.getContext('2d');
@@ -543,25 +528,32 @@
             ctx.fillStyle = '#007a3d'; ctx.fillRect(0, 0, 128, 21);
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 21, 128, 22);
             ctx.fillStyle = '#000000'; ctx.fillRect(0, 43, 128, 21);
-            // رسم النجمتين الحمراوين
-            ctx.fillStyle = '#ce1126';
-            ctx.font = 'bold 20px Arial'; ctx.fillText('★ ★', 44, 37);
-        } else {
+            ctx.fillStyle = '#ce1126'; ctx.font = 'bold 20px Arial'; ctx.fillText('★ ★', 44, 37);
+        } else if (flagType === 'red') {
             ctx.fillStyle = '#ce1126'; ctx.fillRect(0, 0, 128, 21);
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 21, 128, 22);
             ctx.fillStyle = '#000000'; ctx.fillRect(0, 43, 128, 21);
-            // رسم النجوم الثلاث الخضراء
-            ctx.fillStyle = '#007a3d';
-            ctx.font = 'bold 16px Arial'; ctx.fillText('★ ★ ★', 38, 37);
+            ctx.fillStyle = '#007a3d'; ctx.font = 'bold 16px Arial'; ctx.fillText('★ ★ ★', 38, 37);
+        } else {
+            // العلم الأبيض الحيادي للنفط قبل السيطرة
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 128, 64);
+            ctx.fillStyle = '#64748b'; ctx.font = 'bold 14px Arial'; ctx.fillText('NEUTRAL', 30, 36);
         }
 
         let flagTexture = new THREE.CanvasTexture(flagCanvas);
         let flagMat = new THREE.MeshStandardMaterial({ map: flagTexture, side: THREE.DoubleSide, roughness: 0.4 });
         let flagMesh = new THREE.Mesh(flagGeo, flagMat);
-        flagMesh.position.set(7, 36, -12);
-        parentGroup.add(flagMesh);
-
         wavingFlags.push({ mesh: flagMesh, origGeo: flagGeo.clone(), timeOffset: Math.random() * 10 });
+        return flagMesh;
+    }
+
+    function updateRigFlag(rig, newOwner) {
+        if (rig.owner === newOwner) return;
+        rig.owner = newOwner;
+        rig.group.remove(rig.flagMesh);
+        rig.flagMesh = createWavingFlagMesh(newOwner);
+        rig.flagMesh.position.set(6, 26, 0);
+        rig.group.add(rig.flagMesh);
     }
 
     function createBases() {
@@ -581,22 +573,31 @@
     }
 
     function createOilRigs() {
-        [{ x: 50, z: -50 }, { x: -50, z: 50 }, { x: -70, z: -70 }, { x: 70, z: 70 }].forEach(pos => {
-            const rig = new THREE.Group();
-            rig.position.set(pos.x, getTerrainHeight(pos.x, pos.z), pos.z);
+        [{ x: 50, z: -50 }, { x: -50, z: 50 }, { x: -70, z: -70 }, { x: 70, z: 70 }].forEach((pos, idx) => {
+            const rigGroup = new THREE.Group();
+            rigGroup.position.set(pos.x, getTerrainHeight(pos.x, pos.z), pos.z);
             
             const base = new THREE.Mesh(new THREE.BoxGeometry(14, 2.5, 14), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5 }));
-            base.position.y = 1.25; base.castShadow = true; base.receiveShadow = true; rig.add(base);
+            base.position.y = 1.25; base.castShadow = true; base.receiveShadow = true; rigGroup.add(base);
 
             const tower = new THREE.Mesh(new THREE.BoxGeometry(3, 10, 3), new THREE.MeshStandardMaterial({ color: 0x64748b }));
-            tower.position.set(0, 6, -3); tower.castShadow = true; rig.add(tower);
+            tower.position.set(0, 6, -3); tower.castShadow = true; rigGroup.add(tower);
 
             const beam = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 18), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
             beam.position.set(0, 11, 2); beam.castShadow = true;
-            rig.add(beam);
-
-            scene.add(rig);
+            rigGroup.add(beam);
             animatedRigs.push(beam);
+
+            // سارية وعلم أبيض حيادي للبئر
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 20, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
+            pole.position.set(0, 16, 0); rigGroup.add(pole);
+
+            let flagMesh = createWavingFlagMesh('neutral');
+            flagMesh.position.set(6, 26, 0);
+            rigGroup.add(flagMesh);
+
+            scene.add(rigGroup);
+            oilRigs.push({ group: rigGroup, flagMesh: flagMesh, owner: 'neutral', index: idx });
         });
     }
 
@@ -628,7 +629,6 @@
         );
         body.position.y = 1.2; body.castShadow = true; body.receiveShadow = true; group.add(body);
 
-        // رسم العلم على جانبي هيكل الدبابة
         let badgeTex = createTankBadge(flagType);
         let badgeMat = new THREE.MeshBasicMaterial({ map: badgeTex });
         let leftBadge = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 2), badgeMat);
@@ -651,7 +651,11 @@
         hpLabel.innerText = `${maxHp}`;
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
-        return { mesh: group, hpLabel: hpLabel, target: null, team: team, type: type, hp: maxHp, maxHp: maxHp, lastShot: 0, isDestroyed: false, flagType: flagType };
+        return {
+            mesh: group, hpLabel: hpLabel, target: null, team: team, type: type,
+            hp: maxHp, maxHp: maxHp, lastShot: 0, isDestroyed: false, flagType: flagType,
+            targetPos: group.position.clone(), targetRotY: 0
+        };
     }
 
     function buyPlayerTank(type) {
@@ -800,19 +804,16 @@
         gameTick++;
         if (gameTick % 60 === 0) { playerMoney += 12; updateEconomyUI(); }
 
-        // تحريك ذراع منصات النفط
         animatedRigs.forEach((beam, idx) => {
             beam.rotation.z = Math.sin(gameTick * 0.05 + idx) * 0.25;
         });
 
-        // حركة ومحاكاة رفرفة الأعلام
         wavingFlags.forEach(f => {
             const posAttr = f.mesh.geometry.attributes.position;
             const t = gameTick * 0.1 + f.timeOffset;
             for (let i = 0; i < posAttr.count; i++) {
                 let x = posAttr.getX(i);
-                if (x > 0) { // الأطراف ترفرف بحرية
-                    let y = posAttr.getY(i);
+                if (x > 0) {
                     let wave = Math.sin(t + x * 0.5) * 0.6;
                     posAttr.setZ(i, wave);
                 }
@@ -820,15 +821,26 @@
             posAttr.needsUpdate = true;
         });
 
-        for (let i = 0; i < playerTanks.length; i++) {
-            for (let j = i + 1; j < playerTanks.length; j++) {
-                let t1 = playerTanks[i], t2 = playerTanks[j];
-                if (!t1.isDestroyed && !t2.isDestroyed && t1.mesh.position.distanceTo(t2.mesh.position) < 4) {
-                    let d = new THREE.Vector3().subVectors(t1.mesh.position, t2.mesh.position).normalize();
-                    t1.mesh.position.add(d.multiplyScalar(0.2));
-                }
+        // تنعيم حركة دبابات الخصم الفورية (Interpolation)
+        enemyTanks.forEach(en => {
+            if (!en.isDestroyed) {
+                en.mesh.position.lerp(en.targetPos, 0.3);
+                en.mesh.rotation.y += (en.targetRotY - en.mesh.rotation.y) * 0.3;
             }
-        }
+        });
+
+        // فحص السيطرة على آبار النفط
+        oilRigs.forEach(rig => {
+            playerTanks.forEach(tank => {
+                if (!tank.isDestroyed && tank.mesh.position.distanceTo(rig.group.position) < 16) {
+                    if (rig.owner !== playerFlagType) {
+                        updateRigFlag(rig, playerFlagType);
+                        if (currentRoomId) socket.emit("capture_rig", { roomId: currentRoomId, rigIndex: rig.index, owner: playerFlagType });
+                        showFloatingMsg('سيطرت على بئر نفط! 🛢️');
+                    }
+                }
+            });
+        });
 
         playerTanks.forEach((tank, idx) => {
             if (tank.isDestroyed) return;
