@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - أونلاين</title>
+    <title>معركة السيطرة الاستراتيجية - PvP أونلاين</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -99,8 +99,9 @@
 
         #floating-msg {
             position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.75); color: #38bdf8; padding: 3px 8px;
-            border-radius: 4px; font-size: 10px; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+            background: rgba(0, 0, 0, 0.85); color: #38bdf8; padding: 4px 12px;
+            border-radius: 4px; font-size: 11px; font-weight: bold; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+            border: 1px solid #38bdf8;
         }
 
         .cam-controls {
@@ -131,7 +132,7 @@
 
 <div id="start-menu">
     <div class="menu-card" id="lobby-selection-view">
-        <h1>معركة السيطرة أونلاين 🌐</h1>
+        <h1>معركة السيطرة أونلاين (PvP) 🌐</h1>
         <div class="section-title" id="connection-status">جاري الاتصال بالسيرفر...</div>
         <div class="lobbies-list" id="lobbies-container">
             <div style="text-align:center; color:#94a3b8; font-size:11px; padding:15px;">جاري جلب الغرف...</div>
@@ -275,7 +276,7 @@
     socket.on("room_joined", (roomData) => {
         currentRoomId = roomData.id;
         isHost = roomData.isHost;
-        playerMoney = roomData.bet; // ضبط الرصيد الأولي حسب مبلغ الرهان المختار
+        playerMoney = roomData.bet; 
         playerFlagType = isHost ? roomData.hostFlag : roomData.guestFlag;
         enemyFlagType = playerFlagType === 'green' ? 'red' : 'green';
 
@@ -335,6 +336,7 @@
         let eColor = enemyFlagType === 'green' ? 0x22c55e : 0xef4444;
         let newTank = createTank(-data.x, -data.z, eColor, 'enemy', data.type, enemyFlagType);
         enemyTanks.push(newTank);
+        showFloatingMsg('⚠️ الخصم قام بنشر دبابة جديدة في معسكره!');
     });
 
     socket.on("remote_tank_move", (data) => {
@@ -354,7 +356,7 @@
 
     socket.on("rig_captured", (data) => {
         if (oilRigs[data.rigIndex]) {
-            updateRigFlag(oilRigs[data.rigIndex], data.owner);
+            animateFlagTransition(oilRigs[data.rigIndex], data.owner);
         }
     });
 
@@ -451,7 +453,7 @@
     function showFloatingMsg(text) {
         const msg = document.getElementById('floating-msg');
         msg.innerText = text; msg.style.opacity = '1';
-        setTimeout(() => { msg.style.opacity = '0'; }, 2000);
+        setTimeout(() => { msg.style.opacity = '0'; }, 2500);
     }
 
     function init() {
@@ -509,7 +511,7 @@
         targetLookAt.set(startCoord, getTerrainHeight(startCoord, startCoord), startCoord);
         targetCameraRadius = 110; cameraPhi = Math.PI / 3.8; cameraRadius = targetCameraRadius;
         updateCameraPosition();
-        showFloatingMsg('بدأت المعركة الاستراتيجية الفورية!');
+        showFloatingMsg('بدأت معركة السيطرة الحية ضد الخصم!');
     }
 
     function setupLighting() {
@@ -595,13 +597,47 @@
         return flagMesh;
     }
 
-    function updateRigFlag(rig, newOwner) {
+    // مؤثر تنزيل العلم ورفع العلم المسيطر الجديد بديناميكية بصرية
+    function animateFlagTransition(rig, newOwner) {
         if (rig.owner === newOwner) return;
         rig.owner = newOwner;
-        rig.group.remove(rig.flagMesh);
-        rig.flagMesh = createWavingFlagMesh(newOwner);
-        rig.flagMesh.position.set(3.5, 18, 0);
-        rig.group.add(rig.flagMesh);
+        
+        let oldFlag = rig.flagMesh;
+        let startPosY = oldFlag.position.y;
+        let startTime = Date.now();
+        
+        // تأثير إنزال العلم القديم للأسفل
+        let lowerInterval = setInterval(() => {
+            let elapsed = Date.now() - startTime;
+            let progress = elapsed / 400; // مدة النزول 400 ملي ثانية
+            if (progress < 1) {
+                oldFlag.position.y = startPosY - (progress * 6);
+            } else {
+                oldFlag.position.y = startPosY - 6;
+                clearInterval(lowerInterval);
+                rig.group.remove(oldFlag);
+                
+                // إنشاء ورفع العلم الجديد للأعلى
+                let newFlag = createWavingFlagMesh(newOwner);
+                newFlag.position.set(3.5, startPosY - 6, 0);
+                rig.group.add(newFlag);
+                rig.flagMesh = newFlag;
+
+                let riseStartTime = Date.now();
+                let riseInterval = setInterval(() => {
+                    let riseElapsed = Date.now() - riseStartTime;
+                    let riseProgress = riseElapsed / 500; // مدة الرفع 500 ملي ثانية
+                    if (riseProgress < 1) {
+                        newFlag.position.y = (startPosY - 6) + (riseProgress * 6);
+                    } else {
+                        newFlag.position.y = startPosY;
+                        clearInterval(riseInterval);
+                    }
+                }, 16);
+            }
+        }, 16);
+
+        showFloatingMsg(newOwner === playerFlagType ? '🚩 تم رفع علمك المسيطر بنجاح!' : '⚠️ تنبيه: العدو أنزل علمك وسيطر على البئر!');
     }
 
     let pBaseGroup, eBaseGroup;
@@ -735,7 +771,7 @@
             playerTanks.push(newTank);
 
             socket.emit("spawn_tank", { roomId: currentRoomId, x: px, z: pz, type: type });
-            showFloatingMsg('تم شراء دبابة جديدة!');
+            showFloatingMsg('تم شراء دبابة جديدة ونشرها في معسكرك!');
         }
     }
 
@@ -894,9 +930,8 @@
             playerTanks.forEach(tank => {
                 if (!tank.isDestroyed && tank.mesh.position.distanceTo(rig.group.position) < 16) {
                     if (rig.owner !== playerFlagType) {
-                        updateRigFlag(rig, playerFlagType);
+                        animateFlagTransition(rig, playerFlagType);
                         if (currentRoomId) socket.emit("capture_rig", { roomId: currentRoomId, rigIndex: rig.index, owner: playerFlagType });
-                        showFloatingMsg('سيطرت على بئر نفط! 🛢️');
                     }
                 }
             });
