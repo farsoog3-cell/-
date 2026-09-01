@@ -674,9 +674,9 @@
     }
 
     function createBases() {
-        pBaseGroup = new THREE.Group();
+        let pBaseGroup = new THREE.Group();
         pBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
-        eBaseGroup = new THREE.Group();
+        let eBaseGroup = new THREE.Group();
         eBaseGroup.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
 
         createBaseStructure(pBaseGroup, playerFlagType);
@@ -872,7 +872,7 @@
                         targetMarkerMesh.position.y = getTerrainHeight(pt.x, pt.z) + 0.1;
                         targetMarkerMesh.visible = true;
 
-                        // التعديل هنا: تحريك دبابات اللاعب الخاص بك (playerTanks) فقط دون دبابات الخصم (enemyTanks)
+                        // التحكم يقتصر فقط على دبابات اللاعب الخاص (playerTanks)
                         playerTanks.forEach(t => {
                             if (!t.isDestroyed) t.target = pt.clone();
                         });
