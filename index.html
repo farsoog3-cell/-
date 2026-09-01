@@ -1,3 +1,131 @@
+إليك النسخة المحدثة بالكامل لواجهة الغرف وقائمة الانتظار (index.html)، مجهزة بالخصائص والخيارات التالية:
+ * خيارات الغرفة الكاملة لصاحب الغرفة (Host): عند إنشاء الغرفة، تظهر قائمة اختيار علم معسكره (أخضر أو أحمر) واختيار مبلغ الرهان المطلوب من الطرفين (200$، 300$، أو 500$)، بالإضافة إلى زر الاستعداد وزر "بدء اللعبة" (الذي لا يمكن الضغطه إلا بعد انضمام الخصم وجاهزيته).
+ * شاشة غرفة الانتظار للخصم (Guest): عند انضمام الخصم، تظهر له قائمة الانتظار، حيث يختار العلم المتبقي (العكس تلقائياً) ويضغط زر "استعداد" ثم ينتظر صاحب الغرفة لبدء المعركة.
+ * تحديثات السيرفر (server.js): تم تضمين أكواد الدعم اللازمة لمزامنة اختيار الأعلام، مبالغ الرهان، وحالة الاستعداد الفوري بين المضيف والخصم.
+أولاً: كود السيرفر المحدث (server.js)
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: "*", methods: ["GET", "POST"] }
+});
+
+let rooms = {};
+
+io.on('connection', (socket) => {
+    console.log(`مستخدم متصل: ${socket.id}`);
+
+    socket.on('get_rooms', () => {
+        socket.emit('rooms_list', getRoomsArray());
+    });
+
+    socket.on('create_room', (data) => {
+        let roomId = 'room_' + Math.random().toString(36).substring(2, 7);
+        rooms[roomId] = {
+            id: roomId,
+            name: data.name,
+            bet: data.bet,
+            hostId: socket.id,
+            hostFlag: data.hostFlag,
+            hostReady: false,
+            guestId: null,
+            guestFlag: data.hostFlag === 'green' ? 'red' : 'green',
+            guestReady: false
+        };
+        socket.join(roomId);
+        socket.emit('room_joined', { 
+            id: roomId, name: data.name, bet: data.bet, isHost: true, 
+            hostFlag: data.hostFlag, guestFlag: rooms[roomId].guestFlag 
+        });
+        io.emit('rooms_list', getRoomsArray());
+    });
+
+    socket.on('join_room', (data) => {
+        let room = rooms[data.roomId];
+        if (room && !room.guestId) {
+            room.guestId = socket.id;
+            socket.join(room.id);
+            socket.emit('room_joined', { 
+                id: room.id, name: room.name, bet: room.bet, isHost: false, 
+                hostFlag: room.hostFlag, guestFlag: room.guestFlag 
+            });
+            io.to(room.hostId).emit('room_update', { guestJoined: true, guestFlag: room.guestFlag });
+            io.emit('rooms_list', getRoomsArray());
+        }
+    });
+
+    socket.on('set_ready', (data) => {
+        let room = rooms[data.roomId];
+        if (room) {
+            if (room.hostId === socket.id) room.hostReady = data.ready;
+            if (room.guestId === socket.id) room.guestReady = data.ready;
+
+            io.to(room.id).emit('room_ready_update', {
+                hostReady: room.hostReady,
+                guestReady: room.guestReady
+            });
+        }
+    });
+
+    socket.on('start_game', (data) => {
+        let room = rooms[data.roomId];
+        if (room && room.hostId === socket.id && room.hostReady && room.guestReady) {
+            io.to(room.id).emit('start_game');
+        }
+    });
+
+    socket.on('tank_move', (data) => {
+        socket.broadcast.to(data.roomId).emit('remote_tank_move', data);
+    });
+
+    socket.on('spawn_tank', (data) => {
+        socket.broadcast.to(data.roomId).emit('remote_tank_spawn', data);
+    });
+
+    socket.on('shoot', (data) => {
+        socket.broadcast.to(data.roomId).emit('remote_shoot', data);
+    });
+
+    socket.on('capture_rig', (data) => {
+        socket.broadcast.to(data.roomId).emit('rig_captured', data);
+    });
+
+    socket.on('leave_room', (data) => {
+        if (rooms[data.roomId]) {
+            delete rooms[data.roomId];
+            io.emit('rooms_list', getRoomsArray());
+        }
+        socket.leave(data.roomId);
+    });
+
+    socket.on('disconnect', () => {
+        for (let rId in rooms) {
+            if (rooms[rId].hostId === socket.id || rooms[rId].guestId === socket.id) {
+                io.to(rId).emit('room_update', { guestJoined: false });
+                delete rooms[rId];
+            }
+        }
+        io.emit('rooms_list', getRoomsArray());
+    });
+});
+
+function getRoomsArray() {
+    return Object.keys(rooms).map(id => ({
+        id: id,
+        name: rooms[id].name,
+        bet: rooms[id].bet,
+        hostFlag: rooms[id].hostFlag,
+        guestJoined: rooms[id].guestId !== null
+    }));
+}
+
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, () => console.log(`السيرفر يعمل على المنفذ ${PORT}`));
+
+ثانياً: كود الواجهة الأمامية المحدث (index.html)
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -23,13 +151,13 @@
 
         .menu-card h1 { font-size: 16px; margin-bottom: 10px; color: #38bdf8; }
         .section-title { font-size: 11px; color: #94a3b8; margin: 6px 0 3px 0; text-align: right; }
-        .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+        .flag-options, .bet-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
 
-        .flag-btn {
+        .flag-btn, .bet-btn {
             flex: 1; padding: 6px; border: 1px solid #475569; border-radius: 6px;
             background: #1e293b; color: #fff; font-weight: bold; font-size: 11px; cursor: pointer;
         }
-        .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+        .flag-btn.active-player, .bet-btn.active-bet { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
 
         .action-btn {
             width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 6px;
@@ -37,6 +165,7 @@
         }
         .action-btn:disabled { background: #64748b; cursor: not-allowed; }
         .action-btn.green { background: #22c55e; }
+        .action-btn.ready-state { background: #f59e0b; }
 
         .lobbies-list {
             max-height: 140px; overflow-y: auto; background: #0f172a; border: 1px solid #334155;
@@ -139,17 +268,24 @@
     </div>
 
     <div class="menu-card" id="create-room-view" style="display: none;">
-        <h1>إنشاء غرفة معركة ⚔️</h1>
+        <h1>إعدادات غرفة المعركة ⚙️</h1>
         <div class="section-title">اسم الغرفة:</div>
         <input type="text" id="room-name-input" value="معركة الأبطال" style="width:100%; padding:6px; background:#1e293b; border:1px solid #475569; color:#fff; border-radius:4px; font-size:11px; margin-bottom:8px;">
         
-        <div class="section-title">اختر علم معسكرك:</div>
+        <div class="section-title">اختر علم معسكرك (المضيف):</div>
         <div class="flag-options" id="player-flags">
             <button class="flag-btn active-player" onclick="selectFlag('green')">الأخضر السوري</button>
             <button class="flag-btn" onclick="selectFlag('red')">الأحمر السوري</button>
         </div>
 
-        <button class="action-btn green" onclick="createRoomAction()">تأكيد وإنشاء الغرفة 🚀</button>
+        <div class="section-title">مبلغ الرهان المطلوب للطرفين ($):</div>
+        <div class="bet-options" id="bet-amounts">
+            <button class="bet-btn" onclick="selectBet(200)">200$</button>
+            <button class="bet-btn active-bet" onclick="selectBet(300)">300$</button>
+            <button class="bet-btn" onclick="selectBet(500)">500$</button>
+        </div>
+
+        <button class="action-btn green" onclick="createRoomAction()">إنشاء الغرفة 🚀</button>
         <button class="action-btn" style="background:#475569;" onclick="showLobbySelection()">العودة للقائمة</button>
     </div>
 
@@ -158,10 +294,18 @@
         <div class="stats-box" id="room-status-box" style="width:100%; text-align:center; background:rgba(30,41,59,0.9); padding:10px; border-radius:6px; margin:8px 0; font-size:11px;">
             في انتظار انضمام الخصم...
         </div>
-        <div id="host-controls" style="display:none;">
-            <button class="action-btn green" id="start-battle-btn" onclick="hostStartGame()" disabled>بدء المعركة (في انتظار الخصم)</button>
+        
+        <div class="section-title">علمك في المعركة:</div>
+        <div id="assigned-flag-display" style="background:#1e293b; padding:6px; border-radius:4px; font-size:11px; margin-bottom:8px; font-weight:bold; color:#38bdf8;">--</div>
+
+        <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+            <button id="ready-btn" class="action-btn ready-state" onclick="toggleReady()">جاهز / استعداد ⚔️</button>
         </div>
-        <button class="action-btn" style="background:#ef4444; margin-top:8px;" onclick="leaveRoom()">مغادرة الغرفة 🚪</button>
+
+        <div id="host-controls" style="display:none;">
+            <button class="action-btn green" id="start-battle-btn" onclick="hostStartGame()" disabled>بدء المعركة (في انتظار جاهزية الطرفين)</button>
+        </div>
+        <button class="action-btn" style="background:#ef4444;" onclick="leaveRoom()">مغادرة الغرفة 🚪</button>
     </div>
 </div>
 
@@ -249,7 +393,7 @@
         let html = '';
         rooms.forEach(r => {
             html += `<div class="lobby-item">
-                <span>🏰 ${r.name} (${r.hostFlag === 'green' ? 'الأخضر السوري' : 'الأحمر السوري'})</span>
+                <span>🏰 ${r.name} | الرهان: ${r.bet}$ (${r.hostFlag === 'green' ? 'الأخضر' : 'الأحمر'})</span>
                 <button onclick="joinRoom('${r.id}')">انضمام 🎮</button>
             </div>`;
         });
@@ -259,29 +403,57 @@
     socket.on("room_joined", (roomData) => {
         currentRoomId = roomData.id;
         isHost = roomData.isHost;
+        playerMoney = roomData.bet; // ضبط الرصيد الأولي حسب مبلغ الرهان المختار
         playerFlagType = isHost ? roomData.hostFlag : roomData.guestFlag;
         enemyFlagType = playerFlagType === 'green' ? 'red' : 'green';
 
         document.getElementById('create-room-view').style.display = 'none';
         document.getElementById('lobby-selection-view').style.display = 'none';
         document.getElementById('waiting-room-view').style.display = 'block';
-        document.getElementById('room-title-display').innerText = `الغرفة: ${roomData.name}`;
+        document.getElementById('room-title-display').innerText = `غرفة: ${roomData.name} (الرهان: ${roomData.bet}$)`;
+        document.getElementById('assigned-flag-display').innerText = playerFlagType === 'green' ? '🟢 علمك: الأخضر السوري' : '🔴 علمك: الأحمر السوري';
         
+        isReady = false;
+        updateReadyBtnUI();
+
         if (isHost) {
             document.getElementById('host-controls').style.display = 'block';
             document.getElementById('room-status-box').innerText = "في انتظار انضمام الخصم...";
         } else {
             document.getElementById('host-controls').style.display = 'none';
-            document.getElementById('room-status-box').innerText = "انضممت بنجاح! في انتظار بدء المضيف.";
+            document.getElementById('room-status-box').innerText = "انضممت للغرفة! اختر استعدادك وانتظر المضيف.";
         }
     });
 
     socket.on("room_update", (roomData) => {
-        if (isHost && roomData.guestJoined) {
-            document.getElementById('room-status-box').innerText = "انضم الخصم! 🟢";
+        if (isHost) {
+            if (roomData.guestJoined) {
+                document.getElementById('room-status-box').innerText = "انضم الخصم بنجاح! 🟢";
+            } else {
+                document.getElementById('room-status-box').innerText = "غادر الخصم الغرفة. في انتظار خصم جديد...";
+                let startBtn = document.getElementById('start-battle-btn');
+                startBtn.disabled = true;
+            }
+        }
+    });
+
+    let hostIsReady = false, guestIsReady = false;
+    socket.on("room_ready_update", (data) => {
+        hostIsReady = data.hostReady;
+        guestIsReady = data.guestReady;
+        if (isHost) {
             let startBtn = document.getElementById('start-battle-btn');
-            startBtn.disabled = false;
-            startBtn.innerText = "بدء المعركة الآن 🚀";
+            if (hostIsReady && guestIsReady) {
+                startBtn.disabled = false;
+                startBtn.innerText = "بدء المعركة الآن 🚀";
+                document.getElementById('room-status-box').innerText = "الطرفان مستعدان تماماً! يمكن للمضيف البدء.";
+            } else {
+                startBtn.disabled = true;
+                startBtn.innerText = "في انتظار جاهزية الطرفين...";
+                document.getElementById('room-status-box').innerText = `حالة الاستعداد - المضيف: ${hostIsReady ? '✅' : '❌'} | الخصم: ${guestIsReady ? '✅' : '❌'}`;
+            }
+        } else {
+            document.getElementById('room-status-box').innerText = `حالة الاستعداد - المضيف: ${hostIsReady ? '✅' : '❌'} | أنت: ${guestIsReady ? '✅' : '❌'}`;
         }
     });
 
@@ -314,7 +486,6 @@
         }
     });
 
-    // تشغيل موسيقى المعركة فقط عند اللعب وحذف باقي الأصوات
     const battleBgmAudio = new Audio('sounds/battle_bgm.mp3');
     battleBgmAudio.loop = true; battleBgmAudio.volume = 0.5;
 
@@ -322,6 +493,8 @@
     let isHost = false;
     let playerFlagType = 'green';
     let enemyFlagType = 'red';
+    let selectedBetAmount = 300;
+    let isReady = false;
 
     function showLobbySelection() {
         document.getElementById('lobby-selection-view').style.display = 'block';
@@ -343,9 +516,33 @@
         });
     }
 
+    function selectBet(amount) {
+        selectedBetAmount = amount;
+        document.querySelectorAll('#bet-amounts .bet-btn').forEach(btn => {
+            btn.classList.toggle('active-bet', btn.innerText.includes(amount + '$'));
+        });
+    }
+
+    function toggleReady() {
+        isReady = !isReady;
+        updateReadyBtnUI();
+        socket.emit("set_ready", { roomId: currentRoomId, ready: isReady });
+    }
+
+    function updateReadyBtnUI() {
+        let btn = document.getElementById('ready-btn');
+        if (isReady) {
+            btn.style.background = '#22c55e';
+            btn.innerText = "أنت مستعد ✅ (إلغاء الاستعداد)";
+        } else {
+            btn.style.background = '#f59e0b';
+            btn.innerText = "اضغط للجاهزية / الاستعداد ⚔️";
+        }
+    }
+
     function createRoomAction() {
-        let roomName = document.getElementById('room-name-input').value || 'معركة سريعة';
-        socket.emit("create_room", { name: roomName, hostFlag: playerFlagType });
+        let roomName = document.getElementById('room-name-input').value || 'معركة حاسمة';
+        socket.emit("create_room", { name: roomName, hostFlag: playerFlagType, bet: selectedBetAmount });
     }
 
     function joinRoom(roomId) { socket.emit("join_room", { roomId: roomId }); }
@@ -370,7 +567,7 @@
     let terrainMesh;
 
     const CORNER_OFFSET = 380, MAP_LIMIT = 460;
-    let playerMoney = 500, gameTick = 0, playerBuildCooldown = 0;
+    let playerMoney = 300, gameTick = 0, playerBuildCooldown = 0;
     let gameOver = false;
 
     function getTerrainHeight(x, z) {
@@ -498,7 +695,6 @@
     }
 
     function createWavingFlagMesh(flagType) {
-        // حجم أصغر وأدق للعلم (7 عرض × 4.5 ارتفاع)
         const flagWidth = 7, flagHeight = 4.5;
         const flagGeo = new THREE.PlaneGeometry(flagWidth, flagHeight, 8, 6);
         let flagCanvas = document.createElement('canvas');
@@ -532,7 +728,7 @@
         rig.owner = newOwner;
         rig.group.remove(rig.flagMesh);
         rig.flagMesh = createWavingFlagMesh(newOwner);
-        rig.flagMesh.position.set(3.5, 18, 0); // موضع متناسب مع العمود المصغر
+        rig.flagMesh.position.set(3.5, 18, 0);
         rig.group.add(rig.flagMesh);
     }
 
@@ -569,7 +765,6 @@
             rigGroup.add(beam);
             animatedRigs.push(beam);
 
-            // عمود علم مصغر ومتناسق
             const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 22, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
             pole.position.set(0, 12, 0); rigGroup.add(pole);
 
@@ -600,7 +795,6 @@
         return new THREE.CanvasTexture(canvas);
     }
 
-    // تصميم محسن وأنيق للدبابات بمظهر عسكري واقعي
     function createTank(x, z, colorHex, team, type = 'normal', flagType = 'green') {
         const group = new THREE.Group();
         let isRocket = (type === 'rocket');
@@ -608,20 +802,17 @@
         let bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.35, metalness: 0.2 });
         let darkMetal = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
 
-        // هيكل الدبابة الرئيسي
         let body = new THREE.Mesh(
             new THREE.BoxGeometry(isRocket ? 7.2 : 6.2, 2.2, isRocket ? 10.5 : 9.0),
             bodyMat
         );
         body.position.y = 1.3; body.castShadow = true; body.receiveShadow = true; group.add(body);
 
-        // دروع وجوانب مجنزرة محسنة
         [-3.4, 3.4].forEach(tx => {
             let track = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.0, isRocket ? 10.8 : 9.2), darkMetal);
             track.position.set(tx, 1.1, 0); track.castShadow = true; group.add(track);
         });
 
-        // شارات الأعلام الجانبية المصغرة
         let badgeTex = createTankBadge(flagType);
         let badgeMat = new THREE.MeshBasicMaterial({ map: badgeTex });
         let leftBadge = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.6), badgeMat);
@@ -629,17 +820,14 @@
         let rightBadge = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.6), badgeMat);
         rightBadge.position.set(3.51, 1.4, 0); rightBadge.rotateY(Math.PI/2); group.add(rightBadge);
 
-        // برج الدبابة المطور
         let turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 14), darkMetal);
         turret.position.y = 2.7; turret.castShadow = true; group.add(turret);
 
-        // سبطانة المدفع أو قاذف الصواريخ
         let barrelGeo = isRocket ? new THREE.BoxGeometry(1.4, 1.4, 8.5) : new THREE.CylinderGeometry(0.45, 0.45, 6.5, 8);
         let barrel = new THREE.Mesh(barrelGeo, new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.4 }));
         if (!isRocket) barrel.rotateX(Math.PI / 2);
         barrel.position.set(0, 2.7, isRocket ? 4.2 : 3.6); barrel.castShadow = true; group.add(barrel);
 
-        // عادم مزدوج خلفي لإعطاء طابع حقيقي
         [-1.8, 1.8].forEach(ex => {
             let exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.5, 6), darkMetal);
             exhaust.position.set(ex, 1.8, -4.8); group.add(exhaust);
