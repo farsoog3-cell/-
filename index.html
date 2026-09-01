@@ -9,8 +9,16 @@
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
         #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
         
+        #persistent-id-bar {
+            position: absolute; top: 0; left: 0; width: 100%; height: 28px;
+            background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid #38bdf8;
+            z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 0 10px;
+            color: #fff; font-size: 10px;
+        }
+        #persistent-id-bar button { background: #0284c7; border: none; color: white; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 9px; }
+
         #start-menu {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            position: absolute; top: 28px; left: 0; width: 100%; height: calc(100% - 28px); z-index: 10;
             background: rgba(15, 23, 42, 0.95);
             display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
             overflow-y: auto; padding: 15px;
@@ -50,7 +58,7 @@
         .lobby-item button { padding: 4px 8px; background: #22c55e; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 10px; }
 
         #ui-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 28px; left: 0; width: 100%; height: calc(100% - 28px);
             z-index: 5; pointer-events: none; display: none;
         }
 
@@ -129,6 +137,11 @@
     </style>
 </head>
 <body>
+
+<div id="persistent-id-bar">
+    <span>معرف اللاعب الخاص بك (ID): <b id="my-socket-id" style="color: #38bdf8;">جاري الاتصال...</b></span>
+    <button onclick="copyMyId()">نسخ ID 📋</button>
+</div>
 
 <div id="start-menu">
     <div class="menu-card" id="lobby-selection-view">
@@ -245,6 +258,19 @@
 
 <script>
     const socket = io("https://tank-game-server-o650.onrender.com/");
+    let myUniqueId = "";
+
+    socket.on("set_my_id", (data) => {
+        myUniqueId = data.id;
+        document.getElementById('my-socket-id').innerText = myUniqueId;
+    });
+
+    function copyMyId() {
+        if (!myUniqueId) return;
+        navigator.clipboard.writeText(myUniqueId).then(() => {
+            showFloatingMsg('تم نسخ الـ ID بنجاح! 📋');
+        });
+    }
 
     socket.on("connect", () => {
         document.getElementById('connection-status').innerText = "متصل بالسيرفر بنجاح! 🟢";
@@ -354,6 +380,19 @@
         }
     });
 
+    socket.on("remote_tank_damaged", (data) => {
+        if (playerTanks[data.tankIndex] && !playerTanks[data.tankIndex].isDestroyed) {
+            let t = playerTanks[data.tankIndex];
+            t.hp -= data.damage;
+            if (t.hp <= 0) {
+                t.isDestroyed = true;
+                scene.remove(t.mesh);
+                t.hpLabel.remove();
+                showFloatingMsg('❌ تم تدمير إحدى دباباتك!');
+            }
+        }
+    });
+
     socket.on("rig_captured", (data) => {
         if (oilRigs[data.rigIndex]) {
             animateFlagTransition(oilRigs[data.rigIndex], data.owner);
@@ -440,7 +479,7 @@
     let mouse = new THREE.Vector2();
     let terrainMesh;
 
-    const CORNER_OFFSET = 380, MAP_LIMIT = 460;
+    const CORNER_OFFSET = 380, MAP_LIMIT = 430;
     let playerMoney = 300, gameTick = 0, playerBuildCooldown = 0;
     let gameOver = false;
 
@@ -448,6 +487,13 @@
         let h = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 5 + Math.sin(x * 0.008) * 8;
         if (Math.sqrt(x * x + z * z) < 140) h *= 0.2;
         return h;
+    }
+
+    // نظام منع الاصطدام بالجدران والحدود الخارجية
+    function checkWallCollision(pos) {
+        const borderLimit = 440;
+        if (Math.abs(pos.x) > borderLimit || Math.abs(pos.z) > borderLimit) return true;
+        return false;
     }
 
     function showFloatingMsg(text) {
@@ -511,7 +557,7 @@
         targetLookAt.set(startCoord, getTerrainHeight(startCoord, startCoord), startCoord);
         targetCameraRadius = 110; cameraPhi = Math.PI / 3.8; cameraRadius = targetCameraRadius;
         updateCameraPosition();
-        showFloatingMsg('بدأت معركة السيطرة الحية ضد الخصم!');
+        showFloatingMsg('بدأت معركة السيطرة والحرب أونلاين!');
     }
 
     function setupLighting() {
@@ -551,21 +597,12 @@
         const hqBase = new THREE.Mesh(new THREE.BoxGeometry(22, 11, 18), concreteMat);
         hqBase.position.set(0, 5.5, -4); hqBase.castShadow = true; hqBase.receiveShadow = true; parentGroup.add(hqBase);
 
-        const door = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 0.6), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
-        door.position.set(0, 3, 5.1); parentGroup.add(door);
-
-        [-6, 6].forEach(wx => {
-            const windowMesh = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 0.5), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
-            windowMesh.position.set(wx, 7, 5.1); parentGroup.add(windowMesh);
-        });
-
         const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 30, 8), new THREE.MeshStandardMaterial({ color: 0xd1d5db }));
         pole.position.set(0, 15, -12); parentGroup.add(pole);
 
         let flagMesh = createWavingFlagMesh(flagType);
         flagMesh.position.set(4, 25, -12);
         parentGroup.add(flagMesh);
-        parentGroup.userData.flagMesh = flagMesh;
     }
 
     function createWavingFlagMesh(flagType) {
@@ -597,7 +634,6 @@
         return flagMesh;
     }
 
-    // مؤثر تنزيل العلم ورفع العلم المسيطر الجديد بديناميكية بصرية
     function animateFlagTransition(rig, newOwner) {
         if (rig.owner === newOwner) return;
         rig.owner = newOwner;
@@ -606,10 +642,9 @@
         let startPosY = oldFlag.position.y;
         let startTime = Date.now();
         
-        // تأثير إنزال العلم القديم للأسفل
         let lowerInterval = setInterval(() => {
             let elapsed = Date.now() - startTime;
-            let progress = elapsed / 400; // مدة النزول 400 ملي ثانية
+            let progress = elapsed / 400;
             if (progress < 1) {
                 oldFlag.position.y = startPosY - (progress * 6);
             } else {
@@ -617,7 +652,6 @@
                 clearInterval(lowerInterval);
                 rig.group.remove(oldFlag);
                 
-                // إنشاء ورفع العلم الجديد للأعلى
                 let newFlag = createWavingFlagMesh(newOwner);
                 newFlag.position.set(3.5, startPosY - 6, 0);
                 rig.group.add(newFlag);
@@ -626,7 +660,7 @@
                 let riseStartTime = Date.now();
                 let riseInterval = setInterval(() => {
                     let riseElapsed = Date.now() - riseStartTime;
-                    let riseProgress = riseElapsed / 500; // مدة الرفع 500 ملي ثانية
+                    let riseProgress = riseElapsed / 500;
                     if (riseProgress < 1) {
                         newFlag.position.y = (startPosY - 6) + (riseProgress * 6);
                     } else {
@@ -640,7 +674,6 @@
         showFloatingMsg(newOwner === playerFlagType ? '🚩 تم رفع علمك المسيطر بنجاح!' : '⚠️ تنبيه: العدو أنزل علمك وسيطر على البئر!');
     }
 
-    let pBaseGroup, eBaseGroup;
     function createBases() {
         pBaseGroup = new THREE.Group();
         pBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
@@ -735,11 +768,6 @@
         let barrel = new THREE.Mesh(barrelGeo, new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.4 }));
         if (!isRocket) barrel.rotateX(Math.PI / 2);
         barrel.position.set(0, 2.7, isRocket ? 4.2 : 3.6); barrel.castShadow = true; group.add(barrel);
-
-        [-1.8, 1.8].forEach(ex => {
-            let exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.5, 6), darkMetal);
-            exhaust.position.set(ex, 1.8, -4.8); group.add(exhaust);
-        });
 
         group.position.set(x, getTerrainHeight(x, z), z);
         scene.add(group);
@@ -840,13 +868,15 @@
                 const intersects = raycaster.intersectObject(terrainMesh);
                 if (intersects.length > 0) {
                     let pt = intersects[0].point;
-                    targetMarkerMesh.position.copy(pt);
-                    targetMarkerMesh.position.y = getTerrainHeight(pt.x, pt.z) + 0.1;
-                    targetMarkerMesh.visible = true;
+                    if (!checkWallCollision(pt)) {
+                        targetMarkerMesh.position.copy(pt);
+                        targetMarkerMesh.position.y = getTerrainHeight(pt.x, pt.z) + 0.1;
+                        targetMarkerMesh.visible = true;
 
-                    playerTanks.forEach(t => {
-                        if (!t.isDestroyed) t.target = pt.clone();
-                    });
+                        playerTanks.forEach(t => {
+                            if (!t.isDestroyed) t.target = pt.clone();
+                        });
+                    }
                 }
             }
         });
@@ -857,8 +887,12 @@
         minimap.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
             const rect = minimap.getBoundingClientRect();
-            targetLookAt.x = (((e.clientX - rect.left) / rect.width - 0.5) * 2) * MAP_LIMIT;
-            targetLookAt.z = (((e.clientY - rect.top) / rect.height - 0.5) * 2) * MAP_LIMIT;
+            let tx = (((e.clientX - rect.left) / rect.width - 0.5) * 2) * MAP_LIMIT;
+            let tz = (((e.clientY - rect.top) / rect.height - 0.5) * 2) * MAP_LIMIT;
+            if (!checkWallCollision(new THREE.Vector3(tx, 0, tz))) {
+                targetLookAt.x = tx;
+                targetLookAt.z = tz;
+            }
         });
     }
 
@@ -946,10 +980,17 @@
                 let dist = tank.mesh.position.distanceTo(tank.target);
                 if (dist > 1.5) {
                     let dir = new THREE.Vector3().subVectors(tank.target, tank.mesh.position).setY(0).normalize();
-                    isMoving = true;
-                    tank.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tank.mesh.rotation.y) * 0.15;
-                    tank.mesh.position.add(dir.multiplyScalar(0.35));
-                    tank.mesh.position.y = getTerrainHeight(tank.mesh.position.x, tank.mesh.position.z);
+                    let nextPos = tank.mesh.position.clone().add(dir.clone().multiplyScalar(0.35));
+                    
+                    if (!checkWallCollision(nextPos)) {
+                        isMoving = true;
+                        tank.mesh.rotation.y += (Math.atan2(dir.x, dir.z) - tank.mesh.rotation.y) * 0.15;
+                        tank.mesh.position.copy(nextPos);
+                        tank.mesh.position.y = getTerrainHeight(tank.mesh.position.x, tank.mesh.position.z);
+                    } else {
+                        tank.target = null;
+                        targetMarkerMesh.visible = false;
+                    }
                 } else {
                     targetMarkerMesh.visible = false; tank.target = null;
                 }
@@ -959,7 +1000,7 @@
                 createTrackMark(tank.mesh.position);
             }
 
-            enemyTanks.forEach(en => {
+            enemyTanks.forEach((en, eIdx) => {
                 if (!en.isDestroyed && tank.mesh.position.distanceTo(en.mesh.position) < 120 && Date.now() - tank.lastShot > 1500) {
                     tank.lastShot = Date.now();
                     fireBullet(tank);
@@ -979,17 +1020,21 @@
         for (let i = bullets.length - 1; i >= 0; i--) {
             let b = bullets[i];
             b.mesh.position.add(b.dir.clone().multiplyScalar(4));
-            let targetList = (b.team === 'player') ? enemyTanks : playerTanks;
             
-            let hit = false;
-            for (let t of targetList) {
-                if (!t.isDestroyed && b.mesh.position.distanceTo(t.mesh.position) < 3.5) {
-                    t.hp -= b.damage; hit = true;
-                    if (t.hp <= 0) { t.isDestroyed = true; scene.remove(t.mesh); t.hpLabel.remove(); }
-                    break;
-                }
+            if (b.team === 'player') {
+                enemyTanks.forEach((en, eIdx) => {
+                    if (!en.isDestroyed && b.mesh.position.distanceTo(en.mesh.position) < 4) {
+                        let dmg = b.damage;
+                        en.hp -= dmg;
+                        if (currentRoomId) socket.emit("tank_damaged", { roomId: currentRoomId, tankIndex: eIdx, damage: dmg });
+                        if (en.hp <= 0) { en.isDestroyed = true; scene.remove(en.mesh); en.hpLabel.remove(); }
+                        scene.remove(b.mesh); bullets.splice(i, 1);
+                        return;
+                    }
+                });
             }
-            if (hit || b.mesh.position.length() > 600) {
+
+            if (b.mesh && (b.mesh.position.length() > 600)) {
                 scene.remove(b.mesh); bullets.splice(i, 1);
             }
         }
