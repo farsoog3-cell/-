@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - اللعب المباشر المتطور</title>
+    <title>معركة السيطرة الاستراتيجية - النسخة المحسنة</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -32,7 +32,6 @@
             transition: all 0.2s ease;
         }
         .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.25); box-shadow: 0 0 10px rgba(34,197,94,0.2); }
-        .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.25); box-shadow: 0 0 10px rgba(239,68,68,0.2); }
 
         .multiplayer-box {
             background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 10px;
@@ -40,15 +39,12 @@
         }
         .multiplayer-box input {
             width: 100%; padding: 8px; background: #0f172a; border: 1px solid #475569;
-            color: #fff; border-radius: 6px; font-size: 11px; margin-bottom: 6px; outline: none; transition: border-color 0.2s;
+            color: #fff; border-radius: 6px; font-size: 11px; margin-bottom: 6px; outline: none;
         }
-        .multiplayer-box input:focus { border-color: #38bdf8; }
         .multiplayer-box button {
             width: 100%; padding: 7px; background: #0284c7; border: none; color: white;
             border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer; margin-bottom: 6px;
-            transition: background 0.2s;
         }
-        .multiplayer-box button:hover { background: #0ea5e9; }
         
         .rooms-container {
             max-height: 100px; overflow-y: auto; background: #0b0f19; border: 1px solid #334155;
@@ -61,12 +57,11 @@
         .room-item button {
             background: #22c55e; border: none; padding: 3px 8px; border-radius: 4px; color: white; font-size: 9px; cursor: pointer; width: auto; margin: 0;
         }
-        .room-item button:hover { background: #16a34a; }
 
         #start-btn {
             width: 100%; margin-top: 12px; padding: 10px; border: none; border-radius: 8px;
             background: #10b981; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: background 0.2s;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
         #start-btn:disabled { background: #475569; cursor: not-allowed; box-shadow: none; }
 
@@ -78,7 +73,6 @@
         .waiting-card {
             background: rgba(30, 41, 59, 0.95); border: 1px solid #38bdf8; border-radius: 14px;
             padding: 24px; width: 85%; max-width: 340px; text-align: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
         }
         .spinner {
             width: 40px; height: 40px; border: 4px solid rgba(56,189,248,0.2);
@@ -96,7 +90,7 @@
             position: absolute; transform: translate(-50%, -100%);
             background: rgba(0, 0, 0, 0.75); padding: 1px 4px; border-radius: 3px;
             font-size: 9px; font-weight: bold; pointer-events: none; white-space: nowrap;
-            border: 1px solid #334155; transition: transform 0.1s linear;
+            border: 1px solid #334155;
         }
         .hp-player { color: #22c55e; border-color: rgba(34, 197, 94, 0.4); }
         .hp-enemy { color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
@@ -254,31 +248,25 @@
 
     <div class="cam-controls">
         <button class="cam-btn zoom-in" 
-            onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
-            ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
+            onpointerdown="camMove('zi', true)" onpointerup="camMove('zi', false)" onpointerleave="camMove('zi', false)">➕ تقريب</button>
         
         <button class="cam-btn up" 
-            onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)"
-            ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+            onpointerdown="camMove('up', true)" onpointerup="camMove('up', false)" onpointerleave="camMove('up', false)">⬆️</button>
         
         <button class="cam-btn zoom-out" 
-            onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)"
-            ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
+            onpointerdown="camMove('zo', true)" onpointerup="camMove('zo', false)" onpointerleave="camMove('zo', false)">➖ إبعاد</button>
         
         <button class="cam-btn left" 
-            onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)"
-            ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+            onpointerdown="camMove('left', true)" onpointerup="camMove('left', false)" onpointerleave="camMove('left', false)">⬅️</button>
         
         <button class="cam-btn down" 
-            onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)"
-            ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+            onpointerdown="camMove('down', true)" onpointerup="camMove('down', false)" onpointerleave="camMove('down', false)">⬇️</button>
         
         <button class="cam-btn right" 
-            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
-            ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+            onpointerdown="camMove('right', true)" onpointerup="camMove('right', false)" onpointerleave="camMove('right', false)">➡️</button>
     </div>
 
-    <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة المصغرة والتحكم 🎯</div>
+    <div class="cam-hint">اسحب بالشاشة أو استخدم الأزرار والـخريطة 🎯</div>
 </div>
 
 <div id="victory-screen">
@@ -372,13 +360,8 @@
         menuBgm: 'sounds/menu_bgm.mp3',
         battleBgm: 'sounds/battle_bgm.mp3',
         click: 'sounds/click.mp3',
-        attack: 'sounds/attack.mp3',
-        danger: 'sounds/danger.mp3',
         victory: 'sounds/victory_sound.mp3',
         defeat: 'sounds/defeat_sound.mp3',
-        shoot: 'sounds/shoot.mp3',
-        rocket: 'sounds/rocket.mp3',
-        explosion: 'sounds/explosion.mp3',
         buy: 'sounds/buy.mp3',
         idle: 'sounds/tank_idle.mp3',
         move: 'sounds/tank_move.mp3'
@@ -523,11 +506,13 @@
         animate();
     }
 
-    function camMove(dir, state) { camInputs[dir] = state; }
+    function camMove(dir, state) { 
+        camInputs[dir] = state; 
+    }
 
     function processCameraInputs() {
         if (isCinematicEnding) return;
-        const moveSpeed = 5.0;
+        const moveSpeed = 8.0; // زيادة سرعة حركة الكاميرا لتجنب الشعور بالبطء
         let dx = 0, dz = 0;
 
         if (camInputs.up) { dx -= Math.sin(cameraTheta) * moveSpeed; dz -= Math.cos(cameraTheta) * moveSpeed; }
@@ -538,8 +523,8 @@
         targetLookAt.x = Math.max(-420, Math.min(420, targetLookAt.x + dx));
         targetLookAt.z = Math.max(-420, Math.min(420, targetLookAt.z + dz));
 
-        if (camInputs.zi) targetCameraRadius = Math.max(60, targetCameraRadius - 5);
-        if (camInputs.zo) targetCameraRadius = Math.min(550, targetCameraRadius + 5);
+        if (camInputs.zi) targetCameraRadius = Math.max(60, targetCameraRadius - 8);
+        if (camInputs.zo) targetCameraRadius = Math.min(550, targetCameraRadius + 8);
     }
 
     function selectFlag(role, color) {
@@ -830,13 +815,14 @@
         hpLabel.innerText = `${initialHp}`;
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
+        // إنشاء كائنات الصوت بشكل منفصل لكل دبابة لتجنب تداخل الملفات
         let idleAudio = new Audio(soundFiles.idle);
         idleAudio.loop = true;
-        idleAudio.volume = 0.25;
+        idleAudio.volume = 0.2;
 
         let moveAudio = new Audio(soundFiles.move);
         moveAudio.loop = true;
-        moveAudio.volume = 0.45;
+        moveAudio.volume = 0.35;
 
         return { 
             mesh: tankGroup, 
@@ -918,10 +904,14 @@
 
         if (isMoving) {
             if (tank.isIdlePlaying) { tank.idleAudio.pause(); tank.idleAudio.currentTime = 0; tank.isIdlePlaying = false; }
-            if (!tank.isMovePlaying) { tank.moveAudio.play().then(() => { tank.isMovePlaying = true; }).catch(e => {}); }
+            if (!tank.isMovePlaying) { 
+                tank.moveAudio.play().then(() => { tank.isMovePlaying = true; }).catch(e => {}); 
+            }
         } else {
             if (tank.isMovePlaying) { tank.moveAudio.pause(); tank.moveAudio.currentTime = 0; tank.isMovePlaying = false; }
-            if (!tank.isIdlePlaying) { tank.idleAudio.play().then(() => { tank.isIdlePlaying = true; }).catch(e => {}); }
+            if (!tank.isIdlePlaying) { 
+                tank.idleAudio.play().then(() => { tank.isIdlePlaying = true; }).catch(e => {}); 
+            }
         }
     }
 
@@ -1179,13 +1169,13 @@
 
     function getSmartMovementVector(currentPos, desiredDir, currentTank) {
         let bestDir = desiredDir.clone().normalize();
-        let testPos = currentPos.clone().add(bestDir.clone().multiplyScalar(0.35));
+        let testPos = currentPos.clone().add(bestDir.clone().multiplyScalar(0.5));
         if (isPositionSafe(testPos, currentTank)) return bestDir;
 
         let angles = [0.4, -0.4, 0.8, -0.8, 1.2, -1.2, Math.PI / 2, -Math.PI / 2];
         for (let angle of angles) {
             let rotatedDir = desiredDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), angle).normalize();
-            let altTestPos = currentPos.clone().add(rotatedDir.multiplyScalar(0.35));
+            let altTestPos = currentPos.clone().add(rotatedDir.multiplyScalar(0.5));
             if (isPositionSafe(altTestPos, currentTank)) return rotatedDir;
         }
         return null;
@@ -1253,8 +1243,9 @@
                     let safeDir = getSmartMovementVector(tankData.mesh.position, desiredDir, tankData);
                     if (safeDir) {
                         isMoving = true;
-                        tankData.mesh.rotation.y += (Math.atan2(safeDir.x, safeDir.z) - tankData.mesh.rotation.y) * 0.15;
-                        let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.35));
+                        tankData.mesh.rotation.y += (Math.atan2(safeDir.x, safeDir.z) - tankData.mesh.rotation.y) * 0.2;
+                        // رفع سرعة الدبابة لتلافي الشعور بالبطء
+                        let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.6));
                         nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
                         tankData.mesh.position.copy(nextPos);
                     }
