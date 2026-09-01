@@ -359,8 +359,8 @@
     socket.on("start_game", () => { startGame(); });
 
     socket.on("remote_tank_spawn", (data) => {
-        let eColor = enemyFlagType === 'green' ? 0x22c55e : 0xef4444;
-        let newTank = createTank(-data.x, -data.z, eColor, 'enemy', data.type, enemyFlagType);
+        let eColorHex = enemyFlagType === 'green' ? 0x15803d : 0xb91c1c;
+        let newTank = createTank(-data.x, -data.z, eColorHex, 'enemy', data.type, enemyFlagType);
         enemyTanks.push(newTank);
         showFloatingMsg('⚠️ الخصم قام بنشر دبابة جديدة في معسكره!');
     });
@@ -489,7 +489,6 @@
         return h;
     }
 
-    // نظام منع الاصطدام بالجدران والحدود الخارجية
     function checkWallCollision(pos) {
         const borderLimit = 440;
         if (Math.abs(pos.x) > borderLimit || Math.abs(pos.z) > borderLimit) return true;
@@ -684,9 +683,9 @@
         createBaseStructure(eBaseGroup, enemyFlagType);
         scene.add(pBaseGroup); scene.add(eBaseGroup);
 
-        let pColor = playerFlagType === 'green' ? 0x15803d : 0xb91c1c;
+        let pColorHex = playerFlagType === 'green' ? 0x15803d : 0xb91c1c;
         let startCoord = isHost ? CORNER_OFFSET : -CORNER_OFFSET;
-        let playerTank = createTank(startCoord - 45, startCoord - 45, pColor, 'player', 'normal', playerFlagType);
+        let playerTank = createTank(startCoord - 45, startCoord - 45, pColorHex, 'player', 'normal', playerFlagType);
         playerTanks.push(playerTank);
     }
 
@@ -791,11 +790,11 @@
         if (playerMoney >= cost) {
             playerMoney -= cost; playerBuildCooldown = 1200;
             updateEconomyUI();
-            let pColor = playerFlagType === 'green' ? 0x15803d : 0xb91c1c;
+            let pColorHex = playerFlagType === 'green' ? 0x15803d : 0xb91c1c;
             let startCoord = isHost ? CORNER_OFFSET : -CORNER_OFFSET;
             let px = startCoord - 50 + (Math.random() - 0.5) * 20;
             let pz = startCoord - 50 + (Math.random() - 0.5) * 20;
-            let newTank = createTank(px, pz, pColor, 'player', type, playerFlagType);
+            let newTank = createTank(px, pz, pColorHex, 'player', type, playerFlagType);
             playerTanks.push(newTank);
 
             socket.emit("spawn_tank", { roomId: currentRoomId, x: px, z: pz, type: type });
@@ -810,16 +809,17 @@
         scene.add(targetMarkerMesh);
     }
 
+    // نظام إضافة آثار الدبابات على الأرض
     function createTrackMark(pos) {
         const markGeo = new THREE.PlaneGeometry(1.8, 1.8);
         markGeo.rotateX(-Math.PI / 2);
-        const markMat = new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.5 });
+        const markMat = new THREE.MeshBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.6 });
         const markMesh = new THREE.Mesh(markGeo, markMat);
         markMesh.position.set(pos.x, getTerrainHeight(pos.x, pos.z) + 0.05, pos.z);
         scene.add(markMesh);
         trackMarks.push({ mesh: markMesh, time: Date.now() });
 
-        if (trackMarks.length > 50) {
+        if (trackMarks.length > 60) {
             let old = trackMarks.shift();
             scene.remove(old.mesh);
         }
@@ -904,10 +904,10 @@
         const sc = 55 / MAP_LIMIT;
 
         playerTanks.forEach(t => {
-            if (!t.isDestroyed) { ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(55 + t.mesh.position.x * sc, 55 + t.mesh.position.z * sc, 2.5, 0, Math.PI*2); ctx.fill(); }
+            if (!t.isDestroyed) { ctx.fillStyle = playerFlagType === 'green' ? '#22c55e' : '#ef4444'; ctx.beginPath(); ctx.arc(55 + t.mesh.position.x * sc, 55 + t.mesh.position.z * sc, 2.5, 0, Math.PI*2); ctx.fill(); }
         });
         enemyTanks.forEach(t => {
-            if (!t.isDestroyed) { ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(55 + t.mesh.position.x * sc, 55 + t.mesh.position.z * sc, 2.5, 0, Math.PI*2); ctx.fill(); }
+            if (!t.isDestroyed) { ctx.fillStyle = enemyFlagType === 'green' ? '#22c55e' : '#ef4444'; ctx.beginPath(); ctx.arc(55 + t.mesh.position.x * sc, 55 + t.mesh.position.z * sc, 2.5, 0, Math.PI*2); ctx.fill(); }
         });
     }
 
