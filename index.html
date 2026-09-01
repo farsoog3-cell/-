@@ -809,7 +809,6 @@
         scene.add(targetMarkerMesh);
     }
 
-    // نظام إضافة آثار الدبابات على الأرض
     function createTrackMark(pos) {
         const markGeo = new THREE.PlaneGeometry(1.8, 1.8);
         markGeo.rotateX(-Math.PI / 2);
@@ -873,6 +872,7 @@
                         targetMarkerMesh.position.y = getTerrainHeight(pt.x, pt.z) + 0.1;
                         targetMarkerMesh.visible = true;
 
+                        // التعديل هنا: تحريك دبابات اللاعب الخاص بك (playerTanks) فقط دون دبابات الخصم (enemyTanks)
                         playerTanks.forEach(t => {
                             if (!t.isDestroyed) t.target = pt.clone();
                         });
