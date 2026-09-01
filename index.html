@@ -70,7 +70,6 @@
         }
         #start-btn:disabled { background: #475569; cursor: not-allowed; box-shadow: none; }
 
-        /* نافذة الانتظار الحديثة المنبثقة */
         #waiting-modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 30;
             background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(5px);
@@ -212,7 +211,6 @@
     </div>
 </div>
 
-<!-- نافذة الانتظار المنبثقة الحديثة -->
 <div id="waiting-modal">
     <div class="waiting-card">
         <div class="spinner"></div>
@@ -299,7 +297,14 @@
     const socket = io('https://tank-game-server-o650.onrender.com/');
     let currentRoomName = null;
     let isConnectedWithFriend = false;
-    let enemyFlagType = 'none'; // يبدأ بعلم أبيض إن لم ينضم صديق
+    let enemyFlagType = 'none';
+
+    socket.on('connect_error', () => {
+        const container = document.getElementById('rooms-list-container');
+        if (container) {
+            container.innerHTML = '<div style="text-align:center; color:#ef4444; font-size:10px; padding:5px;">تعذر الاتصال بالسيرفر</div>';
+        }
+    });
 
     socket.on('rooms_list', (rooms) => {
         const container = document.getElementById('rooms-list-container');
@@ -512,7 +517,6 @@
         updateEconomyUI();
         window.addEventListener('resize', onWindowResize);
         
-        // السماح بالبدء فوراً للتجربة أو الانتظار بحسب الرغبة
         document.getElementById('start-btn').disabled = false;
         document.getElementById('start-btn').innerText = "بدء المعركة 🚀";
 
@@ -704,7 +708,6 @@
         playerTank.mesh.rotation.y = -Math.PI / 4;
         playerTanks.push(playerTank);
             
-        // إذا لم ينضم صديق، يظهر علم العدو أبيض (محايد) تماماً كما طلبت
         enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, enemyFlagType, 'enemy');
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
@@ -992,7 +995,6 @@
             ctx.fillStyle = '#000000'; ctx.fillRect(0, 43, 128, 21);
             drawStar(ctx, 50, 32, '#007a3d'); drawStar(ctx, 78, 32, '#007a3d');
         } else {
-            // العلم الأبيض الافتراضي عند عدم دخول صديق
             ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, 128, 64);
             ctx.fillStyle = '#64748b'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
             ctx.fillText('بانتظار خصم', 64, 36);
@@ -1311,7 +1313,6 @@
             }
         });
 
-        // إذا لم ينضم صديق، لا يمكن السيطرة على معسكر العدو (لأنه محايد/أبيض)
         if (!isConnectedWithFriend) return;
 
         const enemyBasePos = new THREE.Vector3(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
