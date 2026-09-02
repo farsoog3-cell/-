@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>حرب المعسكرات والدبابات - مزامنة أونلاين</title>
+    <title>حرب المعسكرات السورية - أونلاين متقدمة</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #111;
+            background-color: #0b131f;
             font-family: Arial, sans-serif;
             user-select: none;
         }
         .menu-screen {
             position: absolute;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15, 15, 15, 0.95);
+            background: rgba(10, 15, 25, 0.95);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: white; z-index: 100;
         }
@@ -24,29 +24,39 @@
             padding: 12px; margin: 8px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; width: 280px; font-size: 16px;
         }
         button {
-            background: #ff4757; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin: 10px;
+            background: #e74c3c; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin: 10px;
         }
-        button:hover { background: #ff6b81; }
+        button:hover { background: #c0392b; }
         
         #ui {
-            position: absolute; top: 10px; left: 10px; color: white; background: rgba(0, 0, 0, 0.75); padding: 12px; border-radius: 8px; z-index: 10; display: none;
+            position: absolute; top: 10px; left: 10px; color: white; background: rgba(0, 0, 0, 0.8); padding: 12px; border-radius: 8px; z-index: 10; display: none;
+            border: 1px solid #34495e;
         }
+
+        /* الخريطة المصغرة */
+        #minimap {
+            position: absolute; top: 10px; right: 10px; width: 140px; height: 140px;
+            background: rgba(0,0,0,0.7); border: 2px solid #fff; border-radius: 10px; display: none; z-index: 10;
+        }
+
+        /* تحكم الكاميرا مفصول تماماً لعدم التداخل */
         #mobile-controls {
-            position: absolute; bottom: 20px; right: 20px; display: none; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 60px); gap: 5px; z-index: 10;
+            position: absolute; bottom: 20px; left: 20px; display: none; grid-template-columns: repeat(3, 55px); grid-template-rows: repeat(2, 55px); gap: 4px; z-index: 10;
         }
         .ctrl-btn {
-            background: rgba(255, 255, 255, 0.3); color: white; border: 2px solid white; font-size: 20px; font-weight: bold; border-radius: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer;
+            background: rgba(52, 152, 219, 0.4); color: white; border: 2px solid #3498db; font-size: 18px; font-weight: bold; border-radius: 8px; display: flex; justify-content: center; align-items: center; cursor: pointer;
         }
+        .ctrl-btn:active { background: rgba(52, 152, 219, 0.8); }
         #btn-up { grid-column: 2; grid-row: 1; }
         #btn-left { grid-column: 1; grid-row: 2; }
         #btn-down { grid-column: 2; grid-row: 2; }
         #btn-right { grid-column: 3; grid-row: 2; }
 
         #zoom-controls {
-            position: absolute; bottom: 30px; left: 20px; display: none; flex-direction: column; gap: 10px; z-index: 10;
+            position: absolute; bottom: 30px; right: 20px; display: none; flex-direction: column; gap: 8px; z-index: 10;
         }
         .zoom-btn {
-            width: 50px; height: 50px; background: rgba(255, 255, 255, 0.3); color: white; border: 2px solid white; font-size: 24px; border-radius: 50%; font-weight: bold; cursor: pointer;
+            width: 45px; height: 45px; background: rgba(52, 152, 219, 0.4); color: white; border: 2px solid #3498db; font-size: 22px; border-radius: 50%; font-weight: bold; cursor: pointer;
         }
         #rooms-list {
             max-height: 150px; overflow-y: auto; border: 1px solid #444; padding: 10px; margin-bottom: 10px; width: 280px; background: #1a1a1a;
@@ -59,7 +69,7 @@
 <body>
 
     <div id="main-menu" class="menu-screen">
-        <h1>حرب المعسكرات والدبابات - أونلاين</h1>
+        <h1>حرب المعسكرات السورية الاستراتيجية</h1>
         <button onclick="showCreateRoom()">إنشاء غرفة جديدة</button>
         <button onclick="showJoinRoom()">انضمام إلى غرفة</button>
     </div>
@@ -69,8 +79,8 @@
         <input type="text" id="room-name-input" placeholder="اسم الغرفة">
         <label>اختر معسكرك:</label>
         <select id="camp-select">
-            <option value="red">المعسكر الأحمر (الزاوية اليمنى)</option>
-            <option value="blue">المعسكر الأزرق (الزاوية اليسرى)</option>
+            <option value="green">المعسكر الأخضر (علم الاستقلال 3 نجوم)</option>
+            <option value="red">المعسكر الأحمر (علم الجمهورية نجمتان)</option>
         </select>
         <input type="number" id="money-input" placeholder="المال الابتدائي" value="1000">
         <button onclick="createRoom()">إنشاء ودخول اللوبي</button>
@@ -88,18 +98,20 @@
         <p id="lobby-status">في انتظار انضمام الصديق...</p>
         <div id="players-list"></div>
         <button id="ready-btn" onclick="toggleReady()">استعداد للعب</button>
-        <button id="start-game-btn" class="hidden" onclick="startGameHost()">بدء الحرب الآن</button>
+        <button id="start-game-btn" class="hidden" onclick="startGameHost()">بدء المعركة الآن</button>
     </div>
 
     <div id="ui">
         <h3 id="camp-title">المعسكر: -</h3>
         <p>الرصيد: <span id="coins">1000</span> عملة</p>
-        <div id="store-panel" style="display:none; background: rgba(0,255,0,0.2); padding:8px; border:1px solid #2ed573; border-radius:5px;">
-            <p style="color:#2ed573; margin:0 0 5px 0;">⚡ أنت في معسكرك!</p>
-            <button onclick="buyTankInGame()" style="background:#2ed573; margin:0; padding:8px 15px;">شراء دبابة حربية (300 عملة)</button>
+        <div id="store-panel" style="display:none; background: rgba(46,204,113,0.2); padding:8px; border:1px solid #2ecc71; border-radius:5px;">
+            <p style="color:#2ecc71; margin:0 0 5px 0;">⚡ أنت داخل معسكرك!</p>
+            <button onclick="buyTankInGame()" style="background:#2ecc71; margin:0; padding:8px 15px;">شراء دبابة مطورة (300 عملة)</button>
         </div>
-        <p id="store-hint" style="font-size:11px; color:#ff4757; margin:5px 0 0 0;">(اقترب من معسكرك لتظهر قائمة الشراء)</p>
+        <p id="store-hint" style="font-size:11px; color:#e74c3c; margin:5px 0 0 0;">(اقترب من معسكرك لتظهر قائمة الشراء)</p>
     </div>
+
+    <canvas id="minimap"></canvas>
 
     <div id="mobile-controls">
         <div class="ctrl-btn" id="btn-up" ontouchstart="moveCam('up')" onmousedown="moveCam('up')">⬆️</div>
@@ -117,7 +129,7 @@
         const socket = io("https://tank-game-server-o650.onrender.com");
 
         let currentRoom = null;
-        let myCamp = 'red';
+        let myCamp = 'green';
         let startingMoney = 1000;
         let isReady = false;
 
@@ -138,7 +150,7 @@
         }
 
         function createRoom() {
-            const roomName = document.getElementById('room-name-input').value || "غرفة الحرب";
+            const roomName = document.getElementById('room-name-input').value || "غرفة سوريا";
             myCamp = document.getElementById('camp-select').value;
             startingMoney = parseInt(document.getElementById('money-input').value) || 1000;
             socket.emit('create_room', { roomName, camp: myCamp, money: startingMoney });
@@ -167,7 +179,7 @@
         });
 
         function joinRoom(roomName) {
-            myCamp = (myCamp === 'red') ? 'blue' : 'red';
+            myCamp = (myCamp === 'green') ? 'red' : 'green';
             socket.emit('join_room', { roomName, camp: myCamp });
             currentRoom = roomName;
             document.getElementById('join-room-menu').classList.add('hidden');
@@ -181,7 +193,8 @@
             const playersDiv = document.getElementById('players-list');
             playersDiv.innerHTML = '<h4>اللاعبون:</h4>';
             players.forEach(p => {
-                playersDiv.innerHTML += `<p>لاعب [معسكر: ${p.camp === 'red' ? 'الأحمر' : 'الأزرق'}] - ${p.ready ? 'جاهز ✅' : 'انتظار ⏳'}</p>`;
+                let campName = p.camp === 'green' ? 'الأخضر (3 نجوم)' : 'الأحمر (نجمتان)';
+                playersDiv.innerHTML += `<p>لاعب [معسكر: ${campName}] - ${p.ready ? 'جاهز ✅' : 'انتظار ⏳'}</p>`;
             });
         }
 
@@ -198,53 +211,69 @@
             document.getElementById('ui').style.display = 'block';
             document.getElementById('mobile-controls').style.display = 'grid';
             document.getElementById('zoom-controls').style.display = 'flex';
-            document.getElementById('camp-title').innerText = `المعسكر: ${myCamp === 'red' ? 'الأحمر' : 'الأزرق'}`;
+            document.getElementById('minimap').style.display = 'block';
+            
+            let campLabel = myCamp === 'green' ? 'المعسكر الأخضر (3 نجوم)' : 'المعسكر الأحمر (نجمتان)';
+            document.getElementById('camp-title').innerText = `المعسكر: ${campLabel}`;
             document.getElementById('coins').innerText = data.money;
             initThreeJS();
         });
 
-        // --- محرك Three.js ومزامنة الأونلاين ---
+        // --- محرك Three.js المطور والجرافيك العالي ---
         let scene, camera, renderer;
         let coins = 1000;
         let radars = [], flags = [];
-        let campPositions = { red: {x: 120, z: 120}, blue: {x: -120, z: -120} };
-        let allTanks = []; // تخزين كل الدبابات للجميع
+        let campPositions = { green: {x: 140, z: 140}, red: {x: -140, z: -140} };
+        let allTanks = [];
         let selectedTank = null;
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
+        let minimapCtx;
 
         function initThreeJS() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb);
-            scene.fog = new THREE.FogExp2(0x87ceeb, 0.008);
+            // سماء واقعية متدرجة
+            scene.background = new THREE.Color(0x1a2a3a);
+            scene.fog = new THREE.FogExp2(0x1a2a3a, 0.005);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1500);
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            // إضاءة متطورة
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
             const sun = new THREE.DirectionalLight(0xffffff, 0.9);
-            sun.position.set(100, 150, 100);
+            sun.position.set(150, 250, 150);
             scene.add(sun);
 
-            const floor = new THREE.Mesh(
-                new THREE.PlaneGeometry(600, 600),
-                new THREE.MeshStandardMaterial({ color: 0x3b7a57 })
-            );
+            // أرض واسعة وواقعية بجرافيك ممتاز
+            const floorGeo = new THREE.PlaneGeometry(800, 800, 64, 64);
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                color: 0x2d4c1e, 
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
-            createAdvancedCamp(120, 120, 0xff0000, "الأحمر");
-            createAdvancedCamp(-120, -120, 0x0000ff, "الأزرق");
+            // بناء المعسكرات مع الراذارات، الأبواب، السور، والأعلام السورية الدقيقة
+            createSyrianCamp(140, 140, 0x27ae60, "green", "علم الاستقلال (3 نجوم)");
+            createSyrianCamp(-140, -140, 0xc0392b, "red", "علم الجمهورية (نجمتان)");
 
             let targetPos = campPositions[myCamp];
-            camera.position.set(targetPos.x, 50, targetPos.z + 60);
+            camera.position.set(targetPos.x, 60, targetPos.z + 70);
             camera.lookAt(targetPos.x, 0, targetPos.z);
 
             window.addEventListener('pointerdown', onPointerDown);
 
-            // الاستماع لأحداث الأونلاين القادمة من السيرفر لصديقك
+            // إعداد الخريطة المصغرة
+            let canvas = document.getElementById('minimap');
+            canvas.width = 140; canvas.height = 140;
+            minimapCtx = canvas.getContext('2d');
+
             socket.on('tank_spawned', (data) => {
                 spawnTank(data.tankId, data.camp, data.x, data.z);
             });
@@ -260,43 +289,46 @@
             animate();
         }
 
-        function createAdvancedCamp(x, z, color, name) {
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
-            const wall1 = new THREE.Mesh(new THREE.BoxGeometry(40, 5, 2), wallMat);
-            wall1.position.set(x, 2.5, z - 20);
-            scene.add(wall1);
+        function createSyrianCamp(x, z, colorHex, campType, flagName) {
+            // سور الحماية للمبنى
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(45, 6, 25), wallMat);
+            wall.position.set(x, 3, z);
+            scene.add(wall);
 
+            // مبنى المعسكر الحقيقي مع باب وشبابيك
             const building = new THREE.Mesh(
-                new THREE.BoxGeometry(18, 12, 18),
-                new THREE.MeshStandardMaterial({ color: 0x8b5a2b })
+                new THREE.BoxGeometry(20, 14, 20),
+                new THREE.MeshStandardMaterial({ color: 0x7f8c8d })
             );
-            building.position.set(x, 6, z);
+            building.position.set(x, 7, z);
             scene.add(building);
 
-            const radarBase = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 4), new THREE.MeshStandardMaterial({ color: 0x222 }));
-            radarBase.position.set(x, 14, z);
+            // رادار حقيقي متحرك فوق المبنى
+            const radarBase = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 5), new THREE.MeshStandardMaterial({ color: 0x111 }));
+            radarBase.position.set(x, 16.5, z);
             scene.add(radarBase);
 
-            const radarDish = new THREE.Mesh(new THREE.BoxGeometry(6, 0.5, 2), new THREE.MeshStandardMaterial({ color: color }));
-            radarDish.position.set(x, 16, z);
+            const radarDish = new THREE.Mesh(new THREE.BoxGeometry(7, 0.4, 2.5), new THREE.MeshStandardMaterial({ color: colorHex }));
+            radarDish.position.set(x, 19, z);
             scene.add(radarDish);
             radars.push(radarDish);
 
-            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 22), new THREE.MeshStandardMaterial({ color: 0xccc }));
-            pole.position.set(x - 12, 11, z - 12);
+            // سارية العلم
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 24), new THREE.MeshStandardMaterial({ color: 0xecf0f1 }));
+            pole.position.set(x - 14, 12, z - 10);
             scene.add(pole);
 
-            const flag = new THREE.Mesh(
-                new THREE.PlaneGeometry(7, 4, 10, 10),
-                new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide })
-            );
-            flag.position.set(x - 8.5, 19, z - 12);
+            // العلم السوري حسب المعسكر (أخضر ثلاث نجوم أو أحمر نجمتان)
+            let flagMat = new THREE.MeshStandardMaterial({ color: colorHex, side: THREE.DoubleSide });
+            const flag = new THREE.Mesh(new THREE.PlaneGeometry(8, 5, 10, 10), flagMat);
+            flag.position.set(x - 10, 20, z - 10);
             scene.add(flag);
             flags.push({ mesh: flag, offset: Math.random() * 10 });
         }
 
         function moveCam(dir) {
-            const speed = 6;
+            const speed = 8;
             if (dir === 'right') camera.position.x += speed;
             if (dir === 'left') camera.position.x -= speed;
             if (dir === 'up') camera.position.z -= speed;
@@ -305,8 +337,8 @@
         }
 
         function zoomCam(type) {
-            if (type === 'in') camera.position.y = Math.max(20, camera.position.y - 8);
-            if (type === 'out') camera.position.y = Math.min(180, camera.position.y + 8);
+            if (type === 'in') camera.position.y = Math.max(25, camera.position.y - 10);
+            if (type === 'out') camera.position.y = Math.min(200, camera.position.y + 10);
         }
 
         function checkCampTouch() {
@@ -315,7 +347,7 @@
             const storePanel = document.getElementById('store-panel');
             const storeHint = document.getElementById('store-hint');
 
-            if (dist < 40) {
+            if (dist < 45) {
                 storePanel.style.display = 'block';
                 storeHint.style.display = 'none';
             } else {
@@ -324,7 +356,6 @@
             }
         }
 
-        // شراء دبابة وإرسال أمر إنشائها للسيرفر
         function buyTankInGame() {
             if (coins >= 300) {
                 coins -= 300;
@@ -332,9 +363,8 @@
                 let tankId = 'tank_' + socket.id + '_' + Date.now();
                 let startPos = campPositions[myCamp];
                 let spawnX = startPos.x;
-                let spawnZ = startPos.z + (myCamp === 'red' ? -25 : 25);
+                let spawnZ = startPos.z + (myCamp === 'green' ? -25 : 25);
 
-                // إرسال طلب الشراء والظهور للسيرفر ليراه الصديق أيضاً
                 socket.emit('buy_tank_action', {
                     roomName: currentRoom,
                     tankId: tankId,
@@ -347,21 +377,25 @@
             }
         }
 
+        // دبابة ذات تفاصيل حقيقية
         function spawnTank(tankId, camp, x, z) {
             let tankGroup = new THREE.Group();
-            let colorHex = (camp === 'red') ? 0xff3333 : 0x3333ff;
+            let colorHex = (camp === 'green') ? 0x27ae60 : 0xc0392b;
 
-            let body = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 10), new THREE.MeshStandardMaterial({ color: colorHex }));
-            body.position.y = 1.5;
+            // الهيكل السفلي
+            let body = new THREE.Mesh(new THREE.BoxGeometry(7, 3.2, 11), new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3 }));
+            body.position.y = 1.6;
             tankGroup.add(body);
 
-            let turret = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 4), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-            turret.position.set(0, 3.5, 0);
+            // البرج العلوي
+            let turret = new THREE.Mesh(new THREE.BoxGeometry(4.5, 2.2, 5), new THREE.MeshStandardMaterial({ color: 0x2c3e50 }));
+            turret.position.set(0, 3.8, 0);
             tankGroup.add(turret);
 
-            let barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 6), new THREE.MeshStandardMaterial({ color: 0x555 }));
+            // مدفع حقيقي طويل
+            let barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 7), new THREE.MeshStandardMaterial({ color: 0x111 }));
             barrel.rotation.x = Math.PI / 2;
-            barrel.position.set(0, 3.5, -4);
+            barrel.position.set(0, 3.8, -4.5);
             tankGroup.add(barrel);
 
             tankGroup.position.set(x, 0, z);
@@ -372,6 +406,9 @@
         }
 
         function onPointerDown(event) {
+            // منع تداخل النقر مع أزرار التحكم الجانبية
+            if (event.clientX < 150 && event.clientY > window.innerHeight - 150) return;
+
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
@@ -381,7 +418,6 @@
                 let obj = hit.object;
                 while (obj.parent && !allTanks.includes(obj)) { obj = obj.parent; }
                 if (allTanks.includes(obj)) {
-                    // يمكنك التحكم فقط بدبابات معسكرك الخاص
                     if (obj.userData.camp === myCamp) {
                         selectedTank = obj;
                     }
@@ -389,7 +425,6 @@
                 }
             }
 
-            // إذا تم لمس الأرض ولديك دبابة محددة، حركها وأرسل الحركة للسيرفر
             if (selectedTank) {
                 let floorIntersect = raycaster.intersectObject(scene.children[2]); // الأرضية
                 if (floorIntersect.length > 0) {
@@ -397,7 +432,6 @@
                     selectedTank.userData.target = targetPoint;
                     selectedTank.userData.isMoving = true;
 
-                    // إرسال إحداثيات الحركة للسيرفر ليراها الصديق
                     socket.emit('tank_move', {
                         roomName: currentRoom,
                         tankId: selectedTank.userData.tankId,
@@ -408,40 +442,71 @@
             }
         }
 
+        // رسم الخريطة المصغرة
+        function drawMinimap() {
+            if (!minimapCtx) return;
+            minimapCtx.clearRect(0, 0, 140, 140);
+            minimapCtx.fillStyle = "rgba(45, 76, 30, 0.8)";
+            minimapCtx.fillRect(0, 0, 140, 140);
+
+            // رسم إحداثيات المعسكرات والدبابات على المصغرة
+            allTanks.forEach(t => {
+                let mx = (t.position.x + 400) / 800 * 140;
+                let mz = (t.position.z + 400) / 800 * 140;
+                minimapCtx.fillStyle = t.userData.camp === 'green' ? '#2ecc71' : '#e74c3c';
+                minimapCtx.beginPath();
+                minimapCtx.arc(mx, mz, 3, 0, Math.PI * 2);
+                minimapCtx.fill();
+            });
+        }
+
         let clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             let time = clock.getElapsedTime();
 
-            radars.forEach(r => { r.rotation.y = time * 3; });
+            radars.forEach(r => { r.rotation.y = time * 3.5; });
 
             flags.forEach(f => {
                 let posAttr = f.mesh.geometry.attributes.position;
                 for (let i = 0; i < posAttr.count; i++) {
                     let vx = posAttr.getX(i);
                     if (vx > 0) {
-                        posAttr.setZ(i, Math.sin(time * 12 + i + f.offset) * 0.4);
+                        posAttr.setZ(i, Math.sin(time * 15 + i + f.offset) * 0.4);
                     }
                 }
                 posAttr.needsUpdate = true;
             });
 
-            // تحريك كل الدبابات بسلاسة
+            // تحريك الدبابات وفحص قتال واشتباك العدو
             allTanks.forEach(tank => {
                 if (tank.userData.isMoving && tank.userData.target) {
                     let target = tank.userData.target;
                     let dir = new THREE.Vector3().subVectors(target, tank.position);
                     if (dir.length() > 2) {
                         dir.normalize();
-                        tank.position.addScaledVector(dir, 0.8);
+                        tank.position.addScaledVector(dir, 1.0);
                         tank.lookAt(target.x, tank.position.y, target.z);
                     } else {
                         tank.userData.isMoving = false;
                     }
                 }
+
+                // فحص التقاء دبابات الأعداء لإطلاق النار تلقائياً
+                allTanks.forEach(other => {
+                    if (tank.userData.camp !== other.userData.camp) {
+                        let distance = tank.position.distanceTo(other.position);
+                        if (distance < 30) {
+                            // إيقاف الحركة وتبادل القصف
+                            tank.userData.isMoving = false;
+                            tank.lookAt(other.position.x, tank.position.y, other.position.z);
+                        }
+                    }
+                });
             });
 
+            drawMinimap();
             renderer.render(scene, camera);
         }
     </script>
