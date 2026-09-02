@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>حرب المعسكرات والدبابات المتقدمة - أونلاين</title>
+    <title>حرب المعسكرات والدبابات - مزامنة أونلاين</title>
     <style>
         body {
             margin: 0;
@@ -59,7 +59,7 @@
 <body>
 
     <div id="main-menu" class="menu-screen">
-        <h1>حرب المعسكرات والدبابات المتقدمة</h1>
+        <h1>حرب المعسكرات والدبابات - أونلاين</h1>
         <button onclick="showCreateRoom()">إنشاء غرفة جديدة</button>
         <button onclick="showJoinRoom()">انضمام إلى غرفة</button>
     </div>
@@ -96,7 +96,7 @@
         <p>الرصيد: <span id="coins">1000</span> عملة</p>
         <div id="store-panel" style="display:none; background: rgba(0,255,0,0.2); padding:8px; border:1px solid #2ed573; border-radius:5px;">
             <p style="color:#2ed573; margin:0 0 5px 0;">⚡ أنت في معسكرك!</p>
-            <button onclick="buyTankInGame()" style="background:#2ed573; margin:0; padding:8px 15px;">شراء دبابة متطورة (300 عملة)</button>
+            <button onclick="buyTankInGame()" style="background:#2ed573; margin:0; padding:8px 15px;">شراء دبابة حربية (300 عملة)</button>
         </div>
         <p id="store-hint" style="font-size:11px; color:#ff4757; margin:5px 0 0 0;">(اقترب من معسكرك لتظهر قائمة الشراء)</p>
     </div>
@@ -203,12 +203,12 @@
             initThreeJS();
         });
 
-        // --- محرك Three.js المتقدم ---
+        // --- محرك Three.js ومزامنة الأونلاين ---
         let scene, camera, renderer;
         let coins = 1000;
         let radars = [], flags = [];
         let campPositions = { red: {x: 120, z: 120}, blue: {x: -120, z: -120} };
-        let myTanks = [];
+        let allTanks = []; // تخزين كل الدبابات للجميع
         let selectedTank = null;
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
@@ -228,7 +228,6 @@
             sun.position.set(100, 150, 100);
             scene.add(sun);
 
-            // أرض واسعة جداً
             const floor = new THREE.Mesh(
                 new THREE.PlaneGeometry(600, 600),
                 new THREE.MeshStandardMaterial({ color: 0x3b7a57 })
@@ -236,29 +235,37 @@
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
-            // بناء المعسكرات في الزوايا المتقابلة مع مبنى، شبابيك، باب، وسور حماية ورادار وأعلام
-            createAdvancedCamp(120, 120, 0xff0000, "المعسكر الأحمر");
-            createAdvancedCamp(-120, -120, 0x0000ff, "المعسكر الأزرق");
+            createAdvancedCamp(120, 120, 0xff0000, "الأحمر");
+            createAdvancedCamp(-120, -120, 0x0000ff, "الأزرق");
 
-            // توجيه الكاميرا فوراً نحو معسكر اللاعب
             let targetPos = campPositions[myCamp];
             camera.position.set(targetPos.x, 50, targetPos.z + 60);
             camera.lookAt(targetPos.x, 0, targetPos.z);
 
-            // الاستماع للنقر/اللمس لتحديد الدبابة وإرسالها للأرض
             window.addEventListener('pointerdown', onPointerDown);
+
+            // الاستماع لأحداث الأونلاين القادمة من السيرفر لصديقك
+            socket.on('tank_spawned', (data) => {
+                spawnTank(data.tankId, data.camp, data.x, data.z);
+            });
+
+            socket.on('tank_moved', (data) => {
+                let tank = allTanks.find(t => t.userData.tankId === data.tankId);
+                if (tank) {
+                    tank.userData.target = new THREE.Vector3(data.x, 0, data.z);
+                    tank.userData.isMoving = true;
+                }
+            });
 
             animate();
         }
 
         function createAdvancedCamp(x, z, color, name) {
-            // سور الحماية
             const wallMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
             const wall1 = new THREE.Mesh(new THREE.BoxGeometry(40, 5, 2), wallMat);
             wall1.position.set(x, 2.5, z - 20);
             scene.add(wall1);
 
-            // مبنى المعسكر مع باب وشبابيك
             const building = new THREE.Mesh(
                 new THREE.BoxGeometry(18, 12, 18),
                 new THREE.MeshStandardMaterial({ color: 0x8b5a2b })
@@ -266,7 +273,6 @@
             building.position.set(x, 6, z);
             scene.add(building);
 
-            // رادار متحرك فوق المبنى
             const radarBase = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 4), new THREE.MeshStandardMaterial({ color: 0x222 }));
             radarBase.position.set(x, 14, z);
             scene.add(radarBase);
@@ -276,7 +282,6 @@
             scene.add(radarDish);
             radars.push(radarDish);
 
-            // سارية العلم
             const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 22), new THREE.MeshStandardMaterial({ color: 0xccc }));
             pole.position.set(x - 12, 11, z - 12);
             scene.add(pole);
@@ -290,7 +295,6 @@
             flags.push({ mesh: flag, offset: Math.random() * 10 });
         }
 
-        // تحكم الكاميرا عبر الأزرار
         function moveCam(dir) {
             const speed = 6;
             if (dir === 'right') camera.position.x += speed;
@@ -305,7 +309,6 @@
             if (type === 'out') camera.position.y = Math.min(180, camera.position.y + 8);
         }
 
-        // فحص الاقتراب من المعسكر للشراء
         function checkCampTouch() {
             let myCoords = campPositions[myCamp];
             let dist = Math.abs(camera.position.x - myCoords.x) + Math.abs(camera.position.z - myCoords.z);
@@ -321,78 +324,86 @@
             }
         }
 
-        // شراء دبابة تفصيلية وتخرج من باب المعسكر
+        // شراء دبابة وإرسال أمر إنشائها للسيرفر
         function buyTankInGame() {
             if (coins >= 300) {
                 coins -= 300;
                 document.getElementById('coins').innerText = coins;
-                socket.emit('buy_tank_action', { roomName: currentRoom, camp: myCamp });
+                let tankId = 'tank_' + socket.id + '_' + Date.now();
+                let startPos = campPositions[myCamp];
+                let spawnX = startPos.x;
+                let spawnZ = startPos.z + (myCamp === 'red' ? -25 : 25);
+
+                // إرسال طلب الشراء والظهور للسيرفر ليراه الصديق أيضاً
+                socket.emit('buy_tank_action', {
+                    roomName: currentRoom,
+                    tankId: tankId,
+                    camp: myCamp,
+                    x: spawnX,
+                    z: spawnZ
+                });
             } else {
                 alert("الرصيد غير كافي لشراء دبابة!");
             }
         }
 
-        // بناء دبابة مفصلة (هيكل + برج + مدفع) مع عداد دم
-        function spawnTank(camp) {
+        function spawnTank(tankId, camp, x, z) {
             let tankGroup = new THREE.Group();
             let colorHex = (camp === 'red') ? 0xff3333 : 0x3333ff;
 
-            // هيكل الدبابة
             let body = new THREE.Mesh(new THREE.BoxGeometry(6, 3, 10), new THREE.MeshStandardMaterial({ color: colorHex }));
             body.position.y = 1.5;
             tankGroup.add(body);
 
-            // برج الدبابة
             let turret = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 4), new THREE.MeshStandardMaterial({ color: 0x111111 }));
             turret.position.set(0, 3.5, 0);
             tankGroup.add(turret);
 
-            // المدفع
             let barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 6), new THREE.MeshStandardMaterial({ color: 0x555 }));
             barrel.rotation.x = Math.PI / 2;
             barrel.position.set(0, 3.5, -4);
             tankGroup.add(barrel);
 
-            // إحداثيات الخروج من باب المعسكر
-            let startPos = campPositions[camp];
-            tankGroup.position.set(startPos.x, 0, startPos.z + (camp === 'red' ? -25 : 25));
-            tankGroup.userData = { camp: camp, health: 100, target: null, isMoving: false };
+            tankGroup.position.set(x, 0, z);
+            tankGroup.userData = { tankId: tankId, camp: camp, health: 100, target: null, isMoving: false };
 
             scene.add(tankGroup);
-            if (camp === myCamp) myTanks.push(tankGroup);
-            return tankGroup;
+            allTanks.push(tankGroup);
         }
 
-        socket.on('tank_spawned', (data) => {
-            spawnTank(data.camp);
-        });
-
-        // نظام اللمس والتحديد والتحرك نحو الأرض
         function onPointerDown(event) {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
             raycaster.setFromCamera(mouse, camera);
 
-            // فحص إذا تم لمس دبابة خاصة بك لتحديدها
             let intersects = raycaster.intersectObjects(scene.children, true);
             for (let hit of intersects) {
                 let obj = hit.object;
-                while (obj.parent && !myTanks.includes(obj)) {
-                    obj = obj.parent;
-                }
-                if (myTanks.includes(obj)) {
-                    selectedTank = obj;
+                while (obj.parent && !allTanks.includes(obj)) { obj = obj.parent; }
+                if (allTanks.includes(obj)) {
+                    // يمكنك التحكم فقط بدبابات معسكرك الخاص
+                    if (obj.userData.camp === myCamp) {
+                        selectedTank = obj;
+                    }
                     return;
                 }
             }
 
-            // إذا تم لمس الأرض ولديك دبابة محددة، تتحرك نحو الاتجاه المطلوب
+            // إذا تم لمس الأرض ولديك دبابة محددة، حركها وأرسل الحركة للسيرفر
             if (selectedTank) {
                 let floorIntersect = raycaster.intersectObject(scene.children[2]); // الأرضية
                 if (floorIntersect.length > 0) {
-                    selectedTank.userData.target = floorIntersect[0].point;
+                    let targetPoint = floorIntersect[0].point;
+                    selectedTank.userData.target = targetPoint;
                     selectedTank.userData.isMoving = true;
+
+                    // إرسال إحداثيات الحركة للسيرفر ليراها الصديق
+                    socket.emit('tank_move', {
+                        roomName: currentRoom,
+                        tankId: selectedTank.userData.tankId,
+                        x: targetPoint.x,
+                        z: targetPoint.z
+                    });
                 }
             }
         }
@@ -403,10 +414,8 @@
             requestAnimationFrame(animate);
             let time = clock.getElapsedTime();
 
-            // حركة الرادار المتحرك
             radars.forEach(r => { r.rotation.y = time * 3; });
 
-            // حركة الأعلام المرفرفة
             flags.forEach(f => {
                 let posAttr = f.mesh.geometry.attributes.position;
                 for (let i = 0; i < posAttr.count; i++) {
@@ -418,8 +427,8 @@
                 posAttr.needsUpdate = true;
             });
 
-            // تحريك الدبابات المحددة نحو الهدف مع تأثير الارتجاج والدخان
-            myTanks.forEach(tank => {
+            // تحريك كل الدبابات بسلاسة
+            allTanks.forEach(tank => {
                 if (tank.userData.isMoving && tank.userData.target) {
                     let target = tank.userData.target;
                     let dir = new THREE.Vector3().subVectors(target, tank.position);
