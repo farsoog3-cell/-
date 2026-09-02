@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لعبة الدبابات الثلاثية الأبعاد - المعسكرات والأعلام</title>
+    <title>لعبة حرب المعسكرات والدبابات - أونلاين</title>
     <style>
         body {
             margin: 0;
@@ -11,6 +11,44 @@
             background-color: #111;
             font-family: Arial, sans-serif;
         }
+        /* تصميم الواجهات والقوائم */
+        .menu-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 15, 15, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 100;
+        }
+        .hidden { display: none !important; }
+        input, select {
+            padding: 10px;
+            margin: 8px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #222;
+            color: white;
+            width: 250px;
+        }
+        button {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 10px;
+            transition: 0.2s;
+        }
+        button:hover { background: #ff6b81; }
         #ui {
             position: absolute;
             top: 10px;
@@ -21,155 +59,305 @@
             border-radius: 8px;
             z-index: 10;
         }
-        button {
-            background: #ff4757;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
+        #rooms-list {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #444;
+            padding: 10px;
+            margin-bottom: 10px;
+            width: 280px;
+            background: #1a1a1a;
+        }
+        .room-item {
+            padding: 5px;
+            border-bottom: 1px solid #333;
             cursor: pointer;
-            font-weight: bold;
-            margin-top: 5px;
         }
-        button:hover {
-            background: #ff6b81;
-        }
+        .room-item:hover { background: #333; }
     </style>
+    <!-- مكتبة Three.js للرسومات ثلاثية الأبعاد -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- مكتبة Socket.io للاتصال بالسيرفر -->
     <script src="https://tank-game-server-o650.onrender.com/socket.io/socket.io.js"></script>
 </head>
 <body>
 
-    <div id="ui">
-        <h2>غرفة الحرب والمعسكرات</h2>
-        <p id="status">حالة الاتصال: جاري الاتصال بالسيرفر...</p>
-        <hr>
-        <h3>متجر الدبابات</h3>
-        <p>الرصيد: <span id="coins">100</span> عملة</p>
-        <button onclick="buyTank('معسكر الألفا')">شراء دبابة ثقيلة (50 عملة)</button>
+    <!-- 1. القائمة الرئيسية -->
+    <div id="main-menu" class="menu-screen">
+        <h1>حرب المعسكرات والدبابات</h1>
+        <button onclick="showCreateRoom()">إنشاء غرفة جديدة</button>
+        <button onclick="showJoinRoom()">انضمام إلى غرفة</button>
+    </div>
+
+    <!-- 2. قائمة إنشاء غرفة -->
+    <div id="create-room-menu" class="menu-screen hidden">
+        <h2>إعدادات الغرفة</h2>
+        <input type="text" id="room-name-input" placeholder="اسم الغرفة">
+        <label>اختر معسكرك:</label>
+        <select id="camp-select">
+            <option value="red">معسكر الأحمر (علم أحمر)</option>
+            <option value="blue">معسكر الأزرق (علم أزرق)</option>
+        </select>
+        <input type="number" id="money-input" placeholder="المال الابتدائي للمعسكرات" value="1000">
+        <button onclick="createRoom()">إنشاء ودخول اللوبي</button>
+        <button onclick="backToMain()">رجوع</button>
+    </div>
+
+    <!-- 3. قائمة انضمام لغرفة -->
+    <div id="join-room-menu" class="menu-screen hidden">
+        <h2>الغرف المتاحة</h2>
+        <div id="rooms-list">جاري البحث عن غرف...</div>
+        <button onclick="backToMain()">رجوع</button>
+    </div>
+
+    <!-- 4. غرفة الانتظار (اللوبي) -->
+    <div id="lobby-screen" class="menu-screen hidden">
+        <h2 id="lobby-title">غرفة الانتظار</h2>
+        <p id="lobby-status">في انتظار انضمام الصديق...</p>
+        <div id="players-list"></div>
+        <button id="ready-btn" onclick="toggleReady()">استعداد للعب</button>
+        <button id="start-game-btn" class="hidden" onclick="startGameHost()">بدء الحرب الآن</button>
+    </div>
+
+    <!-- واجهة اللعب الداخلية (HUD) -->
+    <div id="ui" class="hidden">
+        <h3 id="camp-title">المعسكر: -</h3>
+        <p>المال: <span id="coins">1000</span> عملة</p>
+        <button onclick="buyTankInGame()">شراء دبابة للحرب (300 عملة)</button>
+        <p style="font-size: 12px; margin-top: 10px;">التحكم: الأسهم (حركة الكاميرا) | مفاتيح +/- (الزوم)</p>
     </div>
 
     <script>
-        // الاتصال بسيرفر الأونلاين الخاص بك
         const socket = io("https://tank-game-server-o650.onrender.com");
 
-        socket.on('connect', () => {
-            document.getElementById('status').innerText = "حالة الاتصال: متصل بنجاح بالصديق عبر الإنترنت!";
-            document.getElementById('status').style.color = "#2ed573";
+        let currentRoom = null;
+        let isHost = false;
+        let myCamp = 'red';
+        let startingMoney = 1000;
+        let isReady = false;
+
+        // تبديل القوائم
+        function showCreateRoom() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('create-room-menu').classList.remove('hidden');
+        }
+
+        function showJoinRoom() {
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('join-room-menu').classList.remove('hidden');
+            socket.emit('get_rooms');
+        }
+
+        function backToMain() {
+            document.querySelectorAll('.menu-screen').forEach(el => el.classList.add('hidden'));
+            document.getElementById('main-menu').classList.remove('hidden');
+        }
+
+        // إنشاء الغرفة
+        function createRoom() {
+            const roomName = document.getElementById('room-name-input').value || "غرفة جديدة";
+            myCamp = document.getElementById('camp-select').value;
+            startingMoney = parseInt(document.getElementById('money-input').value) || 1000;
+            isHost = true;
+
+            socket.emit('create_room', { roomName, camp: myCamp, money: startingMoney });
+        }
+
+        socket.on('room_created_success', (data) => {
+            currentRoom = data.roomName;
+            document.getElementById('create-room-menu').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+            document.getElementById('lobby-title').innerText = `الغرفة: ${currentRoom}`;
+            document.getElementById('start-game-btn').classList.remove('hidden'); // المضيف يمكنه البدء
+            updateLobbyUI([{ id: socket.id, camp: myCamp, ready: false, host: true }]);
         });
 
-        socket.on('disconnect', () => {
-            document.getElementById('status').innerText = "حالة الاتصال: انقطع الاتصال بالسيرفر!";
-            document.getElementById('status').style.color = "#ff4757";
+        // جلب الغرف للانضمام
+        socket.on('rooms_list', (rooms) => {
+            const listDiv = document.getElementById('rooms-list');
+            listDiv.innerHTML = '';
+            if(rooms.length === 0) {
+                listDiv.innerHTML = '<p>لا توجد غرف متاحة حالياً.</p>';
+                return;
+            }
+            rooms.forEach(room => {
+                let div = document.createElement('div');
+                div.className = 'room-item';
+                div.innerText = `${room.name} (المعسكرات: ${room.playersCount}/2)`;
+                div.onclick = () => joinRoom(room.name);
+                listDiv.appendChild(div);
+            });
         });
 
-        // إعداد بيئة الرسوم الثلاثية الأبعاد باستخدام Three.js
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb); // سماء جميلة (لون سماوي)
-        scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
+        function joinRoom(roomName) {
+            myCamp = (myCamp === 'red') ? 'blue' : 'red'; // المعسكر المعاكس
+            socket.emit('join_room', { roomName, camp: myCamp });
+            currentRoom = roomName;
+            document.getElementById('join-room-menu').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+            document.getElementById('lobby-title').innerText = `الغرفة: ${currentRoom}`;
+        }
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        socket.on('update_lobby', (data) => {
+            updateLobbyUI(data.players);
+        });
 
-        // الإضاءة
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
+        function updateLobbyUI(players) {
+            const playersDiv = document.getElementById('players-list');
+            playersDiv.innerHTML = '<h4>اللاعبون في الغرفة:</h4>';
+            players.forEach(p => {
+                playersDiv.innerHTML += `<p>لاعب (${p.camp}) - الحالة: ${p.ready ? 'جاهز ✅' : 'غير جاهز ❌'}</p>`;
+            });
+            if(players.length === 2) {
+                document.getElementById('lobby-status').innerText = "اكتمل عدد اللاعبين!";
+            }
+        }
 
-        const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        sunLight.position.set(50, 100, 50);
-        scene.add(sunLight);
+        function toggleReady() {
+            isReady = !isReady;
+            document.getElementById('ready-btn').innerText = isReady ? "إلغاء الاستعداد" : "استعداد للعب";
+            socket.emit('player_ready', { roomName: currentRoom, ready: isReady });
+        }
 
-        // الأرض
-        const floorGeo = new THREE.PlaneGeometry(300, 300);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57 }); // أرض عشبية
-        const floor = new THREE.Mesh(floorGeo, floorMat);
-        floor.rotation.x = -Math.PI / 2;
-        scene.add(floor);
+        function startGameHost() {
+            socket.emit('start_game', { roomName: currentRoom });
+        }
 
-        // إنشاء المعسكرات والأعلام التي ترفرف
-        const flags = [];
+        // بدء اللعبة والانتقال للبيئة الثلاثية الأبعاد
+        socket.on('launch_game', (data) => {
+            document.querySelectorAll('.menu-screen').forEach(el => el.classList.add('hidden'));
+            document.getElementById('ui').classList.remove('hidden');
+            document.getElementById('camp-title').innerText = `المعسكر: ${myCamp === 'red' ? 'الأحمر' : 'الأزرق'}`;
+            document.getElementById('coins').innerText = data.money;
+            initThreeJS();
+        });
 
-        function createCamp(x, z, flagColor, campName) {
+        // --- محرك الثلاثي الأبعاد (Three.js) والتحكم بالكاميرا ---
+        let scene, camera, renderer;
+        let coins = 1000;
+        let flags = [];
+        let tanks = {};
+
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb); // سماء جميلة
+            scene.fog = new THREE.FogExp2(0x87ceeb, 0.01);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // إضاءة
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+            sun.position.set(50, 100, 50);
+            scene.add(sun);
+
+            // الأرض
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(400, 400),
+                new THREE.MeshStandardMaterial({ color: 0x3b7a57 })
+            );
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            // بناء المعسكرات والأعلام المرفرفة
+            createCamp(-70, 0, 0xff0000, "الأحمر");
+            createCamp(70, 0, 0x0000ff, "الأزرق");
+
+            // موضع الكاميرا الابتدائي
+            camera.position.set(0, 40, 80);
+            camera.lookAt(0, 0, 0);
+
+            // الاستماع لحركة الكاميرا بالأسهم والزوم
+            window.addEventListener('keydown', handleCameraMovement);
+
+            animate();
+        }
+
+        // التحكم بالكاميرا عبر الأسهم وزوم (+ / -)
+        function handleCameraMovement(e) {
+            const speed = 5;
+            if (e.key === 'ArrowRight') camera.position.x += speed;
+            if (e.key === 'ArrowLeft') camera.position.x -= speed;
+            if (e.key === 'ArrowUp') camera.position.z -= speed;
+            if (e.key === 'ArrowDown') camera.position.z += speed;
+            if (e.key === '+' || e.key === '=') camera.position.y = Math.max(10, camera.position.y - 3); // زوم داخل
+            if (e.key === '-' || e.key === '_') camera.position.y = Math.min(150, camera.position.y + 3); // زوم للخارج
+            camera.lookAt(0, 0, 0);
+        }
+
+        function createCamp(x, z, color, name) {
             // قاعدة المعسكر
-            const baseGeo = new THREE.BoxGeometry(20, 1, 20);
-            const baseMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-            const base = new THREE.Mesh(baseGeo, baseMat);
+            const base = new THREE.Mesh(
+                new THREE.BoxGeometry(25, 1, 25),
+                new THREE.MeshStandardMaterial({ color: 0x555555 })
+            );
             base.position.set(x, 0.5, z);
             scene.add(base);
 
             // سارية العلم
-            const poleGeo = new THREE.CylinderGeometry(0.2, 0.2, 15);
-            const poleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-            const pole = new THREE.Mesh(poleGeo, poleMat);
-            pole.position.set(x - 8, 7.5, z - 8);
+            const pole = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.3, 0.3, 18),
+                new THREE.MeshStandardMaterial({ color: 0xaaaaaa })
+            );
+            pole.position.set(x - 9, 9, z - 9);
             scene.add(pole);
 
-            // قماش العلم (الذي سيهتز ليعطي إيحاء الرفرفة)
-            const flagGeo = new THREE.PlaneGeometry(5, 3, 10, 10);
-            const flagMat = new THREE.MeshStandardMaterial({ color: flagColor, side: THREE.DoubleSide });
-            const flag = new THREE.Mesh(flagGeo, flagMat);
-            flag.position.set(x - 5.5, 13, z - 8);
+            // العلم المرفرف
+            const flag = new THREE.Mesh(
+                new THREE.PlaneGeometry(6, 4, 10, 10),
+                new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide })
+            );
+            flag.position.set(x - 6, 15, z - 9);
             scene.add(flag);
-            
-            flags.push({ mesh: flag, timeOffset: Math.random() * 10 });
+            flags.push({ mesh: flag, offset: Math.random() * 10 });
         }
 
-        // بناء معسكرين متنافسين
-        createCamp(-50, -50, 0xff0000, "معسكر الأحمر"); // علم أحمر
-        createCamp(50, 50, 0x0000ff, "معسكر الأزرق");   // علم أزرق
-
-        // وضع الكاميرا
-        camera.position.set(0, 30, 80);
-        camera.lookAt(0, 0, 0);
-
-        // دالة شراء الدبابات
-        let coins = 100;
-        function buyTank(camp) {
-            if (coins >= 50) {
-                coins -= 50;
+        // شراء دبابة في اللعبة
+        function buyTankInGame() {
+            if(coins >= 300) {
+                coins -= 300;
                 document.getElementById('coins').innerText = coins;
-                alert("تم شراء دبابة حربية جديدة لـ " + camp + " بنجاح! جاهزة للمعركة.");
-                // إرسال حدث الشراء للسيرفر ليراه الصديق الآخر
-                socket.emit('buy_tank', { camp: camp });
+                socket.emit('buy_tank_action', { roomName: currentRoom, camp: myCamp });
             } else {
-                alert("عذراً، رصيدك غير كافي لشراء دبابة!");
+                alert("المال غير كافي لشراء دبابة!");
             }
         }
 
-        // حلقة التحديث والرسم (Animation Loop) لتوليد حركة رفرفة الأعلام والسماء
+        socket.on('tank_spawned', (data) => {
+            // إنشاء دبابة في ساحة المعركة ورؤيتها بين الأصدقاء
+            const tankColor = data.camp === 'red' ? 0xff0000 : 0x0000ff;
+            const tankBody = new THREE.Mesh(
+                new THREE.BoxGeometry(6, 3, 10),
+                new THREE.MeshStandardMaterial({ color: tankColor })
+            );
+            let startX = data.camp === 'red' ? -50 : 50;
+            tankBody.position.set(startX + (Math.random() * 10 - 5), 1.5, Math.random() * 20 - 10);
+            scene.add(tankBody);
+            tanks[data.id] = tankBody;
+        });
+
         let clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
+            let time = clock.getElapsedTime();
 
-            let elapsedTime = clock.getElapsedTime();
-
-            // تحريك الأعلام لتررف بفعل الهواء
+            // حركة رفرفة الأعلام
             flags.forEach(f => {
-                const positionAttribute = f.mesh.geometry.attributes.position;
-                for (let i = 0; i < positionAttribute.count; i++) {
-                    let vertexX = positionAttribute.getX(i);
-                    // جعل حافة العلم تهتز بناءً على الزمن
-                    if (vertexX > 0) {
-                        let wave = Math.sin(elapsedTime * 8 + i + f.timeOffset) * 0.3;
-                        positionAttribute.setZ(i, wave);
+                let posAttr = f.mesh.geometry.attributes.position;
+                for(let i=0; i<posAttr.count; i++) {
+                    let vx = posAttr.getX(i);
+                    if(vx > 0) {
+                        posAttr.setZ(i, Math.sin(time * 10 + i + f.offset) * 0.4);
                     }
                 }
-                positionAttribute.needsUpdate = true;
+                posAttr.needsUpdate = true;
             });
 
             renderer.render(scene, camera);
         }
-
-        animate();
-
-        // التكيف مع حجم الشاشة
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
