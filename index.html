@@ -3,28 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>معركة السيطرة الاستراتيجية - خريطة مصغرة وتحكم متطور</title>
+    <title>معركة السيطرة الاستراتيجية - اللعب الجماعي عبر الإنترنت</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://tank-game-server-o650.onrender.com/socket.io/socket.io.js"></script>
 </head>
 <body>
 
 <div id="start-menu">
     <div class="menu-card">
-        <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
+        <div class="game-logo">⚔️ معركة السيطرة الاستراتيجية 🚩</div>
+        <div class="sub-logo">اختر نمط اللعب وقم بإدارة معسكرك باحترافية</div>
         
-        <div class="section-title">اختر علم معسكرك:</div>
-        <div class="flag-options" id="player-flags">
-            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
+        <div class="mode-select-grid">
+            <button class="mode-card-btn active" id="mode-single-btn" onclick="playClickSound(); switchGameMode('single')">
+                <span class="icon">🤖</span>
+                <span class="title">لعب فردي ضد البوت</span>
+            </button>
+            <button class="mode-card-btn" id="mode-multi-btn" onclick="playClickSound(); switchGameMode('multi')">
+                <span class="icon">🌐</span>
+                <span class="title">اللعب مع الأصدقاء (أونلاين)</span>
+            </button>
         </div>
 
-        <div class="section-title">اختر علم معسكر العدو:</div>
-        <div class="flag-options" id="enemy-flags">
-            <button class="flag-btn" onclick="playClickSound(); selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
-            <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
+        <div class="section-box">
+            <div class="section-title">اختر علم معسكرك:</div>
+            <div class="flag-options" id="player-flags">
+                <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر (3 نجوم)</button>
+                <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر (نجمتان)</button>
+            </div>
+
+            <div class="section-title" id="enemy-flag-title">اختر علم معسكر العدو:</div>
+            <div class="flag-options" id="enemy-flags">
+                <button class="flag-btn" onclick="playClickSound(); selectFlag('enemy', 'green')">الأخضر (3 نجوم)</button>
+                <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر (نجمتان)</button>
+            </div>
         </div>
 
-        <button id="start-btn" onclick="playClickSound(); startGame()">بدء المعركة 🚀</button>
+        <div id="online-rooms-section" style="display: none;">
+            <div class="online-divider"></div>
+            <div class="room-actions-box">
+                <input type="text" id="player-nickname" placeholder="أدخل اسمك المستعار..." maxlength="15">
+                <button class="action-btn create-room-btn" onclick="playClickSound(); openCreateRoomModal()">إنشاء غرفة جديدة 🏠</button>
+            </div>
+            
+            <div class="section-title">الغرف المتاحة حالياً للانضمام:</div>
+            <div id="rooms-list-container">
+                <div class="no-rooms-msg">جاري البحث عن غرف نشطة...</div>
+            </div>
+        </div>
+
+        <button id="start-btn" onclick="playClickSound(); startGame()">بدء المعركة الفردية 🚀</button>
+    </div>
+</div>
+
+<div id="create-room-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+        <h2>إنشاء غرفة معركة جديدة</h2>
+        <input type="text" id="room-name-input" placeholder="اسم الغرفة (مثال: معركة الأصدقاء)" maxlength="20">
+        <div class="modal-buttons">
+            <button class="modal-btn confirm" onclick="playClickSound(); confirmCreateRoom()">إنشاء وتأكيد</button>
+            <button class="modal-btn cancel" onclick="playClickSound(); closeCreateRoomModal()">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div id="waiting-lobby" style="display: none;">
+    <div class="lobby-card">
+        <h2 id="lobby-room-title">غرفة المعركة</h2>
+        <div class="lobby-status" id="lobby-status-text">في انتظار انضمام اللاعب الثاني...</div>
+        <div class="lobby-players-box">
+            <div class="player-slot" id="slot-player-1">👤 اللاعب 1: جاري التحميل...</div>
+            <div class="player-slot" id="slot-player-2">⏳ في انتظار الخصم...</div>
+        </div>
+        <div class="lobby-btns">
+            <button id="lobby-start-match-btn" class="action-btn" style="display:none;" onclick="playClickSound(); startOnlineMatch()">بدء المعركة الآن ⚔️</button>
+            <button class="action-btn cancel" onclick="playClickSound(); leaveLobby()">مغادرة الغرفة 🚪</button>
+        </div>
     </div>
 </div>
 
@@ -47,44 +101,33 @@
         <div class="corner-economy">
             <div class="money-row">
                 <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
-                <div class="money-small"><span id="money-display">500</span>$</div>
+                <div class="money-small"><span id="money-display">500</span> 🪙</div>
             </div>
-            <button class="buy-btn-small" id="buy-tank-btn" onclick="playClickSound(); buyPlayerTank('normal')">عادية (150$)</button>
-            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="playClickSound(); buyPlayerTank('rocket')">صاروخية (300$)</button>
+            <div class="tank-factory-btns">
+                <button class="factory-btn" onclick="playClickSound(); buyPlayerTank('normal')">
+                    <span>دبابة عادية</span>
+                    <span class="cost">150 🪙</span>
+                </button>
+                <button class="factory-btn rocket-btn" onclick="playClickSound(); buyPlayerTank('rocket')">
+                    <span>دبابة صواريخ</span>
+                    <span class="cost">300 🪙</span>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- الخريطة المصغرة -->
-    <div id="minimap-container" title="الخريطة المصغرة">
-        <canvas id="minimap-canvas" width="110" height="110"></canvas>
+    <div class="minimap-container" id="minimap-container">
+        <canvas id="minimap-canvas" width="130" height="130"></canvas>
     </div>
 
-    <div id="floating-msg"></div>
-
-    <div class="cam-controls">
-        <button class="cam-btn zoom-in" 
-            onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
-            ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
-        
-        <button class="cam-btn up" 
-            onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)"
-            ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
-        
-        <button class="cam-btn zoom-out" 
-            onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)"
-            ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
-        
-        <button class="cam-btn left" 
-            onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)"
-            ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
-        
-        <button class="cam-btn down" 
-            onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)"
-            ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
-        
-        <button class="cam-btn right" 
-            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
-            ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+    <div class="camera-control-pad">
+        <div class="cam-hint-title">تحكم الكاميرا 🎮</div>
+        <button class="cam-btn up" onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)" ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+        <button class="cam-btn zoom-in" onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)" ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕ تقريب</button>
+        <button class="cam-btn zoom-out" onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)" ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖ إبعاد</button>
+        <button class="cam-btn left" onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)" ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+        <button class="cam-btn down" onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)" ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+        <button class="cam-btn right" onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)" ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
     </div>
 
     <div class="cam-hint">اسحب بالشاشة أو استخدم الخريطة المصغرة والتحكم 🎯</div>
@@ -97,11 +140,10 @@
     <button class="restart-btn" onclick="playClickSound(); location.reload()">إعادة المعركة 🔄</button>
 </div>
 
+<div id="floating-msg"></div>
 <div id="canvas-container"></div>
 
-<!-- مكتبة Three.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<!-- ملف البرمجة الخاص باللعبة -->
 <script src="game.js"></script>
 </body>
 </html>
