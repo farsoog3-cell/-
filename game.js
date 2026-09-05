@@ -449,9 +449,8 @@ function createTank(x, z, colorHex, team, type = 'normal') {
     const armorMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.5 });
     const trackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
 
-    // تصميم الدبابة الصاروخية لتكون أطول
-    const bodySizeX = isRocketTank ? 6.5 : 6;
-    const bodySizeZ = isRocketTank ? 13 : 9;
+    const bodySizeX = isRocketTank ? 7 : 6;
+    const bodySizeZ = isRocketTank ? 10 : 9;
     const body = new THREE.Mesh(new THREE.BoxGeometry(bodySizeX, 2.2, bodySizeZ), armorMat);
     body.position.y = 1.2; body.name = "body"; body.castShadow = true; body.receiveShadow = true; tankGroup.add(body);
     
@@ -461,48 +460,13 @@ function createTank(x, z, colorHex, team, type = 'normal') {
     const rightTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, bodySizeZ + 0.2), trackMat);
     rightTrack.position.set((bodySizeX/2 + 0.5), 0.8, 0); rightTrack.castShadow = true; tankGroup.add(rightTrack);
     
+    const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 10), armorMat);
+    turret.position.y = 2.8; turret.name = "turret"; turret.castShadow = true; tankGroup.add(turret);
+    
     if (isRocketTank) {
-        // منصة الصواريخ المتحركة
-        const rocketContainer = new THREE.Group();
-        rocketContainer.name = "rocketContainer";
-        
-        const launcherPod = new THREE.Mesh(
-            new THREE.BoxGeometry(3.2, 2.0, 5.5), 
-            new THREE.MeshStandardMaterial({ color: 0x0f172a })
-        );
-        launcherPod.position.set(0, 1.0, 0);
-        launcherPod.castShadow = true;
-        rocketContainer.add(launcherPod);
-
-        // فتحة أو فوهة المنصة من الأمام
-        const hatchMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0x7f1d1d });
-        const hatch = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.4, 0.4), hatchMat);
-        hatch.position.set(0, 1.0, 2.8);
-        hatch.name = "launcherHatch";
-        rocketContainer.add(hatch);
-
-        rocketContainer.position.set(0, 2.3, -1.5);
-        tankGroup.add(rocketContainer);
-
-        // أقدام التثبيت على الأرض
-        const legsGroup = new THREE.Group();
-        legsGroup.name = "legsGroup";
-        const legMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
-        [-3.2, 3.2].forEach(lx => {
-            [-4, 4].forEach(lz => {
-                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.5, 0.8), legMat);
-                leg.position.set(lx, -0.5, lz);
-                leg.castShadow = true;
-                legsGroup.add(leg);
-            });
-        });
-        legsGroup.visible = false;
-        tankGroup.add(legsGroup);
-
+        const launcherPod = new THREE.Mesh(new THREE.BoxGeometry(3, 1.8, 4), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+        launcherPod.position.set(0, 3.8, 0); launcherPod.name = "launcherPod"; launcherPod.castShadow = true; tankGroup.add(launcherPod);
     } else {
-        const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 10), armorMat);
-        turret.position.y = 2.8; turret.name = "turret"; turret.castShadow = true; tankGroup.add(turret);
-        
         const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 6, 6), armorMat);
         cannon.rotation.x = Math.PI / 2; cannon.position.set(0, 2.8, 4); cannon.name = "cannon"; cannon.castShadow = true; tankGroup.add(cannon);
     }
@@ -540,8 +504,7 @@ function createTank(x, z, colorHex, team, type = 'normal') {
         moveAudio: moveAudio,
         isIdlePlaying: false,
         isMovePlaying: false,
-        lastTrackPos: new THREE.Vector3(x, terrainY, z),
-        deploymentProgress: 0
+        lastTrackPos: new THREE.Vector3(x, terrainY, z)
     };
 }
 
@@ -1210,34 +1173,9 @@ function updateTanksMovement() {
             if (enemyTarget) fireBullet(tankData, enemyTarget);
         }
 
-        // تطبيق حركة تراجع المنصة وارتفاعها وثبات الأقدام لدبابة الصواريخ
-        if (tankData.type === 'rocket') {
-            let rocketContainer = tankData.mesh.getObjectByName("rocketContainer");
-            let legsGroup = tankData.mesh.getObjectByName("legsGroup");
-            let isDeploying = !isMoving && enemyTarget;
-
-            if (isDeploying) {
-                tankData.deploymentProgress = Math.min(1, tankData.deploymentProgress + 0.08);
-                if (legsGroup) legsGroup.visible = true;
-            } else {
-                tankData.deploymentProgress = Math.max(0, tankData.deploymentProgress - 0.08);
-                if (tankData.deploymentProgress === 0 && legsGroup) legsGroup.visible = false;
-            }
-
-            if (rocketContainer) {
-                let targetZ = -1.5 - (tankData.deploymentProgress * 1.5);
-                let targetY = 2.3 + (tankData.deploymentProgress * 1.8);
-                let targetTilt = tankData.deploymentProgress * 0.35;
-
-                rocketContainer.position.z = THREE.MathUtils.lerp(rocketContainer.position.z, targetZ, 0.2);
-                rocketContainer.position.y = THREE.MathUtils.lerp(rocketContainer.position.y, targetY, 0.2);
-                rocketContainer.rotation.x = THREE.MathUtils.lerp(rocketContainer.rotation.x, targetTilt, 0.2);
-            }
-        }
-
         if (isMoving) {
             if (tankData.mesh.position.distanceTo(tankData.lastTrackPos) > 2.8) {
-                let bodyWidth = tankData.type === 'rocket' ? 6.5 : 6;
+                let bodyWidth = tankData.type === 'rocket' ? 7 : 6;
                 spawnRealisticTankTracks(tankData.mesh.position, tankData.mesh.rotation.y, bodyWidth);
                 tankData.lastTrackPos.copy(tankData.mesh.position);
             }
