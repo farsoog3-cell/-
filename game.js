@@ -1155,6 +1155,7 @@ function updateTanksMovement() {
 
     let time = Date.now() * 0.005;
 
+    // تنظيف آثار المسارات القديمة
     for (let i = tankTracks.length - 1; i >= 0; i--) {
         let tr = tankTracks[i];
         tr.life--;
@@ -1167,12 +1168,14 @@ function updateTanksMovement() {
         }
     }
 
+    // تحديث جزيئات الدخان
     for (let i = smokeParticles.length - 1; i >= 0; i--) {
         let p = smokeParticles[i];
         p.life--; p.mesh.position.y += p.vy; p.mesh.scale.multiplyScalar(1.03); p.mesh.material.opacity -= 0.025;
         if (p.life <= 0) { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); smokeParticles.splice(i, 1); }
     }
 
+    // تحديث موجات الصدمة والانفجارات
     for (let i = shockwaves.length - 1; i >= 0; i--) {
         let sw = shockwaves[i];
         sw.life--;
@@ -1187,6 +1190,7 @@ function updateTanksMovement() {
         }
     }
 
+    // تحديث الرصاص العادي
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i];
         if (!b.targetTank || !b.targetTank.mesh.parent || b.targetTank.isDestroyed) {
@@ -1212,6 +1216,7 @@ function updateTanksMovement() {
         }
     }
 
+    // تحديث الصواريخ التكتيكية (السكود) في الهواء
     for (let i = tacticalMissiles.length - 1; i >= 0; i--) {
         let m = tacticalMissiles[i];
         if (m.targetTank && !m.targetTank.isDestroyed) m.targetPos.copy(m.targetTank.mesh.position);
@@ -1248,46 +1253,79 @@ function updateTanksMovement() {
         }
 
         let isMoving = false;
-        let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
+        let detectRange = (tankData.type === 'rocket') ? 250 : 120;
+        let enemyTarget = null;
+        let candidatePool = (tankData.team === 'player') ? enemyTanks : playerTanks;
+        
+        let minDst = Infinity;
+        candidatePool.forEach(cand => {
+            if (!cand.isDestroyed) {
+                let d = tankData.mesh.position.distanceTo(cand.mesh.position);
+                if (d < detectRange && d < minDst) {
+                    minDst = d;
+                    enemyTarget = cand;
+                }
+            }
+        });
 
-        if (tankData.team === 'enemy') {
-            enemyTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
-        }
-
+        // 1. معالجة حركة وضرب الدبابات العادية
         if (tankData.type === 'normal') {
             let turretAsm = tankData.mesh.getObjectByName("turretAssembly");
             let muzzleFlash = tankData.mesh.getObjectByName("muzzleFlash");
-            if (turretAsm) {
-                turretAsm.rotation.y = Math.sin(time * 1.5) * 0.8;
-            }
-            if (muzzleFlash) {
-                muzzleFlash.visible = (Math.sin(time * 6) > 0.8) && enemyTarget;
+            
+            if (enemyTarget) {
+                let angleToEnemy = Math.atan2(
+                    enemyTarget.mesh.position.x - tankData.mesh.position.x,
+                    enemyTarget.mesh.position.z - tankData.mesh.position.z
+                );
+                if (turretAsm) {
+                    turretAsm.rotation.y = angleToEnemy - tankData.mesh.rotation.y;
+                }
+                if (muzzleFlash) {
+                    muzzleFlash.visible = (Math.sin(time * 6) > 0.8);
+                }
+                fireBullet(tankData, enemyTarget);
+            } else {
+                if (turretAsm) turretAsm.rotation.y = 0;
+                if (muzzleFlash) muzzleFlash.visible = false;
             }
         }
 
-        if (tankData.type === 'rocket' && enemyTarget) {
-            let distToTarget = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
-            if (distToTarget < 60) {
-                let retreatDir = new THREE.Vector3().subVectors(tankData.mesh.position, enemyTarget.mesh.position).setY(0).normalize();
-                let safeDir = getSmartMovementVector(tankData.mesh.position, retreatDir, tankData);
-                if (safeDir) {
-                    let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.3));
-                    nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
-                    tankData.mesh.position.copy(nextPos); 
-                    isMoving = true;
+        // 2. معالجة عربة صواريخ سكود وتوجيه القاذف عند رؤية العدو
+        let isDeploying = false;
+        if (tankData.type === 'rocket') {
+            let rocketContainer = tankData.mesh.getObjectByName("rocketContainer");
+            let scudFlame = rocketContainer ? rocketContainer.getObjectByName("scudFlame") : null;
+
+            if (enemyTarget) {
+                isMoving = false; 
+                let targetRotationY = Math.atan2(
+                    enemyTarget.mesh.position.x - tankData.mesh.position.x,
+                    enemyTarget.mesh.position.z - tankData.mesh.position.z
+                );
+                tankData.mesh.rotation.y = THREE.MathUtils.lerp(tankData.mesh.rotation.y, targetRotationY, 0.1);
+
+                isDeploying = true;
+                tankData.deploymentProgress = Math.min(1, tankData.deploymentProgress + 0.05);
+
+                if (tankData.deploymentProgress >= 0.8) {
+                    if (scudFlame) scudFlame.visible = true;
+                    fireTacticalMissile(tankData, enemyTarget);
                 }
-            } else if (distToTarget > 110) {
-                let dir = new THREE.Vector3().subVectors(enemyTarget.mesh.position, tankData.mesh.position).setY(0).normalize();
-                let safeDir = getSmartMovementVector(tankData.mesh.position, dir, tankData);
-                if (safeDir) {
-                    let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.35));
-                    nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
-                    tankData.mesh.position.copy(nextPos); 
-                    isMoving = true;
-                }
+            } else {
+                isDeploying = false;
+                tankData.deploymentProgress = Math.max(0, tankData.deploymentProgress - 0.05);
+                if (scudFlame) scudFlame.visible = false;
             }
-            fireTacticalMissile(tankData, enemyTarget);
-        } else {
+
+            if (rocketContainer) {
+                let targetTilt = tankData.deploymentProgress * (Math.PI / 3.2);
+                rocketContainer.rotation.x = THREE.MathUtils.lerp(rocketContainer.rotation.x, -targetTilt, 0.15);
+            }
+        }
+
+        // 3. التحكم بالحركة العادية للمركبات
+        if (!isDeploying) {
             if (tankData.team === 'player') {
                 if (tankData.target) {
                     const dist = tankData.mesh.position.distanceTo(tankData.target);
@@ -1307,42 +1345,24 @@ function updateTanksMovement() {
                     }
                 }
             } else {
-                if (!tankData.target || Math.random() < 0.01) {
-                    tankData.target = new THREE.Vector3(CORNER_OFFSET + (Math.random() - 0.5) * 40, 0, CORNER_OFFSET + (Math.random() - 0.5) * 40);
-                    tankData.target.y = getTerrainHeight(tankData.target.x, tankData.target.z);
-                }
-                const dist = tankData.mesh.position.distanceTo(tankData.target);
-                if (dist > 1.5) {
-                    const desiredDir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
-                    let safeDir = getSmartMovementVector(tankData.mesh.position, desiredDir, tankData);
-                    if (safeDir) {
-                        isMoving = true;
-                        tankData.mesh.rotation.y += (Math.atan2(safeDir.x, safeDir.z) - tankData.mesh.rotation.y) * 0.15;
-                        let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.32));
-                        nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
-                        tankData.mesh.position.copy(nextPos);
+                if (!enemyTarget) {
+                    if (!tankData.target || Math.random() < 0.01) {
+                        tankData.target = new THREE.Vector3(CORNER_OFFSET + (Math.random() - 0.5) * 40, 0, CORNER_OFFSET + (Math.random() - 0.5) * 40);
+                        tankData.target.y = getTerrainHeight(tankData.target.x, tankData.target.z);
+                    }
+                    const dist = tankData.mesh.position.distanceTo(tankData.target);
+                    if (dist > 1.5) {
+                        const desiredDir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                        let safeDir = getSmartMovementVector(tankData.mesh.position, desiredDir, tankData);
+                        if (safeDir) {
+                            isMoving = true;
+                            tankData.mesh.rotation.y += (Math.atan2(safeDir.x, safeDir.z) - tankData.mesh.rotation.y) * 0.15;
+                            let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.32));
+                            nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
+                            tankData.mesh.position.copy(nextPos);
+                        }
                     }
                 }
-            }
-            if (enemyTarget && tankData.type === 'normal') fireBullet(tankData, enemyTarget);
-        }
-
-        if (tankData.type === 'rocket') {
-            let rocketContainer = tankData.mesh.getObjectByName("rocketContainer");
-            let scudFlame = rocketContainer ? rocketContainer.getObjectByName("scudFlame") : null;
-            let isDeploying = !isMoving && enemyTarget;
-
-            if (isDeploying) {
-                tankData.deploymentProgress = Math.min(1, tankData.deploymentProgress + 0.08);
-                if (scudFlame) scudFlame.visible = (Math.sin(time * 8) > 0);
-            } else {
-                tankData.deploymentProgress = Math.max(0, tankData.deploymentProgress - 0.08);
-                if (scudFlame) scudFlame.visible = false;
-            }
-
-            if (rocketContainer) {
-                let targetTilt = tankData.deploymentProgress * (Math.PI / 2.5);
-                rocketContainer.rotation.x = THREE.MathUtils.lerp(rocketContainer.rotation.x, -targetTilt, 0.2);
             }
         }
 
