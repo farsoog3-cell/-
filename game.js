@@ -445,7 +445,6 @@ function createTank(x, z, colorHex, team, type = 'normal') {
     const tankGroup = new THREE.Group();
     let isRocketTank = (type === 'rocket');
     
-    // خامات مطابقة للنموذج المتقدم المطلوب
     const camoMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.4, metalness: 0.85 });
     const darkArmorMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.3, metalness: 0.9 });
     const trackMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.9, metalness: 0.5 });
@@ -456,7 +455,6 @@ function createTank(x, z, colorHex, team, type = 'normal') {
     const flameMat = new THREE.MeshBasicMaterial({ color: 0xff5500 });
 
     if (isRocketTank) {
-        // --- بناء عربة صواريخ سكود (Scud Launch) ---
         const scudChassis = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 11.0), camoMat);
         scudChassis.position.set(0, 0.9, 0);
         scudChassis.castShadow = true;
@@ -520,7 +518,6 @@ function createTank(x, z, colorHex, team, type = 'normal') {
         tankGroup.add(scudLauncherRig);
 
     } else {
-        // --- بناء دبابة القتال المتقدمة (Razorback) ---
         const mainHull = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.2, 8.0), camoMat);
         mainHull.position.y = 0.9;
         mainHull.castShadow = true;
@@ -1257,7 +1254,6 @@ function updateTanksMovement() {
             enemyTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
         }
 
-        // تحريك برج الدبابة العادية أو إطلاق الوميض
         if (tankData.type === 'normal') {
             let turretAsm = tankData.mesh.getObjectByName("turretAssembly");
             let muzzleFlash = tankData.mesh.getObjectByName("muzzleFlash");
@@ -1331,7 +1327,6 @@ function updateTanksMovement() {
             if (enemyTarget && tankData.type === 'normal') fireBullet(tankData, enemyTarget);
         }
 
-        // محاكاة وضعية إطلاق ونصب صاروخ سكود
         if (tankData.type === 'rocket') {
             let rocketContainer = tankData.mesh.getObjectByName("rocketContainer");
             let scudFlame = rocketContainer ? rocketContainer.getObjectByName("scudFlame") : null;
