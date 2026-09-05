@@ -480,7 +480,7 @@ function createTank(x, z, colorHex, team, type = 'normal') {
 
         const scudLauncherRig = new THREE.Group();
         scudLauncherRig.name = "rocketContainer";
-        scudLauncherRig.position.set(0, 1.55, -2.0); 
+        scudLauncherRig.position.set(0, 1.55, 0.0); 
 
         [-0.45, 0.45].forEach(gx => {
             const girder = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.3, 9.0), metalGirdersMat);
@@ -498,18 +498,18 @@ function createTank(x, z, colorHex, team, type = 'normal') {
 
         const scudNoseTip = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.0, 32), scudBodyMat);
         scudNoseTip.rotation.x = Math.PI / 2;
-        scudNoseTip.position.set(0, 0, 5.25); 
+        scudNoseTip.position.set(0, 0, -5.25); 
         scudRocketAssembly.add(scudNoseTip);
 
         for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 2) {
             const rocketFin = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.9, 1.0), darkArmorMat);
-            rocketFin.position.set(Math.cos(angle) * 0.55, Math.sin(angle) * 0.55, -4.0);
+            rocketFin.position.set(Math.cos(angle) * 0.55, Math.sin(angle) * 0.55, 4.0);
             scudRocketAssembly.add(rocketFin);
         }
 
         const scudFlame = new THREE.Mesh(new THREE.ConeGeometry(0.45, 3.5, 16), flameMat);
         scudFlame.rotation.x = Math.PI / 2;
-        scudFlame.position.set(0, 0, -6.0);
+        scudFlame.position.set(0, 0, 6.0);
         scudFlame.name = "scudFlame";
         scudFlame.visible = false;
         scudRocketAssembly.add(scudFlame);
@@ -563,47 +563,47 @@ function createTank(x, z, colorHex, team, type = 'normal') {
 
         const rBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 8.5, 16), darkArmorMat);
         rBarrel.rotation.x = Math.PI / 2;
-        rBarrel.position.set(0, 2.3, -4.6);
+        rBarrel.position.set(0, 2.3, 4.6);
         rBarrel.castShadow = true;
         rTurretAssembly.add(rBarrel);
 
         [ -1.0, 0.5, 2.0 ].forEach(zPos => {
             const thermalRing = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.4, 16), camoMat);
             thermalRing.rotation.x = Math.PI / 2;
-            thermalRing.position.set(0, 2.3, -2.5 - zPos);
+            thermalRing.position.set(0, 2.3, 2.5 + zPos);
             rTurretAssembly.add(thermalRing);
         });
 
         const muzzleBrake = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.8), darkArmorMat);
-        muzzleBrake.position.set(0, 2.3, -8.7);
+        muzzleBrake.position.set(0, 2.3, 8.7);
         rTurretAssembly.add(muzzleBrake);
 
         const commanderCupola = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.5, 16), darkArmorMat);
-        commanderCupola.position.set(0.8, 2.8, 0.3);
+        commanderCupola.position.set(0.8, 2.8, -0.3);
         rTurretAssembly.add(commanderCupola);
 
         const rwsBase = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.6), darkArmorMat);
-        rwsBase.position.set(0.8, 3.1, 0.3);
+        rwsBase.position.set(0.8, 3.1, -0.3);
         rTurretAssembly.add(rwsBase);
 
         const miniGun = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8, 8), darkArmorMat);
         miniGun.rotation.x = Math.PI / 2;
-        miniGun.position.set(0.8, 3.15, -0.4);
+        miniGun.position.set(0.8, 3.15, 0.4);
         rTurretAssembly.add(miniGun);
 
         [-1.3, 1.3].forEach(rx => {
             const apsRadar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), goldMat);
-            apsRadar.position.set(rx, 2.4, -1.5);
+            apsRadar.position.set(rx, 2.4, 1.5);
             rTurretAssembly.add(apsRadar);
         });
 
         const sensorOptic = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.2, 16), glassMat);
         sensorOptic.rotation.x = Math.PI / 2;
-        sensorOptic.position.set(-0.8, 2.4, 1.7);
+        sensorOptic.position.set(-0.8, 2.4, -1.7);
         rTurretAssembly.add(sensorOptic);
 
         const tankMuzzleFlash = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), flameMat);
-        tankMuzzleFlash.position.set(0, 2.3, -9.2);
+        tankMuzzleFlash.position.set(0, 2.3, 9.2);
         tankMuzzleFlash.name = "muzzleFlash";
         tankMuzzleFlash.visible = false;
         rTurretAssembly.add(tankMuzzleFlash);
@@ -1155,7 +1155,6 @@ function updateTanksMovement() {
 
     let time = Date.now() * 0.005;
 
-    // تنظيف آثار المسارات القديمة
     for (let i = tankTracks.length - 1; i >= 0; i--) {
         let tr = tankTracks[i];
         tr.life--;
@@ -1168,14 +1167,12 @@ function updateTanksMovement() {
         }
     }
 
-    // تحديث جزيئات الدخان
     for (let i = smokeParticles.length - 1; i >= 0; i--) {
         let p = smokeParticles[i];
         p.life--; p.mesh.position.y += p.vy; p.mesh.scale.multiplyScalar(1.03); p.mesh.material.opacity -= 0.025;
         if (p.life <= 0) { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); smokeParticles.splice(i, 1); }
     }
 
-    // تحديث موجات الصدمة والانفجارات
     for (let i = shockwaves.length - 1; i >= 0; i--) {
         let sw = shockwaves[i];
         sw.life--;
@@ -1190,7 +1187,6 @@ function updateTanksMovement() {
         }
     }
 
-    // تحديث الرصاص العادي
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i];
         if (!b.targetTank || !b.targetTank.mesh.parent || b.targetTank.isDestroyed) {
@@ -1216,7 +1212,6 @@ function updateTanksMovement() {
         }
     }
 
-    // تحديث الصواريخ التكتيكية (السكود) في الهواء
     for (let i = tacticalMissiles.length - 1; i >= 0; i--) {
         let m = tacticalMissiles[i];
         if (m.targetTank && !m.targetTank.isDestroyed) m.targetPos.copy(m.targetTank.mesh.position);
@@ -1268,7 +1263,6 @@ function updateTanksMovement() {
             }
         });
 
-        // 1. معالجة حركة وضرب الدبابات العادية
         if (tankData.type === 'normal') {
             let turretAsm = tankData.mesh.getObjectByName("turretAssembly");
             let muzzleFlash = tankData.mesh.getObjectByName("muzzleFlash");
@@ -1291,7 +1285,6 @@ function updateTanksMovement() {
             }
         }
 
-        // 2. معالجة عربة صواريخ سكود وتوجيه القاذف عند رؤية العدو
         let isDeploying = false;
         if (tankData.type === 'rocket') {
             let rocketContainer = tankData.mesh.getObjectByName("rocketContainer");
@@ -1299,11 +1292,11 @@ function updateTanksMovement() {
 
             if (enemyTarget) {
                 isMoving = false; 
-                let targetRotationY = Math.atan2(
+                let angleToEnemy = Math.atan2(
                     enemyTarget.mesh.position.x - tankData.mesh.position.x,
                     enemyTarget.mesh.position.z - tankData.mesh.position.z
                 );
-                tankData.mesh.rotation.y = THREE.MathUtils.lerp(tankData.mesh.rotation.y, targetRotationY, 0.1);
+                tankData.mesh.rotation.y = THREE.MathUtils.lerp(tankData.mesh.rotation.y, angleToEnemy, 0.1);
 
                 isDeploying = true;
                 tankData.deploymentProgress = Math.min(1, tankData.deploymentProgress + 0.05);
@@ -1324,7 +1317,6 @@ function updateTanksMovement() {
             }
         }
 
-        // 3. التحكم بالحركة العادية للمركبات
         if (!isDeploying) {
             if (tankData.team === 'player') {
                 if (tankData.target) {
