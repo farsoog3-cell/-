@@ -1,0 +1,129 @@
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
+#canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+
+#start-menu {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+    background: rgba(15, 23, 42, 0.95);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+}
+
+.menu-card {
+    background: rgba(30, 41, 59, 0.95); border: 1px solid #38bdf8;
+    border-radius: 12px; padding: 16px 20px; width: 90%; max-width: 380px; text-align: center;
+}
+
+.menu-card h1 { font-size: 16px; margin-bottom: 10px; color: #38bdf8; }
+.section-title { font-size: 11px; color: #94a3b8; margin: 6px 0 3px 0; text-align: right; }
+.flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 8px; }
+
+.flag-btn {
+    flex: 1; padding: 6px; border: 1px solid #475569; border-radius: 6px;
+    background: #1e293b; color: #fff; font-weight: bold; font-size: 11px; cursor: pointer;
+}
+
+.flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+.flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.2); }
+
+#start-btn {
+    width: 100%; margin-top: 10px; padding: 8px; border: none; border-radius: 6px;
+    background: #0284c7; color: #fff; font-size: 13px; font-weight: bold; cursor: pointer;
+}
+
+#ui-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 5; pointer-events: none; display: none;
+}
+
+.tank-hp-label {
+    position: absolute; transform: translate(-50%, -100%);
+    background: rgba(0, 0, 0, 0.75); padding: 1px 4px; border-radius: 3px;
+    font-size: 9px; font-weight: bold; pointer-events: none; white-space: nowrap;
+    border: 1px solid #334155; transition: transform 0.1s linear;
+}
+.hp-player { color: #22c55e; border-color: rgba(34, 197, 94, 0.4); }
+.hp-enemy { color: #ef4444; border-color: rgba(239, 68, 68, 0.4); }
+
+.top-capture-box {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 210px; background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8;
+    border-radius: 6px; padding: 4px 8px; text-align: center; color: white; font-size: 10px;
+}
+.capture-bar-bg { width: 100%; height: 5px; background: #334155; border-radius: 3px; margin-top: 2px; overflow: hidden; }
+.capture-bar-fill { width: 0%; height: 100%; background: #22c55e; }
+
+.left-controls-group {
+    position: absolute; top: 8px; left: 8px; pointer-events: auto;
+    display: flex; flex-direction: column; gap: 6px; width: 130px;
+}
+
+.selection-controls { display: flex; gap: 4px; width: 100%; }
+.sel-btn {
+    flex: 1; background: rgba(30, 41, 59, 0.85); border: 1px solid #38bdf8; color: white;
+    padding: 5px 4px; border-radius: 5px; font-size: 10px; font-weight: bold; text-align: center; cursor: pointer;
+}
+.sel-btn.active { background: #0284c7; }
+
+.corner-economy {
+    background: rgba(15, 23, 42, 0.85); border: 1px solid #f59e0b;
+    border-radius: 6px; padding: 6px; display: flex; flex-direction: column; gap: 5px; width: 100%;
+}
+.money-row { display: flex; justify-content: space-between; align-items: center; }
+.money-small { color: #fbbf24; font-weight: bold; font-size: 11px; }
+
+.buy-btn-small {
+    background: #22c55e; border: none; color: white; padding: 5px;
+    border-radius: 4px; font-weight: bold; font-size: 9px; width: 100%; text-align: center; cursor: pointer;
+}
+.buy-btn-small:disabled { background: #64748b; }
+.buy-btn-rocket { background: #ea580c; }
+.buy-btn-rocket:disabled { background: #64748b; }
+
+#minimap-container {
+    position: absolute; bottom: 65px; left: 8px; width: 110px; height: 110px;
+    background: rgba(15, 23, 42, 0.9); border: 2px solid #38bdf8; border-radius: 50%;
+    overflow: hidden; pointer-events: auto; cursor: pointer; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+#minimap-canvas { width: 100%; height: 100%; }
+
+#floating-msg {
+    position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.75); color: #38bdf8; padding: 3px 8px;
+    border-radius: 4px; font-size: 10px; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+}
+
+.cam-controls {
+    position: absolute; bottom: 8px; right: 8px;
+    display: grid; grid-template-columns: repeat(3, 42px); gap: 4px;
+    pointer-events: auto;
+}
+.cam-btn {
+    width: 42px; height: 42px; background: rgba(30, 41, 59, 0.85);
+    border: 1px solid #38bdf8; border-radius: 6px; color: white;
+    font-size: 15px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.cam-btn:active, .cam-btn.pressed { background: #0284c7; border-color: #7dd3fc; }
+.cam-btn.up { grid-column: 2; grid-row: 1; }
+.cam-btn.left { grid-column: 1; grid-row: 2; }
+.cam-btn.down { grid-column: 2; grid-row: 2; }
+.cam-btn.right { grid-column: 3; grid-row: 2; }
+.cam-btn.zoom-in { grid-column: 1; grid-row: 1; font-size: 12px; }
+.cam-btn.zoom-out { grid-column: 3; grid-row: 1; font-size: 12px; }
+
+.cam-hint {
+    position: absolute; bottom: 8px; left: 125px;
+    background: rgba(15, 23, 42, 0.75); border: 1px solid #38bdf8;
+    color: #93c5fd; padding: 3px 6px; border-radius: 4px; font-size: 9px; pointer-events: none;
+}
+
+#victory-screen {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
+    background: rgba(15, 23, 42, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+}
+#victory-screen h1 { font-size: 20px; color: #22c55e; margin-bottom: 6px; text-align: center; padding: 0 10px; }
+.stats-box {
+    background: rgba(30, 41, 59, 0.9); border: 1px solid #38bdf8; border-radius: 8px;
+    padding: 10px 16px; font-size: 11px; margin: 8px 0; width: 260px; text-align: right; line-height: 1.5;
+}
+#victory-flag-canvas { width: 180px; height: 100px; border-radius: 6px; margin: 6px 0; }
+.restart-btn { padding: 6px 16px; background: #22c55e; border: none; color: white; font-size: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; }
