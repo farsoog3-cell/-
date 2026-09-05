@@ -179,8 +179,8 @@
                 <span style="font-size: 9px; color: #cbd5e1;">الرصيد:</span>
                 <div class="money-small"><span id="money-display">500</span>$</div>
             </div>
-            <button class="buy-btn-small" id="buy-tank-btn" onclick="playClickSound(); buyPlayerTank('normal')">دبابة عادية (150$)</button>
-            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="playClickSound(); buyPlayerTank('rocket')">عربة سكود (300$)</button>
+            <button class="buy-btn-small" id="buy-tank-btn" onclick="playClickSound(); buyPlayerTank('combat')">عربة قتالية (150$)</button>
+            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="playClickSound(); buyPlayerTank('scud')">راجمة سكود (300$)</button>
         </div>
     </div>
 
@@ -581,14 +581,14 @@
         let eTankX = -CORNER_OFFSET + 45;
         let eTankZ = -CORNER_OFFSET + 45;
 
-        let playerTank = createTank(pTankX, pTankZ, pColor, 'player', 'normal');
-        let enemyTank = createTank(eTankX, eTankZ, eColor, 'enemy', 'normal');
+        let playerUnit = createMilitaryUnit(pTankX, pTankZ, pColor, 'player', 'combat');
+        let enemyUnit = createMilitaryUnit(eTankX, eTankZ, eColor, 'enemy', 'combat');
 
-        playerTank.mesh.rotation.y = -Math.PI / 4;
-        enemyTank.mesh.rotation.y = -Math.PI / 4;
+        playerUnit.mesh.rotation.y = -Math.PI / 4;
+        enemyUnit.mesh.rotation.y = -Math.PI / 4;
 
-        playerTanks.push(playerTank);
-        enemyTanks.push(enemyTank);
+        playerTanks.push(playerUnit);
+        enemyTanks.push(enemyUnit);
             
         enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, enemyFlagType, 'enemy');
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
@@ -674,85 +674,104 @@
         });
     }
 
-    // تصميم مركبة سكود الاحترافية بدلاً من الدبابة الصاروخية التقليدية
-    function createTank(x, z, colorHex, team, type = 'normal') {
-        const tankGroup = new THREE.Group();
-        let isScud = (type === 'rocket');
+    // بناء عربات حديثة بالكامل بدون دبابات تقليدية: عربة قتالية مدرعة (Combat Vehicle) وعربة سكود الصاروخية الاستراتيجية الثقيلة (Scud Launcher)
+    function createMilitaryUnit(x, z, colorHex, team, type = 'combat') {
+        const unitGroup = new THREE.Group();
+        let isScud = (type === 'scud');
         
-        let baseColor = isScud ? (team === 'player' ? 0x2b3820 : 0x3b231e) : colorHex;
-        const armorMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.5 });
-        const metalMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.3 });
-        const trackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        let baseColor = isScud ? (team === 'player' ? 0x2b3820 : 0x3b231e) : (team === 'player' ? 0x1e3a8a : 0x7f1d1d);
+        const armorMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.4, metalness: 0.2 });
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.4 });
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, roughness: 0.1 });
 
         if (isScud) {
-            // شاصيه عربة سكود الطويل والثقيل
-            const scudChassis = new THREE.Mesh(new THREE.BoxGeometry(6.5, 2.4, 12), armorMat);
-            scudChassis.position.y = 1.3; scudChassis.name = "body"; scudChassis.castShadow = true; scudChassis.receiveShadow = true;
-            tankGroup.add(scudChassis);
+            // شاصيه عربة سكود الطويل متعدد المحاور الثقيل
+            const scudChassis = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.2, 13), armorMat);
+            scudChassis.position.y = 1.4; scudChassis.name = "body"; scudChassis.castShadow = true; scudChassis.receiveShadow = true;
+            unitGroup.add(scudChassis);
 
-            // مقصورة القيادة الأمامية المصفحة
-            const cab = new THREE.Mesh(new THREE.BoxGeometry(5.8, 2.0, 3.8), new THREE.MeshStandardMaterial({ color: 0x111827 }));
-            cab.position.set(0, 2.7, 3.6); cab.castShadow = true; tankGroup.add(cab);
+            // كابينة القيادة الأمامية المصفحة بزجاج بانورامي
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(5.6, 1.8, 3.5), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+            cab.position.set(0, 2.6, 4.2); cab.castShadow = true; unitGroup.add(cab);
 
-            // زجاج كابينة القيادة
-            const windshield = new THREE.Mesh(new THREE.BoxGeometry(5, 1.2, 0.4), new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, roughness: 0.1 }));
-            windshield.position.set(0, 2.9, 5.6); tankGroup.add(windshield);
+            const windshield = new THREE.Mesh(new THREE.BoxGeometry(4.8, 1.0, 0.4), glassMat);
+            windshield.position.set(0, 2.8, 6.0); unitGroup.add(windshield);
 
-            // مسارات حركة عسكرية عريضة وثقيلة
-            const leftTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 12.4), trackMat);
-            leftTrack.position.set(-3.7, 0.9, 0); leftTrack.castShadow = true; tankGroup.add(leftTrack);
-            const rightTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 12.4), trackMat);
-            rightTrack.position.set(3.7, 0.9, 0); rightTrack.castShadow = true; tankGroup.add(rightTrack);
+            // عجلات ضخمة متعددة لعربة سكود (6 عجلات على كل جانب للاستقرار والواقعية العسكرية)
+            for (let i = -5; i <= 5; i += 2.5) {
+                [-3.3, 3.3].forEach(wx => {
+                    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 1.0, 16), wheelMat);
+                    wheel.rotation.z = Math.PI / 2;
+                    wheel.position.set(wx, 1.1, i);
+                    wheel.castShadow = true;
+                    unitGroup.add(wheel);
+                });
+            }
 
-            // منصة قاعدة إطلاق الصواريخ الخلفية
-            const launcherBase = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.2, 6.5), metalMat);
-            launcherBase.position.set(0, 2.8, -1.5); launcherBase.castShadow = true; tankGroup.add(launcherBase);
+            // منصة قاعدة إطلاق الصواريخ الخلفية مع دعامات هيدروليكية
+            const launcherBase = new THREE.Mesh(new THREE.BoxGeometry(5.0, 1.0, 6.0), metalMat);
+            launcherBase.position.set(0, 2.7, -1.5); launcherBase.castShadow = true; unitGroup.add(launcherBase);
 
-            // رافع هيدروليكي وزاوية إطلاق صاروخ سكود الضخم
-            const cradle = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 7.5), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-            cradle.position.set(0, 3.8, -1.8);
-            cradle.rotation.x = -Math.PI / 5; // زاوية ميل الإطلاق الاحترافية
-            tankGroup.add(cradle);
+            // رافع الإطلاق وزاوية ميل صاروخ سكود الباليستى الاستراتيجي
+            const cradle = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.0, 8.5), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+            cradle.position.set(0, 3.7, -1.5);
+            cradle.rotation.x = -Math.PI / 4.5; 
+            unitGroup.add(cradle);
 
-            // جسم صاروخ سكود الرئيسي الباليستى الطويل
-            const missileBody = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 10, 12), new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.3 }));
-            missileBody.position.set(0, 4.3, -2.2);
-            missileBody.rotation.x = -Math.PI / 5;
+            // جسم صاروخ سكود الرئيسي الطويل والمميز
+            const missileBody = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 11, 16), new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.2 }));
+            missileBody.position.set(0, 4.2, -1.8);
+            missileBody.rotation.x = -Math.PI / 4.5;
             missileBody.castShadow = true;
-            tankGroup.add(missileBody);
+            unitGroup.add(missileBody);
 
-            // رأس صاروخ سكود المدبب
-            const missileTip = new THREE.Mesh(new THREE.ConeGeometry(1.1, 3, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.2 }));
-            missileTip.position.set(0, 8.8, -4.1);
-            missileTip.rotation.x = -Math.PI / 5;
+            // رأس صاروخ سكود الحربي المدبب باللون الأصفر التحذيري
+            const missileTip = new THREE.Mesh(new THREE.ConeGeometry(1.2, 3.5, 16), new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.1 }));
+            missileTip.position.set(0, 9.4, -3.8);
+            missileTip.rotation.x = -Math.PI / 4.5;
             missileTip.castShadow = true;
-            tankGroup.add(missileTip);
+            unitGroup.add(missileTip);
 
         } else {
-            // تصميم الدبابة العادية الكلاسيكية المحسنة
-            const body = new THREE.Mesh(new THREE.BoxGeometry(6, 2.2, 9), armorMat);
-            body.position.y = 1.2; body.name = "body"; body.castShadow = true; body.receiveShadow = true; tankGroup.add(body);
-            
-            const leftTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, 9.2), trackMat);
-            leftTrack.position.set(-3.5, 0.8, 0); leftTrack.castShadow = true; tankGroup.add(leftTrack);
-            
-            const rightTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, 9.2), trackMat);
-            rightTrack.position.set(3.5, 0.8, 0); rightTrack.castShadow = true; tankGroup.add(rightTrack);
-            
-            const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 10), armorMat);
-            turret.position.y = 2.8; turret.name = "turret"; turret.castShadow = true; tankGroup.add(turret);
-            
-            const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 6, 6), armorMat);
-            cannon.rotation.x = Math.PI / 2; cannon.position.set(0, 2.8, 4); cannon.name = "cannon"; cannon.castShadow = true; tankGroup.add(cannon);
+            // العربة القتالية الحديثة (Combat Vehicle) ذات العجلات السريعة والتصميم الاحترافي المتقدم بدلاً من الدبابة القديمة
+            const combatBody = new THREE.Mesh(new THREE.BoxGeometry(5.2, 2.0, 8.5), armorMat);
+            combatBody.position.y = 1.3; combatBody.name = "body"; combatBody.castShadow = true; combatBody.receiveShadow = true;
+            unitGroup.add(combatBody);
+
+            // برج إطلاق قتالي رشاش حديث خفيف ومستطيل
+            const turret = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.2, 3.8), metalMat);
+            turret.position.set(0, 2.6, 0.5); turret.name = "turret"; turret.castShadow = true; unitGroup.add(turret);
+
+            // سبطانتين رشاش مزدوج متطور بدلاً من المدفوع التقليدي
+            [-0.5, 0.5].forEach(bx => {
+                const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 5, 8), metalMat);
+                barrel.rotation.x = Math.PI / 2;
+                barrel.position.set(bx, 2.7, 3.2);
+                barrel.name = "cannon";
+                barrel.castShadow = true;
+                unitGroup.add(barrel);
+            });
+
+            // 4 عجلات ضخمة مبرومة للعربة القتالية السريعة
+            [-3.0, 3.0].forEach(wx => {
+                [-2.5, 2.5].forEach(wz => {
+                    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.9, 16), wheelMat);
+                    wheel.rotation.z = Math.PI / 2;
+                    wheel.position.set(wx, 1.0, wz);
+                    wheel.castShadow = true;
+                    unitGroup.add(wheel);
+                });
+            });
         }
 
         let terrainY = getTerrainHeight(x, z);
-        tankGroup.position.set(x, terrainY, z);
-        scene.add(tankGroup);
+        unitGroup.position.set(x, terrainY, z);
+        scene.add(unitGroup);
 
         const hpLabel = document.createElement('div');
         hpLabel.className = `tank-hp-label ${team === 'player' ? 'hp-player' : 'hp-enemy'}`;
-        let initialHp = isScud ? 200 : 100;
+        let initialHp = isScud ? 200 : 120;
         hpLabel.innerText = `${initialHp}`;
         document.getElementById('hp-labels-container').appendChild(hpLabel);
 
@@ -765,7 +784,7 @@
         moveAudio.volume = 0.45;
 
         return { 
-            mesh: tankGroup, 
+            mesh: unitGroup, 
             hpLabel: hpLabel, 
             target: null, 
             team: team, 
@@ -876,7 +895,7 @@
 
     function buyPlayerTank(type) {
         if (playerBuildCooldown > 0) return;
-        let cost = (type === 'rocket') ? 300 : 150;
+        let cost = (type === 'scud') ? 300 : 150;
         if (playerMoney >= cost) {
             playerMoney -= cost;
             totalMoneySpent += cost;
@@ -886,15 +905,15 @@
             let pColor = playerFlagType === 'green' ? 0x2e3b23 : 0x6b3a2a;
             let pX = CORNER_OFFSET - 50 + (Math.random() - 0.5) * 20;
             let pZ = CORNER_OFFSET - 50 + (Math.random() - 0.5) * 20;
-            let newTank = createTank(pX, pZ, pColor, 'player', type);
-            newTank.mesh.rotation.y = -Math.PI / 4;
+            let newUnit = createMilitaryUnit(pX, pZ, pColor, 'player', type);
+            newUnit.mesh.rotation.y = -Math.PI / 4;
             
             if (playerTargetPos) {
-                newTank.target = playerTargetPos.clone();
+                newUnit.target = playerTargetPos.clone();
             }
 
-            playerTanks.push(newTank);
-            showFloatingMsg(type === 'rocket' ? 'تم استدعاء عربة سكود جديدة' : 'تم استدعاء دبابة جديدة');
+            playerTanks.push(newUnit);
+            showFloatingMsg(type === 'scud' ? 'تم استدعاء راجمة سكود استراتيجية' : 'تم استدعاء عربة قتالية جديدة');
         }
     }
 
@@ -1038,8 +1057,8 @@
                 raycaster.setFromCamera(mouse, camera);
 
                 if (selectionMode === 'single') {
-                    let tankObjects = playerTanks.map(t => t.mesh);
-                    let intersects = raycaster.intersectObjects(tankObjects, true);
+                    let unitObjects = playerTanks.map(t => t.mesh);
+                    let intersects = raycaster.intersectObjects(unitObjects, true);
                     if (intersects.length > 0) {
                         let hitMesh = intersects[0].object;
                         let found = playerTanks.find(t => t.mesh === hitMesh || t.mesh.children.includes(hitMesh));
@@ -1380,13 +1399,13 @@
             }
 
             let isMoving = false;
-            let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
+            let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'scud' ? 140 : 110));
 
             if (tankData.team === 'enemy') {
-                enemyTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 140 : 110));
+                enemyTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'scud' ? 140 : 110));
             }
 
-            if (tankData.type === 'rocket' && enemyTarget) {
+            if (tankData.type === 'scud' && enemyTarget) {
                 let distToTarget = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
                 if (distToTarget < 60) {
                     let retreatDir = new THREE.Vector3().subVectors(tankData.mesh.position, enemyTarget.mesh.position).setY(0).normalize();
@@ -1450,7 +1469,7 @@
 
             if (isMoving) {
                 if (tankData.mesh.position.distanceTo(tankData.lastTrackPos) > 2.8) {
-                    let bodyWidth = tankData.type === 'rocket' ? 8 : 6;
+                    let bodyWidth = tankData.type === 'scud' ? 8 : 6;
                     spawnRealisticTankTracks(tankData.mesh.position, tankData.mesh.rotation.y, bodyWidth);
                     tankData.lastTrackPos.copy(tankData.mesh.position);
                 }
@@ -1460,17 +1479,17 @@
         });
 
         if (enemyMoney >= 150 && enemyBuildCooldown === 0 && enemyTanks.filter(t => !t.isDestroyed).length < 5) {
-            let buyType = (enemyMoney >= 300 && Math.random() > 0.5) ? 'rocket' : 'normal';
-            let cost = (buyType === 'rocket') ? 300 : 150;
+            let buyType = (enemyMoney >= 300 && Math.random() > 0.5) ? 'scud' : 'combat';
+            let cost = (buyType === 'scud') ? 300 : 150;
             if (enemyMoney >= cost) {
                 enemyMoney -= cost;
                 enemyBuildCooldown = 1200; 
                 let eColor = playerFlagType === 'green' ? 0x6b3a2a : 0x2e3b23;
                 let eX = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
                 let eZ = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
-                let newEnemyTank = createTank(eX, eZ, eColor, 'enemy', buyType);
-                newEnemyTank.mesh.rotation.y = -Math.PI / 4;
-                enemyTanks.push(newEnemyTank);
+                let newEnemyUnit = createMilitaryUnit(eX, eZ, eColor, 'enemy', buyType);
+                newEnemyUnit.mesh.rotation.y = -Math.PI / 4;
+                enemyTanks.push(newEnemyUnit);
             }
         }
 
@@ -1489,8 +1508,8 @@
             buyBtn.disabled = true;
             rocketBtn.disabled = true;
         } else {
-            buyBtn.innerText = `دبابة عادية (150$)`;
-            rocketBtn.innerText = `عربة سكود (300$)`;
+            buyBtn.innerText = `عربة قتالية (150$)`;
+            rocketBtn.innerText = `راجمة سكود (300$)`;
             buyBtn.disabled = (playerMoney < 150);
             rocketBtn.disabled = (playerMoney < 300);
         }
@@ -1627,13 +1646,13 @@
             title.innerText = "هزيمة قاسية! ⚠️ لقد سيطر العدو على معسكرك!"; title.style.color = "#ef4444";
         }
 
-        let activePlayerTanks = playerTanks.filter(t => !t.isDestroyed).length;
+        let activePlayerUnits = playerTanks.filter(t => !t.isDestroyed).length;
         statsBox.innerHTML = `
             • العلم المنتصر: ${winningFlag === 'green' ? 'الأخضر (3 نجوم)' : 'الأحمر (نجمتان)'}<br>
             • خسائر وحداتك: ${totalTanksLost}<br>
             • وحدات العدو المدمرة: ${enemyTanksLost}<br>
             • إجمالي المال المصروف: ${totalMoneySpent}$<br>
-            • الوحدات الحية المتبقية: ${activePlayerTanks}
+            • الوحدات الحية المتبقية: ${activePlayerUnits}
         `;
         renderVictoryFlagCanvas(winningFlag);
     }
