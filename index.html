@@ -221,7 +221,7 @@
             ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
         
         <button class="cam-btn right" 
-            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
+            onmousedown="camMove('right', true)" onmouseup="camRankMove('right', true)" onmouseleave="camMove('right', false)"
             ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
     </div>
 </div>
@@ -396,6 +396,7 @@
     }
 
     function camMove(dir, state) { camInputs[dir] = state; }
+    function camRankMove(dir, state) { camInputs[dir] = state; }
 
     function processCameraInputs() {
         if (isCinematicEnding) return;
@@ -753,7 +754,7 @@
                 launchBed.add(stabilizerLeg);
             });
 
-            // صاروخ سكود مبني بحيث يكون طواله متسقاً مع محور z المحلي ليكون جاهزاً للدوران بسلاسة
+            // 🛠️ **تصحيح رأس الصاروخ واتجاهه البرمجي ليكون المدبب للأمام تماماً**
             const missileGroup = new THREE.Group();
             missileGroup.name = "scudMissile";
 
@@ -768,7 +769,7 @@
             missileGroup.add(missileBody);
 
             const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-            missileTip.rotation.x = Math.PI / 2; 
+            missileTip.rotation.x = -Math.PI / 2; // تعديل عكسي لكي يتجه الرأس المدبب للأمام (المقدمة) بدلاً من الاتجاه المعاكس
             missileTip.position.set(0, 0, -7.9);
             missileTip.castShadow = true;
             missileGroup.add(missileTip);
@@ -1290,7 +1291,7 @@
         let startPos = missileMesh ? missileMesh.getWorldPosition(new THREE.Vector3()) : fromTank.mesh.position.clone().add(new THREE.Vector3(0, 8, 0));
         if (missileMesh) scudBed.remove(missileMesh); 
 
-        // بناء مجموعة الصاروخ الطائر الموحدة المطابقة لمحور Z لتوجيه صحيح 100%
+        // 🛠️ **تصحيح بناء الصاروخ الطائر ليتطابق مع الاتجاه الصحيح تماماً**
         const flyingMissileGroup = new THREE.Group();
         
         const bodyMat = new THREE.MeshBasicMaterial({ color: 0xd1d5db });
@@ -1303,7 +1304,7 @@
         flyingMissileGroup.add(missileBody);
 
         const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-        missileTip.rotation.x = Math.PI / 2;
+        missileTip.rotation.x = -Math.PI / 2; // تعديل عكسي لكي يتجه الرأس المدبب للأمام
         missileTip.position.set(0, 0, -7.9);
         flyingMissileGroup.add(missileTip);
 
@@ -1486,7 +1487,7 @@
                 nextPos.y += Math.sin((t + 0.05) * Math.PI) * 45;
                 
                 m.mesh.position.copy(currentPos);
-                m.mesh.lookAt(nextPos); // توجيه دقيق للرأس نحو مسار الحركة
+                m.mesh.lookAt(nextPos); 
 
                 addSmokeParticle(m.mesh.position, 0xdddddd, 1.0);
             }
@@ -1535,8 +1536,11 @@
 
                             const mBody = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 12, 16), bodyMat);
                             mBody.rotation.x = Math.PI / 2; mBody.position.set(0, 0, 0); mBody.castShadow = true; newMissileGroup.add(mBody);
+                            
                             const mTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-                            mTip.rotation.x = Math.PI / 2; mTip.position.set(0, 0, -7.9); mTip.castShadow = true; newMissileGroup.add(mTip);
+                            mTip.rotation.x = -Math.PI / 2; // رأس الصاروخ مُصحح هنا أيضاً بدقة
+                            mTip.position.set(0, 0, -7.9); mTip.castShadow = true; newMissileGroup.add(mTip);
+
                             for (let i = 0; i < 4; i++) {
                                 const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 1.5), finMat);
                                 fin.rotation.y = (i * Math.PI) / 2;
@@ -1863,7 +1867,7 @@
         } else {
             ctx.fillStyle = '#cc0000'; ctx.fillRect(0, 0, 180, 33);
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 33, 180, 34);
-            ctx.fillStyle = '#000000'; ctx.fillRect(0, 67, 180, 33);
+            ctx.fillStyle, '#000000'; ctx.fillRect(0, 67, 180, 33);
             drawStar(ctx, 70, 50, '#007a3d'); drawStar(ctx, 110, 50, '#007a3d');
         }
     }
