@@ -1,3 +1,240 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>معركة السيطرة الاستراتيجية - عربات سكود الحقيقية</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        #start-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            background: rgba(15, 23, 42, 0.96);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+        }
+
+        .menu-card {
+            background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 16px; padding: 20px 24px; width: 92%; max-width: 400px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .menu-card h1 { font-size: 18px; margin-bottom: 14px; color: #38bdf8; font-weight: 700; }
+        .section-title { font-size: 12px; color: #94a3b8; margin: 8px 0 4px 0; text-align: right; font-weight: 600; }
+        .flag-options { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
+
+        .flag-btn {
+            flex: 1; padding: 8px; border: 1px solid #475569; border-radius: 8px;
+            background: #1e293b; color: #fff; font-weight: bold; font-size: 12px; cursor: pointer; transition: all 0.2s;
+        }
+
+        .flag-btn.active-player { border-color: #22c55e; background: rgba(34, 197, 94, 0.25); color: #4ade80; }
+        .flag-btn.active-enemy { border-color: #ef4444; background: rgba(239, 68, 68, 0.25); color: #f87171; }
+
+        #start-btn {
+            width: 100%; margin-top: 14px; padding: 10px; border: none; border-radius: 8px;
+            background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; font-size: 14px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4); transition: transform 0.1s;
+        }
+        #start-btn:active { transform: scale(0.98); }
+
+        #ui-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 5; pointer-events: none; display: none;
+        }
+
+        .tank-hp-label {
+            position: absolute; transform: translate(-50%, -100%);
+            background: rgba(15, 23, 42, 0.85); padding: 2px 6px; border-radius: 4px;
+            font-size: 10px; font-weight: bold; pointer-events: none; white-space: nowrap;
+            border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transition: transform 0.1s linear;
+        }
+        .hp-player { color: #4ade80; border-color: rgba(34, 197, 94, 0.4); }
+        .hp-enemy { color: #f87171; border-color: rgba(239, 68, 68, 0.4); }
+
+        .top-capture-box {
+            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            width: 260px; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 10px; padding: 6px 12px; text-align: center; color: white; font-size: 11px;
+            backdrop-filter: blur(6px); box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        #capture-status-text { margin-bottom: 4px; font-weight: 600; color: #e2e8f0; }
+        .capture-bar-bg { width: 100%; height: 6px; background: #334155; border-radius: 3px; overflow: hidden; }
+        .capture-bar-fill { width: 0%; height: 100%; background: #22c55e; transition: width 0.2s; }
+
+        .left-controls-group {
+            position: absolute; top: 12px; left: 12px; pointer-events: auto;
+            display: flex; flex-direction: column; gap: 8px; width: 140px;
+        }
+
+        .selection-controls { display: flex; gap: 6px; width: 100%; }
+        .sel-btn {
+            flex: 1; background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); color: white;
+            padding: 6px; border-radius: 6px; font-size: 11px; font-weight: bold; text-align: center; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .sel-btn.active { background: #0284c7; border-color: #38bdf8; }
+
+        .corner-economy {
+            background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; width: 100%;
+            backdrop-filter: blur(6px); box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .money-row { display: flex; justify-content: space-between; align-items: center; }
+        .money-small { color: #fbbf24; font-weight: bold; font-size: 12px; }
+        
+        .buy-btn-small {
+            background: #16a34a; border: none; color: white; padding: 6px;
+            border-radius: 6px; font-weight: bold; font-size: 10px; width: 100%; text-align: center; cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .buy-btn-small:disabled { background: #475569; opacity: 0.6; cursor: not-allowed; }
+        .buy-btn-rocket { background: #c2410c; }
+        .buy-btn-rocket:disabled { background: #475569; opacity: 0.6; cursor: not-allowed; }
+
+        #minimap-container {
+            position: absolute; bottom: 12px; left: 12px; width: 120px; height: 120px;
+            background: rgba(15, 23, 42, 0.92); border: 2px solid #38bdf8; border-radius: 16px;
+            overflow: hidden; pointer-events: auto; cursor: pointer; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px);
+        }
+        #minimap-canvas { width: 100%; height: 100%; }
+
+        #floating-msg {
+            position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.9); color: #38bdf8; padding: 4px 12px;
+            border-radius: 6px; font-size: 11px; font-weight: 600; pointer-events: none; opacity: 0; 
+            transition: opacity 0.3s ease; border: 1px solid rgba(56, 189, 248, 0.3); box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .cam-controls {
+            position: absolute; bottom: 12px; right: 12px;
+            display: grid; grid-template-columns: repeat(3, 46px); gap: 5px;
+            pointer-events: auto; background: rgba(15, 23, 42, 0.85); padding: 6px;
+            border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.3); backdrop-filter: blur(6px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+        .cam-btn {
+            width: 46px; height: 46px; background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; color: white;
+            font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: background 0.1s;
+        }
+        .cam-btn:active, .cam-btn.pressed { background: #0284c7; border-color: #7dd3fc; }
+        .cam-btn.up { grid-column: 2; grid-row: 1; }
+        .cam-btn.left { grid-column: 1; grid-row: 2; }
+        .cam-btn.down { grid-column: 2; grid-row: 2; }
+        .cam-btn.right { grid-column: 3; grid-row: 2; }
+        .cam-btn.zoom-in { grid-column: 1; grid-row: 1; font-size: 13px; }
+        .cam-btn.zoom-out { grid-column: 3; grid-row: 1; font-size: 13px; }
+
+        #victory-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20;
+            background: rgba(15, 23, 42, 0.96); display: none; flex-direction: column; align-items: center; justify-content: center; color: #fff;
+        }
+        #victory-screen h1 { font-size: 22px; color: #22c55e; margin-bottom: 8px; text-align: center; padding: 0 10px; font-weight: 700; }
+        .stats-box {
+            background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 12px;
+            padding: 14px 20px; font-size: 12px; margin: 10px 0; width: 280px; text-align: right; line-height: 1.6;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        }
+        #victory-flag-canvas { width: 180px; height: 100px; border-radius: 8px; margin: 8px 0; border: 1px solid rgba(255,255,255,0.2); }
+        .restart-btn { padding: 8px 20px; background: #16a34a; border: none; color: white; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4); }
+    </style>
+</head>
+<body>
+
+<div id="start-menu">
+    <div class="menu-card">
+        <h1>معركة السيطرة الاستراتيجية ⚔️🚩</h1>
+        
+        <div class="section-title">اختر علم معسكرك:</div>
+        <div class="flag-options" id="player-flags">
+            <button class="flag-btn active-player" onclick="playClickSound(); selectFlag('player', 'green')">الأخضر</button>
+            <button class="flag-btn" onclick="playClickSound(); selectFlag('player', 'red')">الأحمر</button>
+        </div>
+
+        <div class="section-title">اختر علم معسكر العدو:</div>
+        <div class="flag-options" id="enemy-flags">
+            <button class="flag-btn" onclick="playClickSound(); selectFlag('enemy', 'green')">الأخضر</button>
+            <button class="flag-btn active-enemy" onclick="playClickSound(); selectFlag('enemy', 'red')">الأحمر</button>
+        </div>
+
+        <button id="start-btn" onclick="playClickSound(); startGame()">بدء المعركة 🚀</button>
+    </div>
+</div>
+
+<div id="ui-overlay">
+    <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
+
+    <div class="top-capture-box">
+        <div id="capture-status-text">السيطرة على معسكر العدو</div>
+        <div class="capture-bar-bg">
+            <div id="capture-bar-fill" class="capture-bar-fill"></div>
+        </div>
+    </div>
+
+    <div class="left-controls-group">
+        <div class="selection-controls">
+            <button class="sel-btn active" id="sel-all-btn" onclick="playClickSound(); setSelectionMode('all')">الكل</button>
+            <button class="sel-btn" id="sel-single-btn" onclick="playClickSound(); setSelectionMode('single')">فردي</button>
+        </div>
+
+        <div class="corner-economy">
+            <div class="money-row">
+                <span style="font-size: 10px; color: #cbd5e1; font-weight: 600;">الرصيد:</span>
+                <div class="money-small"><span id="money-display">500</span>$</div>
+            </div>
+            <button class="buy-btn-small" id="buy-tank-btn" onclick="playClickSound(); buyPlayerTank('normal')">عادية (150$)</button>
+            <button class="buy-btn-small buy-btn-rocket" id="buy-rocket-tank-btn" onclick="playClickSound(); buyPlayerTank('rocket')">عربة سكود (300$)</button>
+        </div>
+    </div>
+
+    <div id="minimap-container" title="الخريطة المصغرة">
+        <canvas id="minimap-canvas" width="120" height="120"></canvas>
+    </div>
+
+    <div id="floating-msg"></div>
+
+    <div class="cam-controls">
+        <button class="cam-btn zoom-in" 
+            onmousedown="camMove('zi', true)" onmouseup="camMove('zi', false)" onmouseleave="camMove('zi', false)"
+            ontouchstart="camMove('zi', true)" ontouchend="camMove('zi', false)">➕</button>
+        
+        <button class="cam-btn up" 
+            onmousedown="camMove('up', true)" onmouseup="camMove('up', false)" onmouseleave="camMove('up', false)"
+            ontouchstart="camMove('up', true)" ontouchend="camMove('up', false)">⬆️</button>
+        
+        <button class="cam-btn zoom-out" 
+            onmousedown="camMove('zo', true)" onmouseup="camMove('zo', false)" onmouseleave="camMove('zo', false)"
+            ontouchstart="camMove('zo', true)" ontouchend="camMove('zo', false)">➖</button>
+        
+        <button class="cam-btn left" 
+            onmousedown="camMove('left', true)" onmouseup="camMove('left', false)" onmouseleave="camMove('left', false)"
+            ontouchstart="camMove('left', true)" ontouchend="camMove('left', false)">⬅️</button>
+        
+        <button class="cam-btn down" 
+            onmousedown="camMove('down', true)" onmouseup="camMove('down', false)" onmouseleave="camMove('down', false)"
+            ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
+        
+        <button class="cam-btn right" 
+            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
+            ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
+    </div>
+</div>
+
+<div id="victory-screen">
+    <h1 id="victory-title">انتهت المعركة!</h1>
+    <div class="stats-box" id="stats-content"></div>
+    <canvas id="victory-flag-canvas"></canvas>
+    <button class="restart-btn" onclick="playClickSound(); location.reload()">إعادة المعركة 🔄</button>
+</div>
+
+<div id="canvas-container"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
@@ -516,7 +753,7 @@
                 launchBed.add(stabilizerLeg);
             });
 
-            // صاروخ سكود كامل ومتكامل 
+            // صاروخ سكود مبني بحيث يكون طواله متسقاً مع محور z المحلي ليكون جاهزاً للدوران بسلاسة
             const missileGroup = new THREE.Group();
             missileGroup.name = "scudMissile";
 
@@ -525,27 +762,26 @@
             const finMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.4, metalness: 0.7 });
 
             const missileBody = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 12, 16), bodyMat);
-            missileBody.rotation.z = Math.PI / 2; 
-            missileBody.position.set(0, 0.9, 0);
+            missileBody.rotation.x = Math.PI / 2; 
+            missileBody.position.set(0, 0, 0);
             missileBody.castShadow = true;
             missileGroup.add(missileBody);
 
             const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-            missileTip.rotation.z = -Math.PI / 2; 
-            missileTip.position.set(7.9, 0.9, 0);
+            missileTip.rotation.x = Math.PI / 2; 
+            missileTip.position.set(0, 0, -7.9);
             missileTip.castShadow = true;
             missileGroup.add(missileTip);
 
             for (let i = 0; i < 4; i++) {
                 const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 1.5), finMat);
                 fin.rotation.y = (i * Math.PI) / 2;
-                fin.position.set(-5 + Math.cos(i * Math.PI / 2) * 0.8, 0.9 + Math.sin(i * Math.PI / 2) * 0.8, 0);
+                fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, 5);
                 fin.castShadow = true;
                 missileGroup.add(fin);
             }
 
             missileGroup.position.set(0, 0.4, 0);
-            missileGroup.rotation.y = -Math.PI / 2; 
             launchBed.add(missileGroup);
 
             tankGroup.add(launchBed);
@@ -1034,7 +1270,6 @@
         bullets.push({ mesh: bulletMesh, fromTank: fromTank, fromTeam: fromTank.team, targetTank: targetTank, speed: 2.2, damage: 34 });
     }
 
-    // [إصلاح مشكلة اتجاه وطيران صاروخ السكود بشكل دقيق ومرتبط باتجاه العربة]
     function fireTacticalMissile(fromTank, targetTank) {
         if (!fromTank.hasMissileLoaded || fromTank.scudState !== 'readyToFire') return;
         
@@ -1055,7 +1290,7 @@
         let startPos = missileMesh ? missileMesh.getWorldPosition(new THREE.Vector3()) : fromTank.mesh.position.clone().add(new THREE.Vector3(0, 8, 0));
         if (missileMesh) scudBed.remove(missileMesh); 
 
-        // إنشاء نموذج صاروخ طائر متناسق
+        // بناء مجموعة الصاروخ الطائر الموحدة المطابقة لمحور Z لتوجيه صحيح 100%
         const flyingMissileGroup = new THREE.Group();
         
         const bodyMat = new THREE.MeshBasicMaterial({ color: 0xd1d5db });
@@ -1063,19 +1298,19 @@
         const finMat = new THREE.MeshBasicMaterial({ color: 0x1f2937 });
 
         const missileBody = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 12, 16), bodyMat);
-        missileBody.rotation.z = Math.PI / 2;
+        missileBody.rotation.x = Math.PI / 2;
         missileBody.position.set(0, 0, 0);
         flyingMissileGroup.add(missileBody);
 
         const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-        missileTip.rotation.z = -Math.PI / 2;
-        missileTip.position.set(7.9, 0, 0);
+        missileTip.rotation.x = Math.PI / 2;
+        missileTip.position.set(0, 0, -7.9);
         flyingMissileGroup.add(missileTip);
 
         for (let i = 0; i < 4; i++) {
             const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 1.5), finMat);
             fin.rotation.y = (i * Math.PI) / 2;
-            fin.position.set(-5 + Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, 0);
+            fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, 5);
             flyingMissileGroup.add(fin);
         }
 
@@ -1246,11 +1481,12 @@
                 let currentPos = new THREE.Vector3().lerpVectors(m.startPos, m.targetPos, t);
                 let arcHeight = Math.sin(t * Math.PI) * 45;
                 currentPos.y += arcHeight;
-                m.mesh.position.copy(currentPos);
                 
                 let nextPos = new THREE.Vector3().lerpVectors(m.startPos, m.targetPos, Math.min(1.0, t + 0.05));
                 nextPos.y += Math.sin((t + 0.05) * Math.PI) * 45;
-                m.mesh.lookAt(nextPos);
+                
+                m.mesh.position.copy(currentPos);
+                m.mesh.lookAt(nextPos); // توجيه دقيق للرأس نحو مسار الحركة
 
                 addSmokeParticle(m.mesh.position, 0xdddddd, 1.0);
             }
@@ -1298,17 +1534,16 @@
                             const finMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.4, metalness: 0.7 });
 
                             const mBody = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 12, 16), bodyMat);
-                            mBody.rotation.z = Math.PI / 2; mBody.position.set(0, 0.9, 0); mBody.castShadow = true; newMissileGroup.add(mBody);
+                            mBody.rotation.x = Math.PI / 2; mBody.position.set(0, 0, 0); mBody.castShadow = true; newMissileGroup.add(mBody);
                             const mTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-                            mTip.rotation.z = -Math.PI / 2; mTip.position.set(7.9, 0.9, 0); mTip.castShadow = true; newMissileGroup.add(mTip);
+                            mTip.rotation.x = Math.PI / 2; mTip.position.set(0, 0, -7.9); mTip.castShadow = true; newMissileGroup.add(mTip);
                             for (let i = 0; i < 4; i++) {
                                 const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 1.5), finMat);
                                 fin.rotation.y = (i * Math.PI) / 2;
-                                fin.position.set(-5 + Math.cos(i * Math.PI / 2) * 0.8, 0.9 + Math.sin(i * Math.PI / 2) * 0.8, 0);
+                                fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, 5);
                                 fin.castShadow = true; newMissileGroup.add(fin);
                             }
                             newMissileGroup.position.set(0, 0.4, 0);
-                            newMissileGroup.rotation.y = -Math.PI / 2;
                             scudBed.add(newMissileGroup);
                             tankData.hasMissileLoaded = true;
                         }
@@ -1318,13 +1553,6 @@
                 if (enemyTarget) {
                     let distToTarget = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
                     
-                    // توجيه عربة السكود ببطء نحو العدو قبل الإطلاق لتتأكد أن الصاروخ يرتفع للأمام
-                    let lookDir = new THREE.Vector3().subVectors(enemyTarget.mesh.position, tankData.mesh.position).setY(0);
-                    if (lookDir.length() > 0) {
-                        let targetAngle = Math.atan2(lookDir.x, lookDir.z);
-                        tankData.mesh.rotation.y += (targetAngle - tankData.mesh.rotation.y) * 0.05;
-                    }
-
                     if (tankData.hasMissileLoaded && distToTarget <= 170) {
                         if (tankData.scudState === 'sleeping' || tankData.scudState === 'reloading') {
                             tankData.scudState = 'deploying';
@@ -1339,10 +1567,9 @@
                         }
 
                         if (scudBed && missileMesh) {
-                            missileMesh.rotation.z = THREE.MathUtils.lerp(-Math.PI / 2, 0, tankData.scudAnimProgress);
-                            missileMesh.position.x = THREE.MathUtils.lerp(0, 0, tankData.scudAnimProgress);
-                            missileMesh.position.y = THREE.MathUtils.lerp(0.4, 6.0, tankData.scudAnimProgress);
-                            missileMesh.position.z = THREE.MathUtils.lerp(0, 0, tankData.scudAnimProgress);
+                            missileMesh.rotation.x = THREE.MathUtils.lerp(0, -Math.PI / 2, tankData.scudAnimProgress);
+                            missileMesh.position.y = THREE.MathUtils.lerp(0.4, 2.8, tankData.scudAnimProgress);
+                            missileMesh.position.z = THREE.MathUtils.lerp(0, -1.5, tankData.scudAnimProgress);
 
                             let stabilizer = scudBed.getObjectByName("stabilizerLeg");
                             if (stabilizer) stabilizer.position.z = THREE.MathUtils.lerp(-2.5, -4.5, tankData.scudAnimProgress);
@@ -1360,10 +1587,9 @@
                                 tankData.scudState = 'sleeping';
                             }
                             if (scudBed && missileMesh) {
-                                missileMesh.rotation.z = THREE.MathUtils.lerp(-Math.PI / 2, 0, tankData.scudAnimProgress);
-                                missileMesh.position.x = THREE.MathUtils.lerp(0, 0, tankData.scudAnimProgress);
-                                missileMesh.position.y = THREE.MathUtils.lerp(0.4, 6.0, tankData.scudAnimProgress);
-                                missileMesh.position.z = THREE.MathUtils.lerp(0, 0, tankData.scudAnimProgress);
+                                missileMesh.rotation.x = THREE.MathUtils.lerp(0, -Math.PI / 2, tankData.scudAnimProgress);
+                                missileMesh.position.y = THREE.MathUtils.lerp(0.4, 2.8, tankData.scudAnimProgress);
+                                missileMesh.position.z = THREE.MathUtils.lerp(0, -1.5, tankData.scudAnimProgress);
                             }
                         } else if (tankData.scudState === 'sleeping') {
                             let moveTargetPos = enemyTarget.mesh.position;
@@ -1626,7 +1852,7 @@
     }
 
     function renderVictoryFlagCanvas(flagType) {
-        const canvas =, document.getElementById('victory-flag-canvas');
+        const canvas = document.getElementById('victory-flag-canvas');
         const ctx = canvas.getContext('2d');
         canvas.width = 180; canvas.height = 100;
         if (flagType === 'green') {
@@ -1667,3 +1893,5 @@
 
     window.onload = init;
 </script>
+</body>
+</html>
