@@ -718,7 +718,7 @@
         });
 
         if (isRocketTank) {
-            // تصميم شاصي عربة سكود طويلة وحقيقية متعددة المحاور
+            // شاصي شاحنة سكود الثقيلة متعددة المحاور
             const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.8, 14), armorMat);
             chassis.position.y = 1.1; chassis.castShadow = true; chassis.receiveShadow = true;
             tankGroup.add(chassis);
@@ -731,7 +731,6 @@
             windshield.position.set(0, 2.4, 7.05);
             tankGroup.add(windshield);
 
-            // عجلات شاحنة سكود متعددة المحاور الجانبية
             for (let wz = -5; wz <= 5; wz += 2.5) {
                 [-2.2, 2.2].forEach(wx => {
                     const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.8, 12), wheelMat);
@@ -742,7 +741,6 @@
                 });
             }
 
-            // منصة وسام حاملة الصاروخ مع عوارض التثبيت والأرجل الداعمة
             const launchBed = new THREE.Group();
             launchBed.position.set(0, 2.1, -1);
             launchBed.name = "scudBed";
@@ -751,7 +749,6 @@
             bedBase.position.set(0, 0, 0);
             launchBed.add(bedBase);
 
-            // دعامات وأرجل تثبيت خلفية تفتح عند النصب والتثبيت بالأرض
             [-1.8, 1.8].forEach(ax => {
                 const stabilizerLeg = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 3), new THREE.MeshStandardMaterial({color: 0x0f172a, metalness: 0.8}));
                 stabilizerLeg.position.set(ax, -0.4, -3.5);
@@ -759,7 +756,7 @@
                 launchBed.add(stabilizerLeg);
             });
 
-            // صاروخ سكود الطويل والتفصيلي الحقيقي
+            // صاروخ سكود الحقيقي والتفصيلي
             const missileGroup = new THREE.Group();
             missileGroup.name = "scudMissile";
 
@@ -777,7 +774,6 @@
             missileTip.castShadow = true;
             missileGroup.add(missileTip);
 
-            // أزعفة وزعانف صاروخ سكود الخلفية
             for (let i = 0; i < 4; i++) {
                 const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.5, 1.2), finMat);
                 fin.rotation.y = (i * Math.PI) / 2;
@@ -786,9 +782,8 @@
                 missileGroup.add(fin);
             }
 
-            // وضعية الصاروخ مبدئياً ممدد أفقياً فوق العربة
             missileGroup.position.set(0, 0.5, 0.5);
-            missileGroup.rotation.x = Math.PI / 2; // ممدد أفقياً بموازاة العربة
+            missileGroup.rotation.x = Math.PI / 2; 
             launchBed.add(missileGroup);
 
             tankGroup.add(launchBed);
@@ -846,9 +841,8 @@
             isIdlePlaying: false,
             isMovePlaying: false,
             lastTrackPos: new THREE.Vector3(x, terrainY, z),
-            // حالات مراحل إطلاق عربة السكود الدقيقة
-            scudState: 'extended', // 'extended' (ممدد أفقياً للمشي), 'deploying' (يقوم بالنهوض والتثبيت), 'readyToFire' (جاهز للإطلاق), 'firing' (يطلق), 'reloading' (إعادة التلقيم وإنشاء صاروخ جديد)
-            scudAnimProgress: 0, // من 0 إلى 1 لعمليات النهوض والإرجاع
+            scudState: 'extended', 
+            scudAnimProgress: 0, 
             hasMissileLoaded: true
         };
     }
@@ -1275,12 +1269,11 @@
             playSound('danger', 0.9);
         }
 
-        // استخراج الصاروخ المنصوب رأسياً وإطلاقه نحو الهدف
         let scudBed = fromTank.mesh.getObjectByName("scudBed");
         let missileMesh = scudBed ? scudBed.getObjectByName("scudMissile") : null;
         
         let startPos = missileMesh ? missileMesh.getWorldPosition(new THREE.Vector3()) : fromTank.mesh.position.clone().add(new THREE.Vector3(0, 8, 0));
-        if (missileMesh) scudBed.remove(missileMesh); // إزالته من منصة العربة عند الإطلاق
+        if (missileMesh) scudBed.remove(missileMesh); 
 
         const missileGeo = new THREE.ConeGeometry(0.4, 2.5, 6);
         missileGeo.rotateX(Math.PI / 2);
@@ -1435,7 +1428,6 @@
                 scene.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose();
                 tacticalMissiles.splice(i, 1);
 
-                // بعد إطلاق الصاروخ، تبدأ عربة السكود في مرحلة إعادة التلقيم وإنشاء صاروخ جديد وإرجاعه لوضعه الأفقي
                 if (m.tankOwner && !m.tankOwner.isDestroyed) {
                     m.tankOwner.scudState = 'reloading';
                     m.tankOwner.scudAnimProgress = 1.0;
@@ -1474,9 +1466,8 @@
                 let scudBed = tankData.mesh.getObjectByName("scudBed");
                 let missileMesh = scudBed ? scudBed.getObjectByName("scudMissile") : null;
 
-                // معالجة مراحل حركة عربة السكود وحركة الصاروخ والنهوض والتثبيت
                 if (tankData.scudState === 'reloading') {
-                    tankData.scudAnimProgress -= 0.02; // إرجاع تدريجي لوضع الحركة الأفقي
+                    tankData.scudAnimProgress -= 0.02; 
                     if (scudBed) {
                         let stabilizer = scudBed.getObjectByName("stabilizerLeg");
                         if (stabilizer) stabilizer.position.z = THREE.MathUtils.lerp(-3.5, -2.0, 1 - tankData.scudAnimProgress);
@@ -1484,7 +1475,6 @@
                     if (tankData.scudAnimProgress <= 0) {
                         tankData.scudAnimProgress = 0;
                         tankData.scudState = 'extended';
-                        // إعادة إنشاء صاروخ جديد على المنصة بعد التلقيم
                         if (scudBed && !missileMesh) {
                             const newMissileGroup = new THREE.Group();
                             newMissileGroup.name = "scudMissile";
@@ -1514,27 +1504,23 @@
                     let distToTarget = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
                     
                     if (tankData.hasMissileLoaded && distToTarget <= 130) {
-                        // عندما تصل لمدى القصف: تتوقف العربة، وتقوم بالنهوض، وتثبيت الأرجل في الأرض، ونهوض الصاروخ رأسياً
                         if (tankData.scudState === 'extended' || tankData.scudState === 'reloading') {
                             tankData.scudState = 'deploying';
                         }
                         
                         if (tankData.scudState === 'deploying') {
-                            tankData.scudAnimProgress += 0.03; // تقدم النهوض
+                            tankData.scudAnimProgress += 0.03; 
                             if (tankData.scudAnimProgress >= 1.0) {
                                 tankData.scudAnimProgress = 1.0;
                                 tankData.scudState = 'readyToFire';
                             }
                         }
 
-                        // تحديث زوايا دوران وانيميشن نهوض الصاروخ وتثبيت الأرجل في الأرض
                         if (scudBed && missileMesh) {
-                            // الصاروخ ينهض رأسياً من الوضع الأفقي (Math.PI/2 إلى 0)
                             missileMesh.rotation.x = THREE.MathUtils.lerp(Math.PI / 2, 0, tankData.scudAnimProgress);
                             missileMesh.position.z = THREE.MathUtils.lerp(0.5, -4.5, tankData.scudAnimProgress);
                             missileMesh.position.y = THREE.MathUtils.lerp(0.5, 2.2, tankData.scudAnimProgress);
 
-                            // أرجل التثبيت تتثبت في الأرض
                             let stabilizer = scudBed.getObjectByName("stabilizerLeg");
                             if (stabilizer) stabilizer.position.z = THREE.MathUtils.lerp(-2.0, -3.5, tankData.scudAnimProgress);
                         }
@@ -1543,7 +1529,6 @@
                             fireTacticalMissile(tankData, enemyTarget);
                         }
                     } else {
-                        // إذا كان الهدف بعيداً أو لا يوجد صاروخ جاهز: ترجع العربة الصاروخ لوضعه الممدد الأفقية وتستأنف المشي نحو الهدف
                         if (tankData.scudState === 'readyToFire' || tankData.scudState === 'deploying') {
                             tankData.scudState = 'deploying';
                             tankData.scudAnimProgress -= 0.03;
@@ -1557,7 +1542,6 @@
                                 missileMesh.position.y = THREE.MathUtils.lerp(0.5, 2.2, tankData.scudAnimProgress);
                             }
                         } else if (tankData.scudState === 'extended') {
-                            // المشي العادي نحو الهدف
                             let moveTargetPos = enemyTarget.mesh.position;
                             let dir = new THREE.Vector3().subVectors(moveTargetPos, tankData.mesh.position).setY(0).normalize();
                             let safeDir = getSmartMovementVector(tankData.mesh.position, dir, tankData);
@@ -1819,7 +1803,6 @@
     }
 
     function onWindowResize() {
-        data = null;
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
