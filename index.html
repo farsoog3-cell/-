@@ -686,6 +686,7 @@
         const wheelMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.6, metalness: 0.3 });
 
         if (isRocketTank) {
+            // عربة إطلاق صواريخ سكود الحقيقية ذات الثماني عجلات الكبيرة والهيكل الثقيل
             const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.7, 18), armorMat);
             chassis.position.y = 1.0; chassis.castShadow = true; chassis.receiveShadow = true;
             tankGroup.add(chassis);
@@ -708,8 +709,9 @@
                 });
             }
 
+            // منصة الإطلاق الخلفية المخصصة لصاروخ سكود الحقيقي
             const launchBed = new THREE.Group();
-            launchBed.position.set(0, 1.9, -2.0); // ضبط المحور ليصبح مخصصاً لإرجاع مؤخرة الصاروخ للخلف ورأسه للأمام
+            launchBed.position.set(0, 1.9, -2.0); 
             launchBed.name = "scudBed";
 
             const missileGroup = new THREE.Group();
@@ -1196,7 +1198,6 @@
         bullets.push({ mesh: bulletMesh, fromTank: fromTank, fromTeam: fromTank.team, targetTank: targetTank, speed: 2.2, damage: 34 });
     }
 
-    // إطلاق صاروخ السكود الحقيقي بموضع ورأس موجه للخلف ليكون احترافياً ودقيقاً تماماً
     function fireTacticalMissile(fromTank, targetTank) {
         if (!fromTank.hasMissileLoaded || fromTank.scudState !== 'readyToFire') return;
         
@@ -1445,7 +1446,6 @@
                     }
                 }
 
-                // المنطق الدقيق: العربة تتحرك بشكل طبيعي، ولا تقف إلا عندما يظهر عدو في المدى وتحتاج حصرياً للوقوف والنهوض بتركيز وإطلاق احترافي للخلف
                 if (enemyTarget) {
                     let distToTarget = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
                     
@@ -1463,7 +1463,6 @@
                         }
 
                         if (scudBed && missileMesh) {
-                            // التوجيه الدقيق: رأس الصاروخ يتجه نحو الأعلى والخلف بشكل احترافي ومنضبط
                             missileMesh.rotation.x = THREE.MathUtils.lerp(0, Math.PI / 2, tankData.scudAnimProgress);
                             let stabilizer = scudBed.getObjectByName("stabilizerLeg");
                             if (stabilizer) stabilizer.position.z = THREE.MathUtils.lerp(-1.5, 0, tankData.scudAnimProgress);
@@ -1552,205 +1551,172 @@
                 if (enemyTarget) fireBullet(tankData, enemyTarget);
             }
 
-            if (isMoving) {
-                if (tankData.mesh.position.distanceTo(tankData.lastTrackPos) > 2.8) {
-                    let bodyWidth = tankData.type === 'rocket' ? 4.4 : 6;
-                    spawnRealisticTankTracks(tankData.mesh.position, tankData.mesh.rotation.y, bodyWidth);
-                    tankData.lastTrackPos.copy(tankData.mesh.position);
-                }
+            if (isMoving && tankData.mesh.position.distanceTo(tankData.lastTrackPos) > 4.5) {
+                spawnRealisticTankTracks(tankData.mesh.position, tankData.mesh.rotation.y, tankData.type === 'rocket' ? 4.4 : 6);
+                tankData.lastTrackPos.copy(tankData.mesh.position);
             }
 
             updateTankAudio(tankData, isMoving);
         });
+    }
 
-        if (enemyMoney >= 150 && enemyBuildCooldown === 0 && enemyTanks.filter(t => !t.isDestroyed).length < 5) {
-            let buyType = (enemyMoney >= 300 && Math.random() > 0.5) ? 'rocket' : 'normal';
-            let cost = (buyType === 'rocket') ? 300 : 150;
-            if (enemyMoney >= cost) {
-                enemyMoney -= cost;
-                enemyBuildCooldown = 1200; 
+    function updateEconomy() {
+        gameTick++;
+        if (gameTick % 60 === 0) {
+            let playerIncome = 15;
+            let enemyIncome = 15;
+
+            oilRigs.forEach(rig => {
+                let pCount = playerTanks.filter(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, 0, rig.z)) < 22).length;
+                let eCount = enemyTanks.filter(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, 0, rig.z)) < 22).length;
+
+                if (pCount > 0 && eCount === 0) {
+                    rig.owner = 'player';
+                    rig.captureProgress = Math.min(100, rig.captureProgress + 25);
+                    if (rig.captureProgress === 100) {
+                        rig.flagData.type = playerFlagType;
+                        rig.flagData.mesh.material.map = createFlagTexture(playerFlagType);
+                        rig.flagData.mesh.material.needsUpdate = true;
+                    }
+                } else if (eCount > 0 && pCount === 0) {
+                    rig.owner = 'enemy';
+                    rig.captureProgress = Math.min(100, rig.captureProgress + 25);
+                    if (rig.captureProgress === 100) {
+                        rig.flagData.type = enemyFlagType;
+                        rig.flagData.mesh.material.map = createFlagTexture(enemyFlagType);
+                        rig.flagData.mesh.material.needsUpdate = true;
+                    }
+                }
+
+                if (rig.owner === 'player') playerIncome += 10;
+                else if (rig.owner === 'enemy') enemyIncome += 10;
+            });
+
+            playerMoney += playerIncome;
+            enemyMoney += enemyIncome;
+            updateEconomyUI();
+
+            if (enemyMoney >= 220 && enemyBuildCooldown <= 0 && enemyTanks.filter(t=>!t.isDestroyed).length < 6) {
+                enemyMoney -= 180;
+                enemyBuildCooldown = 900;
                 let eColor = playerFlagType === 'green' ? 0x8b2500 : 0x3b5323;
-                let newEnemyTank = createTank(-CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20, -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20, eColor, 'enemy', buyType);
-                newEnemyTank.mesh.rotation.y = -Math.PI / 4;
-                enemyTanks.push(newEnemyTank);
+                let eX = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
+                let eZ = -CORNER_OFFSET + 50 + (Math.random() - 0.5) * 20;
+                let eType = Math.random() > 0.6 ? 'rocket' : 'normal';
+                let newEnemy = createTank(eX, eZ, eColor, 'enemy', eType);
+                enemyTanks.push(newEnemy);
             }
         }
-
-        updateTankHpBars();
     }
 
     function updateEconomyUI() {
         document.getElementById('money-display').innerText = playerMoney;
-        let buyBtn = document.getElementById('buy-tank-btn');
-        let rocketBtn = document.getElementById('buy-rocket-tank-btn');
+        let buyTankBtn = document.getElementById('buy-tank-btn');
+        let buyRocketBtn = document.getElementById('buy-rocket-tank-btn');
+        
+        buyTankBtn.disabled = playerMoney < 150 || playerBuildCooldown > 0;
+        buyRocketBtn.disabled = playerMoney < 300 || playerBuildCooldown > 0;
 
         if (playerBuildCooldown > 0) {
-            let secs = Math.ceil(playerBuildCooldown / 60);
-            buyBtn.innerText = `انتظار (${secs}ث)`;
-            rocketBtn.innerText = `انتظار (${secs}ث)`;
-            buyBtn.disabled = true; rocketBtn.disabled = true;
+            let secondsLeft = Math.ceil(playerBuildCooldown / 60);
+            buyTankBtn.innerText = `انتظار (${secondsLeft}ث)`;
+            buyRocketBtn.innerText = `انتظار (${secondsLeft}ث)`;
         } else {
-            buyBtn.innerText = `عادية (150$)`;
-            rocketBtn.innerText = `عربة سكود (300$)`;
-            buyBtn.disabled = (playerMoney < 150);
-            rocketBtn.disabled = (playerMoney < 300);
+            buyTankBtn.innerText = `عادية (150$)`;
+            buyRocketBtn.innerText = `عربة سكود (300$)`;
         }
     }
 
-    function checkLogicAndEconomy() {
+    function checkVictoryConditions() {
         if (gameOver) return;
-        gameTick++;
-        if (gameTick % 60 === 0) {
-            let pIncome = 0, eIncome = 0;
-            oilRigs.forEach(rig => {
-                if (rig.owner === 'player') pIncome += 10;
-                else if (rig.owner === 'enemy') eIncome += 10;
-            });
-            if (pIncome > 0) { playerMoney += pIncome; updateEconomyUI(); }
-            if (eIncome > 0) enemyMoney += eIncome;
-        }
 
-        oilRigs.forEach(rig => {
-            let playerNear = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, getTerrainHeight(rig.x, rig.z), rig.z)) < 22);
-            let enemyNear = enemyTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(new THREE.Vector3(rig.x, getTerrainHeight(rig.x, rig.z), rig.z)) < 22);
+        let enemyCampPos = new THREE.Vector3(-CORNER_OFFSET, 0, -CORNER_OFFSET);
+        let playerNearEnemyBase = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(enemyCampPos) < CAPTURE_RADIUS);
 
-            if (playerNear && !enemyNear && rig.owner !== 'player') {
-                rig.captureProgress += 1.5;
-                if (rig.captureProgress >= 100) {
-                    rig.owner = 'player';
-                    rig.flagData.mesh.material.map = createFlagTexture(playerFlagType);
-                    rig.flagData.type = playerFlagType;
-                    showFloatingMsg('تمت السيطرة على بئر النفط!');
-                }
-            } else if (enemyNear && !playerNear && rig.owner !== 'enemy') {
-                rig.captureProgress -= 1.5;
-                if (rig.captureProgress <= -100) {
-                    rig.owner = 'enemy';
-                    rig.flagData.mesh.material.map = createFlagTexture(enemyFlagType);
-                    rig.flagData.type = enemyFlagType;
-                }
-            }
-        });
+        let playerCampPos = new THREE.Vector3(CORNER_OFFSET, 0, CORNER_OFFSET);
+        let enemyNearPlayerBase = enemyTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(playerCampPos) < CAPTURE_RADIUS);
 
-        const enemyBasePos = new THREE.Vector3(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
-        const playerBasePos = new THREE.Vector3(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
+        if (playerNearEnemyBase) {
+            captureProgress = Math.min(100, captureProgress + 0.35);
+            document.getElementById('capture-status-text').innerText = 'جارٍ السيطرة على معسكر العدو...';
+            document.getElementById('capture-bar-fill').style.width = `${captureProgress}%`;
 
-        let playerAtEnemyBase = playerTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(enemyBasePos) < CAPTURE_RADIUS);
-        let enemyAtPlayerBase = enemyTanks.some(t => !t.isDestroyed && t.mesh.position.distanceTo(playerBasePos) < CAPTURE_RADIUS);
-        
-        const captureText = document.getElementById('capture-status-text');
-        const captureFill = document.getElementById('capture-bar-fill');
-
-        if (playerAtEnemyBase) {
-            captureProgress += 0.3;
-            captureText.innerText = `السيطرة على معسكر العدو: ${Math.floor(captureProgress)}%`;
-            captureFill.style.width = `${Math.min(100, captureProgress)}%`;
-            captureFill.style.backgroundColor = '#22c55e';
-            
-            if (enemyFlagDataRef) {
-                enemyFlagHeight = THREE.MathUtils.lerp(35.0, 5, captureProgress / 100);
-                enemyPoleFlagMesh.position.y = enemyFlagHeight;
-            }
             if (captureProgress >= 100) {
-                if (enemyFlagDataRef) {
-                    enemyFlagDataRef.mesh.material.map = createFlagTexture(playerFlagType);
-                    enemyFlagDataRef.mesh.material.needsUpdate = true;
-                    enemyPoleFlagMesh.position.y = 35.0;
-                }
-                startCinematicEnding(true);
+                triggerVictory(true);
             }
-        } else if (captureProgress > 0 && captureProgress < 100 && !enemyAtPlayerBase) {
-            captureProgress -= 0.1;
-            captureFill.style.width = `${captureProgress}%`;
-            if (enemyFlagDataRef) {
-                enemyFlagHeight = THREE.MathUtils.lerp(35.0, 5, captureProgress / 100);
-                enemyPoleFlagMesh.position.y = enemyFlagHeight;
+        } else {
+            captureProgress = Math.max(0, captureProgress - 0.15);
+            document.getElementById('capture-bar-fill').style.width = `${captureProgress}%`;
+            if (captureProgress === 0) {
+                document.getElementById('capture-status-text').innerText = 'السيطرة على معسكر العدو';
             }
         }
 
-        if (enemyAtPlayerBase) {
-            enemyCaptureProgress += 0.25;
-            captureText.innerText = `اختراق معسكرك: ${Math.floor(enemyCaptureProgress)}%`;
-            captureFill.style.width = `${Math.min(100, enemyCaptureProgress)}%`;
-            captureFill.style.backgroundColor = '#ef4444';
-
-            if (playerFlagDataRef) {
-                playerFlagHeight = THREE.MathUtils.lerp(35.0, 5, enemyCaptureProgress / 100);
-                playerPoleFlagMesh.position.y = playerFlagHeight;
-            }
+        if (enemyNearPlayerBase) {
+            enemyCaptureProgress = Math.min(100, enemyCaptureProgress + 0.35);
             if (enemyCaptureProgress >= 100) {
-                if (playerFlagDataRef) {
-                    playerFlagDataRef.mesh.material.map = createFlagTexture(enemyFlagType);
-                    playerFlagDataRef.mesh.material.needsUpdate = true;
-                    playerPoleFlagMesh.position.y = 35.0;
-                }
-                startCinematicEnding(false);
+                triggerVictory(false);
             }
-        } else if (enemyCaptureProgress > 0 && enemyCaptureProgress < 100 && !playerAtEnemyBase) {
-            enemyCaptureProgress -= 0.1;
-            captureFill.style.width = `${enemyCaptureProgress}%`;
-            captureFill.style.backgroundColor = '#22c55e';
-            if (playerFlagDataRef) {
-                playerFlagHeight = THREE.MathUtils.lerp(35.0, 5, enemyCaptureProgress / 100);
-                playerPoleFlagMesh.position.y = playerFlagHeight;
-            }
+        } else {
+            enemyCaptureProgress = Math.max(0, enemyCaptureProgress - 0.15);
         }
     }
 
-    function startCinematicEnding(isPlayerWinner) {
+    function triggerVictory(isPlayerWin) {
         gameOver = true;
         isCinematicEnding = true;
-        
-        battleBgmAudio.pause(); battleBgmAudio.currentTime = 0;
-        [...playerTanks, ...enemyTanks].forEach(t => updateTankAudio(t, false));
-        document.getElementById('ui-overlay').style.display = 'none';
+        battleBgmAudio.pause();
 
-        if (isPlayerWinner) playSound('victory', 1.0);
-        else playSound('defeat', 1.0);
-
-        cinematicTargetLook = isPlayerWinner ? new THREE.Vector3(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET) + 15, -CORNER_OFFSET) : new THREE.Vector3(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET) + 15, CORNER_OFFSET);
-
-        setTimeout(() => { triggerVictoryScreen(isPlayerWinner); }, 3000);
-    }
-
-    function triggerVictoryScreen(isPlayerWinner) {
-        const screen = document.getElementById('victory-screen');
-        const title = document.getElementById('victory-title');
-        const statsBox = document.getElementById('stats-content');
-        screen.style.display = 'flex';
-
-        let winningFlag = isPlayerWinner ? playerFlagType : enemyFlagType;
-        if (isPlayerWinner) {
-            title.innerText = "انتصار ساحق! 🚩"; title.style.color = "#22c55e";
+        if (isPlayerWin) {
+            playSound('victory');
+            document.getElementById('victory-title').innerText = '🎉 تهانينا! لقد انتصرت وسيطرت على المعسكر!';
+            cinematicTargetLook = new THREE.Vector3(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
+            if(enemyFlagDataRef) {
+                enemyFlagDataRef.type = playerFlagType;
+                enemyFlagDataRef.mesh.material.map = createFlagTexture(playerFlagType);
+                enemyFlagDataRef.mesh.material.needsUpdate = true;
+            }
         } else {
-            title.innerText = "هزيمة قاسية! ⚠️ لقد سيطر العدو على معسكرك!"; title.style.color = "#ef4444";
+            playSound('defeat');
+            document.getElementById('victory-title').innerText = '💀 هزيمة! سقط معسكرك في أيدي العدو!';
+            cinematicTargetLook = new THREE.Vector3(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
         }
 
-        statsBox.innerHTML = `
-            • العلم المنتصر: ${winningFlag === 'green' ? 'الأخضر' : 'الأحمر'}<br>
-            • خسائر وحداتك: ${totalTanksLost}<br>
-            • وحدات العدو المدمرة: ${enemyTanksLost}<br>
-            • إجمالي المال المصروف: ${totalMoneySpent}$<br>
-            • الوحدات الحية المتبقية: ${playerTanks.filter(t => !t.isDestroyed).length}
+        let statsHTML = `
+            إجمالي الأموال المنفقة: <b>${totalMoneySpent}$</b><br>
+            الوحدات الفاقدة: <b>${totalTanksLost}</b><br>
+            عدو تم القضاء عليه: <b>${enemyTanksLost}</b><br>
+            الآبار المسيطر عليها: <b>${oilRigs.filter(r => r.owner === (isPlayerWin ? 'player' : 'enemy')).length} / 4</b>
         `;
-        renderVictoryFlagCanvas(winningFlag);
+        document.getElementById('stats-content').innerHTML = statsHTML;
+
+        const flagCanvas = document.getElementById('victory-flag-canvas');
+        const fCtx = flagCanvas.getContext('2d');
+        const fTexImg = createFlagTexture(isPlayerWin ? playerFlagType : enemyFlagType).image;
+        flagCanvas.width = 180; flagCanvas.height = 100;
+        setTimeout(() => { fCtx.drawImage(fTexImg, 0, 0, 180, 100); }, 100);
+
+        document.getElementById('ui-overlay').style.display = 'none';
+        document.getElementById('victory-screen').style.display = 'flex';
     }
 
-    function renderVictoryFlagCanvas(flagType) {
-        const canvas = document.getElementById('victory-flag-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 180; canvas.height = 100;
-        if (flagType === 'green') {
-            ctx.fillStyle = '#007a3d'; ctx.fillRect(0, 0, 180, 33);
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 33, 180, 34);
-            ctx.fillStyle = '#000000'; ctx.fillRect(0, 67, 180, 33);
-            drawStar(ctx, 50, 50, '#cc0000'); drawStar(ctx, 90, 50, '#cc0000'); drawStar(ctx, 130, 50, '#cc0000');
-        } else {
-            ctx.fillStyle = '#cc0000'; ctx.fillRect(0, 0, 180, 33);
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 33, 180, 34);
-            ctx.fillStyle = '#000000'; ctx.fillRect(0, 67, 180, 33);
-            drawStar(ctx, 70, 50, '#007a3d'); drawStar(ctx, 110, 50, '#007a3d');
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        processCameraInputs();
+        updateCameraPosition();
+        
+        if (!gameOver) {
+            updateTanksMovement();
+            updateEconomy();
+            checkVictoryConditions();
         }
+
+        animateFlags();
+        updateTankHpBars();
+        renderMinimap();
+
+        renderer.render(scene, camera);
     }
 
     function onWindowResize() {
@@ -1759,24 +1725,8 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    function animate() {
-        requestAnimationFrame(animate);
-        processCameraInputs();
-        updateCameraPosition();
-        updateTanksMovement();
-        checkLogicAndEconomy();
-        animateFlags();
-        renderMinimap();
-        
-        let time = Date.now() * 0.003;
-        animatedRigs.forEach((beam, index) => {
-            beam.rotation.x = Math.sin(time + index) * 0.35;
-        });
-
-        renderer.render(scene, camera);
-    }
-
     window.onload = init;
 </script>
+
 </body>
 </html>
