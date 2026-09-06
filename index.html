@@ -718,7 +718,6 @@
         });
 
         if (isRocketTank) {
-            // شاصي شاحنة سكود الثقيلة متعددة المحاور
             const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.8, 14), armorMat);
             chassis.position.y = 1.1; chassis.castShadow = true; chassis.receiveShadow = true;
             tankGroup.add(chassis);
@@ -756,7 +755,6 @@
                 launchBed.add(stabilizerLeg);
             });
 
-            // صاروخ سكود الحقيقي والتفصيلي
             const missileGroup = new THREE.Group();
             missileGroup.name = "scudMissile";
 
@@ -1553,6 +1551,22 @@
                                 tankData.mesh.position.copy(nextPos);
                             }
                         }
+                    }
+                } else if (tankData.target) {
+                    const dist = tankData.mesh.position.distanceTo(tankData.target);
+                    if (dist > 1.5) {
+                        const desiredDir = new THREE.Vector3().subVectors(tankData.target, tankData.mesh.position).setY(0).normalize();
+                        let safeDir = getSmartMovementVector(tankData.mesh.position, desiredDir, tankData);
+                        if (safeDir) {
+                            isMoving = true;
+                            tankData.mesh.rotation.y += (Math.atan2(safeDir.x, safeDir.z) - tankData.mesh.rotation.y) * 0.15;
+                            let nextPos = tankData.mesh.position.clone().add(safeDir.multiplyScalar(0.28));
+                            nextPos.y = getTerrainHeight(nextPos.x, nextPos.z);
+                            tankData.mesh.position.copy(nextPos);
+                        }
+                    } else {
+                        if (tankData.target === playerTargetPos) targetMarkerMesh.visible = false;
+                        tankData.target = null;
                     }
                 }
             } else {
