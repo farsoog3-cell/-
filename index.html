@@ -716,12 +716,10 @@
         const wheelMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.6, metalness: 0.3 });
 
         if (isRocketTank) {
-            // شاصيه ناقلة سكود ثقيلة
             const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.7, 17), armorMat);
             chassis.position.y = 1.0; chassis.castShadow = true; chassis.receiveShadow = true;
             tankGroup.add(chassis);
 
-            // كابينة القيادة
             const cab = new THREE.Mesh(new THREE.BoxGeometry(4.0, 1.8, 4.8), armorMat);
             cab.position.set(0, 2.2, 6.1); cab.castShadow = true;
             tankGroup.add(cab);
@@ -730,7 +728,6 @@
             windshield.position.set(0, 2.4, 8.55);
             tankGroup.add(windshield);
 
-            // عجلات ناقلة سكود متعددة المحاور
             for (let wz = -6.5; wz <= 6.5; wz += 2.2) {
                 [-2.3, 2.3].forEach(wx => {
                     const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.8, 12), wheelMat);
@@ -741,7 +738,6 @@
                 });
             }
 
-            // منصة إطلاق الصاروخ الخلفية المتحركة
             const launchBed = new THREE.Group();
             launchBed.position.set(0, 1.9, -1);
             launchBed.name = "scudBed";
@@ -757,7 +753,7 @@
                 launchBed.add(stabilizerLeg);
             });
 
-            // صاروخ سكود الباليستوي الثقيل - متمركزا بشكل نائم وأفقي تماماً
+            // صاروخ سكود كامل ومتكامل (جسم + رأس حربي كمجموعة واحدة متصلة)
             const missileGroup = new THREE.Group();
             missileGroup.name = "scudMissile";
 
@@ -766,13 +762,13 @@
             const finMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.4, metalness: 0.7 });
 
             const missileBody = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 12, 16), bodyMat);
-            missileBody.rotation.z = Math.PI / 2; // جعل الأسطوانة أفقية
+            missileBody.rotation.z = Math.PI / 2; 
             missileBody.position.set(0, 0.9, 0);
             missileBody.castShadow = true;
             missileGroup.add(missileBody);
 
             const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-            missileTip.rotation.z = -Math.PI / 2; // رأس الصاروخ يشير إلى الأمام أفقياً
+            missileTip.rotation.z = -Math.PI / 2; 
             missileTip.position.set(7.9, 0.9, 0);
             missileTip.castShadow = true;
             missileGroup.add(missileTip);
@@ -785,7 +781,6 @@
                 missileGroup.add(fin);
             }
 
-            // تمركز الصاروخ تماماً نائماً فوق المنصة
             missileGroup.position.set(0, 0.4, 0);
             missileGroup.rotation.y = -Math.PI / 2; 
             launchBed.add(missileGroup);
@@ -855,7 +850,7 @@
             isIdlePlaying: false,
             isMovePlaying: false,
             lastTrackPos: new THREE.Vector3(x, terrainY, z),
-            scudState: 'sleeping', // الحالات: sleeping, deploying, readyToFire, firing, reloading
+            scudState: 'sleeping', 
             scudAnimProgress: 0, 
             hasMissileLoaded: true
         };
@@ -1296,16 +1291,37 @@
         let startPos = missileMesh ? missileMesh.getWorldPosition(new THREE.Vector3()) : fromTank.mesh.position.clone().add(new THREE.Vector3(0, 8, 0));
         if (missileMesh) scudBed.remove(missileMesh); 
 
-        const missileGeo = new THREE.ConeGeometry(0.5, 3.5, 8);
-        missileGeo.rotateX(Math.PI / 2);
-        const flyingMissile = new THREE.Mesh(missileGeo, new THREE.MeshBasicMaterial({ color: 0xdc2626 }));
-        flyingMissile.position.copy(startPos);
-        scene.add(flyingMissile);
+        // إطلاق صاروخ سكود كامل ومتكامل (جسم + رأس حربي كمجموعة طائرة واحدة بالكامل)
+        const flyingMissileGroup = new THREE.Group();
+        
+        const bodyMat = new THREE.MeshBasicMaterial({ color: 0xd1d5db });
+        const tipMat = new THREE.MeshBasicMaterial({ color: 0xb91c1c }); 
+        const finMat = new THREE.MeshBasicMaterial({ color: 0x1f2937 });
+
+        const missileBody = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 12, 16), bodyMat);
+        missileBody.rotation.z = Math.PI / 2;
+        missileBody.position.set(0, 0, 0);
+        flyingMissileGroup.add(missileBody);
+
+        const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
+        missileTip.rotation.z = -Math.PI / 2;
+        missileTip.position.set(7.9, 0, 0);
+        flyingMissileGroup.add(missileTip);
+
+        for (let i = 0; i < 4; i++) {
+            const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 1.5), finMat);
+            fin.rotation.y = (i * Math.PI) / 2;
+            fin.position.set(-5 + Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, 0);
+            flyingMissileGroup.add(fin);
+        }
+
+        flyingMissileGroup.position.copy(startPos);
+        scene.add(flyingMissileGroup);
 
         let targetPos = targetTank.mesh.position.clone();
 
         tacticalMissiles.push({
-            mesh: flyingMissile, 
+            mesh: flyingMissileGroup, 
             fromTeam: fromTank.team, 
             targetTank: targetTank,
             tankOwner: fromTank,
@@ -1450,7 +1466,12 @@
             if (t >= 1.0) {
                 createShockwaveAndExplosion(m.targetPos, m.fromTeam);
                 if (m.fromTeam === 'player') triggerCameraShake(2.2);
-                scene.remove(m.mesh); m.mesh.geometry.dispose(); m.mesh.material.dispose();
+                
+                m.mesh.traverse(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                });
+                scene.remove(m.mesh);
                 tacticalMissiles.splice(i, 1);
 
                 if (m.tankOwner && !m.tankOwner.isDestroyed) {
@@ -1547,7 +1568,6 @@
                         }
 
                         if (scudBed && missileMesh) {
-                            // حركة نهوض الصاروخ تدريجياً وبشكل متوازن من الوضع النائم إلى الوضع القائم (عمودي تماماً)
                             missileMesh.rotation.z = THREE.MathUtils.lerp(-Math.PI / 2, 0, tankData.scudAnimProgress);
                             missileMesh.position.x = THREE.MathUtils.lerp(0, 0, tankData.scudAnimProgress);
                             missileMesh.position.y = THREE.MathUtils.lerp(0.4, 6.0, tankData.scudAnimProgress);
