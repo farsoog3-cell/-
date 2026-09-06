@@ -754,7 +754,7 @@
                 launchBed.add(stabilizerLeg);
             });
 
-            // 🛠️ **تصحيح رأس الصاروخ واتجاهه البرمجي ليكون المدبب للأمام تماماً**
+            // 🚀 **تم تصحيح اتجاه ورأس صاروخ سكود الثابت على العربة بدقة تامة (الرأس المدبب للأمام والذيل بالخلف)**
             const missileGroup = new THREE.Group();
             missileGroup.name = "scudMissile";
 
@@ -769,15 +769,15 @@
             missileGroup.add(missileBody);
 
             const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-            missileTip.rotation.x = -Math.PI / 2; // تعديل عكسي لكي يتجه الرأس المدبب للأمام (المقدمة) بدلاً من الاتجاه المعاكس
-            missileTip.position.set(0, 0, -7.9);
+            missileTip.rotation.x = Math.PI / 2; // الرأس المدبب للأمام تماماً
+            missileTip.position.set(0, 0, 7.9);
             missileTip.castShadow = true;
             missileGroup.add(missileTip);
 
             for (let i = 0; i < 4; i++) {
                 const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 1.5), finMat);
                 fin.rotation.y = (i * Math.PI) / 2;
-                fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, 5);
+                fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, -5);
                 fin.castShadow = true;
                 missileGroup.add(fin);
             }
@@ -1291,7 +1291,7 @@
         let startPos = missileMesh ? missileMesh.getWorldPosition(new THREE.Vector3()) : fromTank.mesh.position.clone().add(new THREE.Vector3(0, 8, 0));
         if (missileMesh) scudBed.remove(missileMesh); 
 
-        // 🛠️ **تصحيح بناء الصاروخ الطائر ليتطابق مع الاتجاه الصحيح تماماً**
+        // 🚀 **تم تصحيح اتجاه ورأس صاروخ سكود أثناء الإطلاق الجوي ليتجه للأمام تماماً**
         const flyingMissileGroup = new THREE.Group();
         
         const bodyMat = new THREE.MeshBasicMaterial({ color: 0xd1d5db });
@@ -1304,14 +1304,14 @@
         flyingMissileGroup.add(missileBody);
 
         const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-        missileTip.rotation.x = -Math.PI / 2; // تعديل عكسي لكي يتجه الرأس المدبب للأمام
-        missileTip.position.set(0, 0, -7.9);
+        missileTip.rotation.x = Math.PI / 2; // الرأس المدبب للأمام
+        missileTip.position.set(0, 0, 7.9);
         flyingMissileGroup.add(missileTip);
 
         for (let i = 0; i < 4; i++) {
             const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 1.5), finMat);
             fin.rotation.y = (i * Math.PI) / 2;
-            fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, 5);
+            fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, -5);
             flyingMissileGroup.add(fin);
         }
 
@@ -1538,13 +1538,13 @@
                             mBody.rotation.x = Math.PI / 2; mBody.position.set(0, 0, 0); mBody.castShadow = true; newMissileGroup.add(mBody);
                             
                             const mTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), tipMat);
-                            mTip.rotation.x = -Math.PI / 2; // رأس الصاروخ مُصحح هنا أيضاً بدقة
-                            mTip.position.set(0, 0, -7.9); mTip.castShadow = true; newMissileGroup.add(mTip);
+                            mTip.rotation.x = Math.PI / 2; // الرأس المدبب للأمام
+                            mTip.position.set(0, 0, 7.9); mTip.castShadow = true; newMissileGroup.add(mTip);
 
                             for (let i = 0; i < 4; i++) {
                                 const fin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 1.5), finMat);
                                 fin.rotation.y = (i * Math.PI) / 2;
-                                fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, 5);
+                                fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, Math.sin(i * Math.PI / 2) * 0.8, -5);
                                 fin.castShadow = true; newMissileGroup.add(fin);
                             }
                             newMissileGroup.position.set(0, 0.4, 0);
@@ -1571,7 +1571,7 @@
                         }
 
                         if (scudBed && missileMesh) {
-                            missileMesh.rotation.x = THREE.MathUtils.lerp(0, -Math.PI / 2, tankData.scudAnimProgress);
+                            missileMesh.rotation.x = THREE.MathUtils.lerp(0, Math.PI / 2, tankData.scudAnimProgress);
                             missileMesh.position.y = THREE.MathUtils.lerp(0.4, 2.8, tankData.scudAnimProgress);
                             missileMesh.position.z = THREE.MathUtils.lerp(0, -1.5, tankData.scudAnimProgress);
 
@@ -1591,7 +1591,7 @@
                                 tankData.scudState = 'sleeping';
                             }
                             if (scudBed && missileMesh) {
-                                missileMesh.rotation.x = THREE.MathUtils.lerp(0, -Math.PI / 2, tankData.scudAnimProgress);
+                                missileMesh.rotation.x = THREE.MathUtils.lerp(0, Math.PI / 2, tankData.scudAnimProgress);
                                 missileMesh.position.y = THREE.MathUtils.lerp(0.4, 2.8, tankData.scudAnimProgress);
                                 missileMesh.position.z = THREE.MathUtils.lerp(0, -1.5, tankData.scudAnimProgress);
                             }
