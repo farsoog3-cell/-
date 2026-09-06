@@ -378,7 +378,7 @@
         container.appendChild(renderer.domElement);
 
         setupLighting();
-        createHillyBrownSoilTerrain();
+        createRealisticTerrainWithBlendedColors();
         createBases();
         createOilRigs();
         createTargetMarker();
@@ -460,9 +460,9 @@
     }
 
     function setupLighting() {
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.85));
         
-        dirLight = new THREE.DirectionalLight(0xfffbeb, 1.2);
+        dirLight = new THREE.DirectionalLight(0xfffbeb, 1.3);
         dirLight.position.set(300, 450, 300);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
@@ -478,50 +478,83 @@
         scene.add(dirLight);
     }
 
-    function createHillyBrownSoilTerrain() {
-        const geometry = new THREE.PlaneGeometry(1100, 1100, 50, 50);
+    // إنشاء تضاريس الأرض بألوان واقعية ومتداخلة (ألوان طينية وترابية وعشبية متدرجة عبر القمم والمنخفضات)
+    function createRealisticTerrainWithBlendedColors() {
+        const geometry = new THREE.PlaneGeometry(1100, 1100, 60, 60);
         geometry.rotateX(-Math.PI / 2);
 
         const positionAttr = geometry.attributes.position;
+        const colors = [];
+        
         for (let i = 0; i < positionAttr.count; i++) {
             let px = positionAttr.getX(i);
             let pz = positionAttr.getZ(i);
             let h = getTerrainHeight(px, pz);
             positionAttr.setY(i, h);
+
+            // تدرج ألوان متداخلة للأرضية بناءً على الارتفاع والموقع لتبدو واقعية
+            let mixFactor = (h + 8) / 20;
+            mixFactor = Math.max(0, Math.min(1, mixFactor));
+            
+            // تداخل بين اللون الترابي الغامق، العشبي الداكن، والرمادي الحجري
+            let r = THREE.MathUtils.lerp(0.32, 0.24, mixFactor) + (Math.sin(px * 0.1) * 0.03);
+            let g = THREE.MathUtils.lerp(0.25, 0.35, mixFactor) + (Math.cos(pz * 0.1) * 0.03);
+            let b = THREE.MathUtils.lerp(0.18, 0.15, mixFactor);
+            
+            colors.push(Math.max(0, Math.min(1, r)), Math.max(0, Math.min(1, g)), Math.max(0, Math.min(1, b)));
         }
+        
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
         geometry.computeVertexNormals();
 
-        const terrainMat = new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.9 });
+        const terrainMat = new THREE.MeshStandardMaterial({ 
+            vertexColors: true, 
+            roughness: 0.85, 
+            metalness: 0.05 
+        });
+        
         terrainMesh = new THREE.Mesh(geometry, terrainMat);
         terrainMesh.receiveShadow = true;
         scene.add(terrainMesh);
     }
 
+    // إنشاء معسكرات بلون الحجر الحقيقي اللامع والتفاصيل العميقة
     function createBaseStructure(parentGroup, isEnemy) {
-        const wallMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x1e1b18 : 0x334155, roughness: 0.5 });
-        const concreteMat = new THREE.MeshStandardMaterial({ color: isEnemy ? 0x27272a : 0x64748b, roughness: 0.7 });
-        const darkRoofMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
+        // خامات حجرية حقيقية لامعة وعالية الدقة والصلابة
+        const stoneWallMat = new THREE.MeshStandardMaterial({ 
+            color: isEnemy ? 0x27272a : 0x475569, 
+            roughness: 0.35, 
+            metalness: 0.25 
+        });
+        const polishedStoneMat = new THREE.MeshStandardMaterial({ 
+            color: isEnemy ? 0x18181b : 0x334155, 
+            roughness: 0.25, 
+            metalness: 0.4 
+        });
+        const darkRoofMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.5 });
         const glowMat = new THREE.MeshStandardMaterial({ 
             color: isEnemy ? 0xef4444 : 0x22c55e, 
             emissive: isEnemy ? 0x991b1b : 0x15803d, 
-            roughness: 0.2 
+            roughness: 0.15 
         });
-        const metalPlateMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.3, roughness: 0.4 });
-        const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3 });
+        const metalPlateMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.3 });
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 });
         const windowMat = new THREE.MeshStandardMaterial({ 
             color: isEnemy ? 0xef4444 : 0x38bdf8, 
             emissive: isEnemy ? 0x991b1b : 0x0284c7, 
             roughness: 0.1 
         });
 
+        // الجدران الحجرية المحيطة بالمعسكر
         [-18, 18].forEach(x => {
-            const sideWall = new THREE.Mesh(new THREE.BoxGeometry(2.5, 7, 32), wallMat);
+            const sideWall = new THREE.Mesh(new THREE.BoxGeometry(2.5, 7, 32), stoneWallMat);
             sideWall.position.set(x, 3.5, 0); sideWall.castShadow = true; sideWall.receiveShadow = true; parentGroup.add(sideWall);
         });
-        const backWall = new THREE.Mesh(new THREE.BoxGeometry(38.5, 7, 2.5), wallMat);
+        const backWall = new THREE.Mesh(new THREE.BoxGeometry(38.5, 7, 2.5), stoneWallMat);
         backWall.position.set(0, 3.5, 16); backWall.castShadow = true; backWall.receiveShadow = true; parentGroup.add(backWall);
 
-        const hqBase = new THREE.Mesh(new THREE.BoxGeometry(18, 8, 14), concreteMat);
+        // المبنى الرئيسي (الحصن الحجري اللامع)
+        const hqBase = new THREE.Mesh(new THREE.BoxGeometry(18, 8, 14), polishedStoneMat);
         hqBase.position.set(0, 4, -4); hqBase.castShadow = true; hqBase.receiveShadow = true; parentGroup.add(hqBase);
 
         const mainDoor = new THREE.Mesh(new THREE.BoxGeometry(3, 4.5, 0.5), doorMat);
@@ -532,7 +565,7 @@
             windowObj.position.set(wx, 5.5, 3.1); parentGroup.add(windowObj);
         });
 
-        const hqTop = new THREE.Mesh(new THREE.BoxGeometry(12, 5, 10), metalPlateMat);
+        const hqTop = new THREE.Mesh(new THREE.BoxGeometry(12, 5, 10), stoneWallMat);
         hqTop.position.set(0, 10.5, -4); hqTop.castShadow = true; parentGroup.add(hqTop);
 
         const hqRoof = new THREE.Mesh(new THREE.BoxGeometry(14, 1.5, 12), darkRoofMat);
@@ -559,7 +592,7 @@
 
         const enemyBaseGroup = new THREE.Group();
         enemyBaseGroup.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
-        enemyBaseGroup.rotation.y = -(3 * Math.PI) / 4; // تم توحيد الاتجاه تماماً كطلبك
+        enemyBaseGroup.rotation.y = -(3 * Math.PI) / 4; 
 
         if (playerFlagType === 'green') {
             createBaseStructure(playerBaseGroup, false);
@@ -596,6 +629,7 @@
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
+    // إنشاء آبار النفط بتفاصيل حديدية حقيقية ومظهر صلب ومحكم
     function createOilRigs() {
         const positions = [
             { x: 50, z: -50 }, 
@@ -609,12 +643,13 @@
             let terrainH = getTerrainHeight(pos.x, pos.z);
             rigGroup.position.set(pos.x, terrainH, pos.z);
 
-            const baseMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6 });
-            const base = new THREE.Mesh(new THREE.BoxGeometry(12, 2, 12), baseMat);
+            // خامات حديدية قوية وخشنة لآبار النفط
+            const rigBaseMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3, metalness: 0.8 });
+            const base = new THREE.Mesh(new THREE.BoxGeometry(12, 2, 12), rigBaseMat);
             base.position.y = 1; base.castShadow = true; base.receiveShadow = true;
             rigGroup.add(base);
 
-            const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.5 });
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25, metalness: 0.85 });
             const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 8, 0.8), frameMat);
             leftPillar.position.set(-2.5, 5, 0); leftPillar.rotation.z = 0.15; leftPillar.castShadow = true;
             rigGroup.add(leftPillar);
@@ -630,28 +665,28 @@
             const beamGroup = new THREE.Group();
             beamGroup.position.set(0, 9.4, 0);
 
-            const walkingBeam = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 14), new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.3 }));
+            const walkingBeam = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2, 14), new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.3, metalness: 0.7 }));
             walkingBeam.position.set(0, 0, 1); walkingBeam.castShadow = true;
             beamGroup.add(walkingBeam);
 
-            const horseheadMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+            const horseheadMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.2 });
             const horsehead = new THREE.Mesh(new THREE.BoxGeometry(1.4, 3, 2), horseheadMat);
             horsehead.position.set(0, -1.2, 7.5); horsehead.castShadow = true;
             beamGroup.add(horsehead);
 
-            const weightMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+            const weightMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.2 });
             const counterweight = new THREE.Mesh(new THREE.BoxGeometry(3, 2.5, 3), weightMat);
             counterweight.position.set(0, -1, -5.5); counterweight.castShadow = true;
             beamGroup.add(counterweight);
 
             rigGroup.add(beamGroup);
 
-            const motorBox = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+            const motorBox = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 }));
             motorBox.position.set(0, 2.5, -5.5); motorBox.castShadow = true;
             rigGroup.add(motorBox);
 
             const flagGroup = new THREE.Group();
-            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 18, 6), new THREE.MeshStandardMaterial({color: 0x999999}));
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 18, 6), new THREE.MeshStandardMaterial({color: 0xcccccc, metalness: 0.9}));
             pole.position.set(6, 9, -4); flagGroup.add(pole);
 
             const flagGeo = new THREE.PlaneGeometry(7, 4, 12, 4);
@@ -676,13 +711,24 @@
         });
     }
 
+    // تصميم دبابات احترافية بمظهر حديدي فائق الدقة (معدن صلب، انعكاسات قوية وتفاصيل دقيقة)
     function createTank(x, z, colorHex, team, type = 'normal') {
         const tankGroup = new THREE.Group();
         let isRocketTank = (type === 'rocket');
         
         let baseColor = isRocketTank ? (team === 'player' ? 0x1e3a8a : 0x7f1d1d) : colorHex;
-        const armorMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.5 });
-        const trackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        
+        // خامات حديدية احترافية ومصقولة لتعكس مظهراً عسكرياً واقعياً
+        const armorMat = new THREE.MeshStandardMaterial({ 
+            color: baseColor, 
+            roughness: 0.2, 
+            metalness: 0.85 
+        });
+        const trackMat = new THREE.MeshStandardMaterial({ 
+            color: 0x18181b, 
+            roughness: 0.6, 
+            metalness: 0.9 
+        });
 
         const bodySizeX = isRocketTank ? 7 : 6;
         const bodySizeZ = isRocketTank ? 10 : 9;
@@ -695,14 +741,14 @@
         const rightTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, bodySizeZ + 0.2), trackMat);
         rightTrack.position.set((bodySizeX/2 + 0.5), 0.8, 0); rightTrack.castShadow = true; tankGroup.add(rightTrack);
         
-        const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 10), armorMat);
+        const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 12), armorMat);
         turret.position.y = 2.8; turret.name = "turret"; turret.castShadow = true; tankGroup.add(turret);
         
         if (isRocketTank) {
-            const launcherPod = new THREE.Mesh(new THREE.BoxGeometry(3, 1.8, 4), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+            const launcherPod = new THREE.Mesh(new THREE.BoxGeometry(3, 1.8, 4), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 }));
             launcherPod.position.set(0, 3.8, 0); launcherPod.name = "launcherPod"; launcherPod.castShadow = true; tankGroup.add(launcherPod);
         } else {
-            const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 6, 6), armorMat);
+            const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 6, 8), armorMat);
             cannon.rotation.x = Math.PI / 2; cannon.position.set(0, 2.8, 4); cannon.name = "cannon"; cannon.castShadow = true; tankGroup.add(cannon);
         }
 
@@ -849,7 +895,6 @@
             let newTank = createTank(pX, pZ, pColor, 'player', type);
             newTank.mesh.rotation.y = -Math.PI / 4;
             
-            // تتوجه الدبابة الجديدة نحو المكان المحدد الحالي تلقائياً
             if (playerTargetPos) {
                 newTank.target = playerTargetPos.clone();
             }
@@ -1037,7 +1082,6 @@
         }, { passive: true });
     }
 
-    // التفاعل مع الخريطة المصغرة لتحريك الكاميرا أو توجيه الدبابات سريعاً
     function setupMinimapInteraction() {
         const minimap = document.getElementById('minimap-container');
         minimap.addEventListener('pointerdown', (e) => {
@@ -1046,7 +1090,6 @@
             const xClick = e.clientX - rect.left;
             const yClick = e.clientY - rect.top;
             
-            // تحويل إحداثيات الخريطة الدائرية إلى إحداثيات العالم الحقيقي
             const normX = (xClick / rect.width - 0.5) * 2;
             const normZ = (yClick / rect.height - 0.5) * 2;
             
@@ -1059,7 +1102,6 @@
         });
     }
 
-    // رسم الخريطة المصغرة في كل إطار
     function renderMinimap() {
         const canvas = document.getElementById('minimap-canvas');
         const ctx = canvas.getContext('2d');
@@ -1068,7 +1110,6 @@
         
         ctx.clearRect(0, 0, w, h);
         
-        // رسم خلفية الخريطة
         ctx.fillStyle = '#1e293b';
         ctx.beginPath();
         ctx.arc(w/2, h/2, w/2, 0, Math.PI * 2);
@@ -1076,13 +1117,11 @@
         
         const scale = (w / 2) / MAP_LIMIT;
 
-        // رسم قواعد المعسكرات
         ctx.fillStyle = '#22c55e';
         ctx.fillRect(w/2 + CORNER_OFFSET * scale - 3, h/2 + CORNER_OFFSET * scale - 3, 6, 6);
         ctx.fillStyle = '#ef4444';
         ctx.fillRect(w/2 + (-CORNER_OFFSET) * scale - 3, h/2 + (-CORNER_OFFSET) * scale - 3, 6, 6);
 
-        // رسم دبابات اللاعب
         playerTanks.forEach(t => {
             if (t.isDestroyed) return;
             let mx = w/2 + t.mesh.position.x * scale;
@@ -1091,7 +1130,6 @@
             ctx.beginPath(); ctx.arc(mx, mz, 2.5, 0, Math.PI*2); ctx.fill();
         });
 
-        // رسم دبابات العدو
         enemyTanks.forEach(t => {
             if (t.isDestroyed) return;
             let mx = w/2 + t.mesh.position.x * scale;
@@ -1100,7 +1138,6 @@
             ctx.beginPath(); ctx.arc(mx, mz, 2.5, 0, Math.PI*2); ctx.fill();
         });
 
-        // رسم موقع الكاميرا الحالي على الخريطة
         let camMx = w/2 + targetLookAt.x * scale;
         let camMz = h/2 + targetLookAt.z * scale;
         ctx.strokeStyle = '#38bdf8';
