@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>معركة السيطرة الاستراتيجية - عربات سكود الحقيقية</title>
+    <script>window.FIREBASE_CONFIG = window.FIREBASE_CONFIG || null;</script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -281,6 +282,25 @@
         </div>
 
         <button class="menu-btn" id="start-btn" onclick="playClickSound(); startGame()">بدء المعركة 🚀</button>
+            <button class="menu-btn" style="background:linear-gradient(135deg,#16a34a,#15803d)" onclick="playClickSound(); openOnlineMenu()">🌐 لعب أونلاين 1 ضد 1</button>
+    </div>
+</div>
+
+<div id="online-modal" class="settings-card-overlay" style="z-index:30;display:none;">
+    <div class="menu-card">
+        <h1>🌐 معركة أونلاين 1 ضد 1</h1>
+        <button class="menu-btn" onclick="playClickSound(); createOnlineRoom()">إنشاء غرفة</button>
+        <div class="settings-group">
+            <div class="settings-label">رمز الغرفة</div>
+            <div id="online-room-code" style="font-size:26px;font-weight:900;color:#fbbf24;letter-spacing:5px;direction:ltr">----</div>
+        </div>
+        <div class="settings-group">
+            <div class="settings-label">أدخل رمز غرفة اللاعب الآخر</div>
+            <input id="online-room-input" maxlength="8" inputmode="text" style="padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:white;text-align:center;font-size:18px;letter-spacing:3px;text-transform:uppercase" placeholder="ABC123">
+        </div>
+        <button class="menu-btn" style="background:linear-gradient(135deg,#7c3aed,#5b21b6)" onclick="playClickSound(); joinOnlineRoom()">انضمام إلى الغرفة</button>
+        <div id="online-status" style="color:#cbd5e1;font-size:12px;min-height:20px">جاري تجهيز الاتصال...</div>
+        <button class="purchase-close" onclick="playClickSound(); closeOnlineMenu()">رجوع</button>
     </div>
 </div>
 
@@ -503,6 +523,21 @@
 
     let playerMoney = 500;
     let enemyMoney = 500;
+
+    // ===== نظام اللعب أونلاين 1 ضد 1 (Firebase Realtime Database) =====
+    let onlineMode = false;
+    let onlineRole = null; // host أو guest
+    let onlineRoomCode = null;
+    let onlineDb = null;
+    let onlineRoomRef = null;
+    let onlineUnsub = null;
+    let onlineReady = false;
+    let onlinePeerId = null;
+    let onlineLastSent = 0;
+    let onlineRemoteUnits = {};
+    let onlineConfigReady = false;
+    let onlineSyncBusy = false;
+    const ONLINE_CONFIG = window.FIREBASE_CONFIG || null;
     let totalMoneySpent = 0;
     let totalTanksLost = 0;
     let enemyTanksLost = 0;
@@ -676,7 +711,8 @@
         cameraRadius = targetCameraRadius;
         updateCameraPosition();
 
-        showFloatingMsg('بدأت المعركة! الكاميرا الآن فوق معسكرك.');
+        showFloatingMsg(onlineMode ? '🌐 بدأت معركة 1 ضد 1!' : 'بدأت المعركة! الكاميرا الآن فوق معسكرك.');
+        if (onlineMode) onlineSendState(true);
     }
 
     function setupLighting() {
@@ -1033,7 +1069,8 @@
             manualControl: false,
             isDestroyed: false,
             destructionTimer: 0,
-            target: null
+            target: null,
+            netId: null
         };
     }
 
@@ -1213,6 +1250,11 @@
         // سيارة إسعاف العدو تبقى موجودة ضمن سلوك العدو.
         const enemyAmbulance = createModernAmbulance(-CORNER_OFFSET + 18, -CORNER_OFFSET + 18, 'enemy');
         ambulances.push(enemyAmbulance);
+
+        // IDs ثابتة للوحدات الابتدائية، ومهمة لبث الحالة بين اللاعبين.
+        playerTank.netId = 'p0';
+        enemyTank.netId = 'e0';
+        enemyAmbulance.netId = 'ea0';
             
         enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, enemyFlagType, 'enemy');
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
@@ -1848,7 +1890,8 @@
             lastTrackPos: new THREE.Vector3(x, terrainY, z),
             scudState: 'sleeping', 
             scudAnimProgress: 0, 
-            hasMissileLoaded: true
+            hasMissileLoaded: true,
+            netId: null
         };
     }
 
@@ -2078,7 +2121,9 @@
             exitTarget.y = getTerrainHeight(exitTarget.x, exitTarget.z);
             newTank.target = exitTarget;
 
+            newTank.netId = `${onlineRole || 'local'}-tank-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
             playerTanks.push(newTank);
+            if (onlineMode) onlineSendState(true);
             showFloatingMsg(type === 'rocket' ? 'تم خروج عربة سكود من بوابة المعسكر' : 'تم خروج دبابة عادية من بوابة المعسكر');
         }
     }
@@ -2109,7 +2154,9 @@
         ambulance.isLeavingBase = false;
         ambulance.manualControl = true;
 
+        ambulance.netId = `${onlineRole || 'local'}-amb-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
         ambulances.push(ambulance);
+        if (onlineMode) onlineSendState(true);
 
         showFloatingMsg('🚑 تم شراء سيارة الإسعاف وخروجها من بوابة المعسكر');
         closePurchaseMenu();
@@ -2308,6 +2355,7 @@
                 const intersects = raycaster.intersectObject(terrainMesh);
                 if (intersects.length > 0) {
                     playerTargetPos = intersects[0].point;
+                    if (onlineMode) onlineSendState(true);
                     targetMarkerMesh.position.copy(playerTargetPos);
                     targetMarkerMesh.position.y = getTerrainHeight(playerTargetPos.x, playerTargetPos.z) + 0.1;
                     targetMarkerMesh.visible = true;
@@ -2638,6 +2686,7 @@
 
         unit.isDestroyed = true;
         unit.hp = 0;
+        if (onlineMode && unit.team === 'player') onlineSendState(true);
         unit.target = null;
         unit.healTarget = null;
         unit.isHealing = false;
@@ -2773,6 +2822,7 @@
             if (dist < 32) {
                 let damageAmount = Math.floor(160 * (1 - dist / 32));
                 unit.hp -= Math.max(40, damageAmount);
+                if (onlineMode && unit.team === 'enemy') onlineSendDamage(unit.netId, Math.max(40, damageAmount), fromTeam);
                 if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(unit);
 
                 if (unit.hp <= 0 && !unit.isDestroyed) {
@@ -2904,6 +2954,7 @@
             let dir = new THREE.Vector3().subVectors(b.targetTank.mesh.position, b.mesh.position);
             if (dir.length() < 2.5) {
                 b.targetTank.hp -= b.damage;
+                if (onlineMode && b.targetTank.team === 'enemy') onlineSendDamage(b.targetTank.netId, b.damage, b.fromTeam);
                 playSound('explosion');
                 addSmokeParticle(b.targetTank.mesh.position);
                 if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(b.targetTank);
@@ -3170,7 +3221,7 @@
             updateTankAudio(tankData, isMoving);
         });
 
-        if (enemyMoney >= 150 && enemyBuildCooldown === 0 && enemyTanks.filter(t => !t.isDestroyed).length < 7) {
+        if (!onlineMode && enemyMoney >= 150 && enemyBuildCooldown === 0 && enemyTanks.filter(t => !t.isDestroyed).length < 7) {
             let buyType = (enemyMoney >= 300 && Math.random() > 0.3) ? 'rocket' : 'normal';
             let cost = (buyType === 'rocket') ? 300 : 150;
             if (enemyMoney >= cost) {
@@ -3416,6 +3467,7 @@
         updateTanksMovement();
         updateAmbulances();
         checkLogicAndEconomy();
+        if (onlineMode) onlineTick();
         animateFlags();
         renderMinimap();
         
@@ -3427,6 +3479,188 @@
         });
 
         renderer.render(scene, camera);
+    }
+
+    // ============================================================
+    // ONLINE 1v1 - Firebase Realtime Database
+    // ملاحظة: ضع إعداد Firebase الخاص بمشروعك في window.FIREBASE_CONFIG
+    // أو قبل هذا الملف مباشرة. لا نضع مفاتيح مشروعك داخل الكود المنشور.
+    // ============================================================
+    function setOnlineStatus(text, good=false) {
+        const el = document.getElementById('online-status');
+        if (el) { el.textContent = text; el.style.color = good ? '#4ade80' : '#cbd5e1'; }
+    }
+    function openOnlineMenu() {
+        document.getElementById('settings-modal').style.display='none';
+        document.getElementById('online-modal').style.display='flex';
+        setOnlineStatus('جاري تجهيز الاتصال...');
+        initFirebaseOnline();
+    }
+    function closeOnlineMenu() {
+        document.getElementById('online-modal').style.display='none';
+        document.getElementById('settings-modal').style.display='flex';
+    }
+    async function initFirebaseOnline() {
+        if (onlineReady) { setOnlineStatus('الاتصال جاهز.', true); return true; }
+        if (!ONLINE_CONFIG) {
+            setOnlineStatus('لم يتم وضع Firebase Config داخل الملف.');
+            return false;
+        }
+        try {
+            const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js');
+            const { getDatabase, ref, set, update, onValue, onDisconnect, get, push } = await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-database.js');
+            window.__fb = { ref, set, update, onValue, onDisconnect, get, push };
+            const app = initializeApp(ONLINE_CONFIG, 'online-1v1');
+            onlineDb = getDatabase(app);
+            onlineReady = true;
+            setOnlineStatus('الاتصال بالخادم جاهز ✔', true);
+            return true;
+        } catch (e) {
+            console.error(e);
+            setOnlineStatus('تعذر الاتصال بـ Firebase: ' + (e.message || e));
+            return false;
+        }
+    }
+    function makeRoomCode() {
+        return Math.random().toString(36).slice(2,8).toUpperCase();
+    }
+    function serializeUnit(u) {
+        if (!u || !u.netId) return null;
+        return { id:u.netId, type:u.type || 'normal', x:u.mesh.position.x, z:u.mesh.position.z, ry:u.mesh.rotation.y, hp:u.hp, maxHp:u.maxHp, destroyed:!!u.isDestroyed, target:u.target ? {x:u.target.x,z:u.target.z}:null };
+    }
+    function localSnapshot() {
+        const units = {};
+        playerTanks.forEach(u => { const v=serializeUnit(u); if(v) units[v.id]=v; });
+        ambulances.filter(a=>a.team==='player').forEach(u => { const v=serializeUnit(u); if(v){v.type='ambulance'; units[v.id]=v;} });
+        return { role:onlineRole, money:playerMoney, units, oil:oilRigs.map(r=>({owner:r.owner,progress:r.captureProgress})), sentAt:Date.now() };
+    }
+    function onlineSendState(force=false) {
+        if (!onlineMode || !onlineReady || !onlineRoomRef) return;
+        const now=Date.now();
+        if (!force && now-onlineLastSent<90) return;
+        onlineLastSent=now;
+        const side = onlineRole==='host' ? 'host' : 'guest';
+        window.__fb.set(window.__fb.ref(onlineDb, `rooms/${onlineRoomCode}/state/${side}`), localSnapshot()).catch(console.error);
+    }
+    async function createOnlineRoom() {
+        if (!await initFirebaseOnline()) return;
+        onlineMode=true; onlineRole='host'; onlineRoomCode=makeRoomCode(); onlinePeerId=onlineRoomCode+'-host';
+        onlineRoomRef=window.__fb.ref(onlineDb, `rooms/${onlineRoomCode}`);
+        try {
+            await window.__fb.set(onlineRoomRef, {status:'waiting',host:true,createdAt:Date.now()});
+            await window.__fb.set(window.__fb.ref(onlineDb,`rooms/${onlineRoomCode}/state/host`), localSnapshot());
+            await window.__fb.onDisconnect(window.__fb.ref(onlineDb,`rooms/${onlineRoomCode}/state/host`)).remove();
+            document.getElementById('online-room-code').textContent=onlineRoomCode;
+            setOnlineStatus('انتظر اللاعب الثاني ثم سيبدأ اللعب تلقائيًا.', true);
+            listenOnlineRoom();
+        } catch(e) { setOnlineStatus('فشل إنشاء الغرفة: '+e.message); }
+    }
+    async function joinOnlineRoom() {
+        if (!await initFirebaseOnline()) return;
+        const code=(document.getElementById('online-room-input').value||'').trim().toUpperCase();
+        if(!/^[A-Z0-9]{4,8}$/.test(code)){setOnlineStatus('رمز الغرفة غير صحيح.');return;}
+        onlineMode=true; onlineRole='guest'; onlineRoomCode=code; onlinePeerId=code+'-guest';
+        onlineRoomRef=window.__fb.ref(onlineDb,`rooms/${code}`);
+        try {
+            const snap=await window.__fb.get(onlineRoomRef);
+            if(!snap.exists()){setOnlineStatus('الغرفة غير موجودة.'); onlineMode=false; return;}
+            const data=snap.val()||{};
+            if(data.guestConnected){setOnlineStatus('الغرفة ممتلئة.'); onlineMode=false; return;}
+            await window.__fb.update(onlineRoomRef,{guestConnected:true,status:'playing'});
+            await window.__fb.set(window.__fb.ref(onlineDb,`rooms/${code}/state/guest`),localSnapshot());
+            await window.__fb.onDisconnect(window.__fb.ref(onlineDb,`rooms/${code}/state/guest`)).remove();
+            document.getElementById('online-room-code').textContent=code;
+            setOnlineStatus('تم الانضمام ✔ تبدأ المعركة الآن.', true);
+            listenOnlineRoom();
+            setTimeout(()=>{ closeOnlineMenu(); startGame(); },700);
+        } catch(e){setOnlineStatus('فشل الانضمام: '+e.message);}
+    }
+    function listenOnlineRoom() {
+        if(!onlineRoomRef || !onlineReady) return;
+        if(onlineUnsub) onlineUnsub();
+        onlineUnsub=window.__fb.onValue(onlineRoomRef, snap=>{
+            const d=snap.val()||{};
+            if(onlineRole==='host' && d.guestConnected){
+                setOnlineStatus('اللاعب الثاني متصل ✔ ابدأ اللعب.', true);
+                if(document.getElementById('online-modal').style.display!=='none'){
+                    setTimeout(()=>{closeOnlineMenu();startGame();},500);
+                }
+            }
+            const other=onlineRole==='host' ? d.state?.guest : d.state?.host;
+            if(other) applyRemoteSnapshot(other);
+        });
+    }
+    function applyRemoteSnapshot(data) {
+        if(!data || !data.units) return;
+        Object.values(data.units).forEach(v=>{
+            let u=onlineRemoteUnits[v.id];
+            if(!u){
+                const color=0x8b2500;
+                if(v.type==='ambulance'){
+                    u=createModernAmbulance(v.x,v.z,'enemy');
+                    u.netId=v.id; u.team='enemy';
+                    ambulances.push(u);
+                }else{
+                    u=createTank(v.x,v.z,color,'enemy',v.type||'normal');
+                    u.netId=v.id; enemyTanks.push(u);
+                }
+                onlineRemoteUnits[v.id]=u;
+            }
+            // اللاعب الضيف يرى جيش المضيف في الجهة المقابلة حتى لا تتداخل القواعد.
+            const mirror = onlineRole === 'guest' ? -1 : 1;
+            const rx = v.x * mirror;
+            const rz = v.z * mirror;
+            u.mesh.position.x=THREE.MathUtils.lerp(u.mesh.position.x,rx,0.55);
+            u.mesh.position.z=THREE.MathUtils.lerp(u.mesh.position.z,rz,0.55);
+            u.mesh.position.y=getTerrainHeight(u.mesh.position.x,u.mesh.position.z);
+            u.mesh.rotation.y=(v.ry||0) + (onlineRole === 'guest' ? Math.PI : 0);
+            u.hp=typeof v.hp==='number'?v.hp:u.hp;
+            u.maxHp=v.maxHp||u.maxHp;
+            if(v.destroyed && !u.isDestroyed) destroyCombatUnit(u,'player');
+            updateTanksDamageVisual(u);
+        });
+        if (Array.isArray(data.oil)) {
+            data.oil.forEach((o,i)=>{
+                if(!oilRigs[i]) return;
+                oilRigs[i].owner=o.owner || 'none';
+                oilRigs[i].captureProgress=Number(o.progress)||0;
+                const flagType=o.owner==='player'?'green':(o.owner==='enemy'?'red':'none');
+                oilRigs[i].flagData.mesh.material.map=createFlagTexture(flagType);
+                oilRigs[i].flagData.mesh.material.needsUpdate=true;
+            });
+        }
+        if(typeof data.money==='number' && onlineRole!=='host') { /* مال الخصم لا يؤثر على رصيد اللاعب */ }
+    }
+    function onlineSendDamage(targetId, damage, fromTeam) {
+        if(!onlineMode || !onlineReady || !onlineRoomCode || !targetId) return;
+        const side=onlineRole==='host'?'host':'guest';
+        const eventRef=window.__fb.push(window.__fb.ref(onlineDb,`rooms/${onlineRoomCode}/events`));
+        window.__fb.set(eventRef,{type:'damage',targetId,damage,from:side,fromTeam,at:Date.now()}).catch(console.error);
+    }
+    function onlineTick() {
+        if(!onlineReady || !onlineRoomRef) return;
+        onlineSendState(false);
+        if(!window.__fb || !onlineRoomCode) return;
+        // معالجة أوامر الضرر الواردة مرة واحدة عبر حذف الحدث بعد تطبيقه.
+        const eventsRef=window.__fb.ref(onlineDb,`rooms/${onlineRoomCode}/events`);
+        window.__fb.get(eventsRef).then(s=>{
+            if(!s.exists()) return;
+            const all=s.val()||{};
+            Object.entries(all).forEach(([key,ev])=>{
+                if(ev.from===(onlineRole==='host'?'host':'guest')) return;
+                if(ev.type==='damage' && ev.targetId){
+                    const target=playerTanks.find(t=>t.netId===ev.targetId) || ambulances.find(a=>a.netId===ev.targetId);
+                    if(target && !target.isDestroyed){
+                        target.hp-=Number(ev.damage)||0;
+                        updateTanksDamageVisual(target);
+                        playSound('explosion');
+                        addSmokeParticle(target.mesh.position);
+                        if(target.hp<=0) destroyCombatUnit(target,'enemy');
+                    }
+                }
+                window.__fb.set(window.__fb.ref(onlineDb,`rooms/${onlineRoomCode}/events/${key}`),null).catch(()=>{});
+            });
+        }).catch(()=>{});
     }
 
     window.onload = init;
