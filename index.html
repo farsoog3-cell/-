@@ -284,6 +284,7 @@
       style="display:none;width:100%;padding:12px;border-radius:10px;border:1px solid #475569;background:#020617;color:#fff;text-align:center;font-size:18px;letter-spacing:3px;margin-bottom:9px">
     <div id="mp-room-info" style="display:none;margin-top:8px"></div>
     <button id="mp-share-btn" style="display:none;width:100%;padding:11px;border:0;border-radius:10px;background:#0ea5e9;color:#fff;font-weight:800;margin-top:9px" onclick="shareMultiplayerRoom()">📤 مشاركة الدعوة</button>
+    <button id="mp-copy-btn" style="display:none;width:100%;padding:11px;border:0;border-radius:10px;background:#16a34a;color:#fff;font-weight:800;margin-top:8px" onclick="copyMultiplayerRoomLink()">📋 نسخ رابط الغرفة</button>
     <div id="mp-status" style="font-size:12px;color:#94a3b8;margin-top:12px;min-height:18px"></div>
   </div>
 </div>
@@ -3722,6 +3723,7 @@
           <div style="font-size:30px;letter-spacing:6px;font-weight:900;color:#fff;margin:4px 0">${MP.roomId}</div>
           <div style="font-size:11px;color:#94a3b8;word-break:break-all">${makeInviteUrl(MP.roomId)}</div>`;
         $('mp-share-btn').style.display='block';
+        $('mp-copy-btn').style.display='block';
         $('mp-create-btn').style.display='none';
         $('mp-join-btn').style.display='none';
         mpStatus('بانتظار رفيقك…');
@@ -3776,14 +3778,40 @@
         });
     }
 
+    window.copyMultiplayerRoomLink = async function() {
+        if (!MP.roomId) return;
+        const url = makeInviteUrl(MP.roomId);
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(url);
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = url;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                ta.setSelectionRange(0, ta.value.length);
+                const ok = document.execCommand('copy');
+                ta.remove();
+                if (!ok) throw new Error('copy failed');
+            }
+            mpStatus('✅ تم نسخ رابط الغرفة — أرسله لصديقك');
+            showFloatingMsg('📋 تم نسخ رابط الغرفة');
+        } catch(e) {
+            console.error(e);
+            mpStatus('لم يتم النسخ تلقائيًا، انسخ الرابط الظاهر يدويًا');
+        }
+    };
+
     window.shareMultiplayerRoom = async function() {
         const url = makeInviteUrl(MP.roomId);
         try {
             if (navigator.share) {
                 await navigator.share({title:'انضم لمعركتي',text:'انضم إليّ في المعركة',url});
             } else {
-                await navigator.clipboard.writeText(url);
-                mpStatus('تم نسخ رابط الدعوة');
+                await copyMultiplayerRoomLink();
             }
         } catch(e) {}
     };
