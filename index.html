@@ -281,6 +281,11 @@
         </div>
 
         <button class="menu-btn" id="start-btn" onclick="playClickSound(); startGame()">بدء المعركة 🚀</button>
+        <button class="menu-btn" id="find-player-btn" onclick="playClickSound(); togglePlayerSearch()">البحث عن لاعب 👥</button>
+        <div id="player-search-status" style="display:none; margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(15,23,42,.85); border:1px solid rgba(56,189,248,.35); color:#e2e8f0; font-size:12px; text-align:center; line-height:1.5;">
+            <span id="player-search-text">جارٍ البحث عن لاعب...</span>
+            <button id="cancel-player-search" onclick="cancelPlayerSearch(); event.stopPropagation();" style="margin-top:8px; padding:7px 14px; border:0; border-radius:8px; background:#334155; color:#fff; font-weight:bold;">إلغاء البحث</button>
+        </div>
     </div>
 </div>
 
@@ -655,6 +660,92 @@
             });
         }
         showFloatingMsg(mode === 'all' ? 'تم تحديد جميع الوحدات' : 'اضغط على العربة لتحديدها');
+    }
+
+    // ===== البحث عن لاعب عبر السيرفر =====
+    // ملاحظة: السيرفر يجب أن يدعم WebSocket برسائل matchmaking.
+    const MATCHMAKING_WS_URL = 'wss://tank-game-server-o650.onrender.com';
+    let matchmakingSocket = null;
+    let matchmakingSearching = false;
+
+    function setPlayerSearchUI(searching, text) {
+        const box = document.getElementById('player-search-status');
+        const btn = document.getElementById('find-player-btn');
+        const label = document.getElementById('player-search-text');
+        if (!box || !btn || !label) return;
+        box.style.display = searching ? 'block' : 'none';
+        label.textContent = text || 'جارٍ البحث عن لاعب...';
+        btn.disabled = searching;
+        btn.style.opacity = searching ? '0.55' : '1';
+    }
+
+    function togglePlayerSearch() {
+        if (matchmakingSearching) return;
+        matchmakingSearching = true;
+        setPlayerSearchUI(true, '🔎 جارٍ البحث عن لاعب آخر...');
+
+        try {
+            matchmakingSocket = new WebSocket(MATCHMAKING_WS_URL);
+
+            matchmakingSocket.onopen = () => {
+                if (!matchmakingSearching) return;
+                setPlayerSearchUI(true, '🔎 أنت في قائمة البحث... بانتظار لاعب آخر');
+                matchmakingSocket.send(JSON.stringify({ type: 'find_match' }));
+            };
+
+            matchmakingSocket.onmessage = (event) => {
+                let data;
+                try { data = JSON.parse(event.data); } catch (e) { return; }
+
+                // يقبل أكثر من اسم شائع لرسالة العثور على الخصم.
+                const matched = data.type === 'match_found' ||
+                                data.type === 'matched' ||
+                                data.type === 'match' ||
+                                data.event === 'match_found';
+
+                if (matched) {
+                    matchmakingSearching = false;
+                    setPlayerSearchUI(false);
+                    if (matchmakingSocket) matchmakingSocket.close();
+                    matchmakingSocket = null;
+                    showFloatingMsg('🎮 تم العثور على لاعب! بدأت المباراة.');
+                    startGame();
+                }
+            };
+
+            matchmakingSocket.onerror = () => {
+                matchmakingSearching = false;
+                setPlayerSearchUI(false);
+                showFloatingMsg('تعذر الاتصال بسيرفر البحث عن اللاعبين');
+            };
+
+            matchmakingSocket.onclose = () => {
+                if (matchmakingSearching) {
+                    matchmakingSearching = false;
+                    setPlayerSearchUI(false);
+                }
+                matchmakingSocket = null;
+            };
+        } catch (e) {
+            matchmakingSearching = false;
+            setPlayerSearchUI(false);
+            showFloatingMsg('تعذر بدء البحث عن لاعب');
+        }
+    }
+
+    function cancelPlayerSearch() {
+        matchmakingSearching = false;
+        if (matchmakingSocket) {
+            try {
+                if (matchmakingSocket.readyState === WebSocket.OPEN) {
+                    matchmakingSocket.send(JSON.stringify({ type: 'cancel_match' }));
+                }
+                matchmakingSocket.close();
+            } catch (e) {}
+        }
+        matchmakingSocket = null;
+        setPlayerSearchUI(false);
+        showFloatingMsg('تم إلغاء البحث عن لاعب');
     }
 
     function startGame() {
