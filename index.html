@@ -117,12 +117,17 @@
         .buy-btn-rocket:disabled { background: #475569; opacity: 0.6; cursor: not-allowed; }
 
         #minimap-container {
-            position: absolute; bottom: 12px; left: 12px; width: 120px; height: 120px;
-            background: rgba(15, 23, 42, 0.92); border: 2px solid #38bdf8; border-radius: 16px;
-            overflow: hidden; pointer-events: auto; cursor: pointer; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(6px);
+            position: absolute; bottom: 12px; left: 12px; width: 140px; height: 140px;
+            background: #172014; border: 3px solid #202820; border-radius: 5px;
+            overflow: hidden; pointer-events: auto; cursor: crosshair;
+            box-shadow: 0 6px 18px rgba(0,0,0,.75), inset 0 0 0 1px rgba(255,255,255,.12);
         }
-        #minimap-canvas { width: 100%; height: 100%; }
+        #minimap-canvas { width: 100%; height: 100%; display:block; image-rendering:auto; }
+        .minimap-title {
+            position:absolute; top:5px; left:7px; right:7px; z-index:2;
+            color:#e8f0df; font-size:9px; font-weight:800; letter-spacing:.4px;
+            text-shadow:0 1px 2px #000; pointer-events:none;
+        }
 
         #floating-msg {
             position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
@@ -219,8 +224,9 @@
         </div>
     </div>
 
-    <div id="minimap-container" title="الخريطة المصغرة">
-        <canvas id="minimap-canvas" width="120" height="120"></canvas>
+    <div id="minimap-container" title="الخريطة المصغرة — اضغط للانتقال">
+        <div class="minimap-title">الخريطة التكتيكية</div>
+        <canvas id="minimap-canvas" width="140" height="140"></canvas>
     </div>
 
     <div id="floating-msg"></div>
@@ -247,7 +253,7 @@
             ontouchstart="camMove('down', true)" ontouchend="camMove('down', false)">⬇️</button>
         
         <button class="cam-btn right" 
-            onmousedown="camMove('right', true)" onmouseup="camRankMove('right', true)" onmouseleave="camMove('right', false)"
+            onmousedown="camMove('right', true)" onmouseup="camMove('right', false)" onmouseleave="camMove('right', false)"
             ontouchstart="camMove('right', true)" ontouchend="camMove('right', false)">➡️</button>
     </div>
 </div>
@@ -1249,70 +1255,199 @@
         }, { passive: true });
     }
 
+    function worldToMinimap(x, z, w, h) {
+        const pad = 4;
+        const usableW = w - pad * 2;
+        const usableH = h - pad * 2;
+        return {
+            x: pad + ((x + MAP_LIMIT) / (MAP_LIMIT * 2)) * usableW,
+            y: pad + ((z + MAP_LIMIT) / (MAP_LIMIT * 2)) * usableH
+        };
+    }
+
+    function minimapToWorld(px, py, w, h) {
+        const pad = 4;
+        const usableW = w - pad * 2;
+        const usableH = h - pad * 2;
+        return {
+            x: ((px - pad) / usableW) * (MAP_LIMIT * 2) - MAP_LIMIT,
+            z: ((py - pad) / usableH) * (MAP_LIMIT * 2) - MAP_LIMIT
+        };
+    }
+
     function setupMinimapInteraction() {
         const minimap = document.getElementById('minimap-container');
+
         minimap.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
             e.stopPropagation();
+
             const rect = minimap.getBoundingClientRect();
-            const xClick = e.clientX - rect.left;
-            const yClick = e.clientY - rect.top;
-            
-            const normX = (xClick / rect.width - 0.5) * 2;
-            const normZ = (yClick / rect.height - 0.5) * 2;
-            
-            let worldX = normX * MAP_LIMIT;
-            let worldZ = normZ * MAP_LIMIT;
-            
-            targetLookAt.x = worldX;
-            targetLookAt.z = worldZ;
-            showFloatingMsg('تم نقل الكاميرا عبر الخريطة المصغرة');
+            const px = Math.max(4, Math.min(rect.width - 4, e.clientX - rect.left));
+            const py = Math.max(4, Math.min(rect.height - 4, e.clientY - rect.top));
+            const world = minimapToWorld(px, py, rect.width, rect.height);
+
+            targetLookAt.x = Math.max(-420, Math.min(420, world.x));
+            targetLookAt.z = Math.max(-420, Math.min(420, world.z));
+            showFloatingMsg('تم نقل الكاميرا إلى الموقع المحدد');
+        });
+
+        minimap.addEventListener('pointermove', (e) => {
+            if (e.buttons === 1) {
+                const rect = minimap.getBoundingClientRect();
+                const world = minimapToWorld(
+                    e.clientX - rect.left,
+                    e.clientY - rect.top,
+                    rect.width,
+                    rect.height
+                );
+                targetLookAt.x = Math.max(-420, Math.min(420, world.x));
+                targetLookAt.z = Math.max(-420, Math.min(420, world.z));
+            }
         });
     }
 
     function renderMinimap() {
         const canvas = document.getElementById('minimap-canvas');
         const ctx = canvas.getContext('2d');
-        const w = canvas.width;
-        const h = canvas.height;
-        
+        const w = canvas.width, h = canvas.height;
+
         ctx.clearRect(0, 0, w, h);
-        
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+
+        // أرضية تشبه خرائط ألعاب الـ RTS: أخضر/بني مع اختلافات بسيطة.
+        ctx.fillStyle = '#3d512e';
+        ctx.fillRect(0, 0, w, h);
+
+        const pad = 4;
+        const mapW = w - pad * 2;
+        const mapH = h - pad * 2;
+
+        // رقعة تضاريس سريعة وخفيفة.
+        for (let gx = 0; gx < 18; gx++) {
+            for (let gz = 0; gz < 18; gz++) {
+                const wx = -MAP_LIMIT + (gx / 18) * MAP_LIMIT * 2;
+                const wz = -MAP_LIMIT + (gz / 18) * MAP_LIMIT * 2;
+                const hh = getTerrainHeight(wx, wz);
+                const shade = Math.max(0, Math.min(1, (hh + 10) / 25));
+                ctx.fillStyle = shade > .55 ? '#53683a' : '#465a31';
+                ctx.fillRect(
+                    pad + gx * mapW / 18,
+                    pad + gz * mapH / 18,
+                    mapW / 18 + 1,
+                    mapH / 18 + 1
+                );
+            }
+        }
+
+        // طرق/مسارات استراتيجية.
+        ctx.strokeStyle = 'rgba(184,164,111,.38)';
+        ctx.lineWidth = 7;
         ctx.beginPath();
-        ctx.roundRect(0, 0, w, h, 14);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-        ctx.lineWidth = 1.5;
+        ctx.moveTo(pad + mapW * .12, pad + mapH * .87);
+        ctx.lineTo(pad + mapW * .88, pad + mapH * .13);
         ctx.stroke();
-        
-        const scale = (w / 2) / MAP_LIMIT;
 
-        ctx.fillStyle = '#22c55e';
-        ctx.fillRect(w/2 + CORNER_OFFSET * scale - 4, h/2 + CORNER_OFFSET * scale - 4, 8, 8);
-        ctx.fillStyle = '#ef4444';
-        ctx.fillRect(w/2 + (-CORNER_OFFSET) * scale - 4, h/2 + (-CORNER_OFFSET) * scale - 4, 8, 8);
+        ctx.strokeStyle = 'rgba(118,98,61,.30)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(pad + mapW * .15, pad + mapH * .15);
+        ctx.lineTo(pad + mapW * .85, pad + mapH * .85);
+        ctx.stroke();
 
-        playerTanks.forEach(t => {
-            if (t.isDestroyed) return;
-            let mx = w/2 + t.mesh.position.x * scale;
-            let mz = h/2 + t.mesh.position.z * scale;
-            ctx.fillStyle = '#4ade80';
-            ctx.beginPath(); ctx.arc(mx, mz, 3, 0, Math.PI*2); ctx.fill();
+        // ماء/مناطق منخفضة بسيطة.
+        ctx.fillStyle = 'rgba(45,91,105,.35)';
+        ctx.beginPath();
+        ctx.ellipse(w * .50, h * .50, w * .18, h * .09, -.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        // شبكة خفيفة.
+        ctx.strokeStyle = 'rgba(255,255,255,.07)';
+        ctx.lineWidth = 1;
+        for (let i = 1; i < 4; i++) {
+            const xx = pad + mapW * i / 4;
+            const yy = pad + mapH * i / 4;
+            ctx.beginPath(); ctx.moveTo(xx, pad); ctx.lineTo(xx, h-pad); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(pad, yy); ctx.lineTo(w-pad, yy); ctx.stroke();
+        }
+
+        // حقول النفط.
+        oilRigs.forEach(r => {
+            const p = worldToMinimap(r.x, r.z, w, h);
+            ctx.fillStyle = r.owner === 'player' ? '#55d66a' :
+                            r.owner === 'enemy' ? '#ef4b4b' : '#e5c75d';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#182016';
+            ctx.lineWidth = 1;
+            ctx.stroke();
         });
 
-        enemyTanks.forEach(t => {
-            if (t.isDestroyed) return;
-            let mx = w/2 + t.mesh.position.x * scale;
-            let mz = h/2 + t.mesh.position.z * scale;
-            ctx.fillStyle = '#f87171';
-            ctx.beginPath(); ctx.arc(mx, mz, 3, 0, Math.PI*2); ctx.fill();
-        });
+        // قواعد اللاعب والعدو — مربعات أكبر مثل خرائط الـ RTS.
+        function drawBase(x, z, fill, stroke) {
+            const p = worldToMinimap(x, z, w, h);
+            ctx.fillStyle = fill;
+            ctx.strokeStyle = stroke;
+            ctx.lineWidth = 2;
+            ctx.fillRect(p.x - 7, p.y - 7, 14, 14);
+            ctx.strokeRect(p.x - 7, p.y - 7, 14, 14);
+        }
+        drawBase(CORNER_OFFSET, CORNER_OFFSET, '#35c957', '#b7ffbf');
+        drawBase(-CORNER_OFFSET, -CORNER_OFFSET, '#d83b3b', '#ffb0b0');
 
-        let camMx = w/2 + targetLookAt.x * scale;
-        let camMz = h/2 + targetLookAt.z * scale;
-        ctx.strokeStyle = '#38bdf8';
+        // الوحدات.
+        function drawUnit(tank, fill, selected) {
+            if (tank.isDestroyed) return;
+            const p = worldToMinimap(tank.mesh.position.x, tank.mesh.position.z, w, h);
+
+            ctx.fillStyle = fill;
+            ctx.strokeStyle = selected ? '#ffffff' : '#182016';
+            ctx.lineWidth = selected ? 2 : 1;
+
+            if (tank.type === 'rocket') {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(-tank.mesh.rotation.y);
+                ctx.beginPath();
+                ctx.moveTo(0, -6); ctx.lineTo(4, 4); ctx.lineTo(0, 2);
+                ctx.lineTo(-4, 4); ctx.closePath();
+                ctx.fill(); ctx.stroke();
+                ctx.restore();
+            } else {
+                ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+                ctx.strokeRect(p.x - 3, p.y - 3, 6, 6);
+            }
+        }
+
+        playerTanks.forEach(t => drawUnit(t, '#52e56c',
+            t === selectedTank && selectionMode === 'single'));
+        enemyTanks.forEach(t => drawUnit(t, '#f04b4b', false));
+
+        // إطار مجال رؤية الكاميرا — أهم جزء في خريطة الجنرالات.
+        const viewHalfW = Math.min(190, cameraRadius * 0.62);
+        const viewHalfZ = Math.min(170, cameraRadius * 0.46);
+        const tl = worldToMinimap(targetLookAt.x - viewHalfW, targetLookAt.z - viewHalfZ, w, h);
+        const br = worldToMinimap(targetLookAt.x + viewHalfW, targetLookAt.z + viewHalfZ, w, h);
+
+        ctx.strokeStyle = '#f4f4f4';
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(camMx, camMz, 7, 0, Math.PI*2); ctx.stroke();
+        ctx.shadowColor = 'rgba(0,0,0,.9)';
+        ctx.shadowBlur = 3;
+        ctx.strokeRect(
+            Math.max(pad, tl.x), Math.max(pad, tl.y),
+            Math.min(mapW, br.x - tl.x), Math.min(mapH, br.y - tl.y)
+        );
+        ctx.shadowBlur = 0;
+
+        // نقطة مركز الكاميرا.
+        const cp = worldToMinimap(targetLookAt.x, targetLookAt.z, w, h);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(cp.x, cp.y, 2.5, 0, Math.PI * 2); ctx.fill();
+
+        // إطار الخريطة.
+        ctx.strokeStyle = '#111711';
+        ctx.lineWidth = 4;
+        ctx.strokeRect(2, 2, w - 4, h - 4);
     }
 
     function getSmartMovementVector(currentPos, desiredDir, currentTank) {
