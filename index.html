@@ -664,7 +664,7 @@
 
     // ===== البحث عن لاعب عبر السيرفر =====
     // ملاحظة: السيرفر يجب أن يدعم WebSocket برسائل matchmaking.
-    const MATCHMAKING_WS_URL = 'wss://tank-game-server-o650.onrender.com';
+    const MATCHMAKING_WS_URL = 'wss://tank-game-server-o650.onrender.com/ws';
     let matchmakingSocket = null;
     let matchmakingSearching = false;
 
@@ -720,11 +720,12 @@
             };
 
             matchmakingSocket.onclose = () => {
+                matchmakingSocket = null;
                 if (matchmakingSearching) {
                     matchmakingSearching = false;
                     setPlayerSearchUI(false);
+                    showFloatingMsg('انقطع اتصال سيرفر البحث عن اللاعبين');
                 }
-                matchmakingSocket = null;
             };
         } catch (e) {
             matchmakingSearching = false;
