@@ -668,6 +668,163 @@
     let matchmakingSocket = null;
     let matchmakingSearching = false;
 
+    // أوضاع اللعب: بدء المعركة = ضد البوت، البحث عن لاعب = مباراة حقيقية 1 ضد 1.
+    let gameMode = 'bot';
+    let multiplayerRoomId = null;
+    let myPlayerId = null;
+    let multiplayerTeam = 'player';
+    let myFlagType = 'green';
+    let opponentFlagType = 'red';
+    let remoteUnits = new Map();
+    let netUnitCounter = 0;
+    let lastNetworkSend = 0;
+
+    function sendNetworkMessage(payload) {
+        if (gameMode !== 'multiplayer' || !matchmakingSocket || matchmakingSocket.readyState !== WebSocket.OPEN) return;
+        try { matchmakingSocket.send(JSON.stringify(payload)); } catch (e) {}
+    }
+
+    function assignNetId(unit, forcedId = null) {
+        if (!unit) return unit;
+        if (!unit.netId) unit.netId = forcedId || `${myPlayerId || 'local'}:${++netUnitCounter}`;
+        return unit;
+    }
+
+    function removeUnitFromScene(unit) {
+        if (!unit) return;
+        unit.isDestroyed = true;
+        if (unit.hpLabel && unit.hpLabel.parentNode) unit.hpLabel.remove();
+        if (unit.mesh && unit.mesh.parent) unit.mesh.parent.remove(unit.mesh);
+    }
+
+    function clearLocalBotForMultiplayer() {
+        enemyTanks.slice().forEach(removeUnitFromScene);
+        ambulances.filter(a => a.team === 'enemy').slice().forEach(removeUnitFromScene);
+        enemyTanks = [];
+        ambulances = ambulances.filter(a => a.team !== 'enemy');
+    }
+
+    function configureMultiplayerMatch(data) {
+        gameMode = 'multiplayer';
+        multiplayerRoomId = data.roomId || data.room || null;
+        myPlayerId = data.playerId || data.id || null;
+        multiplayerTeam = data.team || 'player';
+        myFlagType = data.flagId || data.flag || 'green';
+        opponentFlagType = data.opponentFlagId || data.opponentFlag || (myFlagType === 'green' ? 'red' : 'green');
+        clearLocalBotForMultiplayer();
+        if (playerFlagDataRef) {
+            playerFlagDataRef.mesh.material.map = createFlagTexture(myFlagType);
+            playerFlagDataRef.mesh.material.needsUpdate = true;
+        }
+        if (enemyFlagDataRef) {
+            enemyFlagDataRef.mesh.material.map = createFlagTexture(opponentFlagType);
+            enemyFlagDataRef.mesh.material.needsUpdate = true;
+        }
+        playerTanks.forEach(assignNetId);
+        ambulances.filter(a => a.team === 'player').forEach(assignNetId);
+    }
+
+    function createRemoteTankFromNetwork(state) {
+        let existing = remoteUnits.get(state.id);
+        if (existing) return existing;
+        const color = state.type === 'rocket' ? 0x4a5d4e : 0x8b2500;
+        const tank = createTank(state.x, state.z, color, 'enemy', state.type || 'normal');
+        tank.isRemote = true;
+        tank.netId = state.id;
+        tank.remoteTarget = new THREE.Vector3(state.x, getTerrainHeight(state.x, state.z), state.z);
+        tank.remoteRotation = state.ry || 0;
+        tank.hp = typeof state.hp === 'number' ? state.hp : tank.maxHp;
+        tank.isDestroyed = !!state.destroyed;
+        tank.mesh.rotation.y = tank.remoteRotation;
+        enemyTanks.push(tank);
+        remoteUnits.set(state.id, tank);
+        return tank;
+    }
+
+    function createRemoteAmbulanceFromNetwork(state) {
+        let existing = remoteUnits.get(state.id);
+        if (existing) return existing;
+        const ambulance = createModernAmbulance(state.x, state.z, 'enemy');
+        ambulance.isRemote = true;
+        ambulance.netId = state.id;
+        ambulance.remoteTarget = new THREE.Vector3(state.x, getTerrainHeight(state.x, state.z), state.z);
+        ambulance.remoteRotation = state.ry || 0;
+        ambulance.hp = typeof state.hp === 'number' ? state.hp : ambulance.maxHp;
+        ambulance.isDestroyed = !!state.destroyed;
+        ambulance.mesh.rotation.y = ambulance.remoteRotation;
+        ambulances.push(ambulance);
+        remoteUnits.set(state.id, ambulance);
+        return ambulance;
+    }
+
+    function handleNetworkState(data) {
+        if (!data || !Array.isArray(data.units)) return;
+        data.units.forEach(state => {
+            if (!state || !state.id) return;
+            const unit = state.kind === 'ambulance'
+                ? createRemoteAmbulanceFromNetwork(state)
+                : createRemoteTankFromNetwork(state);
+            unit.remoteTarget.set(state.x, getTerrainHeight(state.x, state.z), state.z);
+            unit.remoteRotation = state.ry || 0;
+            unit.hp = Math.max(0, Math.min(unit.maxHp, state.hp));
+            unit.isDestroyed = !!state.destroyed;
+            if (unit.isDestroyed) {
+                if (unit.hpLabel) unit.hpLabel.style.display = 'none';
+                unit.mesh.visible = false;
+            } else {
+                unit.mesh.visible = true;
+            }
+        });
+    }
+
+    function broadcastLocalState() {
+        if (gameMode !== 'multiplayer') return;
+        const now = performance.now();
+        if (now - lastNetworkSend < 90) return;
+        lastNetworkSend = now;
+        const units = [
+            ...playerTanks.map(assignNetId),
+            ...ambulances.filter(a => a.team === 'player').map(assignNetId)
+        ].map(u => ({
+            id: u.netId, kind: u.isAmbulance ? 'ambulance' : 'tank',
+            type: u.type || 'normal', x: u.mesh.position.x, z: u.mesh.position.z,
+            ry: u.mesh.rotation.y, hp: u.hp, destroyed: !!u.isDestroyed
+        }));
+        sendNetworkMessage({ type: 'game_update', roomId: multiplayerRoomId, payload: { kind: 'state', units } });
+    }
+
+    function networkDamage(target, amount, fromTeam) {
+        if (!target || target.isDestroyed) return;
+        target.hp -= amount;
+        if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(target);
+        if (gameMode === 'multiplayer' && target.isRemote) {
+            sendNetworkMessage({ type: 'game_update', roomId: multiplayerRoomId, payload: { kind: 'damage', id: target.netId, amount, fromTeam } });
+        }
+        if (target.hp <= 0 && !target.isDestroyed) destroyCombatUnit(target, fromTeam);
+    }
+
+    function networkPurchase(type) {
+        if (gameMode !== 'multiplayer') return;
+        sendNetworkMessage({ type: 'game_update', roomId: multiplayerRoomId, payload: { kind: 'purchase', unitType: type } });
+    }
+
+    function handleNetworkEvent(data) {
+        const p = data && data.payload;
+        if (!p) return;
+        if (p.kind === 'state') handleNetworkState(p);
+        else if (p.kind === 'damage') {
+            const local = [...playerTanks, ...ambulances.filter(a => a.team === 'player')].find(u => u.netId === p.id);
+            if (local) networkDamage(local, Number(p.amount) || 0, 'enemy');
+        } else if (p.kind === 'purchase') {
+            // الوحدة الجديدة ستظهر تلقائياً في snapshot الشبكة التالي؛ لا ننشئ نسخة ثانية هنا.
+        } else if (p.kind === 'fire' && p.x !== undefined) {
+            const near = enemyTanks.filter(t => !t.isDestroyed).sort((a,b) => a.mesh.position.distanceTo(new THREE.Vector3(p.x,0,p.z)) - b.mesh.position.distanceTo(new THREE.Vector3(p.x,0,p.z)))[0];
+            if (near) createModernMuzzleFlash(near);
+        } else if (p.kind === 'fx' && p.x !== undefined) {
+            createModernImpactFlash(new THREE.Vector3(p.x, getTerrainHeight(p.x,p.z), p.z), 'enemy');
+        }
+    }
+
     function setPlayerSearchUI(searching, text) {
         const box = document.getElementById('player-search-status');
         const btn = document.getElementById('find-player-btn');
@@ -706,10 +863,14 @@
                 if (matched) {
                     matchmakingSearching = false;
                     setPlayerSearchUI(false);
-                    if (matchmakingSocket) matchmakingSocket.close();
-                    matchmakingSocket = null;
-                    showFloatingMsg('🎮 تم العثور على لاعب! بدأت المباراة.');
-                    startGame();
+                    configureMultiplayerMatch(data);
+                    showFloatingMsg(`🎮 تم العثور على لاعب! علمك ${myFlagType === 'green' ? 'الأخضر' : 'الأحمر'} — المباراة 1 ضد 1`);
+                    startGame('multiplayer', data);
+                    return;
+                }
+
+                if (data.type === 'game_update' || data.type === 'state_update') {
+                    handleNetworkEvent(data);
                 }
             };
 
@@ -749,7 +910,10 @@
         showFloatingMsg('تم إلغاء البحث عن لاعب');
     }
 
-    function startGame() {
+    function startGame(mode = 'bot', matchData = null) {
+        if (mode === 'multiplayer' && matchData) configureMultiplayerMatch(matchData);
+        else if (mode === 'bot') gameMode = 'bot';
+
         menuBgmAudio.pause();
         menuBgmAudio.currentTime = 0;
         battleBgmAudio.play().catch(e => {});
@@ -768,7 +932,7 @@
         cameraRadius = targetCameraRadius;
         updateCameraPosition();
 
-        showFloatingMsg('بدأت المعركة! الكاميرا الآن فوق معسكرك.');
+        showFloatingMsg(gameMode === 'multiplayer' ? 'بدأت المباراة ضد اللاعب الآخر.' : 'بدأت المعركة ضد البوت.');
     }
 
     function setupLighting() {
@@ -1299,6 +1463,8 @@
 
         playerTanks.push(playerTank);
         enemyTanks.push(enemyTank);
+        assignNetId(playerTank);
+        assignNetId(enemyTank);
 
         // لا توجد سيارة إسعاف للاعب عند بداية المعركة.
         // تظهر سيارة الإسعاف التابعة للاعب فقط بعد شرائها من المتجر.
@@ -2171,6 +2337,8 @@
             newTank.target = exitTarget;
 
             playerTanks.push(newTank);
+            assignNetId(newTank);
+            networkPurchase(type);
             showFloatingMsg(type === 'rocket' ? 'تم خروج عربة سكود من بوابة المعسكر' : 'تم خروج دبابة عادية من بوابة المعسكر');
         }
     }
@@ -2754,6 +2922,9 @@
         fromTank.lastShot = now;
         fromTank.reloadTime = 8000;
         createModernMuzzleFlash(fromTank);
+        if (gameMode === 'multiplayer' && fromTank.team === 'player') {
+            sendNetworkMessage({ type: 'game_update', roomId: multiplayerRoomId, payload: { kind: 'fire', x: fromTank.mesh.position.x, z: fromTank.mesh.position.z } });
+        }
         if (fromTank.team === 'player') {
             playSound('attack', 0.8);
             triggerCameraShake(1.2);
@@ -2864,11 +3035,10 @@
             let dist = unit.mesh.position.distanceTo(centerPos);
             if (dist < 32) {
                 let damageAmount = Math.floor(160 * (1 - dist / 32));
-                unit.hp -= Math.max(40, damageAmount);
-                if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(unit);
-
-                if (unit.hp <= 0 && !unit.isDestroyed) {
-                    destroyCombatUnit(unit, fromTeam);
+                const appliedDamage = Math.max(40, damageAmount);
+                networkDamage(unit, appliedDamage, fromTeam);
+                if (gameMode === 'multiplayer' && unit.isRemote) {
+                    sendNetworkMessage({ type: 'game_update', roomId: multiplayerRoomId, payload: { kind: 'fx', x: centerPos.x, z: centerPos.z } });
                 }
             }
         });
@@ -2995,14 +3165,12 @@
             }
             let dir = new THREE.Vector3().subVectors(b.targetTank.mesh.position, b.mesh.position);
             if (dir.length() < 2.5) {
-                b.targetTank.hp -= b.damage;
+                networkDamage(b.targetTank, b.damage, b.fromTeam);
                 playSound('explosion');
-                addSmokeParticle(b.targetTank.mesh.position);
-                if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(b.targetTank);
-
-                if (b.targetTank.hp <= 0 && !b.targetTank.isDestroyed) {
-                    destroyCombatUnit(b.targetTank, b.fromTeam);
+                if (gameMode === 'multiplayer' && b.targetTank.isRemote) {
+                    sendNetworkMessage({ type: 'game_update', roomId: multiplayerRoomId, payload: { kind: 'fx', x: b.targetTank.mesh.position.x, z: b.targetTank.mesh.position.z } });
                 }
+                addSmokeParticle(b.targetTank.mesh.position);
                 scene.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); bullets.splice(i, 1);
             } else {
                 b.mesh.position.add(dir.normalize().multiplyScalar(b.speed));
@@ -3063,6 +3231,22 @@
                     tankData.hpLabel.remove();
                 }
                 updateTankAudio(tankData, false);
+                return;
+            }
+
+            // الوحدات القادمة من اللاعب الآخر تتحرك فقط حسب بيانات الشبكة، ولا يشغلها البوت المحلي.
+            if (tankData.isRemote) {
+                if (tankData.remoteTarget) {
+                    const delta = tankData.remoteTarget.clone().sub(tankData.mesh.position);
+                    const dist = delta.length();
+                    if (dist > 0.04) {
+                        const step = Math.min(0.55, dist);
+                        tankData.mesh.position.add(delta.normalize().multiplyScalar(step));
+                        tankData.mesh.position.y = getTerrainHeight(tankData.mesh.position.x, tankData.mesh.position.z);
+                        tankData.mesh.rotation.y += (tankData.remoteRotation - tankData.mesh.rotation.y) * 0.2;
+                    }
+                }
+                updateTankAudio(tankData, !!tankData.remoteTarget && tankData.mesh.position.distanceTo(tankData.remoteTarget) > 1);
                 return;
             }
 
@@ -3211,7 +3395,7 @@
                             tankData.target = null; 
                         }
                     }
-                } else {
+                } else if (gameMode === 'bot') {
                     if (!tankData.target || Math.random() < 0.02) {
                         let targetsList = [
                             new THREE.Vector3(CORNER_OFFSET, 0, CORNER_OFFSET),
@@ -3285,6 +3469,7 @@
             }
         }
 
+        broadcastLocalState();
         updateTankHpLabels();
     }
 
