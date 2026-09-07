@@ -354,6 +354,7 @@
     let tacticalMissiles = [];
     let shockwaves = [];
     let smokeParticles = [];
+    let combatEffects = [];
     let obstacles = []; 
     let rotatingRadars = [];
     let tankTracks = [];
@@ -660,6 +661,20 @@
         mainRadarDish.castShadow = true;
         parentGroup.add(mainRadarDish);
         rotatingRadars.push(mainRadarDish);
+
+        // Modern HQ details: antenna mast, helipad, barriers, lamps and modular command units.
+        const mast=new THREE.Mesh(new THREE.CylinderGeometry(.28,.4,8,12),metalPlateMat);
+        mast.position.set(9,4.5,8); mast.castShadow=true; parentGroup.add(mast);
+        const mastTip=new THREE.Mesh(new THREE.SphereGeometry(.55,12,8),glowMat); mastTip.position.set(9,8.8,8); parentGroup.add(mastTip);
+        for(let i=0;i<4;i++){
+            const barrier=new THREE.Mesh(new THREE.BoxGeometry(4.5,.7,.7),metalPlateMat);
+            barrier.position.set(-10+i*6,.7,12); parentGroup.add(barrier);
+        }
+        const helipad=new THREE.Mesh(new THREE.CylinderGeometry(7,.7,16,32),new THREE.MeshStandardMaterial({color:0x26313d,roughness:.8,metalness:.25}));
+        helipad.scale.y=.08; helipad.position.set(0,.25,18); parentGroup.add(helipad);
+        const padRing=new THREE.Mesh(new THREE.TorusGeometry(5.8,.18,8,40),glowMat); padRing.rotation.x=Math.PI/2; padRing.position.set(0,.5,18); parentGroup.add(padRing);
+        const commBox=new THREE.Mesh(new THREE.BoxGeometry(7,3.2,5),darkRoofMat); commBox.position.set(-9,2,-5); commBox.castShadow=true; parentGroup.add(commBox);
+        const commScreen=new THREE.Mesh(new THREE.BoxGeometry(4,.9,.08),windowMat); commScreen.position.set(-9,2.3,-7.53); parentGroup.add(commScreen);
     }
 
     function createBases() {
@@ -703,90 +718,208 @@
 
     function createOilRigs() {
         const positions = [
-            { x: 50, z: -50 }, 
-            { x: -50, z: 50 },
-            { x: -70, z: -70 },
-            { x: 70, z: 70 }
+            { x: 50, z: -50 }, { x: -50, z: 50 },
+            { x: -70, z: -70 }, { x: 70, z: 70 }
         ];
 
-        positions.forEach(pos => {
+        positions.forEach((pos, index) => {
             const rigGroup = new THREE.Group();
-            let terrainH = getTerrainHeight(pos.x, pos.z);
+            const terrainH = getTerrainHeight(pos.x, pos.z);
             rigGroup.position.set(pos.x, terrainH, pos.z);
 
-            const concreteMat = new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.7, metalness: 0.2 });
-            const basePad = new THREE.Mesh(new THREE.BoxGeometry(14, 1.5, 14), concreteMat);
-            basePad.position.y = 0.75; basePad.castShadow = true; basePad.receiveShadow = true;
-            rigGroup.add(basePad);
+            // Oil field: realistic pumpjack / nodding-donkey style equipment.
+            const steel = new THREE.MeshStandardMaterial({ color: 0x4b5154, roughness: 0.48, metalness: 0.82 });
+            const darkSteel = new THREE.MeshStandardMaterial({ color: 0x202427, roughness: 0.58, metalness: 0.72 });
+            const yellow = new THREE.MeshStandardMaterial({ color: 0xc79620, roughness: 0.52, metalness: 0.35 });
+            const rust = new THREE.MeshStandardMaterial({ color: 0x633b24, roughness: 0.9, metalness: 0.18 });
+            const concrete = new THREE.MeshStandardMaterial({ color: 0x77736b, roughness: 0.96 });
+            const black = new THREE.MeshStandardMaterial({ color: 0x111416, roughness: 0.88, metalness: 0.12 });
+            const pipeMat = new THREE.MeshStandardMaterial({ color: 0x596166, roughness: 0.42, metalness: 0.9 });
+            const warning = new THREE.MeshStandardMaterial({ color: 0xd8a51d, roughness: 0.55, metalness: 0.28 });
+            const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff9d19 });
 
-            const rustMetalMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.4, metalness: 0.8 });
-            
-            [-4.5, 4.5].forEach(fx => {
-                const supportTower = new THREE.Mesh(new THREE.BoxGeometry(1.2, 9, 1.2), rustMetalMat);
-                supportTower.position.set(fx, 5, 0);
-                supportTower.castShadow = true;
-                rigGroup.add(supportTower);
+            // Heavy concrete foundation.
+            const foundation = new THREE.Mesh(new THREE.BoxGeometry(15.5, 0.65, 13.5), concrete);
+            foundation.position.y = 0.32;
+            foundation.castShadow = true;
+            foundation.receiveShadow = true;
+            rigGroup.add(foundation);
+
+            const steelPlate = new THREE.Mesh(new THREE.BoxGeometry(13.8, 0.24, 11.8), darkSteel);
+            steelPlate.position.y = 0.78;
+            rigGroup.add(steelPlate);
+
+            // Pumpjack support tower.
+            const tower = new THREE.Group();
+            [-3.4, 3.4].forEach(x => {
+                [-2.25, 2.25].forEach(z => {
+                    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.42, 7.0, 0.42), steel);
+                    leg.position.set(x, 4.25, z);
+                    leg.castShadow = true;
+                    tower.add(leg);
+                });
             });
+            for (let i = 0; i < 3; i++) {
+                const y = 2.1 + i * 2.15;
+                [-2.25, 2.25].forEach(z => {
+                    const cross = new THREE.Mesh(new THREE.BoxGeometry(7.15, 0.18, 0.18), steel);
+                    cross.position.set(0, y, z);
+                    tower.add(cross);
+                });
+                const diag1 = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 7.0), steel);
+                diag1.position.set(0, y, 0);
+                diag1.rotation.y = Math.PI / 4;
+                tower.add(diag1);
+                const diag2 = diag1.clone();
+                diag2.rotation.y = -Math.PI / 4;
+                tower.add(diag2);
+            }
+            rigGroup.add(tower);
 
-            const topCrossbar = new THREE.Mesh(new THREE.BoxGeometry(10, 1, 1.2), rustMetalMat);
-            topCrossbar.position.set(0, 9.5, 0);
-            topCrossbar.castShadow = true;
-            rigGroup.add(topCrossbar);
+            // Walking beam and horsehead: this part moves continuously.
+            const pivot = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 1.0, 18), darkSteel);
+            pivot.rotation.z = Math.PI / 2;
+            pivot.position.set(0, 7.55, 0);
+            rigGroup.add(pivot);
 
-            const tankMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.3, metalness: 0.8 });
-            const oilTank = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 5, 16), tankMat);
-            oilTank.position.set(-4.5, 3.2, -4.5);
-            oilTank.castShadow = true; oilTank.receiveShadow = true;
-            rigGroup.add(oilTank);
+            const beam = new THREE.Group();
+            beam.position.set(0, 7.65, 0);
+            const walkingBeam = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.62, 10.6), yellow);
+            walkingBeam.castShadow = true;
+            beam.add(walkingBeam);
 
-            const tankRoof = new THREE.Mesh(new THREE.ConeGeometry(3.3, 1, 16), new THREE.MeshStandardMaterial({ color: 0x4b5563 }));
-            tankRoof.position.set(-4.5, 6.2, -4.5);
+            const beamTop = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.18, 10.0), steel);
+            beamTop.position.y = 0.36;
+            beam.add(beamTop);
+
+            const horsehead = new THREE.Mesh(new THREE.BoxGeometry(1.65, 1.9, 1.0), yellow);
+            horsehead.position.z = 5.05;
+            beam.add(horsehead);
+
+            const horseFace = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.35, 0.25), warning);
+            horseFace.position.set(0, -0.02, 5.58);
+            beam.add(horseFace);
+
+            const counterweight = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.45, 1.25), darkSteel);
+            counterweight.position.z = -4.25;
+            beam.add(counterweight);
+
+            const counterPlate = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.2, 1.5), rust);
+            counterPlate.position.set(0, -0.78, -4.25);
+            beam.add(counterPlate);
+
+            // Polished rod and pumping rod.
+            const polishedRod = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 3.8, 14), pipeMat);
+            polishedRod.position.set(0, -1.9, 5.05);
+            beam.add(polishedRod);
+
+            const rodGuide = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.38, 16), darkSteel);
+            rodGuide.position.set(0, -3.75, 5.05);
+            rigGroup.add(rodGuide);
+
+            rigGroup.add(beam);
+            animatedRigs.push(beam);
+
+            // Gearbox, motor and flywheel.
+            const motor = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.9, 2.65), darkSteel);
+            motor.position.set(0, 1.9, -3.65);
+            motor.castShadow = true;
+            rigGroup.add(motor);
+
+            const motorTop = new THREE.Mesh(new THREE.BoxGeometry(2.75, 0.3, 2.1), yellow);
+            motorTop.position.set(0, 3.0, -3.65);
+            rigGroup.add(motorTop);
+
+            const flywheel = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.24, 28), steel);
+            flywheel.rotation.x = Math.PI / 2;
+            flywheel.position.set(0, 3.05, -2.25);
+            rigGroup.add(flywheel);
+
+            // Crank connecting the motor to the walking beam.
+            const crank = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 2.7, 12), pipeMat);
+            crank.rotation.z = Math.PI / 2;
+            crank.position.set(0, 4.0, -1.5);
+            rigGroup.add(crank);
+
+            // Realistic oil tank with top hatch, ladder and pipe.
+            const tank = new THREE.Mesh(new THREE.CylinderGeometry(2.35, 2.35, 3.0, 28), darkSteel);
+            tank.position.set(-4.65, 2.25, 3.7);
+            tank.castShadow = true;
+            rigGroup.add(tank);
+            const tankRoof = new THREE.Mesh(new THREE.CylinderGeometry(2.12, 2.12, 0.22, 28), steel);
+            tankRoof.position.set(-4.65, 3.86, 3.7);
             rigGroup.add(tankRoof);
+            const tankBand = new THREE.Mesh(new THREE.TorusGeometry(2.36, 0.08, 8, 28), warning);
+            tankBand.position.set(-4.65, 2.25, 3.7);
+            tankBand.rotation.x = Math.PI / 2;
+            rigGroup.add(tankBand);
 
-            const beamGroup = new THREE.Group();
-            beamGroup.position.set(0, 9.5, 0);
+            for (let i = 0; i < 4; i++) {
+                const rung = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, 0.16), steel);
+                rung.position.set(-6.35, 1.0 + i * 0.65, 3.7);
+                rigGroup.add(rung);
+            }
+            const tankPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 4.6, 12), pipeMat);
+            tankPipe.rotation.z = Math.PI / 2;
+            tankPipe.position.set(-2.2, 2.15, 3.7);
+            rigGroup.add(tankPipe);
 
-            const walkingBeam = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 15), rustMetalMat);
-            walkingBeam.position.set(0, 0, 1); walkingBeam.castShadow = true;
-            beamGroup.add(walkingBeam);
+            // Well head, valve stack and tubing.
+            const wellHead = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.75, 1.7, 18), darkSteel);
+            wellHead.position.set(4.25, 1.65, 2.8);
+            rigGroup.add(wellHead);
+            for (let i = 0; i < 3; i++) {
+                const valve = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.22, 16), warning);
+                valve.rotation.z = Math.PI / 2;
+                valve.position.set(4.25, 1.8 + i * 0.38, 2.8);
+                rigGroup.add(valve);
+            }
 
-            const horsehead = new THREE.Mesh(new THREE.BoxGeometry(1.6, 3.5, 2.5), new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.8 }));
-            horsehead.position.set(0, -1.5, 8); horsehead.castShadow = true;
-            beamGroup.add(horsehead);
-
-            const counterweight = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3, 3.2), new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.9 }));
-            counterweight.position.set(0, -1.2, -6); counterweight.castShadow = true;
-            beamGroup.add(counterweight);
-
-            rigGroup.add(beamGroup);
-
-            const motorBox = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), new THREE.MeshStandardMaterial({ color: 0x374151, metalness: 0.7 }));
-            motorBox.position.set(4, 2.5, -4.5); motorBox.castShadow = true;
-            rigGroup.add(motorBox);
-
-            const flagGroup = new THREE.Group();
-            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 18, 6), new THREE.MeshStandardMaterial({color: 0xcccccc, metalness: 0.9}));
-            pole.position.set(6, 9, 4); flagGroup.add(pole);
-
-            const flagGeo = new THREE.PlaneGeometry(7, 4, 12, 4);
-            const flagMat = new THREE.MeshBasicMaterial({ map: createFlagTexture('none'), side: THREE.DoubleSide });
-            const flagMesh = new THREE.Mesh(flagGeo, flagMat);
-            flagMesh.position.set(9.5, 16, 4); flagGroup.add(flagMesh);
-            activeFlagMeshes.push({ mesh: flagMesh, baseHeight: 16, type: 'none' });
-
-            rigGroup.add(flagGroup);
-            scene.add(rigGroup);
-            
-            obstacles.push({ x: pos.x, z: pos.z, radius: 10 });
-            
-            oilRigs.push({
-                x: pos.x, z: pos.z, group: rigGroup,
-                beam: beamGroup,
-                flagData: activeFlagMeshes[activeFlagMeshes.length - 1],
-                owner: 'none', captureProgress: 0
+            // Short pipes and elbows around the pump.
+            const pipePositions = [[3.0, 1.2, 2.8], [3.0, 1.2, -0.8], [-1.8, 1.25, -1.9]];
+            pipePositions.forEach(v => {
+                const p = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 3.2, 12), pipeMat);
+                p.rotation.z = Math.PI / 2;
+                p.position.set(v[0], v[1], v[2]);
+                rigGroup.add(p);
             });
-            
-            animatedRigs.push(beamGroup);
+
+            // Safety rail and small service platform.
+            const platform = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.2, 2.4), steel);
+            platform.position.set(4.3, 2.1, -2.5);
+            rigGroup.add(platform);
+            [-1, 1].forEach(x => {
+                const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.2, 2.4), steel);
+                rail.position.set(4.3 + x * 1.65, 2.75, -2.5);
+                rigGroup.add(rail);
+            });
+
+            // Small warning beacon.
+            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), beaconMat);
+            beacon.position.set(0, 10.0, 0);
+            rigGroup.add(beacon);
+
+            // Dedicated ownership flag for THIS oil rig.
+            const flagGroup = new THREE.Group();
+            flagGroup.position.set(5.5, 0, -4.8);
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 5.8, 10), steel);
+            pole.position.y = 2.9;
+            pole.castShadow = true;
+            flagGroup.add(pole);
+
+            const flagGeo = new THREE.PlaneGeometry(3.8, 2.25, 12, 4);
+            const flagMat = new THREE.MeshBasicMaterial({ map: createFlagTexture('none'), side: THREE.DoubleSide, transparent: true });
+            const flagMesh = new THREE.Mesh(flagGeo, flagMat);
+            flagMesh.position.set(1.9, 5.0, 0);
+            flagGroup.add(flagMesh);
+            rigGroup.add(flagGroup);
+
+            const flagData = { mesh: flagMesh, baseHeight: 5.0, type: 'none' };
+            activeFlagMeshes.push(flagData);
+
+            scene.add(rigGroup);
+            obstacles.push({ x: pos.x, z: pos.z, radius: 10 });
+            oilRigs.push({ x: pos.x, z: pos.z, group: rigGroup, beam: beam, flagData: flagData, owner: 'none', captureProgress: 0 });
         });
     }
 
@@ -800,95 +933,355 @@
         const wheelMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.6, metalness: 0.3 });
 
         if (isRocketTank) {
-            const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.4, 1.7, 17), armorMat);
-            chassis.position.y = 1.0; chassis.castShadow = true; chassis.receiveShadow = true;
+            // Modern SCUD-style TEL: layered armor, detailed chassis, suspension,
+            // hydraulic launch platform and a detailed missile assembly.
+            const darkArmorMat = new THREE.MeshStandardMaterial({ color: 0x202a24, roughness: 0.58, metalness: 0.48 });
+            const panelMat = new THREE.MeshStandardMaterial({ color: 0x35443a, roughness: 0.42, metalness: 0.52 });
+            const edgeMat = new THREE.MeshStandardMaterial({ color: 0x111713, roughness: 0.35, metalness: 0.72 });
+            const rubberMat = new THREE.MeshStandardMaterial({ color: 0x101312, roughness: 0.82, metalness: 0.08 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x173c42, roughness: 0.12, metalness: 0.82, transparent: true, opacity: 0.86 });
+            const warningMat = new THREE.MeshStandardMaterial({ color: 0xd3a92f, roughness: 0.45, metalness: 0.35 });
+
+            // Main armored truck chassis.
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(5.0, 1.65, 16.8), armorMat);
+            chassis.position.y = 1.05; chassis.castShadow = true; chassis.receiveShadow = true;
             tankGroup.add(chassis);
 
-            const cab = new THREE.Mesh(new THREE.BoxGeometry(4.0, 1.8, 4.8), armorMat);
-            cab.position.set(0, 2.2, 6.1); cab.castShadow = true;
-            tankGroup.add(cab);
+            // Lower armored skirts and front/rear bumpers.
+            const lowerHull = new THREE.Mesh(new THREE.BoxGeometry(5.35, 0.72, 15.7), darkArmorMat);
+            lowerHull.position.set(0, 0.42, 0.25); lowerHull.castShadow = true; tankGroup.add(lowerHull);
+            const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.62, 0.65), edgeMat);
+            frontBumper.position.set(0, 0.62, 8.25); frontBumper.castShadow = true; tankGroup.add(frontBumper);
+            const rearBumper = frontBumper.clone();
+            rearBumper.position.z = -8.25; tankGroup.add(rearBumper);
 
-            const windshield = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.0, 0.2), new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.85 }));
-            windshield.position.set(0, 2.4, 8.55);
-            tankGroup.add(windshield);
+            // Cab with sloped-looking layered armor.
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(4.55, 2.55, 4.65), panelMat);
+            cab.position.set(0, 2.35, 6.0); cab.castShadow = true; tankGroup.add(cab);
+            const cabRoof = new THREE.Mesh(new THREE.BoxGeometry(4.72, 0.28, 4.78), darkArmorMat);
+            cabRoof.position.set(0, 3.72, 6.0); cabRoof.castShadow = true; tankGroup.add(cabRoof);
 
-            for (let wz = -6.5; wz <= 6.5; wz += 2.2) {
-                [-2.3, 2.3].forEach(wx => {
-                    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.8, 12), wheelMat);
-                    wheel.rotation.z = Math.PI / 2;
-                    wheel.position.set(wx, 0.85, wz);
-                    wheel.castShadow = true;
-                    tankGroup.add(wheel);
-                });
-            }
-
-            const launchBed = new THREE.Group();
-            launchBed.position.set(0, 1.9, -1);
-            launchBed.name = "scudBed";
-
-            const bedBase = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.5, 11.5), new THREE.MeshStandardMaterial({color: 0x27272a, metalness: 0.7}));
-            bedBase.position.set(0, 0, 0);
-            launchBed.add(bedBase);
-
-            [-2.0, 2.0].forEach(ax => {
-                const stabilizerLeg = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 3.2), new THREE.MeshStandardMaterial({color: 0x111827, metalness: 0.8}));
-                stabilizerLeg.position.set(ax, -0.4, -4.5);
-                stabilizerLeg.name = "stabilizerLeg";
-                launchBed.add(stabilizerLeg);
+            // Modern armored windshield + side windows.
+            const windshield = new THREE.Mesh(new THREE.BoxGeometry(3.75, 1.12, 0.18), glassMat);
+            windshield.position.set(0, 2.65, 8.35); windshield.rotation.x = -0.05; tankGroup.add(windshield);
+            [-2.18, 2.18].forEach(wx => {
+                const sideWindow = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.0, 2.25), glassMat);
+                sideWindow.position.set(wx, 2.65, 6.15); tankGroup.add(sideWindow);
             });
 
-            const missileGroup = new THREE.Group();
-            missileGroup.name = "scudMissile";
+            // Protective window frames and cab armor rails.
+            [-1.92, 1.92].forEach(wx => {
+                const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.45, 0.22), edgeMat);
+                pillar.position.set(wx, 2.63, 8.22); tankGroup.add(pillar);
+            });
+            const roofBar = new THREE.Mesh(new THREE.BoxGeometry(4.85, 0.16, 0.18), edgeMat);
+            roofBar.position.set(0, 3.88, 8.18); tankGroup.add(roofBar);
 
-            const silverBodyMat = new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.2, metalness: 0.9 });
-            const silverTipMat = new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.1, metalness: 0.95 }); 
-            const finMat = new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.4, metalness: 0.7 });
+            // Detailed wheels, hubs, mudguards and axles.
+            const wheelPositions = [-6.2, -2.9, 0.55, 3.95, 7.0];
+            wheelPositions.forEach(wz => {
+                [-2.72, 2.72].forEach(wx => {
+                    const tire = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 1.02, 0.78, 18), rubberMat);
+                    tire.rotation.z = Math.PI / 2; tire.position.set(wx, 0.93, wz); tire.castShadow = true; tankGroup.add(tire);
+                    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.84, 12), edgeMat);
+                    hub.rotation.z = Math.PI / 2; hub.position.set(wx, 0.93, wz); tankGroup.add(hub);
+                    const hubCap = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.9, 10), panelMat);
+                    hubCap.rotation.z = Math.PI / 2; hubCap.position.set(wx, 0.93, wz); tankGroup.add(hubCap);
 
-            const missileBody = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 12, 16), silverBodyMat);
-            missileBody.position.set(0, 0, 0);
-            missileBody.castShadow = true;
-            missileGroup.add(missileBody);
+                    const mudguard = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.22, 2.25), darkArmorMat);
+                    mudguard.position.set(wx, 1.92, wz); mudguard.castShadow = true; tankGroup.add(mudguard);
+                });
+            });
 
-            const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), silverTipMat);
-            missileTip.position.set(0, 6 + 1.9, 0);
-            missileTip.castShadow = true;
-            missileGroup.add(missileTip);
+            // Side armor panels and access hatches.
+            [-2.61, 2.61].forEach(wx => {
+                const sideSkirt = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.12, 12.9), panelMat);
+                sideSkirt.position.set(wx, 1.05, -0.15); sideSkirt.castShadow = true; tankGroup.add(sideSkirt);
+                [-5.4, -1.8, 1.8, 5.4].forEach(hz => {
+                    const hatch = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.58, 1.05), edgeMat);
+                    hatch.position.set(wx * 1.01, 1.55, hz); tankGroup.add(hatch);
+                });
+            });
 
-            for (let i = 0; i < 4; i++) {
-                const fin = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.5, 1.8), finMat);
-                fin.rotation.y = (i * Math.PI) / 2;
-                fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, -5, Math.sin(i * Math.PI / 2) * 0.8);
-                fin.castShadow = true;
-                missileGroup.add(fin);
-
-                const stabilizerFin = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.6), silverTipMat);
-                stabilizerFin.rotation.y = (i * Math.PI) / 2;
-                stabilizerFin.position.set(Math.cos(i * Math.PI / 2) * 1.1, -6.2, Math.sin(i * Math.PI / 2) * 1.1);
-                missileGroup.add(stabilizerFin);
+            // Headlights, marker lights and grille.
+            [-1.65, 1.65].forEach(wx => {
+                const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.34, 0.18), new THREE.MeshStandardMaterial({ color: 0xcffafe, emissive: 0x164e63, emissiveIntensity: 1.8, roughness: 0.18, metalness: 0.7 }));
+                lamp.position.set(wx, 1.58, 8.48); tankGroup.add(lamp);
+            });
+            for (let i = -2; i <= 2; i++) {
+                const grilleBar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.62, 0.18), edgeMat);
+                grilleBar.position.set(i * 0.58, 1.05, 8.52); tankGroup.add(grilleBar);
             }
 
-            missileGroup.position.set(0, 0.5, 0);
-            missileGroup.rotation.x = Math.PI / 2;
+            // Exhaust stack and service box.
+            const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.27, 2.4, 12), edgeMat);
+            exhaust.position.set(2.05, 2.15, -6.4); tankGroup.add(exhaust);
+            const exhaustCap = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.22, 12), darkArmorMat);
+            exhaustCap.position.set(2.05, 3.35, -6.4); tankGroup.add(exhaustCap);
+            const serviceBox = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.95, 1.8), darkArmorMat);
+            serviceBox.position.set(-1.65, 2.0, -5.9); serviceBox.castShadow = true; tankGroup.add(serviceBox);
+
+            // Roof electronics: antenna bases, GPS/sensor block and beacon.
+            [-1.35, 1.35].forEach(wx => {
+                const antennaBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 0.22, 10), edgeMat);
+                antennaBase.position.set(wx, 3.98, 6.2); tankGroup.add(antennaBase);
+                const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.9, 8), panelMat);
+                antenna.position.set(wx, 4.95, 6.2); antenna.rotation.z = wx > 0 ? 0.05 : -0.05; tankGroup.add(antenna);
+            });
+            const sensorBox = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.38, 0.85), edgeMat);
+            sensorBox.position.set(0, 4.02, 7.0); tankGroup.add(sensorBox);
+            const beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.22, 12), warningMat);
+            beacon.position.set(0, 4.33, 7.0); tankGroup.add(beacon);
+
+            // Launch platform: base rails, hinges, hydraulics and locking clamps.
+            const launchBed = new THREE.Group();
+            launchBed.position.set(0, 2.05, -1.0);
+            launchBed.name = "scudBed";
+
+            const bedBase = new THREE.Mesh(new THREE.BoxGeometry(4.15, 0.5, 11.9), edgeMat);
+            bedBase.position.set(0, 0, 0); bedBase.castShadow = true; launchBed.add(bedBase);
+            const bedTop = new THREE.Mesh(new THREE.BoxGeometry(3.72, 0.32, 11.25), panelMat);
+            bedTop.position.set(0, 0.38, 0); bedTop.castShadow = true; launchBed.add(bedTop);
+
+            [-1.55, 1.55].forEach(ax => {
+                const rail = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.35, 10.9), darkArmorMat);
+                rail.position.set(ax, 0.65, 0); launchBed.add(rail);
+                [-4.3, -1.5, 1.5, 4.3].forEach(rz => {
+                    const clamp = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.72), warningMat);
+                    clamp.position.set(ax, 0.88, rz); launchBed.add(clamp);
+                });
+            });
+
+            // Hydraulic stabilizer legs retained by name for existing animation code.
+            [-2.0, 2.0].forEach(ax => {
+                const stabilizerLeg = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.46, 3.45), edgeMat);
+                stabilizerLeg.position.set(ax, -0.45, -4.55);
+                stabilizerLeg.name = "stabilizerLeg";
+                stabilizerLeg.castShadow = true;
+                launchBed.add(stabilizerLeg);
+                const hydraulic = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 1.65, 10), warningMat);
+                hydraulic.position.set(ax, -0.1, -4.45); hydraulic.rotation.x = Math.PI / 2; launchBed.add(hydraulic);
+            });
+
+            // Detailed missile: body, bands, nose, fins and attachment rings.
+            const missileGroup = new THREE.Group();
+            missileGroup.name = "scudMissile";
+            const missileBodyMat = new THREE.MeshStandardMaterial({ color: 0x8b9490, roughness: 0.34, metalness: 0.78 });
+            const missileDarkMat = new THREE.MeshStandardMaterial({ color: 0x26312c, roughness: 0.46, metalness: 0.68 });
+            const missileTipMat = new THREE.MeshStandardMaterial({ color: 0xb8c0bc, roughness: 0.2, metalness: 0.9 });
+            const finMat = new THREE.MeshStandardMaterial({ color: 0x303b35, roughness: 0.38, metalness: 0.74 });
+
+            const missileBody = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.92, 12.2, 20), missileBodyMat);
+            missileBody.castShadow = true; missileGroup.add(missileBody);
+            const nose = new THREE.Mesh(new THREE.ConeGeometry(0.82, 3.5, 20), missileTipMat);
+            nose.position.y = 7.65; nose.castShadow = true; missileGroup.add(nose);
+            [-4.25, -2.0, 1.7, 4.0].forEach(by => {
+                const band = new THREE.Mesh(new THREE.TorusGeometry(0.86, 0.075, 8, 20), missileDarkMat);
+                band.rotation.x = Math.PI / 2; band.position.y = by; missileGroup.add(band);
+            });
+            for (let i = 0; i < 4; i++) {
+                const a = i * Math.PI / 2;
+                const fin = new THREE.Mesh(new THREE.BoxGeometry(0.18, 3.25, 1.65), finMat);
+                fin.rotation.y = a;
+                fin.position.set(Math.cos(a) * 0.86, -5.05, Math.sin(a) * 0.86);
+                fin.castShadow = true; missileGroup.add(fin);
+                const brace = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.1, 0.5), missileTipMat);
+                brace.rotation.y = a; brace.position.set(Math.cos(a) * 1.02, -6.2, Math.sin(a) * 1.02); missileGroup.add(brace);
+            }
+            missileGroup.position.set(0, 0.55, 0);
+            missileGroup.rotation.set(Math.PI / 2, 0, 0);
             launchBed.add(missileGroup);
             tankGroup.add(launchBed);
 
+            // Small identification/maintenance plates for visual detail.
+            const plate = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.55, 0.08), warningMat);
+            plate.position.set(0, 1.78, 8.6); tankGroup.add(plate);
         } else {
-            const bodySizeX = 6;
-            const bodySizeZ = 9;
-            const body = new THREE.Mesh(new THREE.BoxGeometry(bodySizeX, 2.2, bodySizeZ), armorMat);
-            body.position.y = 1.2; body.name = "body"; body.castShadow = true; body.receiveShadow = true; tankGroup.add(body);
-            
-            const leftTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, bodySizeZ + 0.2), wheelMat);
-            leftTrack.position.set(-(bodySizeX/2 + 0.5), 0.8, 0); leftTrack.castShadow = true; tankGroup.add(leftTrack);
-            
-            const rightTrack = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.7, bodySizeZ + 0.2), wheelMat);
-            rightTrack.position.set((bodySizeX/2 + 0.5), 0.8, 0); rightTrack.castShadow = true; tankGroup.add(rightTrack);
-            
-            const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.6, 1.5, 12), armorMat);
-            turret.position.y = 2.8; turret.name = "turret"; turret.castShadow = true; tankGroup.add(turret);
-            
-            const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 6, 8), armorMat);
-            cannon.rotation.x = Math.PI / 2; cannon.position.set(0, 2.8, 4); cannon.name = "cannon"; cannon.castShadow = true; tankGroup.add(cannon);
+
+            // دبابة قتال رئيسية حديثة: هيكل زاوي + جنزير مفصل + دروع إضافية + بصريات وأسلحة مساعدة.
+            const bodySizeX = 6.2;
+            const bodySizeZ = 9.4;
+            const darkArmorMat = new THREE.MeshStandardMaterial({ color: 0x202a24, roughness: 0.55, metalness: 0.65 });
+            const edgeMat = new THREE.MeshStandardMaterial({ color: 0x111714, roughness: 0.72, metalness: 0.45 });
+            const rubberMat = new THREE.MeshStandardMaterial({ color: 0x0b0d0c, roughness: 0.9, metalness: 0.05 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x173b43, roughness: 0.12, metalness: 0.85, emissive: 0x06171a, emissiveIntensity: 0.35 });
+            const lightMat = new THREE.MeshStandardMaterial({ color: 0xe8f5ff, roughness: 0.12, metalness: 0.5, emissive: 0xb9ddff, emissiveIntensity: 1.8 });
+
+            function addBox(name, size, pos, mat, rot = null) {
+                const m = new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], size[2]), mat);
+                m.name = name;
+                m.position.set(pos[0], pos[1], pos[2]);
+                if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
+                m.castShadow = true; m.receiveShadow = true;
+                tankGroup.add(m);
+                return m;
+            }
+
+            // الهيكل الرئيسي مع مقدمة مائلة وكتفَي حماية.
+            addBox('body', [bodySizeX, 2.15, bodySizeZ], [0, 1.35, 0], armorMat);
+            addBox('upperHull', [5.55, 0.85, 6.4], [0, 2.55, 0.7], armorMat, [0.03, 0, 0]);
+            addBox('frontGlacis', [5.8, 1.45, 2.25], [0, 2.0, 4.05], armorMat, [-0.28, 0, 0]);
+            addBox('rearDeck', [5.55, 0.65, 2.2], [0, 2.45, -3.55], darkArmorMat);
+
+            // جنزيران حديثان مع بكرات واضحة.
+            [-1, 1].forEach(side => {
+                const sx = side * 3.55;
+                addBox(side < 0 ? 'leftTrack' : 'rightTrack', [1.15, 1.95, bodySizeZ + 0.35], [sx, 1.0, 0], edgeMat);
+                addBox('sideSkirt', [0.34, 1.25, 8.35], [side * 3.18, 1.55, 0], darkArmorMat);
+
+                for (let i = 0; i < 7; i++) {
+                    const z = -3.55 + i * 1.18;
+                    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(i === 3 ? 0.72 : 0.62, i === 3 ? 0.72 : 0.62, 0.58, 20), wheelMat);
+                    wheel.rotation.z = Math.PI / 2;
+                    wheel.position.set(sx, 0.88, z);
+                    wheel.castShadow = true; wheel.receiveShadow = true;
+                    tankGroup.add(wheel);
+
+                    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.62, 16), rubberMat);
+                    hub.rotation.z = Math.PI / 2;
+                    hub.position.set(sx, 0.88, z);
+                    tankGroup.add(hub);
+                }
+
+                // سنون الجنزير الصغيرة لإظهار التفاصيل عند الحركة.
+                for (let i = 0; i < 18; i++) {
+                    const z = -4.55 + i * 0.54;
+                    const shoe = addBox('trackShoe', [0.16, 0.18, 0.42], [side * 4.12, 0.55, z], rubberMat);
+                    shoe.rotation.y = (i % 2 ? 0.06 : -0.06);
+                }
+            });
+
+            // حلقة البرج ودرع برج زاوي حديث.
+            const turret = new THREE.Mesh(new THREE.CylinderGeometry(2.72, 3.05, 1.15, 8), armorMat);
+            turret.position.set(0, 3.25, 0.15);
+            turret.rotation.y = Math.PI / 8;
+            turret.name = 'turret';
+            turret.castShadow = true; turret.receiveShadow = true;
+            tankGroup.add(turret);
+
+            addBox('turretMantlet', [2.15, 1.2, 1.2], [0, 3.35, 2.0], darkArmorMat, [-0.04, 0, 0]);
+            addBox('turretFrontArmor', [4.55, 1.15, 1.8], [0, 3.75, 1.2], armorMat, [-0.16, 0, 0]);
+            addBox('turretRear', [4.2, 1.0, 2.35], [0, 3.55, -1.15], armorMat, [0.05, 0, 0]);
+
+            // وحدات دروع تفاعلية/مركبة على الجانبين.
+            [-1, 1].forEach(side => {
+                for (let i = 0; i < 5; i++) {
+                    const block = addBox('eraBlock', [0.55, 0.62, 0.72], [side * 2.62, 3.75, -1.55 + i * 0.7], darkArmorMat, [0, side * 0.12, 0]);
+                    block.rotation.z = side * 0.08;
+                }
+            });
+
+            // مدفع رئيسي حديث: سبطانة، غلاف حراري، حلقات تقوية وفرامل فوهة.
+            const cannonBase = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.82, 1.0, 20), edgeMat);
+            cannonBase.rotation.x = Math.PI / 2;
+            cannonBase.position.set(0, 3.45, 2.55);
+            cannonBase.castShadow = true;
+            tankGroup.add(cannonBase);
+
+            const cannon = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.36, 7.2, 20), armorMat);
+            cannon.rotation.x = Math.PI / 2;
+            cannon.position.set(0, 3.45, 5.8);
+            cannon.name = 'cannon';
+            cannon.castShadow = true;
+            tankGroup.add(cannon);
+
+            const thermalSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.43, 4.15, 16), darkArmorMat);
+            thermalSleeve.rotation.x = Math.PI / 2;
+            thermalSleeve.position.set(0, 3.45, 5.25);
+            thermalSleeve.castShadow = true;
+            tankGroup.add(thermalSleeve);
+
+            [-0.95, 0.35, 1.55].forEach(zOff => {
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.075, 8, 18), edgeMat);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.set(0, 3.45, 5.8 + zOff);
+                tankGroup.add(ring);
+            });
+
+            const muzzle = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.45, 0.9, 20), edgeMat);
+            muzzle.rotation.x = Math.PI / 2;
+            muzzle.position.set(0, 3.45, 9.2);
+            muzzle.castShadow = true;
+            tankGroup.add(muzzle);
+
+            // فرامل فوهة حديثة متعددة الفتحات.
+            const muzzleBrake = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.54, 0.72, 12), darkArmorMat);
+            muzzleBrake.rotation.x = Math.PI / 2;
+            muzzleBrake.position.set(0, 3.45, 9.72);
+            muzzleBrake.castShadow = true;
+            tankGroup.add(muzzleBrake);
+            for (let i = 0; i < 6; i++) {
+                const vent = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 0.34), edgeMat);
+                const a = (i / 6) * Math.PI * 2;
+                vent.position.set(Math.cos(a) * 0.52, 3.45 + Math.sin(a) * 0.52, 9.72);
+                vent.rotation.z = -a;
+                tankGroup.add(vent);
+            }
+
+            const barrelSensor = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.18, 0.7), lightMat);
+            barrelSensor.position.set(0.46, 3.73, 7.25);
+            barrelSensor.castShadow = true;
+            tankGroup.add(barrelSensor);
+
+            // سبطانة رشاش محوري.
+            const coax = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 2.2, 10), edgeMat);
+            coax.rotation.x = Math.PI / 2;
+            coax.position.set(0.72, 3.55, 2.8);
+            tankGroup.add(coax);
+
+            // منظار القائد + منظار حراري أمامي.
+            const cupola = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.85, 0.55, 16), darkArmorMat);
+            cupola.position.set(0.85, 4.35, -0.25);
+            cupola.castShadow = true;
+            tankGroup.add(cupola);
+
+            const optic = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.55, 0.85), glassMat);
+            optic.position.set(-0.65, 4.15, 1.05);
+            optic.rotation.x = -0.08;
+            optic.castShadow = true;
+            tankGroup.add(optic);
+
+            // رشاش علوي حديث.
+            const mgBase = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.38, 0.22, 12), edgeMat);
+            mgBase.position.set(0.85, 4.7, -0.25);
+            tankGroup.add(mgBase);
+            const mg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 1.65), edgeMat);
+            mg.position.set(0.85, 4.82, 0.48);
+            mg.rotation.x = -0.08;
+            tankGroup.add(mg);
+
+            // قاذفات دخان مزدوجة على جانبي البرج.
+            [-1, 1].forEach(side => {
+                for (let i = 0; i < 4; i++) {
+                    const smoke = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.7, 10), edgeMat);
+                    smoke.rotation.z = Math.PI / 2;
+                    smoke.position.set(side * (2.35 + (i % 2) * 0.15), 4.0, 0.35 + (i - 1.5) * 0.48);
+                    smoke.castShadow = true;
+                    tankGroup.add(smoke);
+                }
+            });
+
+            // كشافات LED أمامية مع حماية معدنية.
+            [-1, 1].forEach(side => {
+                addBox('headlightHousing', [0.7, 0.38, 0.65], [side * 2.2, 1.72, 4.82], edgeMat, [0, 0, 0]);
+                addBox('LEDHeadlight', [0.46, 0.22, 0.08], [side * 2.2, 1.78, 5.15], lightMat);
+            });
+
+            // هوائيات ومجسات صغيرة تعطي شكل مركبة حديثة.
+            [-1, 1].forEach(side => {
+                const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 2.4, 8), edgeMat);
+                antenna.position.set(side * 1.85, 4.75, -1.9);
+                antenna.rotation.z = side * 0.05;
+                tankGroup.add(antenna);
+            });
+
+            // خطافات سحب أمامية.
+            [-1.7, 1.7].forEach(px => {
+                const hook = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.07, 8, 16, Math.PI * 1.5), edgeMat);
+                hook.rotation.x = Math.PI / 2;
+                hook.position.set(px, 0.72, 4.95);
+                tankGroup.add(hook);
+            });
         }
 
         let terrainY = getTerrainHeight(x, z);
@@ -1025,13 +1418,101 @@
     }
 
     function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
-        const geo = new THREE.SphereGeometry(0.8 * scale, 6, 6);
-        const mat = new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.7 });
-        const mesh = new THREE.Mesh(geo, mat);
-        let groundH = getTerrainHeight(pos.x, pos.z);
-        mesh.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*2, Math.max(2, groundH + 2), (Math.random()-0.5)*2));
-        scene.add(mesh);
-        smokeParticles.push({ mesh: mesh, life: 35, vy: 0.12 });
+        // Modern layered smoke: soft core + outer plume, with randomized drift.
+        const group = new THREE.Group();
+        const puffMat = new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.28, depthWrite: false });
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x111827, transparent: true, opacity: 0.18, depthWrite: false });
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(0.85 * scale, 10, 8), puffMat);
+        const core = new THREE.Mesh(new THREE.SphereGeometry(0.48 * scale, 8, 6), coreMat);
+        puff.scale.set(1.15, 0.85, 1.15);
+        core.position.y = 0.12 * scale;
+        group.add(puff, core);
+        const groundH = getTerrainHeight(pos.x, pos.z);
+        group.position.copy(pos).add(new THREE.Vector3((Math.random()-0.5)*1.8*scale, Math.max(1.2, groundH + 1.2), (Math.random()-0.5)*1.8*scale));
+        group.rotation.set(Math.random()*0.5, Math.random()*Math.PI, Math.random()*0.5);
+        scene.add(group);
+        smokeParticles.push({ mesh: group, life: 48 + Math.random()*18, vy: 0.08 + Math.random()*0.06, driftX: (Math.random()-0.5)*0.018, driftZ: (Math.random()-0.5)*0.018, baseScale: scale });
+    }
+
+    function addRocketTrailParticle(pos, scale = 1) {
+        // High-tech rocket exhaust trail: hot glow, translucent smoke and a small ember core.
+        const group = new THREE.Group();
+        const outerMat = new THREE.MeshBasicMaterial({ color: 0xdbeafe, transparent: true, opacity: 0.16, depthWrite: false, blending: THREE.AdditiveBlending });
+        const hotMat = new THREE.MeshBasicMaterial({ color: 0xff8a00, transparent: true, opacity: 0.78, depthWrite: false, blending: THREE.AdditiveBlending });
+        const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
+        const outer = new THREE.Mesh(new THREE.SphereGeometry(0.95 * scale, 10, 8), outerMat);
+        const hot = new THREE.Mesh(new THREE.ConeGeometry(0.58 * scale, 2.8 * scale, 12, 1, true), hotMat);
+        const core = new THREE.Mesh(new THREE.ConeGeometry(0.22 * scale, 2.1 * scale, 10, 1, true), whiteMat);
+        hot.rotation.x = Math.PI;
+        core.rotation.x = Math.PI;
+        hot.position.y = -0.9 * scale;
+        core.position.y = -0.65 * scale;
+        group.add(outer, hot, core);
+        group.position.copy(pos);
+        group.rotation.set(Math.random()*0.15, Math.random()*Math.PI, Math.random()*0.15);
+        scene.add(group);
+        smokeParticles.push({ mesh: group, life: 18 + Math.random()*8, vy: 0.025, driftX: (Math.random()-0.5)*0.012, driftZ: (Math.random()-0.5)*0.012, baseScale: scale, rocketTrail: true });
+    }
+
+    function createModernScudMissile() {
+        const group = new THREE.Group();
+        group.name = "scudMissile";
+
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.24, metalness: 0.82 });
+        const noseMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.12, metalness: 0.92 });
+        const darkMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.32, metalness: 0.72 });
+        const bandMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.28, metalness: 0.86 });
+        const accentMat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x0e7490, emissiveIntensity: 0.8, roughness: 0.2, metalness: 0.45 });
+
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.98, 12.2, 24), bodyMat);
+        body.castShadow = true;
+        group.add(body);
+
+        const lowerStage = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.92, 1.05, 24), darkMat);
+        lowerStage.position.y = -6.35;
+        lowerStage.castShadow = true;
+        group.add(lowerStage);
+
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.92, 3.8, 24), noseMat);
+        nose.position.y = 8.0;
+        nose.castShadow = true;
+        group.add(nose);
+
+        [ -4.7, -1.8, 1.6, 4.7 ].forEach((y, idx) => {
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.94, idx === 0 ? 0.10 : 0.065, 8, 24), idx === 0 ? darkMat : bandMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = y;
+            group.add(ring);
+        });
+
+        const sensorRing = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.055, 8, 20), accentMat);
+        sensorRing.rotation.x = Math.PI / 2;
+        sensorRing.position.y = 6.25;
+        group.add(sensorRing);
+
+        for (let i = 0; i < 4; i++) {
+            const a = i * Math.PI / 2;
+            const fin = new THREE.Mesh(new THREE.BoxGeometry(0.24, 3.55, 1.95), darkMat);
+            fin.position.set(Math.cos(a) * 0.92, -4.95, Math.sin(a) * 0.92);
+            fin.rotation.y = a;
+            fin.castShadow = true;
+            group.add(fin);
+
+            const brace = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.45, 0.42), bandMat);
+            brace.position.set(Math.cos(a) * 1.03, -3.95, Math.sin(a) * 1.03);
+            brace.rotation.y = a;
+            group.add(brace);
+        }
+
+        const engineNozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.68, 0.75, 20), darkMat);
+        engineNozzle.position.y = -6.75;
+        group.add(engineNozzle);
+
+        const nozzleGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.42, 0.08, 16), new THREE.MeshBasicMaterial({ color: 0xffa726, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
+        nozzleGlow.position.y = -7.12;
+        group.add(nozzleGlow);
+
+        return group;
     }
 
     function updateTanksDamageVisual(tankData) {
@@ -1483,12 +1964,74 @@
         return true;
     }
 
+    function createModernMuzzleFlash(fromTank) {
+        const group = new THREE.Group();
+        group.name = 'modernMuzzleFlash';
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.98, depthWrite: false, blending: THREE.AdditiveBlending });
+        const hotMat = new THREE.MeshBasicMaterial({ color: 0xffd54a, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
+        const outerMat = new THREE.MeshBasicMaterial({ color: 0xff6a00, transparent: true, opacity: 0.62, depthWrite: false, blending: THREE.AdditiveBlending });
+        const core = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 10), coreMat);
+        const hot = new THREE.Mesh(new THREE.ConeGeometry(0.78, 2.8, 14, 1, true), hotMat);
+        const outer = new THREE.Mesh(new THREE.ConeGeometry(1.25, 4.2, 14, 1, true), outerMat);
+        hot.rotation.x = Math.PI / 2;
+        outer.rotation.x = Math.PI / 2;
+        hot.position.z = 1.0;
+        outer.position.z = 1.65;
+        group.add(core, hot, outer);
+        for (let i = 0; i < 6; i++) {
+            const ray = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 1.8 + Math.random()*0.8), hotMat);
+            const a = i / 6 * Math.PI * 2;
+            ray.position.set(Math.cos(a)*0.65, Math.sin(a)*0.65, 1.1);
+            ray.rotation.z = a;
+            group.add(ray);
+        }
+        const worldPos = fromTank.mesh.localToWorld(new THREE.Vector3(0, 3.45, 10.05));
+        group.position.copy(worldPos);
+        group.rotation.y = fromTank.mesh.rotation.y;
+        group.rotation.x = fromTank.mesh.rotation.x;
+        scene.add(group);
+        combatEffects.push({ mesh: group, life: 7, kind: 'muzzle' });
+    }
+
+    function createModernImpactFlash(centerPos, fromTeam) {
+        const group = new THREE.Group();
+        group.name = 'modernArtilleryExplosion';
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending });
+        const hotMat = new THREE.MeshBasicMaterial({ color: 0xffd54a, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending });
+        const fireMat = new THREE.MeshBasicMaterial({ color: 0xff6a00, transparent: true, opacity: 0.86, depthWrite: false, blending: THREE.AdditiveBlending });
+        const darkMat = new THREE.MeshBasicMaterial({ color: 0x202020, transparent: true, opacity: 0.55, depthWrite: false });
+        const core = new THREE.Mesh(new THREE.SphereGeometry(1.7, 20, 14), coreMat);
+        const hot = new THREE.Mesh(new THREE.SphereGeometry(3.0, 18, 12), hotMat);
+        const fire = new THREE.Mesh(new THREE.SphereGeometry(4.5, 18, 12), fireMat);
+        const smoke = new THREE.Mesh(new THREE.SphereGeometry(3.2, 16, 12), darkMat);
+        core.scale.set(1.0, 1.25, 1.0);
+        hot.scale.set(1.15, 0.9, 1.15);
+        fire.scale.set(1.0, 0.72, 1.0);
+        smoke.position.y = 2.2;
+        group.add(fire, hot, core, smoke);
+
+        for (let i = 0; i < 14; i++) {
+            const ember = new THREE.Mesh(new THREE.SphereGeometry(0.12 + Math.random()*0.18, 6, 6), hotMat);
+            const a = Math.random()*Math.PI*2;
+            const r = 1.2 + Math.random()*3.8;
+            ember.position.set(Math.cos(a)*r, (Math.random()-0.25)*2.8, Math.sin(a)*r);
+            group.add(ember);
+        }
+        const groundH = getTerrainHeight(centerPos.x, centerPos.z);
+        group.position.set(centerPos.x, groundH + 1.4, centerPos.z);
+        scene.add(group);
+        combatEffects.push({ mesh: group, life: 34, kind: 'impact' });
+
+        // دخان كثيف متعدد الطبقات بعد موجة النار.
+        for (let i = 0; i < 10; i++) addSmokeParticle(centerPos, i < 4 ? 0x3b3b3b : 0x777777, 1.5 + Math.random()*1.4);
+    }
+
     function fireBullet(fromTank, targetTank) {
         const now = Date.now();
-        if (now - fromTank.lastShot < 1200) return;
+        if (fromTank.reloadTime > 0) return;
         fromTank.lastShot = now;
-        
-        playSound('shoot', fromTank.team === 'player' ? 1.0 : 0.4);
+        fromTank.reloadTime = 8000;
+        createModernMuzzleFlash(fromTank);
         if (fromTank.team === 'player') {
             playSound('attack', 0.8);
             triggerCameraShake(1.2);
@@ -1503,10 +2046,11 @@
     }
 
     function fireTacticalMissile(fromTank, targetTank) {
-        if (!fromTank.hasMissileLoaded || fromTank.scudState !== 'readyToFire') return;
+        if (!fromTank.hasMissileLoaded || fromTank.scudState !== 'readyToFire' || fromTank.scudReloadTime > 0) return;
         
         fromTank.hasMissileLoaded = false;
         fromTank.scudState = 'firing';
+        fromTank.scudReloadTime = 5000;
 
         playSound('rocket', fromTank.team === 'player' ? 1.0 : 0.5);
         if (fromTank.team === 'player') {
@@ -1522,31 +2066,30 @@
         let startPos = missileMesh ? missileMesh.getWorldPosition(new THREE.Vector3()) : fromTank.mesh.position.clone().add(new THREE.Vector3(0, 8, 0));
         if (missileMesh) scudBed.remove(missileMesh); 
 
-        const flyingMissileGroup = new THREE.Group();
-        
-        const silverBodyMat = new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.2, metalness: 0.9 });
-        const silverTipMat = new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.1, metalness: 0.95 }); 
-        const finMat = new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.4, metalness: 0.7 });
+        const flyingMissileGroup = createModernScudMissile();
 
-        const missileBody = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 12, 16), silverBodyMat);
-        missileBody.position.set(0, 0, 0);
-        flyingMissileGroup.add(missileBody);
+        // Dynamic multi-layer rocket flame: orange envelope + white-hot core + glow plume.
+        const exhaustGroup = new THREE.Group();
+        exhaustGroup.name = "modernRocketExhaust";
+        const exhaustGlow = new THREE.Mesh(new THREE.SphereGeometry(1.5, 16, 10), new THREE.MeshBasicMaterial({ color: 0xff6a00, transparent: true, opacity: 0.28, depthWrite: false, blending: THREE.AdditiveBlending }));
+        const exhaustOuter = new THREE.Mesh(new THREE.ConeGeometry(1.25, 6.5, 18, 1, true), new THREE.MeshBasicMaterial({ color: 0xff8a00, transparent: true, opacity: 0.78, depthWrite: false, blending: THREE.AdditiveBlending }));
+        const exhaustCore = new THREE.Mesh(new THREE.ConeGeometry(0.62, 5.2, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.92, depthWrite: false, blending: THREE.AdditiveBlending }));
+        const exhaustHot = new THREE.Mesh(new THREE.ConeGeometry(0.92, 4.4, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd54a, transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending }));
+        exhaustOuter.rotation.x = Math.PI;
+        exhaustCore.rotation.x = Math.PI;
+        exhaustHot.rotation.x = Math.PI;
+        exhaustGlow.position.y = -7.2;
+        exhaustOuter.position.y = -10.0;
+        exhaustCore.position.y = -9.3;
+        exhaustHot.position.y = -9.7;
+        exhaustGroup.add(exhaustGlow, exhaustOuter, exhaustHot, exhaustCore);
+        flyingMissileGroup.add(exhaustGroup);
 
-        const missileTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), silverTipMat);
-        missileTip.position.set(0, 6 + 1.9, 0);
-        flyingMissileGroup.add(missileTip);
-
-        for (let i = 0; i < 4; i++) {
-            const fin = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.5, 1.8), finMat);
-            fin.rotation.y = (i * Math.PI) / 2;
-            fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, -5, Math.sin(i * Math.PI / 2) * 0.8);
-            flyingMissileGroup.add(fin);
+        for (let i = 0; i < 8; i++) {
+            const spark = new THREE.Mesh(new THREE.SphereGeometry(0.07 + Math.random()*0.07, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffe082, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
+            spark.position.set((Math.random()-0.5)*1.0, -9 - Math.random()*2.5, (Math.random()-0.5)*1.0);
+            exhaustGroup.add(spark);
         }
-
-        const fireFlame = new THREE.Mesh(new THREE.ConeGeometry(1.2, 5, 12), new THREE.MeshBasicMaterial({ color: 0xff4500 }));
-        fireFlame.rotation.x = Math.PI;
-        fireFlame.position.set(0, -8.5, 0);
-        flyingMissileGroup.add(fireFlame);
 
         flyingMissileGroup.position.copy(startPos);
         scene.add(flyingMissileGroup);
@@ -1561,29 +2104,37 @@
             startPos: startPos, 
             targetPos: targetPos,
             progress: 0,
-            totalDuration: 75
+            totalDuration: 75,
+            lastPos: startPos.clone()
         });
     }
 
     function createShockwaveAndExplosion(centerPos, fromTeam) {
         playSound('explosion');
-        const ringGeo = new THREE.RingGeometry(0.5, 1, 32);
+        createModernImpactFlash(centerPos, fromTeam);
+
+        const groundY = getTerrainHeight(centerPos.x, centerPos.z);
+        const ringGeo = new THREE.RingGeometry(0.5, 1.2, 48);
         ringGeo.rotateX(-Math.PI / 2);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xffb347, side: THREE.DoubleSide, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        ringMesh.position.copy(centerPos); 
-        ringMesh.position.y = getTerrainHeight(centerPos.x, centerPos.z) + 0.2;
+        ringMesh.position.set(centerPos.x, groundY + 0.22, centerPos.z);
         scene.add(ringMesh);
 
-        const beamGeo = new THREE.CylinderGeometry(3, 8, 1, 16, 1, true);
-        const beamMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+        const innerRingGeo = new THREE.RingGeometry(0.3, 0.7, 48);
+        innerRingGeo.rotateX(-Math.PI / 2);
+        const innerRing = new THREE.Mesh(innerRingGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending }));
+        innerRing.position.set(centerPos.x, groundY + 0.25, centerPos.z);
+        scene.add(innerRing);
+
+        const beamGeo = new THREE.CylinderGeometry(1.8, 7.5, 7, 24, 1, true);
+        const beamMat = new THREE.MeshBasicMaterial({ color: 0xff8a00, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending });
         const beamMesh = new THREE.Mesh(beamGeo, beamMat);
-        beamMesh.position.copy(centerPos); 
-        beamMesh.position.y = getTerrainHeight(centerPos.x, centerPos.z) + 5;
+        beamMesh.position.set(centerPos.x, groundY + 3.2, centerPos.z);
         scene.add(beamMesh);
 
-        shockwaves.push({ ring: ringMesh, beam: beamMesh, life: 25, scaleSpeed: 1.4 });
-        for (let i = 0; i < 8; i++) addSmokeParticle(centerPos, 0xff4500, 1.8);
+        shockwaves.push({ ring: ringMesh, innerRing: innerRing, beam: beamMesh, life: 30, scaleSpeed: 1.15 });
+        for (let i = 0; i < 14; i++) addSmokeParticle(centerPos, i < 5 ? 0x222222 : 0x666666, 1.4 + Math.random()*1.3);
 
         let allTanks = [...playerTanks, ...enemyTanks];
         allTanks.forEach(tank => {
@@ -1644,8 +2195,45 @@
 
         for (let i = smokeParticles.length - 1; i >= 0; i--) {
             let p = smokeParticles[i];
-            p.life--; p.mesh.position.y += p.vy; p.mesh.scale.multiplyScalar(1.03); p.mesh.material.opacity -= 0.025;
-            if (p.life <= 0) { scene.remove(p.mesh); p.mesh.geometry.dispose(); p.mesh.material.dispose(); smokeParticles.splice(i, 1); }
+            p.life--;
+            p.mesh.position.y += p.vy;
+            p.mesh.position.x += p.driftX || 0;
+            p.mesh.position.z += p.driftZ || 0;
+            p.mesh.scale.multiplyScalar(p.rocketTrail ? 1.045 : 1.025);
+            p.mesh.rotation.y += 0.012;
+            p.mesh.traverse(child => {
+                if (child.material && child.material.opacity !== undefined) child.material.opacity *= p.rocketTrail ? 0.93 : 0.965;
+            });
+            if (p.life <= 0) {
+                scene.remove(p.mesh);
+                p.mesh.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) child.material.dispose(); });
+                smokeParticles.splice(i, 1);
+            }
+        }
+
+        for (let i = combatEffects.length - 1; i >= 0; i--) {
+            const fx = combatEffects[i];
+            fx.life--;
+            if (fx.kind === 'muzzle') {
+                const t = fx.life / 7;
+                fx.mesh.scale.setScalar(0.65 + t * 0.75);
+                fx.mesh.traverse(child => { if (child.material && child.material.opacity !== undefined) child.material.opacity = Math.max(0, t); });
+            } else {
+                const t = fx.life / 34;
+                fx.mesh.scale.multiplyScalar(1.035);
+                fx.mesh.position.y += 0.045;
+                fx.mesh.rotation.y += 0.018;
+                fx.mesh.traverse(child => {
+                    if (child.material && child.material.opacity !== undefined) child.material.opacity *= 0.965;
+                });
+                const fireChildren = fx.mesh.children.slice(0, 3);
+                fireChildren.forEach((child, idx) => { child.scale.y *= idx === 3 ? 1 : 0.99; });
+            }
+            if (fx.life <= 0) {
+                scene.remove(fx.mesh);
+                fx.mesh.traverse(child => { if (child.geometry) child.geometry.dispose(); if (child.material) child.material.dispose(); });
+                combatEffects.splice(i, 1);
+            }
         }
 
         for (let i = shockwaves.length - 1; i >= 0; i--) {
@@ -1655,8 +2243,10 @@
             sw.ring.material.opacity -= 0.04;
             sw.beam.scale.y += 0.8;
             sw.beam.material.opacity -= 0.04;
+            if (sw.innerRing) { sw.innerRing.scale.addScalar(sw.scaleSpeed * 0.72); sw.innerRing.material.opacity -= 0.045; }
             if (sw.life <= 0) {
                 scene.remove(sw.ring); sw.ring.geometry.dispose(); sw.ring.material.dispose();
+                if (sw.innerRing) { scene.remove(sw.innerRing); sw.innerRing.geometry.dispose(); sw.innerRing.material.dispose(); }
                 scene.remove(sw.beam); sw.beam.geometry.dispose(); sw.beam.material.dispose();
                 shockwaves.splice(i, 1);
             }
@@ -1708,8 +2298,8 @@
                 tacticalMissiles.splice(i, 1);
 
                 if (m.tankOwner && !m.tankOwner.isDestroyed) {
-                    m.tankOwner.scudState = 'reloading';
-                    m.tankOwner.scudAnimProgress = 1.0;
+                    // التلقيم يبدأ مباشرة بعد الإطلاق ويستغرق 5 ثوانٍ.
+                    // لا ننتظر وصول الصاروخ إلى الهدف.
                 }
             } else {
                 let currentPos = new THREE.Vector3().lerpVectors(m.startPos, m.targetPos, t);
@@ -1723,7 +2313,12 @@
                 m.mesh.lookAt(nextPos);
                 m.mesh.rotateX(Math.PI / 2);
 
-                addSmokeParticle(m.mesh.position, 0xdddddd, 1.0);
+                const travelDir = new THREE.Vector3().subVectors(currentPos, m.lastPos);
+                if (travelDir.lengthSq() > 0.0001) travelDir.normalize();
+                const trailPos = currentPos.clone().sub(travelDir.multiplyScalar(4.0));
+                addRocketTrailParticle(trailPos, 0.9);
+                if (Math.random() < 0.45) addSmokeParticle(trailPos, 0xb8c2cc, 0.8);
+                m.lastPos.copy(currentPos);
             }
         }
 
@@ -1744,15 +2339,36 @@
             let isMoving = false;
             let enemyTarget = enemyTanks.find(e => !e.isDestroyed && e.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 180 : 110));
 
+            // تلقيم الدبابات العادية: 8 ثوانٍ بعد كل طلقة
+            if (tankData.reloadTime > 0) {
+                tankData.reloadTime -= 16.67;
+                if (tankData.reloadTime < 0) tankData.reloadTime = 0;
+            }
+
             if (tankData.team === 'enemy') {
                 enemyTarget = playerTanks.find(p => !p.isDestroyed && p.mesh.position.distanceTo(tankData.mesh.position) < (tankData.type === 'rocket' ? 180 : 110));
             }
 
             if (tankData.type === 'rocket') {
+                // تلقيم صاروخ السكود: 5 ثوانٍ من لحظة الإطلاق
+                if (tankData.scudReloadTime > 0) {
+                    tankData.scudReloadTime -= 16.67;
+                    if (tankData.scudReloadTime <= 0) {
+                        tankData.scudReloadTime = 0;
+                        tankData.hasMissileLoaded = true;
+                        tankData.scudState = 'sleeping';
+                        tankData.scudAnimProgress = 0;
+                        let reloadBed = tankData.mesh.getObjectByName("scudBed");
+                        if (reloadBed && !reloadBed.getObjectByName("scudMissile")) {
+                            reloadBed.add(createModernScudMissile());
+                        }
+                    }
+                }
+
                 let scudBed = tankData.mesh.getObjectByName("scudBed");
                 let missileMesh = scudBed ? scudBed.getObjectByName("scudMissile") : null;
 
-                if (tankData.scudState === 'reloading') {
+                if (tankData.scudState === 'reloading' && tankData.scudReloadTime <= 0) {
                     tankData.scudAnimProgress -= 0.02; 
                     if (scudBed) {
                         let stabilizer = scudBed.getObjectByName("stabilizerLeg");
@@ -1762,32 +2378,7 @@
                         tankData.scudAnimProgress = 0;
                         tankData.scudState = 'sleeping';
                         if (scudBed && !missileMesh) {
-                            const newMissileGroup = new THREE.Group();
-                            newMissileGroup.name = "scudMissile";
-                            
-                            const silverBodyMat = new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.2, metalness: 0.9 });
-                            const silverTipMat = new THREE.MeshStandardMaterial({ color: 0xf3f4f6, roughness: 0.1, metalness: 0.95 });
-                            const finMat = new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.4, metalness: 0.7 });
-
-                            const mBody = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 12, 16), silverBodyMat);
-                            mBody.position.set(0, 0, 0); mBody.castShadow = true; newMissileGroup.add(mBody);
-                            
-                            const mTip = new THREE.Mesh(new THREE.ConeGeometry(0.9, 3.8, 16), silverTipMat);
-                            mTip.position.set(0, 6 + 1.9, 0); mTip.castShadow = true; newMissileGroup.add(mTip);
-
-                            for (let i = 0; i < 4; i++) {
-                                const fin = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.5, 1.8), finMat);
-                                fin.rotation.y = (i * Math.PI) / 2;
-                                fin.position.set(Math.cos(i * Math.PI / 2) * 0.8, -5, Math.sin(i * Math.PI / 2) * 0.8);
-                                fin.castShadow = true; newMissileGroup.add(fin);
-
-                                const stabilizerFin = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.6), silverTipMat);
-                                stabilizerFin.rotation.y = (i * Math.PI) / 2;
-                                stabilizerFin.position.set(Math.cos(i * Math.PI / 2) * 1.1, -6.2, Math.sin(i * Math.PI / 2) * 1.1);
-                                newMissileGroup.add(stabilizerFin);
-                            }
-                            newMissileGroup.position.set(0, 0.5, 0);
-                            newMissileGroup.rotation.x = Math.PI / 2;
+                            const newMissileGroup = createModernScudMissile();
                             scudBed.add(newMissileGroup);
                             tankData.hasMissileLoaded = true;
                         }
@@ -1918,6 +2509,20 @@
                 }
             }
 
+            // أثناء الحركة يبقى صاروخ السكود راقداً أفقياً وثابتاً على منصة الإطلاق.
+            if (tankData.type === 'rocket' && isMoving) {
+                tankData.scudState = 'sleeping';
+                tankData.scudAnimProgress = 0;
+                const movingScudBed = tankData.mesh.getObjectByName('scudBed');
+                const movingMissile = movingScudBed ? movingScudBed.getObjectByName('scudMissile') : null;
+                if (movingMissile) {
+                    movingMissile.rotation.set(Math.PI / 2, 0, 0);
+                    movingMissile.position.set(0, 0.55, 0);
+                }
+                const movingStabilizer = movingScudBed ? movingScudBed.getObjectByName('stabilizerLeg') : null;
+                if (movingStabilizer) movingStabilizer.position.z = -2.5;
+            }
+
             updateTankAudio(tankData, isMoving);
         });
 
@@ -1988,6 +2593,7 @@
                 if (rig.captureProgress >= 100) {
                     rig.owner = 'player';
                     rig.flagData.mesh.material.map = createFlagTexture(playerFlagType);
+                    rig.flagData.mesh.material.needsUpdate = true;
                     rig.flagData.type = playerFlagType;
                     showFloatingMsg('تمت السيطرة على بئر النفط!');
                 }
@@ -1996,6 +2602,7 @@
                 if (rig.captureProgress <= -100) {
                     rig.owner = 'enemy';
                     rig.flagData.mesh.material.map = createFlagTexture(enemyFlagType);
+                    rig.flagData.mesh.material.needsUpdate = true;
                     rig.flagData.type = enemyFlagType;
                 }
             }
@@ -2142,7 +2749,9 @@
         
         let time = Date.now() * 0.003;
         animatedRigs.forEach((beam, index) => {
-            beam.rotation.x = Math.sin(time + index) * 0.35;
+            const phase = time * 1.15 + index * 1.7;
+            beam.rotation.x = Math.sin(phase) * 0.30;
+            beam.rotation.z = Math.sin(phase * 0.5) * 0.012;
         });
 
         renderer.render(scene, camera);
