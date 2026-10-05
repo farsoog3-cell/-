@@ -2155,7 +2155,21 @@
       <span class="pvp-dot"></span><b id="pvp-connection-text">جاري الاتصال بالسيرفر...</b>
     </div>
 
-    <div id="pvp-lobby" class="pvp-grid">
+    
+<div id="pvp-active-players" class="pvp-active-panel">
+  <div class="pvp-active-head">
+    <div>
+      <div class="pvp-panel-title" style="margin-bottom:2px">اللاعبون النشطون على السيرفر</div>
+      <div class="pvp-note" style="margin-top:0">اختر لاعبًا متصلًا وأرسل له دعوة مباشرة للعب ضدك.</div>
+    </div>
+    <span id="pvp-active-count" class="pvp-active-count">0 ONLINE</span>
+  </div>
+  <div id="pvp-active-list" class="pvp-active-list">
+    <div class="pvp-empty-online">جاري تحميل قائمة اللاعبين...</div>
+  </div>
+</div>
+
+<div id="pvp-lobby" class="pvp-grid">
       <section class="pvp-panel">
         <div class="pvp-panel-title">غرفة جديدة</div>
         <div class="pvp-field">
@@ -2230,6 +2244,19 @@
         <button id="pvp-start-btn" class="pvp-start-btn" onclick="pvpHostStart()" disabled>بدء المعركة</button>
       </div>
       <div id="pvp-room-message" class="pvp-room-message">بانتظار لاعب ثانٍ...</div>
+    </div>
+  </div>
+</div>
+
+<div id="pvp-invite-popup" class="pvp-invite-popup" hidden>
+  <div class="pvp-invite-card">
+    <div class="pvp-invite-icon">⚔</div>
+    <div class="pvp-kicker">INCOMING BATTLE INVITATION</div>
+    <h3 id="pvp-invite-title">دعوة إلى معركة</h3>
+    <p id="pvp-invite-text">قام لاعب بدعوتك إلى كيم لاعب ضد لاعب.</p>
+    <div class="pvp-invite-actions">
+      <button class="pvp-cancel-btn" onclick="pvpRejectInvite()">رفض</button>
+      <button class="pvp-start-btn" onclick="pvpAcceptInvite()">قبول الدعوة</button>
     </div>
   </div>
 </div>
@@ -11708,7 +11735,7 @@ function createArmyFactory(x,z,ghost=false){
     });
     if(typeof updateFactoryFlagOwner==='function') updateFactoryFlagOwner(factory,'enemy');
   };
-  document.addEventListener('DOMContentLoaded',()=>{setTeamUI('player',(battleConfig&&battleConfig.playerColor)||'#168cff');});
+  document.addEventListener('DOMContentLoaded',()=>{setTeamUI('player',(window.battleConfig&&battleConfig.playerColor)||'#168cff');});
 })();
 </script>
 
@@ -12934,7 +12961,7 @@ body.waiting-menu-active #intro-flag-fullscreen-canvas{display:none !important;}
 /* Initialize the color preview immediately, before the battle settings are opened. */
 document.addEventListener('DOMContentLoaded',function(){
   const flag=document.querySelector('.intro-flag');
-  if(flag) flag.style.setProperty('--player-color',(battleConfig&&battleConfig.playerColor)||'#168cff');
+  if(flag) flag.style.setProperty('--player-color',(window.battleConfig&&battleConfig.playerColor)||'#168cff');
 });
 </script>
 
@@ -13158,67 +13185,167 @@ const PVP_SERVER = 'wss://tank-game-server-o650.onrender.com/ws';
 let pvpSocket=null, pvpRoom=null, pvpRole=null, pvpPlayerId=null, pvpConnected=false;
 let pvpReadyState=false, pvpMoney=3000, pvpColor='#168cff', pvpColorName='BLUE';
 let pvpRemoteUnits=new Map(), pvpRemoteBuildings=new Map(), pvpLastSend=0, pvpStarted=false;
+let pvpMyName='Commander', pvpPendingInvite=null;
 
 function el(id){return document.getElementById(id);}
 function pvpMsg(t){const x=el('pvp-room-message');if(x)x.textContent=t;}
-function setConn(ok,msg){pvpConnected=ok;const x=el('pvp-connection'),t=el('pvp-connection-text');if(x)x.className='pvp-status '+(ok?'online':'offline');if(t)t.textContent=msg;}
+function setConn(ok,msg){
+  pvpConnected=ok;
+  const x=el('pvp-connection'),t=el('pvp-connection-text');
+  if(x)x.className='pvp-status '+(ok?'online':'offline');
+  if(t)t.textContent=msg;
+}
 function send(o){if(pvpSocket&&pvpSocket.readyState===WebSocket.OPEN)pvpSocket.send(JSON.stringify(o));}
 
+function updatePresence(){
+  const input=el('pvp-player-name');
+  pvpMyName=(input?.value||pvpMyName||'Commander').trim().slice(0,18)||'Commander';
+  send({type:'presence',name:pvpMyName,settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}});
+}
 function connectPvp(){
   if(pvpSocket && (pvpSocket.readyState===0||pvpSocket.readyState===1))return;
   setConn(false,'جاري الاتصال بسيرفر المعارك...');
   try{
     pvpSocket=new WebSocket(PVP_SERVER);
-    pvpSocket.onopen=()=>{setConn(true,'السيرفر متصل — يمكنك إنشاء غرفة أو الانضمام');};
-    pvpSocket.onclose=()=>{setConn(false,'انقطع الاتصال بالسيرفر');pvpSocket=null;};
-    pvpSocket.onerror=()=>{setConn(false,'تعذر الاتصال بالسيرفر');};
-    pvpSocket.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}handlePvpMessage(m);};
+    pvpSocket.onopen=()=>{
+      setConn(true,'السيرفر متصل — اللاعبون النشطون متاحون الآن');
+      updatePresence();
+    };
+    pvpSocket.onclose=()=>{
+      setConn(false,'انقطع الاتصال بالسيرفر');
+      pvpSocket=null;
+      renderActivePlayers([]);
+    };
+    pvpSocket.onerror=()=>setConn(false,'تعذر الاتصال بالسيرفر');
+    pvpSocket.onmessage=e=>{
+      let m;try{m=JSON.parse(e.data)}catch(_){return}
+      handlePvpMessage(m);
+    };
   }catch(e){setConn(false,'تعذر فتح اتصال الشبكة');}
 }
-
 function pvpCreateRoom(){
   const name=(el('pvp-player-name')?.value||'Commander').trim().slice(0,18)||'Commander';
-  connectPvp();
-  setTimeout(()=>send({type:'create_room',name,settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}}),120);
+  pvpMyName=name; connectPvp();
+  setTimeout(()=>send({type:'create_room',name,settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}}),150);
 }
 function pvpJoinRoom(){
   const code=(el('pvp-room-code')?.value||'').trim().toUpperCase();
   const name=(el('pvp-player-name')?.value||'Commander').trim().slice(0,18)||'Commander';
   if(!/^[A-Z0-9]{6}$/.test(code)){pvpMsg('أدخل كود غرفة صحيح من 6 أحرف.');return;}
-  connectPvp();
-  setTimeout(()=>send({type:'join_room',room:code,name,settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}}),120);
+  pvpMyName=name; connectPvp();
+  setTimeout(()=>send({type:'join_room',room:code,name,settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}}),150);
 }
-function pvpSelectMoney(v){pvpMoney=Number(v)||3000;document.querySelectorAll('.pvp-money-grid button').forEach(b=>b.classList.toggle('active',Number(b.dataset.money)===pvpMoney));if(pvpRoom)send({type:'settings',settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}});}
-function pvpSelectColor(c,n){pvpColor=c;pvpColorName=n;document.querySelectorAll('.pvp-color-grid button').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===c.toLowerCase()));const d=el('pvp-color-dot'),x=el('pvp-color-name');if(d){d.style.background=c;d.style.boxShadow='0 0 7px '+c}if(x)x.textContent=n;if(pvpRoom)send({type:'settings',settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}});}
-function pvpCopyRoomCode(){if(pvpRoom)navigator.clipboard?.writeText(pvpRoom).catch(()=>{});pvpMsg('تم نسخ كود الغرفة.');}
+function pvpSelectMoney(v){
+  pvpMoney=Number(v)||3000;
+  document.querySelectorAll('.pvp-money-grid button').forEach(b=>b.classList.toggle('active',Number(b.dataset.money)===pvpMoney));
+  if(pvpRoom)send({type:'settings',settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}});
+  else updatePresence();
+}
+function pvpSelectColor(c,n){
+  pvpColor=c;pvpColorName=n;
+  document.querySelectorAll('.pvp-color-grid button').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===c.toLowerCase()));
+  const d=el('pvp-color-dot'),x=el('pvp-color-name');
+  if(d){d.style.background=c;d.style.boxShadow='0 0 7px '+c}
+  if(x)x.textContent=n;
+  if(pvpRoom)send({type:'settings',settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}});
+  else updatePresence();
+}
+function pvpCopyRoomCode(){
+  if(pvpRoom)navigator.clipboard?.writeText(pvpRoom).catch(()=>{});
+  pvpMsg('تم نسخ كود الغرفة.');
+}
 function pvpLeaveRoom(){send({type:'leave_room'});pvpResetRoom();}
-function pvpReady(){pvpReadyState=!pvpReadyState;send({type:'ready',ready:pvpReadyState});el('pvp-ready-btn').textContent=pvpReadyState?'إلغاء الجاهزية':'جاهز';}
+function pvpReady(){
+  pvpReadyState=!pvpReadyState;
+  send({type:'ready',ready:pvpReadyState});
+  if(el('pvp-ready-btn'))el('pvp-ready-btn').textContent=pvpReadyState?'إلغاء الجاهزية':'جاهز';
+}
 function pvpHostStart(){if(pvpRole!=='host')return;send({type:'start_battle'});}
 
 function pvpResetRoom(){
   pvpRoom=null;pvpRole=null;pvpPlayerId=null;pvpReadyState=false;pvpStarted=false;
-  el('pvp-lobby').hidden=false;el('pvp-room-panel').hidden=true;
+  if(el('pvp-lobby'))el('pvp-lobby').hidden=false;
+  if(el('pvp-room-panel'))el('pvp-room-panel').hidden=true;
   if(el('pvp-ready-btn'))el('pvp-ready-btn').textContent='جاهز';
   if(el('pvp-start-btn'))el('pvp-start-btn').disabled=true;
+  updatePresence();
 }
 function renderRoom(m){
-  el('pvp-lobby').hidden=true;el('pvp-room-panel').hidden=false;
-  el('pvp-room-code-display').textContent=pvpRoom||m.room||'------';
+  if(el('pvp-lobby'))el('pvp-lobby').hidden=true;
+  if(el('pvp-room-panel'))el('pvp-room-panel').hidden=false;
+  if(el('pvp-room-code-display'))el('pvp-room-code-display').textContent=pvpRoom||m.room||'------';
   const ps=m.players||[];
   for(let i=0;i<2;i++){
     const q=ps[i], n=el('pvp-name-'+(i+1)),r=el('pvp-ready-'+(i+1)),slot=el('pvp-slot-'+(i+1));
-    if(q){n.textContent=q.name||('PLAYER '+(i+1));r.textContent=q.ready?'READY':'CONNECTED';slot.style.borderColor=q.color||'#4b584c';}
-    else{n.textContent='بانتظار اللاعب...';r.textContent='WAITING';slot.style.borderColor='';}
+    if(q){
+      n.textContent=q.name||('PLAYER '+(i+1));
+      r.textContent=q.ready?'READY':'CONNECTED';
+      slot.style.borderColor=q.settings?.color||q.color||'#4b584c';
+    }else{
+      n.textContent='بانتظار اللاعب...';r.textContent='WAITING';slot.style.borderColor='';
+    }
   }
   const canStart=pvpRole==='host'&&ps.length===2&&ps.every(x=>x.ready);
-  el('pvp-start-btn').disabled=!canStart;
+  if(el('pvp-start-btn'))el('pvp-start-btn').disabled=!canStart;
   pvpMsg(ps.length<2?'بانتظار اللاعب الثاني...':(canStart?'اللاعبان جاهزان — يمكنك بدء المعركة.':'اجعل اللاعبين في حالة جاهز.'));
+}
+function renderActivePlayers(players){
+  const list=el('pvp-active-list'),count=el('pvp-active-count');
+  if(!list)return;
+  const arr=(players||[]).filter(p=>p.id!==pvpPlayerId);
+  if(count)count.textContent=arr.length+' ONLINE';
+  if(!arr.length){list.innerHTML='<div class="pvp-empty-online">لا يوجد لاعب آخر متاح حاليًا. ابقَ متصلًا ليظهر لك أي لاعب يدخل السيرفر.</div>';return;}
+  list.innerHTML=arr.map(p=>{
+    const busy=p.inRoom||p.status==='playing';
+    const c=p.settings?.color||'#168cff';
+    return `<div class="pvp-online-player">
+      <span class="pvp-online-dot" style="background:${c};box-shadow:0 0 7px ${c}"></span>
+      <div class="pvp-online-info"><b>${escapeHtml(p.name||'Commander')}</b><small>${busy?'داخل غرفة / مشغول':'متاح للعب'}</small></div>
+      <button class="pvp-invite-btn" ${busy?'disabled':''} onclick="pvpInvitePlayer('${p.id}')">${busy?'مشغول':'دعوة'}</button>
+    </div>`;
+  }).join('');
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function pvpInvitePlayer(id){
+  if(!id)return;
+  if(!pvpConnected){pvpMsg('اتصل بالسيرفر أولًا.');return;}
+  pvpMyName=(el('pvp-player-name')?.value||'Commander').trim().slice(0,18)||'Commander';
+  send({type:'invite',targetId:id,name:pvpMyName,settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}});
+  pvpMsg('تم إرسال الدعوة. بانتظار قبول اللاعب...');
+}
+function showInvite(m){
+  pvpPendingInvite=m;
+  const pop=el('pvp-invite-popup');
+  if(el('pvp-invite-title'))el('pvp-invite-title').textContent='دعوة من '+(m.fromName||'لاعب');
+  if(el('pvp-invite-text'))el('pvp-invite-text').textContent='تمت دعوتك إلى كيم لاعب ضد لاعب. الميزانية المقترحة: '+(m.settings?.money||3000)+'$. يمكنك قبول الدعوة والدخول مباشرة إلى الغرفة.';
+  if(pop)pop.hidden=false;
+}
+function pvpAcceptInvite(){
+  const m=pvpPendingInvite;if(!m)return;
+  if(el('pvp-invite-popup'))el('pvp-invite-popup').hidden=true;
+  pvpPendingInvite=null;
+  const input=el('pvp-player-name');
+  pvpMyName=(input?.value||pvpMyName||'Commander').trim().slice(0,18)||'Commander';
+  pvpMoney=Number(m.settings?.money)||3000;
+  connectPvp();
+  setTimeout(()=>send({type:'accept_invite',room:m.room,name:pvpMyName,settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}}),150);
+}
+function pvpRejectInvite(){
+  if(el('pvp-invite-popup'))el('pvp-invite-popup').hidden=true;
+  if(pvpPendingInvite)send({type:'reject_invite',inviteId:pvpPendingInvite.inviteId});
+  pvpPendingInvite=null;
 }
 function handlePvpMessage(m){
   if(m.type==='hello'){pvpPlayerId=m.id;return;}
-  if(m.type==='room_created'||m.type==='room_joined'){pvpRoom=m.room;pvpRole=m.role;renderRoom(m);return;}
+  if(m.type==='presence_list'){renderActivePlayers(m.players||[]);return;}
+  if(m.type==='room_created'||m.type==='room_joined'){
+    pvpRoom=m.room;pvpRole=m.role;renderRoom(m);return;
+  }
   if(m.type==='room_update'){renderRoom(m);return;}
   if(m.type==='room_error'){pvpMsg(m.message||'حدث خطأ في الغرفة.');return;}
+  if(m.type==='invite'){showInvite(m);return;}
+  if(m.type==='invite_sent'){pvpMsg('تم إرسال الدعوة إلى '+(m.name||'اللاعب')+'.');return;}
+  if(m.type==='invite_error'){pvpMsg(m.message||'تعذر إرسال الدعوة.');return;}
   if(m.type==='battle_start'){startPvpBattle(m);return;}
   if(m.type==='state'){applyRemoteState(m.state);return;}
   if(m.type==='peer_left'){pvpMsg('غادر اللاعب الثاني الغرفة.');pvpStarted=false;return;}
@@ -13227,14 +13354,13 @@ function startPvpBattle(m){
   pvpStarted=true;
   const me=(m.players||[]).find(x=>x.id===pvpPlayerId), enemy=(m.players||[]).find(x=>x.id!==pvpPlayerId);
   if(me){pvpMoney=me.settings.money||3000;pvpColor=me.settings.color||'#168cff';pvpColorName=me.settings.colorName||'BLUE';}
-  battleConfig=battleConfig||{};
+  window.battleConfig=window.battleConfig||{};
   battleConfig.money=pvpMoney;battleConfig.bot='none';battleConfig.playerColor=pvpColor;battleConfig.playerColorName=pvpColorName;
   battleConfig.enemyColor=enemy?.settings?.color||'#f43f5e';battleConfig.enemyColorName=enemy?.settings?.colorName||'RED';
   if(typeof playerFlagType!=='undefined')playerFlagType=pvpColor;
   if(typeof enemyFlagType!=='undefined')enemyFlagType=battleConfig.enemyColor;
   if(typeof applyTeamVisual==='function'){try{applyTeamVisual('player',pvpColor);applyTeamVisual('enemy',battleConfig.enemyColor)}catch(_){}}
   closeBattleSetup();
-  // استخدم دالة البداية الأصلية لتشغيل العالم فقط، بعد تعطيل AI.
   if(typeof beginConfiguredGame==='function')beginConfiguredGame();
   setTimeout(()=>{pvpMsg('');sendLocalState(true)},700);
 }
@@ -13246,7 +13372,7 @@ function safeUnitType(u){
   return u.type||'normal';
 }
 function localUnitsSnapshot(){
-  const all=[...(playerTanks||[]),...(reconVehicles||[]),...(ambulances||[])];
+  const all=[...(window.playerTanks||[]),...(window.reconVehicles||[]),...(window.ambulances||[])];
   const seen=new Set(),out=[];
   for(const u of all){
     if(!u||u.__remote||u.team!=='player'||seen.has(u))continue;
@@ -13259,11 +13385,11 @@ function localUnitsSnapshot(){
 }
 function localBuildingsSnapshot(){
   const out=[];
-  for(const f of [...(constructedFactories||[])].filter(x=>x&&x.owner==='player'&&x.done&&!x.__remote)){
+  for(const f of [...(window.constructedFactories||[])].filter(x=>x&&x.owner==='player'&&x.done&&!x.__remote)){
     if(!f.__netId)f.__netId=(pvpPlayerId||'p')+'_f_'+Math.random().toString(36).slice(2,8);
     out.push({id:f.__netId,type:'factory',x:f.mesh.position.x,z:f.mesh.position.z,yaw:f.mesh.rotation.y,hp:f.hp,maxHp:f.maxHp||f.hp});
   }
-  for(const b of [...(constructedBarracks||[])].filter(x=>x&&x.owner==='player'&&x.done&&!x.__remote)){
+  for(const b of [...(window.constructedBarracks||[])].filter(x=>x&&x.owner==='player'&&x.done&&!x.__remote)){
     if(!b.__netId)b.__netId=(pvpPlayerId||'p')+'_b_'+Math.random().toString(36).slice(2,8);
     out.push({id:b.__netId,type:'barracks',x:b.mesh.position.x,z:b.mesh.position.z,yaw:b.mesh.rotation.y,hp:b.hp,maxHp:b.maxHp||b.hp});
   }
@@ -13272,7 +13398,7 @@ function localBuildingsSnapshot(){
 function sendLocalState(force){
   if(!pvpStarted||!pvpConnected)return;
   const now=performance.now();if(!force&&now-pvpLastSend<100)return;pvpLastSend=now;
-  send({type:'state',state:{units:localUnitsSnapshot(),buildings:localBuildingsSnapshot(),money:playerMoney||0,baseHp:playerBaseGroup?.hp||6500,color:pvpColor}});
+  send({type:'state',state:{units:localUnitsSnapshot(),buildings:localBuildingsSnapshot(),money:window.playerMoney||0,baseHp:window.playerBaseGroup?.hp||6500,color:pvpColor}});
 }
 function makeRemoteUnit(d){
   let u=null;
@@ -13287,15 +13413,15 @@ function makeRemoteUnit(d){
   u.__remote=true;u.__netId=d.id;u.manualControl=false;u.aiTarget=null;u.aiOrder=null;u.target=null;
   if(u.mesh){u.mesh.position.set(d.x,getTerrainHeight(d.x,d.z),d.z);u.mesh.rotation.y=d.yaw||0}
   if(!u.__remoteArrayAdded){
-    if(u.isRecon)(reconVehicles||[]).push(u);
-    else if(u.team==='enemy')(enemyTanks||[]).push(u);
+    if(u.isRecon)(window.reconVehicles||[]).push(u);
+    else if(u.team==='enemy')(window.enemyTanks||[]).push(u);
     u.__remoteArrayAdded=true;
   }
   return u;
 }
 function removeRemoteUnit(u){
   try{if(u.mesh?.parent)u.mesh.parent.remove(u.mesh);if(u.hpLabel)u.hpLabel.remove()}catch(_){}
-  for(const a of [enemyTanks,reconVehicles,ambulances]){if(a){const i=a.indexOf(u);if(i>=0)a.splice(i,1)}}
+  for(const a of [window.enemyTanks,window.reconVehicles,window.ambulances]){if(a){const i=a.indexOf(u);if(i>=0)a.splice(i,1)}}
 }
 function applyRemoteState(st){
   if(!pvpStarted)return;
@@ -13309,7 +13435,7 @@ function applyRemoteState(st){
     if(!d.destroyed&&!u.isDestroyed)u.mesh.visible=true;
   }
   for(const [id,u] of pvpRemoteUnits){if(!incoming.has(id)){removeRemoteUnit(u);pvpRemoteUnits.delete(id)}}
-  if(st.baseHp!=null&&enemyBaseGroup)enemyBaseGroup.hp=st.baseHp;
+  if(st.baseHp!=null&&window.enemyBaseGroup)window.enemyBaseGroup.hp=st.baseHp;
 }
 function smoothRemoteUnits(){
   for(const u of pvpRemoteUnits.values()){
@@ -13319,11 +13445,18 @@ function smoothRemoteUnits(){
     let dy=(t.yaw||0)-u.mesh.rotation.y;dy=Math.atan2(Math.sin(dy),Math.cos(dy));u.mesh.rotation.y+=dy*.35;
   }
 }
-const oldRAF=window.requestAnimationFrame;
-function networkTick(){sendLocalState(false);smoothRemoteUnits();oldRAF(networkTick)}
-function openPvpSetup(){connectPvp();const m=el('battle-setup-modal');if(m){m.classList.add('show');m.setAttribute('aria-hidden','false')}pvpSelectMoney(pvpMoney);pvpSelectColor(pvpColor,pvpColorName)}
+function openPvpSetup(){
+  connectPvp();
+  const m=el('battle-setup-modal');
+  if(m){m.classList.add('show');m.setAttribute('aria-hidden','false')}
+  pvpSelectMoney(pvpMoney);pvpSelectColor(pvpColor,pvpColorName);
+  updatePresence();
+}
 window.openBattleSetup=openPvpSetup;
 window.closeBattleSetup=function(){const m=el('battle-setup-modal');if(m){m.classList.remove('show');m.setAttribute('aria-hidden','true')}};
+window.pvpInvitePlayer=pvpInvitePlayer;
+window.pvpRejectInvite=pvpRejectInvite;
+window.pvpAcceptInvite=pvpAcceptInvite;
 
 document.addEventListener('DOMContentLoaded',()=>{
   window.onlinePvp=true;
