@@ -7971,6 +7971,9 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function updateEnemyAI(){
+        // ONLINE 1v1: absolutely no local bot while waiting for the opponent
+        // or after the online match has started. The server is authoritative.
+        if(window.__ONLINE_MODE===true)return;
         enemyAIThink++; if(enemyAIThink%8!==0)return;
         const liveEnemy=enemyTanks.filter(t=>!t.isDestroyed), livePlayer=playerTanks.filter(t=>!t.isDestroyed);
         const info=updateEnemyIntel(liveEnemy,livePlayer);
@@ -13310,7 +13313,8 @@ function startOnline(){
       const me=m.players.find(p=>p.team===myTeam), other=m.players.find(p=>p.team!==myTeam);
       if(me){battleConfig.playerColor=me.color;playerFlagType=me.color}
       if(other){battleConfig.enemyColor=other.color;enemyFlagType=other.color}
-      if(localStart) localStart();
+      // IMPORTANT: never call the old offline beginConfiguredGame here.
+      // The server has just authorized the real 1v1 match.
       enterOnlineWorld();
       status('المباراة بدأت — نفس الخريطة لكلا اللاعبين','ok');
       setTimeout(()=>statusEl.classList.remove('show'),2200);
@@ -13328,7 +13332,17 @@ function startOnline(){
 }
 
 function enterOnlineWorld(){
+  // This function is called ONLY after the server sends match_start.
+  // Until then the game stays in the waiting room.
   window.__ONLINE_MODE=true;
+  try{
+    ['start-menu','settings-modal','battle-setup-modal','online-room-modal','online-room-list-modal'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){el.classList.remove('show');el.style.display='none';el.setAttribute('aria-hidden','true');}
+    });
+    const ui=document.getElementById('ui-overlay');
+    if(ui){ui.style.display='block';ui.style.visibility='visible';ui.style.opacity='1';}
+  }catch(e){}
   // Stop the local bot and hide local simulated units/buildings.
   try{playerTanks.forEach(u=>{if(u&&u.mesh)u.mesh.visible=false})}catch(e){}
   try{enemyTanks.forEach(u=>{if(u&&u.mesh)u.mesh.visible=false})}catch(e){}
@@ -13553,14 +13567,15 @@ document.addEventListener('visibilitychange',()=>{if(online&&document.visibility
   }
   window.openOnlineCreate=function(){
     hideBotControls();
+    window.__ONLINE_MODE=false;
     const modal=document.getElementById('online-room-modal');
-    if(modal){modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
+    if(modal){modal.classList.add('show');modal.setAttribute('aria-hidden','false');modal.style.display='flex';}
     const create=document.getElementById('online-create-room-btn');
     const ready=document.getElementById('online-create-ready-actions');
-    if(create)create.style.display='block';
+    if(create){create.style.display='block';create.disabled=false;create.textContent='إنشاء الغرفة';}
     if(ready)ready.style.display='none';
     const status=document.getElementById('online-create-status');
-    if(status)status.innerHTML='<strong>ONLINE 1V1:</strong> اختر المال واللون ثم ابدأ البحث عن لاعب.';
+    if(status)status.innerHTML='<strong>ONLINE 1V1:</strong> اختر المال واللون ثم أنشئ غرفة. لن تبدأ المعركة حتى يدخل PLAYER 2.';
   };
   window.openOnlineRoomList=function(){
     hideBotControls();
@@ -13580,16 +13595,52 @@ document.addEventListener('visibilitychange',()=>{if(online&&document.visibility
       const activeColor=colorGrid&&colorGrid.querySelector('.online-color.active');
       const money=Number(activeMoney&&activeMoney.dataset.money)||1000;
       const color=(activeColor&&activeColor.dataset.color)||'#168cff';
+
       if(window.battleConfig){
         battleConfig.money=money;
         battleConfig.playerColor=color;
         battleConfig.playerColorName='ONLINE';
         battleConfig.bot='online';
       }
+
+      // Lock the local AI BEFORE opening WebSocket. This prevents the old
+      // offline bot from creating units while we wait for PLAYER 2.
+      window.__ONLINE_MODE=true;
+      try{
+        if(typeof enemyMoney!=='undefined')enemyMoney=0;
+        if(Array.isArray(enemyTanks)){
+          enemyTanks.forEach(u=>{
+            if(!u)return;
+            u.isDestroyed=true;
+            u.manualControl=false;
+            u.target=null;
+            if(u.mesh)u.mesh.visible=false;
+          });
+        }
+        if(Array.isArray(enemyFactories)){
+          enemyFactories.forEach(b=>{if(b&&b.mesh)b.mesh.visible=false;});
+        }
+        if(Array.isArray(constructedFactories)){
+          constructedFactories.forEach(b=>{if(b&&b.mesh)b.mesh.visible=false;});
+        }
+        if(Array.isArray(constructedBarracks)){
+          constructedBarracks.forEach(b=>{if(b&&b.mesh)b.mesh.visible=false;});
+        }
+      }catch(e){}
+
       const status=document.getElementById('online-create-status');
-      if(status)status.innerHTML='<strong>السيرفر:</strong> جاري البحث عن لاعب ثانٍ...';
-      hide('online-room-modal');
-      if(typeof window.beginConfiguredGame==='function')window.beginConfiguredGame();
+      if(status)status.innerHTML='<strong>السيرفر:</strong> تم إنشاء غرفة انتظار — بانتظار PLAYER 2...';
+
+      create.disabled=true;
+      create.textContent='بانتظار اللاعب الثاني...';
+
+      // Stay inside the room/waiting screen. The game MUST NOT start here.
+      const modal=document.getElementById('online-room-modal');
+      if(modal){modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
+
+      if(typeof window.CB_START_ONLINE==='function'){
+        window.CB_START_ONLINE();
+      }
     };
   }
   hideBotControls();
