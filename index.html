@@ -2517,7 +2517,7 @@
           <button type="button" data-color="#168cff" onclick="pvpJoinPickColor(this)"></button><button type="button" data-color="#00d9ff" onclick="pvpJoinPickColor(this)"></button><button type="button" data-color="#ffd21f" onclick="pvpJoinPickColor(this)"></button><button type="button" data-color="#ff7a00" onclick="pvpJoinPickColor(this)"></button><button type="button" data-color="#ff3b5c" onclick="pvpJoinPickColor(this)"></button><button type="button" data-color="#a855f7" onclick="pvpJoinPickColor(this)"></button><button type="button" data-color="#22c55e" onclick="pvpJoinPickColor(this)"></button>
         </div></div>
       </div>
-      <button class="pvp-main-btn" onclick="pvpConfirmJoinRoom()">دخول الغرفة</button>
+      <button id="pvp-room-entry-btn" class="pvp-main-btn" onclick="pvpConfirmJoinRoom()">دخول الغرفة</button>
     </div>
 
     <div class="pvp-unified-actions"><button class="pvp-cancel-btn" onclick="pvpLeaveRoom()">مغادرة الغرفة</button><button id="pvp-ready-btn" class="pvp-ready-btn" onclick="pvpReady()">جاهز</button><button id="pvp-start-btn" class="pvp-start-btn" onclick="pvpHostStart()" disabled>بدء المعركة</button></div>
@@ -13565,6 +13565,12 @@ function pvpJoinPickColor(btn){
   pvpColor=btn.dataset.color||'#168cff';
   const names={'#168cff':'BLUE','#00d9ff':'ICE','#ffd21f':'GOLD','#ff7a00':'ORANGE','#ff3b5c':'ROSE','#a855f7':'VIOLET','#22c55e':'GREEN'};
   pvpColorName=names[pvpColor.toLowerCase()]||'BLUE';
+  if(pvpRoom){
+    send({type:'settings',settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}});
+    const d=el('pvp-color-dot'),x=el('pvp-color-name');
+    if(d){d.style.background=pvpColor;d.style.boxShadow='0 0 8px '+pvpColor}
+    if(x)x.textContent=pvpColorName;
+  }
 }
 function pvpConfirmJoinRoom(){
   const code=window.__pendingPvpRoom;
@@ -13572,7 +13578,7 @@ function pvpConfirmJoinRoom(){
   if(!code||!/^[A-Z0-9]{6}$/.test(code)){pvpMsg('كود الغرفة غير صحيح.');return;}
   if(!name){pvpMsg('اكتب اسمك أولًا.');return;}
   pvpMyName=name;
-  const entry=el('pvp-room-entry');if(entry)entry.hidden=true;
+  const entry=el('pvp-room-entry');if(entry)entry.hidden=false;
   connectPvp();
   setTimeout(()=>send({type:'join_room',room:code,name,settings:{money:pvpMoney,color:pvpColor,colorName:pvpColorName}}),150);
 }
@@ -13600,6 +13606,8 @@ function pvpReady(){
   pvpReadyState=!pvpReadyState;
   send({type:'ready',ready:pvpReadyState});
   if(el('pvp-ready-btn'))el('pvp-ready-btn').textContent=pvpReadyState?'إلغاء الجاهزية':'جاهز';
+  const entryBtn=el('pvp-room-entry-btn');
+  if(entryBtn&&pvpRole!=='host')entryBtn.textContent=pvpReadyState?'إلغاء الاستعداد':'استعداد';
 }
 function pvpHostStart(){if(pvpRole!=='host')return;send({type:'start_battle'});}
 
@@ -13607,7 +13615,8 @@ function pvpResetRoom(){
   pvpRoom=null;pvpRole=null;pvpPlayerId=null;pvpReadyState=false;pvpStarted=false;
   window.__pendingPvpRoom=null;
   const card=document.querySelector('#battle-setup-modal .pvp-unified-card');
-  if(card)card.classList.remove('in-room');
+  if(card){card.classList.remove('in-room','pvp-guest');}
+  if(el('pvp-join-name'))el('pvp-join-name').readOnly=false;
   if(el('pvp-room-entry'))el('pvp-room-entry').hidden=true;
   if(el('pvp-lobby'))el('pvp-lobby').hidden=false;
   if(el('pvp-room-panel'))el('pvp-room-panel').hidden=true;
@@ -13619,8 +13628,25 @@ function renderRoom(m){
   if(el('pvp-lobby'))el('pvp-lobby').hidden=true;
   if(el('pvp-room-panel'))el('pvp-room-panel').hidden=false;
   const card=document.querySelector('#battle-setup-modal .pvp-unified-card');
-  if(card)card.classList.add('in-room');
+  if(card){
+    card.classList.add('in-room');
+    card.classList.toggle('pvp-guest',pvpRole!=='host');
+  }
   if(el('pvp-room-code-display'))el('pvp-room-code-display').textContent='ROOM '+(pvpRoom||m.room||'------');
+  const guest=card&&pvpRole!=='host';
+  const entry=el('pvp-room-entry');
+  const joinName=el('pvp-join-name');
+  const entryTitle=entry?.querySelector('.pvp-room-entry-title');
+  const entryBtn=el('pvp-room-entry-btn');
+  if(guest){
+    if(entry)entry.hidden=false;
+    if(joinName){joinName.value=pvpMyName||joinName.value||'Commander';joinName.readOnly=true;}
+    if(entryTitle)entryTitle.textContent='إعداد اللاعب الثاني';
+    if(entryBtn){entryBtn.textContent=pvpReadyState?'إلغاء الاستعداد':'استعداد';entryBtn.onclick=pvpReady;}
+    document.querySelectorAll('.pvp-join-colors button').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===pvpColor.toLowerCase()));
+  }else{
+    if(entry)entry.hidden=true;
+  }
   const ps=m.players||[];
   try{window.__syncUnifiedRoom?.(ps,m.room||pvpRoom);}catch(_){}
   for(let i=0;i<2;i++){
@@ -14457,13 +14483,15 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 <style id="online-room-stay-fix">
-#battle-setup-modal .pvp-room-entry{margin-top:10px;padding:10px;border:1px solid rgba(148,163,184,.22);background:rgba(5,10,7,.72);border-radius:10px}
-#battle-setup-modal .pvp-room-entry-title{font-weight:900;color:#f0fdf4;margin-bottom:8px}
+/* ===== نفس بطاقة إنشاء الغرفة للاعب الثاني ===== */
+#battle-setup-modal .pvp-room-entry{margin-top:10px;padding:12px;border:1px solid rgba(148,163,184,.28);background:linear-gradient(145deg,rgba(14,28,24,.96),rgba(5,10,8,.94));border-radius:8px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),0 8px 24px rgba(0,0,0,.35)}
+#battle-setup-modal .pvp-room-entry-title{font-weight:900;color:#f0fdf4;margin-bottom:10px;font-size:12px;letter-spacing:.3px}
 #battle-setup-modal .pvp-room-entry-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-#battle-setup-modal .pvp-room-entry label,#battle-setup-modal .pvp-room-entry-grid>div{display:flex;flex-direction:column;gap:5px;color:#aab5b1;font-size:9px;font-weight:800}
-#battle-setup-modal .pvp-room-entry input{height:36px;padding:0 9px;border:1px solid #455245;border-radius:7px;background:#0c120e;color:#fff;outline:none}
-#battle-setup-modal .pvp-join-colors{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
-#battle-setup-modal .pvp-join-colors button{width:27px;height:27px;border-radius:50%;border:2px solid rgba(255,255,255,.18);background:var(--c,#168cff);cursor:pointer}
+#battle-setup-modal .pvp-room-entry label,#battle-setup-modal .pvp-room-entry-grid>div{display:flex;flex-direction:column;gap:5px;color:#aab5b1;font-size:9px;font-weight:900}
+#battle-setup-modal .pvp-room-entry input{height:38px;padding:0 10px;border:1px solid #455245;border-radius:6px;background:#0a100c;color:#fff;outline:none;font-weight:800}
+#battle-setup-modal .pvp-room-entry input:read-only{opacity:.82;cursor:default}
+#battle-setup-modal .pvp-join-colors{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:2px}
+#battle-setup-modal .pvp-join-colors button{width:100%;aspect-ratio:1;border-radius:6px;border:2px solid rgba(255,255,255,.18);background:var(--c,#168cff);cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 3px 8px rgba(0,0,0,.28);transition:.16s}
 #battle-setup-modal .pvp-join-colors button[data-color="#168cff"]{background:#168cff}
 #battle-setup-modal .pvp-join-colors button[data-color="#00d9ff"]{background:#00d9ff}
 #battle-setup-modal .pvp-join-colors button[data-color="#ffd21f"]{background:#ffd21f}
@@ -14471,10 +14499,15 @@ document.addEventListener('DOMContentLoaded',()=>{
 #battle-setup-modal .pvp-join-colors button[data-color="#ff3b5c"]{background:#ff3b5c}
 #battle-setup-modal .pvp-join-colors button[data-color="#a855f7"]{background:#a855f7}
 #battle-setup-modal .pvp-join-colors button[data-color="#22c55e"]{background:#22c55e}
-#battle-setup-modal .pvp-join-colors button.active{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.22),0 0 10px rgba(255,255,255,.3)}
+#battle-setup-modal .pvp-join-colors button.active{border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.2),0 0 13px currentColor;transform:scale(1.06)}
+#battle-setup-modal .pvp-room-entry>.pvp-main-btn{width:100%;margin-top:10px;min-height:42px}
 #battle-setup-modal .pvp-unified-card.in-room .pvp-room-create{display:none!important}
-#battle-setup-modal .pvp-unified-card.in-room .pvp-room-entry{display:none!important}
+#battle-setup-modal .pvp-unified-card.in-room:not(.pvp-guest) .pvp-room-entry{display:none!important}
+#battle-setup-modal .pvp-unified-card.in-room.pvp-guest .pvp-room-entry{display:block!important}
+#battle-setup-modal .pvp-unified-card.in-room.pvp-guest .pvp-room-entry-title:after{content:' — اختر إعداداتك ثم اضغط استعداد';color:#9aa99d;font-size:9px;margin-right:6px;font-weight:700}
+#battle-setup-modal .pvp-unified-card.in-room.pvp-guest .pvp-unified-actions #pvp-ready-btn{display:none!important}
 #battle-setup-modal .pvp-unified-card.in-room .pvp-room-code-display{margin-top:12px}
+@media(max-width:520px){#battle-setup-modal .pvp-room-entry-grid{grid-template-columns:1fr}#battle-setup-modal .pvp-join-colors{grid-template-columns:repeat(7,1fr)}}
 </style>
 </body>
 </html>
