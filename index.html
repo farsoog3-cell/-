@@ -2307,6 +2307,18 @@
 #settings-modal .settings-group .menu-btn{margin-top:10px!important}
 #settings-modal .settings-group .menu-btn:hover,#settings-modal #sound-settings-btn:hover{border-color:#83dcff!important;box-shadow:0 0 15px #168cff44!important}
 </style>
+
+<style id="zero-hour-lobby-override">
+/* PvP uses ONE lobby only. The old battle-setup window is disabled. */
+#battle-setup-modal{display:none!important;visibility:hidden!important;pointer-events:none!important;}
+#online-panel-overlay.zero-hour-lobby{display:flex!important;align-items:stretch!important;justify-content:center!important;}
+#online-panel-overlay.zero-hour-lobby .online-panel{width:min(980px,96vw)!important;max-height:92vh!important;overflow:auto!important;}
+#online-panel-overlay.zero-hour-lobby #online-friends-panel{display:none!important;}
+#online-panel-overlay.zero-hour-lobby #online-rooms-panel,
+#online-panel-overlay.zero-hour-lobby #online-create-panel{display:block!important;}
+#online-panel-overlay.zero-hour-lobby #online-rooms-panel{margin-bottom:12px;}
+#online-panel-overlay.zero-hour-lobby #online-create-panel{border-top:1px solid rgba(255,255,255,.12);padding-top:12px;}
+</style>
 </head>
 <body>
 
@@ -4428,7 +4440,10 @@ function beginConfiguredGame(){
     targetCameraRadius=110; cameraPhi=Math.PI/3.8; cameraRadius=targetCameraRadius; updateCameraPosition();
     showFloatingMsg(`⚔ Battle started! Bot strength: ${{weak:'WEAK',medium:'MEDIUM',strong:'STRONG'}}[battleConfig.bot]||'MEDIUM'}.`);
 }
-function startGame(){openBattleSetup();}
+function startGame(){
+  // Generals-style flow: clicking multiplayer goes directly to the room lobby.
+  try{openRoomsPanel();}catch(_){try{openCreateRoomPanel();}catch(__){}}
+}
 
     function setupLighting() {
         scene.add(new THREE.AmbientLight(0xf0e7d8, 0.64));
@@ -14175,11 +14190,20 @@ function startOnlineBattleLoop(){
   requestAnimationFrame(loop);
 }
 function openPanel(which){
- connect();$('online-panel-overlay').hidden=false;
+ connect();
+ const ov=$('online-panel-overlay');
+ ov.hidden=false;
+ ov.classList.toggle('zero-hour-lobby',which==='rooms'||which==='create');
  $('online-friends-panel').hidden=which!=='friends';
- $('online-rooms-panel').hidden=which!=='rooms';
- $('online-create-panel').hidden=which!=='create';
- if(which==='create'){$('online-name-input').value=myName;$('online-money-select').value=myMoney;updateMyRoomColorUI();document.querySelectorAll('.online-colors button').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===myColor.toLowerCase()))}
+ // In the unified lobby, the room list and Create Room are the SAME screen.
+ $('online-rooms-panel').hidden=!(which==='rooms'||which==='create');
+ $('online-create-panel').hidden=!(which==='rooms'||which==='create');
+ if(which==='create'||which==='rooms'){
+   $('online-name-input').value=myName;
+   if($('online-room-name-input') && !$('online-room-name-input').value) $('online-room-name-input').value='معركة جديدة';
+   updateMyRoomColorUI();
+   document.querySelectorAll('.online-colors button').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===myColor.toLowerCase()));
+ }
  if(which==='friends'){setStatus('جاري تحديث اللاعبين المتصلين فعليًا...')}
  refreshPanels();
 }
@@ -14233,6 +14257,7 @@ function joinOnlineRoom(code){
  if(ws&&ws.readyState===1)join();else setTimeout(join,250);
 }
 function showRoom(m){
+ // Both players enter the exact same room lobby. No battle-setup screen is used.
  closeOnlinePanels();$('online-room-screen').hidden=false;
  currentRoom=m.room||currentRoom; currentRole=m.role||currentRole;
  $('online-room-code').textContent=currentRoom||'------';
