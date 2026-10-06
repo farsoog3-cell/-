@@ -2307,18 +2307,6 @@
 #settings-modal .settings-group .menu-btn{margin-top:10px!important}
 #settings-modal .settings-group .menu-btn:hover,#settings-modal #sound-settings-btn:hover{border-color:#83dcff!important;box-shadow:0 0 15px #168cff44!important}
 </style>
-
-<style id="zero-hour-lobby-override">
-/* PvP uses ONE lobby only. The old battle-setup window is disabled. */
-#battle-setup-modal{display:none!important;visibility:hidden!important;pointer-events:none!important;}
-#online-panel-overlay.zero-hour-lobby{display:flex!important;align-items:stretch!important;justify-content:center!important;}
-#online-panel-overlay.zero-hour-lobby .online-panel{width:min(980px,96vw)!important;max-height:92vh!important;overflow:auto!important;}
-#online-panel-overlay.zero-hour-lobby #online-friends-panel{display:none!important;}
-#online-panel-overlay.zero-hour-lobby #online-rooms-panel,
-#online-panel-overlay.zero-hour-lobby #online-create-panel{display:block!important;}
-#online-panel-overlay.zero-hour-lobby #online-rooms-panel{margin-bottom:12px;}
-#online-panel-overlay.zero-hour-lobby #online-create-panel{border-top:1px solid rgba(255,255,255,.12);padding-top:12px;}
-</style>
 </head>
 <body>
 
@@ -2457,13 +2445,17 @@
     </section>
 
     <section id="online-create-panel" class="online-section" hidden>
-      <h3>إنشاء غرفة جديدة</h3>
-      <p>اكتب اسمك، اختر لونك، واكتب اسم الغرفة. بعد الإنشاء ستبقى داخل الغرفة بانتظار اللاعب الثاني.</p>
+      <h3>إنشاء كيم لاعب ضد لاعب</h3>
       <div class="online-form-row">
-        <label>اسم اللاعب<input id="online-name-input" maxlength="18" placeholder="اكتب اسمك" autocomplete="off"></label>
-        <label>اسم الغرفة<input id="online-room-name-input" maxlength="24" placeholder="مثال: معركة الصحراء" autocomplete="off"></label>
+        <label>اسم اللاعب<input id="online-name-input" maxlength="18" placeholder="Commander"></label>
+        <label>المال الابتدائي
+          <select id="online-money-select">
+            <option value="1000">$1,000</option><option value="2000">$2,000</option>
+            <option value="3000" selected>$3,000</option><option value="4000">$4,000</option>
+          </select>
+        </label>
       </div>
-      <div class="online-label">لون اللاعب الأول</div>
+      <div class="online-label">اختر لونك</div>
       <div class="online-colors">
         <button data-color="#168cff" onclick="chooseOnlineColor(this)">أزرق</button>
         <button data-color="#8fe7ff" onclick="chooseOnlineColor(this)">جليدي</button>
@@ -2481,120 +2473,53 @@
 </div>
 
 <div id="battle-setup-modal" aria-hidden="true">
-  <div class="pvp-setup-card">
-    <div class="pvp-head">
+  <div class="pvp-unified-card">
+    <header class="pvp-unified-head">
       <div>
-        <div class="pvp-kicker">ONLINE COMMAND NETWORK</div>
-        <h2>PLAYER VS PLAYER</h2>
-        <p>أنشئ غرفة أو انضم إلى غرفة لاعب آخر عبر السيرفر.</p>
+        <div class="pvp-kicker">ONLINE BATTLE NETWORK</div>
+        <h2>معركة لاعب ضد لاعب</h2>
+        <p>غرفة واحدة، لاعبان، إعدادات واضحة — بدون بوت.</p>
       </div>
-      <button class="pvp-close" onclick="closeBattleSetup()" aria-label="CLOSE">×</button>
-    </div>
+      <button class="pvp-close" onclick="closeBattleSetup()">×</button>
+    </header>
 
-    <div id="pvp-connection" class="pvp-status offline">
-      <span class="pvp-dot"></span><b id="pvp-connection-text">جاري الاتصال بالسيرفر...</b>
-    </div>
+    <div id="pvp-connection" class="pvp-status offline"><span class="pvp-dot"></span><b id="pvp-connection-text">جاري الاتصال بالسيرفر...</b></div>
 
-    
-<div id="pvp-active-players" style="display:none!important" class="pvp-active-panel">
-  <div class="pvp-active-head">
-    <div>
-      <div class="pvp-panel-title" style="margin-bottom:2px">اللاعبون النشطون على السيرفر</div>
-      <div class="pvp-note" style="margin-top:0">اختر لاعبًا متصلًا وأرسل له دعوة مباشرة للعب ضدك.</div>
-    </div>
-    <span id="pvp-active-count" class="pvp-active-count">0 ONLINE</span>
-  </div>
-  <div id="pvp-active-list" class="pvp-active-list">
-    <div class="pvp-empty-online">جاري تحميل قائمة اللاعبين...</div>
-  </div>
-</div>
-
-<div id="pvp-lobby" class="pvp-grid" style="display:none!important" style="display:none!important">
-      <section class="pvp-panel">
-        <div class="pvp-panel-title">غرفة جديدة</div>
-        <div class="pvp-field">
-          <label>اسم اللاعب</label>
-          <input id="pvp-player-name" maxlength="18" value="Commander" autocomplete="off">
-        </div>
-        <button class="pvp-main-btn" onclick="pvpCreateRoom()">إنشاء غرفة</button>
-        <div class="pvp-note">سيظهر لك كود من 6 أحرف لإرساله إلى اللاعب الثاني.</div>
-      </section>
-
-      <section class="pvp-panel">
-        <div class="pvp-panel-title">الانضمام إلى غرفة</div>
-        <div class="pvp-field">
-          <label>كود الغرفة</label>
-          <input id="pvp-room-code" maxlength="6" placeholder="ABC123" autocomplete="off"
-                 oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
-        </div>
-        <button class="pvp-main-btn secondary" onclick="pvpJoinRoom()">انضمام</button>
-        <div class="pvp-note">لا يمكن دخول أكثر من لاعبين للغرفة.</div>
-      </section>
-    </div>
-
-    <div id="pvp-room-panel" class="pvp-room-panel" hidden>
-      <div class="pvp-room-top">
-        <div>
-          <span class="pvp-mini-label">ROOM CODE</span>
-          <strong id="pvp-room-code-display">------</strong>
-        </div>
-        <button class="pvp-copy" onclick="pvpCopyRoomCode()">نسخ الكود</button>
+    <section class="pvp-duel">
+      <div class="pvp-player-card" id="unified-p1">
+        <span class="pvp-slot">P1</span><i id="unified-p1-color"></i>
+        <strong id="unified-p1-name">أنت</strong><small id="unified-p1-state">HOST</small>
       </div>
-
-      <div class="pvp-players">
-        <div class="pvp-player-slot" id="pvp-slot-1">
-          <span class="slot-badge">P1</span><div><b id="pvp-name-1">بانتظار اللاعب...</b><small id="pvp-ready-1">HOST</small></div>
-        </div>
-        <div class="pvp-vs">VS</div>
-        <div class="pvp-player-slot" id="pvp-slot-2">
-          <span class="slot-badge">P2</span><div><b id="pvp-name-2">بانتظار اللاعب...</b><small id="pvp-ready-2">WAITING</small></div>
-        </div>
+      <div class="pvp-vs-big">VS</div>
+      <div class="pvp-player-card" id="unified-p2">
+        <span class="pvp-slot">P2</span><i id="unified-p2-color"></i>
+        <strong id="unified-p2-name">بانتظار اللاعب</strong><small id="unified-p2-state">WAITING</small>
       </div>
+    </section>
 
-      <div class="pvp-settings-grid">
-        <div class="pvp-panel compact">
-          <div class="pvp-panel-title">إعداد المعركة</div>
-          <label class="pvp-label">ميزانية البداية</label>
-          <div class="pvp-money-grid">
-            <button data-money="1000" onclick="pvpSelectMoney(1000)">1000$</button>
-            <button data-money="2000" onclick="pvpSelectMoney(2000)">2000$</button>
-            <button class="active" data-money="3000" onclick="pvpSelectMoney(3000)">3000$</button>
-            <button data-money="4000" onclick="pvpSelectMoney(4000)">4000$</button>
-          </div>
-        </div>
-        <div class="pvp-panel compact">
-          <div class="pvp-panel-title">لون قواتك</div>
-          <div class="pvp-color-grid">
-            <button style="--c:#168cff" data-color="#168cff" data-name="BLUE" onclick="pvpSelectColor('#168cff','BLUE')"></button>
-            <button style="--c:#00d9ff" data-color="#00d9ff" data-name="ICE" onclick="pvpSelectColor('#00d9ff','ICE')"></button>
-            <button style="--c:#ffd21f" data-color="#ffd21f" data-name="GOLD" onclick="pvpSelectColor('#ffd21f','GOLD')"></button>
-            <button style="--c:#ff7a00" data-color="#ff7a00" data-name="ORANGE" onclick="pvpSelectColor('#ff7a00','ORANGE')"></button>
-            <button style="--c:#ff3b5c" data-color="#ff3b5c" data-name="ROSE" onclick="pvpSelectColor('#ff3b5c','ROSE')"></button>
-            <button style="--c:#e11d48" data-color="#e11d48" data-name="RED" onclick="pvpSelectColor('#e11d48','RED')"></button>
-            <button style="--c:#a855f7" data-color="#a855f7" data-name="VIOLET" onclick="pvpSelectColor('#a855f7','VIOLET')"></button>
-            <button style="--c:#22c55e" data-color="#22c55e" data-name="GREEN" onclick="pvpSelectColor('#22c55e','GREEN')"></button>
-          </div>
-          <div class="pvp-color-readout"><span id="pvp-color-dot"></span><b id="pvp-color-name">BLUE</b></div>
-        </div>
-      </div>
+    <section class="pvp-room-create">
+      <div class="pvp-field"><label>اسمك</label><input id="pvp-player-name" maxlength="18" value="Commander" autocomplete="off"></div>
+      <button class="pvp-main-btn" onclick="pvpCreateRoom()">إنشاء غرفة</button>
+      <div class="pvp-field"><label>كود الغرفة</label><input id="pvp-room-code" maxlength="6" placeholder="ABC123" autocomplete="off" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"></div>
+      <button class="pvp-main-btn secondary" onclick="pvpJoinRoom()">انضمام</button>
+    </section>
 
-      <div class="pvp-room-actions">
-        <button class="pvp-cancel-btn" onclick="pvpLeaveRoom()">مغادرة الغرفة</button>
-        <button id="pvp-ready-btn" class="pvp-ready-btn" onclick="pvpReady()">جاهز</button>
-        <button id="pvp-start-btn" class="pvp-start-btn" onclick="pvpHostStart()" disabled>بدء المعركة</button>
-      </div>
-      <div id="pvp-room-message" class="pvp-room-message">بانتظار لاعب ثانٍ...</div>
-    </div>
+    <section class="pvp-settings-unified">
+      <div><label>المال</label><div class="pvp-money-grid"><button data-money="1000" onclick="pvpSelectMoney(1000)">1000$</button><button data-money="2000" onclick="pvpSelectMoney(2000)">2000$</button><button class="active" data-money="3000" onclick="pvpSelectMoney(3000)">3000$</button><button data-money="4000" onclick="pvpSelectMoney(4000)">4000$</button></div></div>
+      <div><label>لون جيشك</label><div class="pvp-color-grid"><button style="--c:#168cff" data-color="#168cff" onclick="pvpSelectColor('#168cff','BLUE')"></button><button style="--c:#00d9ff" data-color="#00d9ff" onclick="pvpSelectColor('#00d9ff','ICE')"></button><button style="--c:#ffd21f" data-color="#ffd21f" onclick="pvpSelectColor('#ffd21f','GOLD')"></button><button style="--c:#ff7a00" data-color="#ff7a00" onclick="pvpSelectColor('#ff7a00','ORANGE')"></button><button style="--c:#ff3b5c" data-color="#ff3b5c" onclick="pvpSelectColor('#ff3b5c','ROSE')"></button><button style="--c:#e11d48" data-color="#e11d48" onclick="pvpSelectColor('#e11d48','RED')"></button><button style="--c:#a855f7" data-color="#a855f7" onclick="pvpSelectColor('#a855f7','VIOLET')"></button><button style="--c:#22c55e" data-color="#22c55e" onclick="pvpSelectColor('#22c55e','GREEN')"></button></div><div class="pvp-color-readout"><span id="pvp-color-dot"></span><b id="pvp-color-name">BLUE</b></div></div>
+    </section>
+
+    <div class="pvp-unified-actions"><button class="pvp-cancel-btn" onclick="pvpLeaveRoom()">مغادرة الغرفة</button><button id="pvp-ready-btn" class="pvp-ready-btn" onclick="pvpReady()">جاهز</button><button id="pvp-start-btn" class="pvp-start-btn" onclick="pvpHostStart()" disabled>بدء المعركة</button></div>
+    <div id="pvp-room-code-display" class="pvp-room-code-display">لم يتم إنشاء غرفة بعد</div>
+    <div id="pvp-room-message" class="pvp-room-message">أنشئ غرفة أو أدخل كود غرفة لاعب آخر.</div>
   </div>
 </div>
-
 
 <div id="online-room-screen" class="online-room-screen" hidden>
   <div class="online-room-card">
     <div class="online-panel-title">PLAYER VS PLAYER</div>
     <h2>غرفة المعركة</h2>
     <div class="online-room-code"><span>ROOM</span><b id="online-room-code">------</b></div>
-    <div class="online-room-name"><span>اسم الغرفة</span><b id="online-room-name">غرفة المعركة</b></div>
     <div class="online-vs">
       <div class="online-slot" id="online-p1-slot">
         <i id="online-p1-color"></i>
@@ -2612,21 +2537,6 @@
     </div>
     <div class="online-room-settings">المال: <b id="online-room-money">$3,000</b></div>
     <div class="online-my-room-color">لونك في الغرفة: <span id="online-my-room-color-dot"></span><b id="online-my-room-color-name">BLUE</b></div>
-    <div class="online-room-profile">
-      <div id="online-room-profile-hint" class="online-status-text">بياناتك في هذه الغرفة</div>
-      <label>اسمك <input id="online-room-player-name" maxlength="18" placeholder="اكتب اسمك" autocomplete="off"></label>
-      <div class="online-room-color-picker">
-        <button data-color="#168cff" data-name="BLUE" onclick="chooseRoomColor(this)"></button>
-        <button data-color="#8fe7ff" data-name="ICE" onclick="chooseRoomColor(this)"></button>
-        <button data-color="#e6b94c" data-name="GOLD" onclick="chooseRoomColor(this)"></button>
-        <button data-color="#ff8a2b" data-name="ORANGE" onclick="chooseRoomColor(this)"></button>
-        <button data-color="#ff4d78" data-name="ROSE" onclick="chooseRoomColor(this)"></button>
-        <button data-color="#ef3d4e" data-name="RED" onclick="chooseRoomColor(this)"></button>
-        <button data-color="#a86cff" data-name="VIOLET" onclick="chooseRoomColor(this)"></button>
-        <button data-color="#52d66f" data-name="GREEN" onclick="chooseRoomColor(this)"></button>
-      </div>
-      <button class="online-profile-save" onclick="saveRoomProfile()">حفظ الاسم واللون</button>
-    </div>
     <div class="online-room-actions">
       <button onclick="onlineToggleReady()" id="online-ready-btn">جاهز</button>
       <button onclick="onlineStartRoom()" id="online-start-btn" disabled>ابدأ الكيم</button>
@@ -4423,7 +4333,7 @@ function beginConfiguredGame(){
     totalMoneySpent=0;
     battleAudioActive=true;
     updateEconomyUI();
-    applyBattleBotConfig();
+    /* BOT SYSTEM REMOVED: online PvP is controlled by the remote player. */
     refreshAllTeamFlags();
     closeBattleSetup();
     menuBgmAudio.pause(); menuBgmAudio.currentTime=0;
@@ -4440,10 +4350,7 @@ function beginConfiguredGame(){
     targetCameraRadius=110; cameraPhi=Math.PI/3.8; cameraRadius=targetCameraRadius; updateCameraPosition();
     showFloatingMsg(`⚔ Battle started! Bot strength: ${{weak:'WEAK',medium:'MEDIUM',strong:'STRONG'}}[battleConfig.bot]||'MEDIUM'}.`);
 }
-function startGame(){
-  // Generals-style flow: clicking multiplayer goes directly to the room lobby.
-  try{openRoomsPanel();}catch(_){try{openCreateRoomPanel();}catch(__){}}
-}
+function startGame(){openBattleSetup();}
 
     function setupLighting() {
         scene.add(new THREE.AmbientLight(0xf0e7d8, 0.64));
@@ -13675,6 +13582,7 @@ function renderRoom(m){
   if(el('pvp-room-panel'))el('pvp-room-panel').hidden=false;
   if(el('pvp-room-code-display'))el('pvp-room-code-display').textContent=pvpRoom||m.room||'------';
   const ps=m.players||[];
+  try{window.__syncUnifiedRoom?.(ps,m.room||pvpRoom);}catch(_){}
   for(let i=0;i<2;i++){
     const q=ps[i], n=el('pvp-name-'+(i+1)),r=el('pvp-ready-'+(i+1)),slot=el('pvp-slot-'+(i+1));
     if(q){
@@ -13772,14 +13680,14 @@ function safeUnitType(u){
   return u.type||'normal';
 }
 function localUnitsSnapshot(){
-  const all=[...(playerTanks||[]),...(reconVehicles||[]),...(ambulances||[])];
+  const all=[...(window.playerTanks||[]),...(window.reconVehicles||[]),...(window.ambulances||[])];
   const seen=new Set(),out=[];
   for(const u of all){
     if(!u||u.__remote||u.team!=='player'||seen.has(u))continue;
     seen.add(u);
     if(!u.mesh)continue;
     if(!u.__netId)u.__netId=(pvpPlayerId||'p')+'_'+Math.random().toString(36).slice(2,9);
-    out.push({id:u.__netId,type:safeUnitType(u),x:u.mesh.position.x,z:u.mesh.position.z,yaw:u.mesh.rotation.y,hp:u.hp,maxHp:u.maxHp||u.hp,target:u.target?{x:u.target.x,z:u.target.z}:null,destroyed:!!u.isDestroyed,shotAt:Number(u.lastShot)||0,target:u.target?.mesh?{x:u.target.mesh.position.x,z:u.target.mesh.position.z}:u.target?{x:u.target.x,z:u.target.z}:null});
+    out.push({id:u.__netId,type:safeUnitType(u),x:u.mesh.position.x,z:u.mesh.position.z,yaw:u.mesh.rotation.y,hp:u.hp,maxHp:u.maxHp||u.hp,target:u.target?{x:u.target.x,z:u.target.z}:null,destroyed:!!u.isDestroyed});
   }
   return out;
 }
@@ -13835,7 +13743,7 @@ function applyRemoteState(st){
     if(!d.destroyed&&!u.isDestroyed)u.mesh.visible=true;
   }
   for(const [id,u] of pvpRemoteUnits){if(!incoming.has(id)){removeRemoteUnit(u);pvpRemoteUnits.delete(id)}}
-  if(st.baseHp!=null&&enemyBaseGroup)enemyBaseGroup.hp=st.baseHp;
+  if(st.baseHp!=null&&window.enemyBaseGroup)window.enemyBaseGroup.hp=st.baseHp;
 }
 function smoothRemoteUnits(){
   for(const u of pvpRemoteUnits.values()){
@@ -13912,17 +13820,9 @@ function renderFriends(){
 }
 function renderRooms(){
  const box=$('online-rooms-list'),badge=$('online-rooms-badge');if(!box)return;
- const arr=availableRooms.filter(r=>!r.started && Number(r.count||r.players?.length||0)===1);
+ const arr=availableRooms.filter(r=>r.count===1&&!r.started);
  if(badge)badge.textContent=arr.length;
- box.innerHTML=arr.length?arr.map(r=>{
-   const host=(r.players||[])[0]||{};
-   const hs=host.settings||{};
-   const hostName=r.hostName||host.name||'Commander';
-   const hostColor=hs.color||host.color||'#168cff';
-   const hostColorName=hs.colorName||host.colorName||'COLOR';
-   const code=String(r.room||r.code||'').replaceAll("'", "\\'");
-   return `<div class="online-list-row"><i class="dot" style="background:${hostColor};box-shadow:0 0 8px ${hostColor}"></i><div class="info"><strong>${esc(r.roomName||r.name||('غرفة '+code))}</strong><small>${esc(code)} • ${esc(hostName)} — 1 / 2 • ${esc(hostColorName)} • الغرفة مفتوحة</small></div><button onclick="joinOnlineRoom('${code}')">دخول الغرفة</button></div>`;
- }).join(''):'<div class="online-status-text">لا توجد غرف مفتوحة. عندما ينشئ لاعب غرفة ستظهر هنا للاعب الآخر.</div>';
+ box.innerHTML=arr.length?arr.map(r=>`<div class="online-list-row"><i class="dot"></i><div class="info"><strong>غرفة ${esc(r.code)}</strong><small>${esc(r.hostName||'Commander')} — لاعب واحد — المال $${r.money||3000}</small></div><button onclick="joinOnlineRoom('${r.code}')">دخول</button></div>`).join(''):'<div class="online-status-text">لا توجد غرف متاحة حاليًا.</div>';
 }
 function handle(m){
  if(m.type==='hello'){myId=m.id;return}
@@ -13933,25 +13833,9 @@ function handle(m){
   for(const id of presenceSeen.keys()) if(!liveIds.has(String(id)) && now-(presenceSeen.get(id)||0)>PRESENCE_TIMEOUT) presenceSeen.delete(id);
   renderFriends();return
 }
- if(m.type==='rooms_list'||m.type==='rooms'){
-   availableRooms=Array.isArray(m.rooms)?m.rooms:[];
-   renderRooms();
-   return
- }
- if(m.type==='room_created'||m.type==='room_joined'||m.type==='room_update'||m.type==='hello_room'){
-   currentRoom=m.room||currentRoom;
-   currentRole=m.role||currentRole;
-   showRoom({
-     ...m,
-     room:m.room||currentRoom,
-     roomName:m.roomName||m.name||'غرفة المعركة',
-     players:Array.isArray(m.players)?m.players:(window.__onlineRoomPlayers||[])
-   });
-   if(m.type==='room_created'&&currentRole==='host'&&ws&&ws.readyState===1){
-     ready=true;
-     send({type:'ready',ready:true});
-   }
-   return
+ if(m.type==='rooms_list'){availableRooms=m.rooms||[];renderRooms();return}
+ if(m.type==='room_created'||m.type==='room_joined'||m.type==='room_update'){
+   currentRoom=m.room;currentRole=m.role||currentRole;showRoom(m);return
  }
  if(m.type==='room_error'){setStatus(m.message||'حدث خطأ');return}
  if(m.type==='invite'){
@@ -13960,250 +13844,14 @@ function handle(m){
  }
  if(m.type==='battle_start'){startActualPvp(m);return}
  if(m.type==='peer_left'){setStatus('غادر اللاعب الآخر.');battleStarted=false;return}
- if(m.type==='state'){applyOnlineRemoteState(m.state);return}
-}
-
-/* ================================================================
-   REAL PVP WORLD SYNCHRONIZATION
-   The room WebSocket is the authoritative connection for the battle.
-   Every client sends its actual player-side units/buildings/oil/base state
-   and receives the opponent's state. No bots or fake units are created.
-   ================================================================ */
-const onlineRemoteUnits=new Map();
-const onlineRemoteBuildings=new Map();
-let onlineLastStateSend=0;
-let onlineBattleLoopStarted=false;
-
-function onlineUnitType(u){
-  if(!u)return 'normal';
-  if(u.isBuilder||u.isConstructionTruck||u.type==='builder')return 'builder';
-  if(u.isInfantry)return 'infantry';
-  if(u.isRecon||u.type==='scout')return 'scout';
-  if(u.type==='rocket')return 'rocket';
-  if(u.type==='ambulance'||ambulances.includes(u))return 'ambulance';
-  return u.type||'normal';
-}
-
-function onlineLocalUnits(){
-  const all=[...(playerTanks||[]),...(reconVehicles||[]),...(ambulances||[])];
-  const out=[],seen=new Set();
-  for(const u of all){
-    if(!u||u.__remote||u.team!=='player'||!u.mesh||seen.has(u))continue;
-    seen.add(u);
-    if(!u.__netId)u.__netId=(myId||'player')+'_u_'+Math.random().toString(36).slice(2,10);
-    const pos=u.mesh.position;
-    const target=u.target?.mesh?u.target.mesh.position:u.target;
-    out.push({
-      id:u.__netId,
-      type:onlineUnitType(u),
-      x:pos.x,z:pos.z,yaw:u.mesh.rotation.y||0,
-      hp:Number.isFinite(u.hp)?u.hp:(u.maxHp||100),maxHp:u.maxHp||u.hp||100,
-      destroyed:!!u.isDestroyed,
-      shotAt:Number(u.lastShot)||0,
-      moving:!!(u.target||u.hasPlayerMoveOrder||u.factoryExiting||u.barracksExiting),
-      target:target&&Number.isFinite(target.x)&&Number.isFinite(target.z)?{x:target.x,z:target.z}:null
-    });
-  }
-  return out;
-}
-
-function onlineLocalBuildings(){
-  const out=[];
-  const pushBuilding=(f,type,progress=1)=>{
-    if(!f||f.__remote||!f.mesh)return;
-    if(!f.__netId)f.__netId=(myId||'player')+'_b_'+Math.random().toString(36).slice(2,9);
-    out.push({id:f.__netId,type,x:f.mesh.position.x,z:f.mesh.position.z,yaw:f.mesh.rotation.y||0,hp:f.hp,maxHp:f.maxHp||1600,destroyed:!!f.isDestroyed,done:!!f.done,progress:Number(progress)||0});
-  };
-  for(const f of (constructedFactories||[])){
-    if(!f||f.__remote||f.owner!=='player'||f.isDestroyed||!f.mesh)continue;
-    pushBuilding(f,'factory',f.done?1:(f.progress||0));
-  }
-  for(const c of (activeFactoryConstructions||[])){
-    const f=c?.build;if(f&&f.owner==='player'&&!f.isDestroyed)pushBuilding(f,'factory',f.progress||0);
-  }
-  for(const b of (constructedBarracks||[])){
-    if(!b||b.__remote||b.owner!=='player'||b.isDestroyed||!b.mesh)continue;
-    pushBuilding(b,'barracks',b.done?1:(b.progress||0));
-  }
-  const bc=activeBarracksConstruction;
-  if(bc?.build&&bc.build.owner==='player'&&!bc.build.isDestroyed)pushBuilding(bc.build,'barracks',bc.build.progress||0);
-  return out;
-}
-
-function onlineLocalOil(){
-  return (oilRigs||[]).map((r,i)=>({id:'oil_'+i,x:r.x,z:r.z,owner:r.owner||'none',hp:r.hp,maxHp:r.maxHp||700,destroyed:!!r.isDestroyed}));
-}
-
-function onlineSendState(force=false){
-  if(!battleStarted||!ws||ws.readyState!==1||!currentRoom)return;
-  const now=performance.now();
-  if(!force&&now-onlineLastStateSend<80)return;
-  onlineLastStateSend=now;
-  send({type:'state',state:{
-    units:onlineLocalUnits(),
-    buildings:onlineLocalBuildings(),
-    oil:onlineLocalOil(),
-    baseHp:playerBaseGroup?.hp??6500,
-    money:playerMoney??myMoney,
-    color:myColor,
-    colorName:myColorName,
-    sentAt:Date.now()
-  }});
-}
-
-function onlineCreateRemoteUnit(d){
-  let u=null;
-  try{
-    const enemyColor=battleConfig.enemyColor||'#ef3d4e';
-    if(d.type==='builder')u=createConstructionTruck(d.x,d.z,'enemy');
-    else if(d.type==='infantry')u=createInfantrySoldier(d.x,d.z,'enemy');
-    else if(d.type==='scout')u=createReconVehicle(d.x,d.z,'enemy');
-    else if(d.type==='ambulance')u=createModernAmbulance(d.x,d.z,'enemy');
-    else u=createTank(d.x,d.z,enemyColor,'enemy',d.type||'normal');
-  }catch(_){return null}
-  if(!u)return null;
-  u.__remote=true;u.__netId=d.id;u.manualControl=false;u.aiTarget=null;u.aiOrder=null;u.target=null;u.hasPlayerMoveOrder=false;
-  if(u.mesh){u.mesh.position.set(d.x,getTerrainHeight(d.x,d.z),d.z);u.mesh.rotation.y=d.yaw||0;}
-  try{applySilverArmyStyle(u);addUnitTeamMarkings(u,'enemy');if(typeof recolorUnit==='function')recolorUnit(u,battleConfig.enemyColor||'#ef3d4e');}catch(_){}
-  if(u.isRecon){if(!reconVehicles.includes(u))reconVehicles.push(u);}
-  else if(u.team==='enemy'&&!enemyTanks.includes(u))enemyTanks.push(u);
-  return u;
-}
-
-function onlineRemoveRemoteUnit(u){
-  try{if(u?.mesh?.parent)u.mesh.parent.remove(u.mesh);if(u?.hpLabel)u.hpLabel.remove();}catch(_){}
-  for(const a of [enemyTanks,reconVehicles,ambulances]){if(a){const i=a.indexOf(u);if(i>=0)a.splice(i,1);}}
-}
-
-function onlineCreateRemoteBuilding(d){
-  let b=null;
-  try{
-    if(d.type==='factory'){
-      b=createArmyFactory(d.x,d.z,false);
-      b.owner='enemy';b.mesh.userData.factoryOwner='enemy';
-      if(typeof recolorMaterials==='function')recolorMaterials(b.mesh,battleConfig.enemyColor||'#ef3d4e',true);
-    }else{
-      b=createMilitaryBarracks(d.x,d.z,false,'enemy');
-    }
-  }catch(_){return null}
-  if(!b)return null;
-  b.__remote=true;b.__netId=d.id;b.owner='enemy';b.isDestroyed=false;b.done=!!d.done;b.progress=Number(d.progress)||0;
-  if(b.mesh){b.mesh.visible=true; if(!d.done){b.mesh.scale.setScalar(Math.max(.08,Math.min(1,.08+.92*b.progress)));}}
-  if(d.type==='factory'){if(!constructedFactories.includes(b))constructedFactories.push(b);}
-  else if(!constructedBarracks.includes(b))constructedBarracks.push(b);
-  return b;
-}
-
-function onlineRemoveRemoteBuilding(b){
-  try{if(b?.mesh?.parent)b.mesh.parent.remove(b.mesh);if(b?.mesh?.userData?.hpLabel)b.mesh.userData.hpLabel.remove();if(b?.hpLabel)b.hpLabel.remove();}catch(_){}
-  for(const a of [constructedFactories,constructedBarracks]){if(a){const i=a.indexOf(b);if(i>=0)a.splice(i,1);}}
-}
-
-function onlineApplyOilState(oil){
-  const rigs=oilRigs||[];
-  for(const d of (oil||[])){
-    const r=rigs.find(x=>Math.abs(x.x-d.x)<.5&&Math.abs(x.z-d.z)<.5);
-    if(!r)continue;
-    r.hp=d.hp;r.maxHp=d.maxHp||r.maxHp;
-    const remoteOwner=d.owner==='player'?'enemy':(d.owner==='enemy'?'player':'none');
-    r.owner=remoteOwner;r.isDestroyed=!!d.destroyed;
-    if(r.flagData){
-      r.flagData.owner=r.owner;
-      r.flagData.type=r.owner==='player'?myColor:(r.owner==='enemy'?(battleConfig.enemyColor||'#ef3d4e'):'white');
-      if(r.flagData.mesh){
-        r.flagData.mesh.visible=!r.isDestroyed;
-        const typ=r.owner==='player'?myColor:(r.owner==='enemy'?(battleConfig.enemyColor||'#ef3d4e'):'white');
-        try{r.flagData.mesh.material.map=createFlagTexture(typ);r.flagData.mesh.material.needsUpdate=true;}catch(_){}
-      }
-    }
-    if(r.group)r.group.visible=!r.isDestroyed;
-    if(r.wreckBase)r.wreckBase.visible=!!r.isDestroyed;
-  }
-}
-
-function applyOnlineRemoteState(st){
-  if(!battleStarted||!st)return;
-  const incomingUnits=new Set();
-  for(const d of (st.units||[])){
-    if(!d?.id)continue;incomingUnits.add(d.id);
-    let u=onlineRemoteUnits.get(d.id);
-    if(!u){u=onlineCreateRemoteUnit(d);if(u)onlineRemoteUnits.set(d.id,u);}
-    if(!u?.mesh)continue;
-    u.__remoteTarget={x:d.x,z:d.z,yaw:d.yaw||0};
-    u.__remoteMoveTarget=d.target||null;
-    u.__remoteMoving=!!d.moving;
-    u.hp=d.hp;u.maxHp=d.maxHp||u.maxHp;
-    if((d.shotAt||0)>((u.__lastRemoteShot)||0)){
-      u.__lastRemoteShot=d.shotAt||0;
-      try{
-        if(u.isInfantry){
-          const pos=u.mesh.position.clone();pos.y+=1.8;createInfantryMuzzleFX(pos,u.mesh.rotation.y);createInfantryGunSmoke(pos,u.mesh.rotation.y);
-        }else if(u.type==='rocket'){
-          createModernMuzzleFlash(u);createTankFireSmokeBurst(u);
-        }else{
-          createModernMuzzleFlash(u);createTankFireSmokeBurst(u);
-        }
-      }catch(_){}
-    }
-    if(d.destroyed&&!u.isDestroyed){u.isDestroyed=true;u.mesh.visible=false;}
-    else if(!d.destroyed&&!u.isDestroyed)u.mesh.visible=true;
-  }
-  for(const [id,u] of onlineRemoteUnits){if(!incomingUnits.has(id)){onlineRemoveRemoteUnit(u);onlineRemoteUnits.delete(id);}}
-
-  const incomingBuildings=new Set();
-  for(const d of (st.buildings||[])){
-    if(!d?.id)continue;incomingBuildings.add(d.id);
-    let b=onlineRemoteBuildings.get(d.id);
-    if(!b){b=onlineCreateRemoteBuilding(d);if(b)onlineRemoteBuildings.set(d.id,b);}
-    if(!b)continue;b.hp=d.hp;b.maxHp=d.maxHp||b.maxHp;b.isDestroyed=!!d.destroyed;b.done=!!d.done;b.progress=Number(d.progress)||0;
-    if(b.mesh){b.mesh.visible=!b.isDestroyed;if(!b.done)b.mesh.scale.setScalar(Math.max(.08,Math.min(1,.08+.92*b.progress)));else b.mesh.scale.setScalar(1);}
-
-  }
-  for(const [id,b] of onlineRemoteBuildings){if(!incomingBuildings.has(id)){onlineRemoveRemoteBuilding(b);onlineRemoteBuildings.delete(id);}}
-
-  onlineApplyOilState(st.oil);
-  if(st.baseHp!=null&&enemyBaseGroup)enemyBaseGroup.hp=st.baseHp;
-}
-
-function onlineSmoothRemoteWorld(){
-  for(const u of onlineRemoteUnits.values()){
-    if(!u?.mesh||!u.__remoteTarget||u.isDestroyed)continue;
-    const t=u.__remoteTarget;
-    u.mesh.position.x+=(t.x-u.mesh.position.x)*.30;
-    u.mesh.position.z+=(t.z-u.mesh.position.z)*.30;
-    u.mesh.position.y=getTerrainHeight(u.mesh.position.x,u.mesh.position.z);
-    if(u.__remoteMoving){
-      u.mesh.userData.remoteMoving=true;
-    }else{
-      u.mesh.userData.remoteMoving=false;
-    }
-    let dy=(t.yaw||0)-u.mesh.rotation.y;dy=Math.atan2(Math.sin(dy),Math.cos(dy));u.mesh.rotation.y+=dy*.30;
-  }
-}
-
-function startOnlineBattleLoop(){
-  if(onlineBattleLoopStarted)return;onlineBattleLoopStarted=true;
-  const loop=()=>{
-    if(battleStarted){onlineSendState(false);onlineSmoothRemoteWorld();}
-    requestAnimationFrame(loop);
-  };
-  requestAnimationFrame(loop);
+ if(m.type==='state'&&window.applyRemoteState)window.applyRemoteState(m.state);
 }
 function openPanel(which){
- connect();
- const ov=$('online-panel-overlay');
- ov.hidden=false;
- ov.classList.toggle('zero-hour-lobby',which==='rooms'||which==='create');
+ connect();$('online-panel-overlay').hidden=false;
  $('online-friends-panel').hidden=which!=='friends';
- // In the unified lobby, the room list and Create Room are the SAME screen.
- $('online-rooms-panel').hidden=!(which==='rooms'||which==='create');
- $('online-create-panel').hidden=!(which==='rooms'||which==='create');
- if(which==='create'||which==='rooms'){
-   $('online-name-input').value=myName;
-   if($('online-room-name-input') && !$('online-room-name-input').value) $('online-room-name-input').value='معركة جديدة';
-   updateMyRoomColorUI();
-   document.querySelectorAll('.online-colors button').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===myColor.toLowerCase()));
- }
+ $('online-rooms-panel').hidden=which!=='rooms';
+ $('online-create-panel').hidden=which!=='create';
+ if(which==='create'){$('online-name-input').value=myName;$('online-money-select').value=myMoney;updateMyRoomColorUI();document.querySelectorAll('.online-colors button').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===myColor.toLowerCase()))}
  if(which==='friends'){setStatus('جاري تحديث اللاعبين المتصلين فعليًا...')}
  refreshPanels();
 }
@@ -14228,15 +13876,10 @@ function updateMyRoomColorUI(){
  if(name)name.textContent=myColorName||'BLUE';
 }
 function createOnlineRoomFromMenu(){
- const enteredName=($('online-name-input')?.value||'').trim().slice(0,18);
- const roomName=($('online-room-name-input')?.value||'').trim().slice(0,24);
- if(!enteredName){setStatus('اكتب اسم اللاعب أولاً.');$('online-name-input')?.focus();return;}
- if(!roomName){setStatus('اكتب اسم الغرفة أولاً.');$('online-room-name-input')?.focus();return;}
- myName=enteredName;
- myMoney=3000;
- const payload={type:'create_room',name:myName,roomName,settings:{money:myMoney,color:myColor,colorName:myColorName}};
- if(!ws||ws.readyState!==1){connect();setTimeout(()=>{if(ws&&ws.readyState===1)send(payload);},300);return;}
- send(payload);
+ myName=($('online-name-input').value||'Commander').trim()||'Commander';
+ myMoney=Number($('online-money-select').value)||3000;
+ if(!ws||ws.readyState!==1){connect();setTimeout(()=>{if(ws&&ws.readyState===1)send({type:'create_room',name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}});},250);return}
+ send({type:'create_room',name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}});
 }
 function inviteOnlinePlayer(id){
  myName=($('online-name-input')?.value||myName||'Commander').trim()||'Commander';
@@ -14248,25 +13891,15 @@ function acceptOnlineInvite(m){
  closeOnlinePanels();connect();setTimeout(()=>send({type:'join_room',room:m.room,name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}}),100)
 }
 function joinOnlineRoom(code){
- const roomCode=String(code||'').trim().toUpperCase();
- if(!roomCode)return;
- myName='';
- closeOnlinePanels();
- connect();
- const join=()=>send({type:'join_room',room:roomCode,name:'',settings:{money:3000,color:myColor,colorName:myColorName}});
- if(ws&&ws.readyState===1)join();else setTimeout(join,250);
+ myName=($('online-name-input')?.value||myName||'Commander').trim()||'Commander';
+ closeOnlinePanels();connect();setTimeout(()=>send({type:'join_room',room:code,name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}}),100)
 }
 function showRoom(m){
- // Both players enter the exact same room lobby. No battle-setup screen is used.
  closeOnlinePanels();$('online-room-screen').hidden=false;
  currentRoom=m.room||currentRoom; currentRole=m.role||currentRole;
  $('online-room-code').textContent=currentRoom||'------';
- $('online-room-name').textContent=m.roomName||m.name||'غرفة المعركة';
- const roomMe=Array.isArray(m.players)?m.players.find(x=>String(x.id)===String(myId)):null;
- const nameInput=$('online-room-player-name'); if(nameInput) nameInput.value=roomMe?.name||myName||'Commander';
  updateMyRoomColorUI();
  const p=Array.isArray(m.players)?m.players:[];
- window.__onlineRoomPlayers=p;
  for(let i=0;i<2;i++){
   const q=p[i],n=$('online-p'+(i+1)+'-name'),st=$('online-p'+(i+1)+'-state'),slot=$('online-p'+(i+1)+'-slot'),dot=$('online-p'+(i+1)+'-color'),cn=$('online-p'+(i+1)+'-color-name');
   if(q){
@@ -14285,77 +13918,37 @@ function showRoom(m){
   }
  }
  const me=p.find(x=>String(x.id)===String(myId));
- if(me){ready=!!me.ready;myName=me.name||myName;}
- const isHost=currentRole==='host';
- const profileHint=$('online-room-profile-hint');
- if(profileHint)profileHint.textContent=isHost?'أنت صاحب الغرفة — اسمك ولونك محفوظان.':'اكتب اسمك واختر لونك، ثم اضغط «مستعد».';
- const nameInput2=$('online-room-player-name');
- if(nameInput2){nameInput2.value=isHost?(me?.name||myName||''):(me?.name&&me.name!=='Commander'?me.name:'');nameInput2.disabled=isHost;}
- document.querySelectorAll('.online-room-color-picker button').forEach(b=>{b.disabled=isHost;b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===(myColor||'').toLowerCase());});
+ if(me){ready=!!me.ready;}
  const both=p.length===2, allReady=both&&p.every(x=>!!x.ready);
- const readyBtn=$('online-ready-btn');
- if(readyBtn){readyBtn.textContent='مستعد';readyBtn.disabled=isHost||!both;readyBtn.style.opacity=readyBtn.disabled?.55:1;}
- const startBtn=$('online-start-btn'); if(startBtn){startBtn.disabled=!(isHost&&allReady);startBtn.style.opacity=startBtn.disabled?.55:1;}
- const money=p[0]?.settings?.money ?? myMoney;
+ const readyBtn=$('online-ready-btn'); if(readyBtn)readyBtn.textContent=ready?'إلغاء الجاهزية':'جاهز';
+ const startBtn=$('online-start-btn'); if(startBtn){startBtn.disabled=!(currentRole==='host'&&allReady);startBtn.style.opacity=startBtn.disabled?.55:1;}
+ const money=p[0]?.settings?.money ?? p[0]?.settings?.money ?? myMoney;
  $('online-room-money').textContent='$'+Number(money||0).toLocaleString();
- if(!both)setStatus(isHost?'الغرفة جاهزة — أنت مستعد تلقائيًا. بانتظار اللاعب الثاني...':'تم الدخول إلى الغرفة.');
- else if(allReady)setStatus(isHost?'اللاعبان مستعدان — يمكنك بدء المعركة.':'تم تسجيل استعدادك — بانتظار بدء صاحب الغرفة.');
- else if(isHost)setStatus('اللاعب الثاني داخل الغرفة — بانتظار ضغطه «مستعد».');
- else if(ready)setStatus('أنت مستعد — بانتظار اللاعب الآخر.');
- else setStatus('اكتب اسمك، اختر لونك، ثم اضغط «مستعد».');
+ if(!both)setStatus('بانتظار لاعب آخر...');
+ else if(allReady)setStatus(currentRole==='host'?'اللاعبان جاهزان — يمكنك بدء المعركة.':'اللاعبان جاهزان — بانتظار بدء المضيف.');
+ else if(ready)setStatus('أنت جاهز — بانتظار جاهزية اللاعب الآخر.');
+ else setStatus('اختر لونك ثم اضغط «جاهز».');
 }
-function chooseRoomColor(btn){
-  if(!btn)return;
-  myColor=btn.dataset.color||myColor;myColorName=btn.dataset.name||myColorName;
-  document.querySelectorAll('.online-room-color-picker button').forEach(b=>b.classList.toggle('active',b===btn));
-  updateMyRoomColorUI();
-}
-function saveRoomProfile(){
-  const n=($('online-room-player-name')?.value||myName||'Commander').trim().slice(0,18)||'Commander';
-  myName=n;
-  if(!currentRoom||!ws||ws.readyState!==1){setStatus('لا يوجد اتصال بالغرفة.');return;}
-  send({type:'settings',name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}});
-  setStatus('تم حفظ اسمك ولونك في الغرفة.');
-}
-function onlineToggleReady(){
- if(currentRole==='host'){setStatus('أنت صاحب الغرفة ومستعد تلقائيًا.');return;}
- if(!currentRoom||!ws||ws.readyState!==1){setStatus('لا يمكن تغيير الجاهزية بدون اتصال بالسيرفر.');return;}
- const name=($('online-room-player-name')?.value||'').trim().slice(0,18);
- if(!name){setStatus('اكتب اسمك أولاً.');$('online-room-player-name')?.focus();return;}
- const players=Array.isArray(window.__onlineRoomPlayers)?window.__onlineRoomPlayers:[];
- const other=players.find(p=>String(p.id)!==String(myId));
- if(other){const otherColor=(other.settings?.color||other.color||'').toLowerCase();if(otherColor&&otherColor===String(myColor).toLowerCase()){setStatus('هذا اللون مستخدم من اللاعب الآخر. اختر لونًا مختلفًا.');return;}}
- myName=name;
- send({type:'settings',name:myName,settings:{money:3000,color:myColor,colorName:myColorName}});
- ready=!ready;
- send({type:'ready',ready});
- $('online-ready-btn').textContent='مستعد';
-}
+function onlineToggleReady(){if(!currentRoom||!ws||ws.readyState!==1){setStatus('لا يمكن تغيير الجاهزية بدون اتصال بالسيرفر.');return}ready=!ready;send({type:'ready',ready});$('online-ready-btn').textContent=ready?'إلغاء الجاهزية':'جاهز'}
 function onlineStartRoom(){if(currentRole==='host')send({type:'start_battle'})}
 function onlineLeaveRoom(){send({type:'leave_room'});$('online-room-screen').hidden=true;currentRoom=null;currentRole=null;ready=false;refreshPanels()}
 function startActualPvp(m){
  battleStarted=true;document.getElementById('online-main-menu')?.style.setProperty('display','none','important');
- const me=(m.players||[]).find(p=>String(p.id)===String(myId)),enemy=(m.players||[]).find(p=>String(p.id)!==String(myId));
- if(me){myMoney=Number(me.settings?.money)||3000;myColor=me.settings?.color||myColor;myColorName=me.settings?.colorName||myColorName;}
+ const me=(m.players||[]).find(p=>p.id===myId),enemy=(m.players||[]).find(p=>p.id!==myId);
+ if(me){myMoney=me.settings.money;myColor=me.settings.color;myColorName=me.settings.colorName}
  window.onlinePvp=true;
  window.battleConfig=window.battleConfig||{};battleConfig.bot='none';battleConfig.money=myMoney;
  battleConfig.playerColor=myColor;battleConfig.playerColorName=myColorName;
  battleConfig.enemyColor=enemy?.settings?.color||'#ef3d4e';battleConfig.enemyColorName=enemy?.settings?.colorName||'RED';
- /* Both clients create the same map. Your local camp uses YOUR color; the
-    opposite camp uses the opponent's color. This keeps the battlefield
-    visually identical from either side. */
- playerFlagType=myColor;enemyFlagType=battleConfig.enemyColor;
  $('online-room-screen').hidden=true;
+ // Start the real game using the existing game initializer, without AI.
  if(typeof beginConfiguredGame==='function')beginConfiguredGame();
- if(typeof applyTeamVisual==='function'){try{applyTeamVisual('player',myColor);applyTeamVisual('enemy',battleConfig.enemyColor);}catch(_){}}
- startOnlineBattleLoop();
- setTimeout(()=>onlineSendState(true),350);
- setStatus('تم بدء الكيم — العالم والوحدات والقتال يتم مزامنتها مع اللاعب الآخر.');
+ setStatus('تم بدء الكيم — اللاعبان داخل المعركة الآن.');
 }
 window.openFriendsPanel=openFriendsPanel;window.openRoomsPanel=openRoomsPanel;window.openCreateRoomPanel=openCreateRoomPanel;
 window.closeOnlinePanels=closeOnlinePanels;window.chooseOnlineColor=chooseOnlineColor;window.createOnlineRoomFromMenu=createOnlineRoomFromMenu;
 window.inviteOnlinePlayer=inviteOnlinePlayer;window.joinOnlineRoom=joinOnlineRoom;window.acceptOnlineInvite=acceptOnlineInvite;
-window.chooseRoomColor=chooseRoomColor;window.saveRoomProfile=saveRoomProfile;window.onlineToggleReady=onlineToggleReady;window.onlineStartRoom=onlineStartRoom;window.onlineLeaveRoom=onlineLeaveRoom;
+window.onlineToggleReady=onlineToggleReady;window.onlineStartRoom=onlineStartRoom;window.onlineLeaveRoom=onlineLeaveRoom;
 document.addEventListener('DOMContentLoaded',()=>{
  updateMyRoomColorUI();connect();
  setInterval(()=>{
@@ -14366,7 +13959,6 @@ document.addEventListener('DOMContentLoaded',()=>{
      // Heartbeat: this is the only source used by the visible friends list.
      send({type:'presence',name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}});
      send({type:'presence'});
-     if(battleStarted) onlineSendState(true);
    }
  },4000);
 });
@@ -14785,6 +14377,26 @@ document.addEventListener('DOMContentLoaded',()=>{
 })();
 </script>
 
-
+<style id="pvp-unified-final">
+#battle-setup-modal{position:fixed!important;inset:0!important;z-index:99999!important;display:none!important;align-items:center;justify-content:center;padding:8px;background:rgba(0,0,0,.86);backdrop-filter:blur(10px);direction:rtl;box-sizing:border-box}#battle-setup-modal.show{display:flex!important}
+.pvp-unified-card{width:min(760px,98vw);max-height:96vh;overflow:auto;background:linear-gradient(145deg,#182019,#070a08);border:1px solid #67715f;border-radius:12px;padding:16px;color:#eef2ea;box-shadow:0 25px 90px #000,inset 0 0 0 1px #ffffff12;box-sizing:border-box}.pvp-unified-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-bottom:1px solid #394238;padding-bottom:12px}.pvp-unified-head h2{margin:3px 0;font-size:clamp(21px,5vw,32px)}.pvp-unified-head p{margin:0;color:#9ba69d;font-size:12px}.pvp-kicker{font-size:9px;letter-spacing:2px;color:#b4c68f;font-weight:900}.pvp-close{width:40px;height:40px;border:1px solid #66705f;background:#121712;color:#fff;border-radius:7px;font-size:25px;cursor:pointer}.pvp-status{margin:12px 0;padding:9px 12px;border:1px solid #3e493e;border-radius:7px;background:#0d130f;display:flex;align-items:center;gap:8px;font-size:11px}.pvp-dot{width:9px;height:9px;border-radius:50%;background:#d66;display:inline-block}.pvp-status.online .pvp-dot{background:#42e47b;box-shadow:0 0 10px #42e47b}.pvp-duel{display:grid;grid-template-columns:1fr 70px 1fr;align-items:center;gap:10px;margin:12px 0}.pvp-player-card{min-height:100px;border:1px solid #485346;background:#0c120e;border-radius:10px;padding:12px;display:grid;grid-template-columns:34px 1fr;column-gap:9px;align-items:center;position:relative}.pvp-player-card .pvp-slot{grid-row:1/3;width:34px;height:34px;border-radius:7px;background:#202920;display:grid;place-items:center;font-weight:900;font-size:10px}.pvp-player-card i{width:14px;height:14px;border-radius:50%;background:#168cff;box-shadow:0 0 9px #168cff;position:absolute;top:12px;left:12px}.pvp-player-card strong{font-size:15px}.pvp-player-card small{color:#879487;font-size:9px}.pvp-vs-big{text-align:center;font-weight:1000;font-size:20px;color:#c9cfae}.pvp-room-create{display:grid;grid-template-columns:1.2fr 1fr 1.2fr 1fr;gap:7px;align-items:end;border:1px solid #3d463d;background:#0b100d;padding:10px;border-radius:9px}.pvp-field label,.pvp-settings-unified label{display:block;color:#aab5a8;font-size:10px;font-weight:900;margin:0 0 5px}.pvp-field input{width:100%;height:40px;box-sizing:border-box;border:1px solid #465146;border-radius:6px;background:#050805;color:#fff;padding:0 10px;outline:none}.pvp-field input:focus{border-color:#9eae72}.pvp-main-btn,.pvp-ready-btn,.pvp-start-btn,.pvp-cancel-btn{min-height:40px;border:1px solid #69745e;border-radius:6px;background:#273125;color:#eef2e8;font-weight:900;cursor:pointer}.pvp-main-btn.secondary{background:#202b35;border-color:#536d82}.pvp-settings-unified{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.pvp-settings-unified>div{border:1px solid #3d463d;background:#0b100d;padding:10px;border-radius:9px}.pvp-money-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.pvp-money-grid button{min-height:38px;border:1px solid #465146;border-radius:6px;background:#182019;color:#dfe6da;font-weight:900;cursor:pointer}.pvp-money-grid button.active{border-color:#c7bb58;background:#4a5235;color:#fff1a0}.pvp-color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}.pvp-color-grid button{height:30px;border:2px solid #344034;border-radius:5px;background:var(--c);cursor:pointer;box-shadow:inset 0 0 7px #0008}.pvp-color-grid button.active{outline:2px solid #fff;outline-offset:1px}.pvp-color-readout{margin-top:7px;display:flex;align-items:center;gap:7px;font-size:10px}.pvp-color-readout span{width:11px;height:11px;border-radius:50%;background:#168cff}.pvp-unified-actions{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:7px;margin-top:10px}.pvp-start-btn{background:linear-gradient(#667b46,#35462a);border-color:#b9ad52;color:#fff3a2}.pvp-start-btn:disabled{opacity:.4;cursor:not-allowed}.pvp-room-code-display{text-align:center;margin-top:10px;font-size:12px;font-weight:900;letter-spacing:2px;color:#d5dcbd}.pvp-room-message{text-align:center;margin-top:6px;color:#89968b;font-size:10px;min-height:16px}@media(max-width:650px){.pvp-room-create{grid-template-columns:1fr 1fr}.pvp-settings-unified{grid-template-columns:1fr}.pvp-unified-card{padding:10px}.pvp-duel{grid-template-columns:1fr 45px 1fr}.pvp-player-card{min-height:88px;padding:8px}.pvp-color-grid{grid-template-columns:repeat(4,1fr)}}@media(max-width:420px){.pvp-unified-head h2{font-size:19px}.pvp-room-create{grid-template-columns:1fr}.pvp-unified-actions{grid-template-columns:1fr 1fr}.pvp-unified-actions .pvp-start-btn{grid-column:1/-1}.pvp-duel{gap:5px}.pvp-vs-big{font-size:15px}.pvp-player-card strong{font-size:12px}}
+</style>
+<script id="pvp-unified-controller">
+(function(){
+  function syncUnifiedRoom(players,room){
+    const code=document.getElementById('pvp-room-code-display');
+    if(code)code.textContent=room?'ROOM '+room:'لم يتم إنشاء غرفة بعد';
+    const ps=players||[];
+    for(let i=0;i<2;i++){
+      const q=ps[i],n=document.getElementById('unified-p'+(i+1)+'-name'),st=document.getElementById('unified-p'+(i+1)+'-state'),c=document.getElementById('unified-p'+(i+1)+'-color');
+      if(!q){if(n)n.textContent=i?'بانتظار اللاعب':'أنت';if(st)st.textContent=i?'WAITING':'HOST';continue;}
+      if(n)n.textContent=q.name||('PLAYER '+(i+1));
+      if(st)st.textContent=q.ready?'جاهز':'متصل';
+      if(c)c.style.background=q.settings?.color||q.color||'#168cff';
+    }
+  }
+  window.__syncUnifiedRoom=syncUnifiedRoom;
+})();
+</script>
 </body>
 </html>
