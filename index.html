@@ -2445,18 +2445,13 @@
     </section>
 
     <section id="online-create-panel" class="online-section" hidden>
-      <h3>إنشاء كيم لاعب ضد لاعب</h3>
+      <h3>إنشاء غرفة جديدة</h3>
+      <p>اكتب اسمك، اختر لونك، واكتب اسم الغرفة. بعد الإنشاء ستبقى داخل الغرفة بانتظار اللاعب الثاني.</p>
       <div class="online-form-row">
-        <label>اسم اللاعب<input id="online-name-input" maxlength="18" placeholder="Commander"></label>
-        <label>اسم الغرفة<input id="online-room-name-input" maxlength="24" placeholder="Desert Battle"></label>
-        <label>المال الابتدائي
-          <select id="online-money-select">
-            <option value="1000">$1,000</option><option value="2000">$2,000</option>
-            <option value="3000" selected>$3,000</option><option value="4000">$4,000</option>
-          </select>
-        </label>
+        <label>اسم اللاعب<input id="online-name-input" maxlength="18" placeholder="اكتب اسمك" autocomplete="off"></label>
+        <label>اسم الغرفة<input id="online-room-name-input" maxlength="24" placeholder="مثال: معركة الصحراء" autocomplete="off"></label>
       </div>
-      <div class="online-label">اختر لونك</div>
+      <div class="online-label">لون اللاعب الأول</div>
       <div class="online-colors">
         <button data-color="#168cff" onclick="chooseOnlineColor(this)">أزرق</button>
         <button data-color="#8fe7ff" onclick="chooseOnlineColor(this)">جليدي</button>
@@ -2606,7 +2601,8 @@
     <div class="online-room-settings">المال: <b id="online-room-money">$3,000</b></div>
     <div class="online-my-room-color">لونك في الغرفة: <span id="online-my-room-color-dot"></span><b id="online-my-room-color-name">BLUE</b></div>
     <div class="online-room-profile">
-      <label>اسمك <input id="online-room-player-name" maxlength="18" placeholder="Commander"></label>
+      <div id="online-room-profile-hint" class="online-status-text">بياناتك في هذه الغرفة</div>
+      <label>اسمك <input id="online-room-player-name" maxlength="18" placeholder="اكتب اسمك" autocomplete="off"></label>
       <div class="online-room-color-picker">
         <button data-color="#168cff" data-name="BLUE" onclick="chooseRoomColor(this)"></button>
         <button data-color="#8fe7ff" data-name="ICE" onclick="chooseRoomColor(this)"></button>
@@ -13936,6 +13932,10 @@ function handle(m){
      roomName:m.roomName||m.name||'غرفة المعركة',
      players:Array.isArray(m.players)?m.players:(window.__onlineRoomPlayers||[])
    });
+   if(m.type==='room_created'&&currentRole==='host'&&ws&&ws.readyState===1){
+     ready=true;
+     send({type:'ready',ready:true});
+   }
    return
  }
  if(m.type==='room_error'){setStatus(m.message||'حدث خطأ');return}
@@ -14204,11 +14204,15 @@ function updateMyRoomColorUI(){
  if(name)name.textContent=myColorName||'BLUE';
 }
 function createOnlineRoomFromMenu(){
- myName=($('online-name-input').value||'Commander').trim()||'Commander';
- myMoney=Number($('online-money-select').value)||3000;
- const roomName=($('online-room-name-input')?.value||'Desert Battle').trim().slice(0,24)||'Desert Battle';
- if(!ws||ws.readyState!==1){connect();setTimeout(()=>{if(ws&&ws.readyState===1)send({type:'create_room',name:myName,roomName,settings:{money:myMoney,color:myColor,colorName:myColorName}});},250);return}
- send({type:'create_room',name:myName,roomName,settings:{money:myMoney,color:myColor,colorName:myColorName}});
+ const enteredName=($('online-name-input')?.value||'').trim().slice(0,18);
+ const roomName=($('online-room-name-input')?.value||'').trim().slice(0,24);
+ if(!enteredName){setStatus('اكتب اسم اللاعب أولاً.');$('online-name-input')?.focus();return;}
+ if(!roomName){setStatus('اكتب اسم الغرفة أولاً.');$('online-room-name-input')?.focus();return;}
+ myName=enteredName;
+ myMoney=3000;
+ const payload={type:'create_room',name:myName,roomName,settings:{money:myMoney,color:myColor,colorName:myColorName}};
+ if(!ws||ws.readyState!==1){connect();setTimeout(()=>{if(ws&&ws.readyState===1)send(payload);},300);return;}
+ send(payload);
 }
 function inviteOnlinePlayer(id){
  myName=($('online-name-input')?.value||myName||'Commander').trim()||'Commander';
@@ -14220,8 +14224,13 @@ function acceptOnlineInvite(m){
  closeOnlinePanels();connect();setTimeout(()=>send({type:'join_room',room:m.room,name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}}),100)
 }
 function joinOnlineRoom(code){
- myName=($('online-name-input')?.value||myName||'Commander').trim()||'Commander';
- closeOnlinePanels();connect();setTimeout(()=>send({type:'join_room',room:code,name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}}),100)
+ const roomCode=String(code||'').trim().toUpperCase();
+ if(!roomCode)return;
+ myName='';
+ closeOnlinePanels();
+ connect();
+ const join=()=>send({type:'join_room',room:roomCode,name:'',settings:{money:3000,color:myColor,colorName:myColorName}});
+ if(ws&&ws.readyState===1)join();else setTimeout(join,250);
 }
 function showRoom(m){
  closeOnlinePanels();$('online-room-screen').hidden=false;
@@ -14251,16 +14260,24 @@ function showRoom(m){
   }
  }
  const me=p.find(x=>String(x.id)===String(myId));
- if(me){ready=!!me.ready;}
+ if(me){ready=!!me.ready;myName=me.name||myName;}
+ const isHost=currentRole==='host';
+ const profileHint=$('online-room-profile-hint');
+ if(profileHint)profileHint.textContent=isHost?'أنت صاحب الغرفة — اسمك ولونك محفوظان.':'اكتب اسمك واختر لونك، ثم اضغط «مستعد».';
+ const nameInput2=$('online-room-player-name');
+ if(nameInput2){nameInput2.value=isHost?(me?.name||myName||''):(me?.name&&me.name!=='Commander'?me.name:'');nameInput2.disabled=isHost;}
+ document.querySelectorAll('.online-room-color-picker button').forEach(b=>{b.disabled=isHost;b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===(myColor||'').toLowerCase());});
  const both=p.length===2, allReady=both&&p.every(x=>!!x.ready);
- const readyBtn=$('online-ready-btn'); if(readyBtn)readyBtn.textContent=ready?'إلغاء الجاهزية':'جاهز';
- const startBtn=$('online-start-btn'); if(startBtn){startBtn.disabled=!(currentRole==='host'&&allReady);startBtn.style.opacity=startBtn.disabled?.55:1;}
- const money=p[0]?.settings?.money ?? p[0]?.settings?.money ?? myMoney;
+ const readyBtn=$('online-ready-btn');
+ if(readyBtn){readyBtn.textContent='مستعد';readyBtn.disabled=isHost||!both;readyBtn.style.opacity=readyBtn.disabled?.55:1;}
+ const startBtn=$('online-start-btn'); if(startBtn){startBtn.disabled=!(isHost&&allReady);startBtn.style.opacity=startBtn.disabled?.55:1;}
+ const money=p[0]?.settings?.money ?? myMoney;
  $('online-room-money').textContent='$'+Number(money||0).toLocaleString();
- if(!both)setStatus('بانتظار لاعب آخر...');
- else if(allReady)setStatus(currentRole==='host'?'اللاعبان جاهزان — يمكنك بدء المعركة.':'اللاعبان جاهزان — بانتظار بدء المضيف.');
- else if(ready)setStatus('أنت جاهز — بانتظار جاهزية اللاعب الآخر.');
- else setStatus('اختر لونك ثم اضغط «جاهز».');
+ if(!both)setStatus(isHost?'الغرفة جاهزة — أنت مستعد تلقائيًا. بانتظار اللاعب الثاني...':'تم الدخول إلى الغرفة.');
+ else if(allReady)setStatus(isHost?'اللاعبان مستعدان — يمكنك بدء المعركة.':'تم تسجيل استعدادك — بانتظار بدء صاحب الغرفة.');
+ else if(isHost)setStatus('اللاعب الثاني داخل الغرفة — بانتظار ضغطه «مستعد».');
+ else if(ready)setStatus('أنت مستعد — بانتظار اللاعب الآخر.');
+ else setStatus('اكتب اسمك، اختر لونك، ثم اضغط «مستعد».');
 }
 function chooseRoomColor(btn){
   if(!btn)return;
@@ -14276,23 +14293,18 @@ function saveRoomProfile(){
   setStatus('تم حفظ اسمك ولونك في الغرفة.');
 }
 function onlineToggleReady(){
-  if(!currentRoom||!ws||ws.readyState!==1){setStatus('لا يمكن تغيير الجاهزية بدون اتصال بالسيرفر.');return}
-  const name=($('online-room-player-name')?.value||myName||'Commander').trim().slice(0,18);
-  if(!name){setStatus('اكتب اسم اللاعب أولاً.');return}
-  const players=Array.isArray(window.__onlineRoomPlayers)?window.__onlineRoomPlayers:[];
-  const other=players.find(p=>String(p.id)!==String(myId));
-  if(other){
-    const otherColor=(other.settings?.color||other.color||'').toLowerCase();
-    if(otherColor && otherColor===String(myColor).toLowerCase()){
-      setStatus('هذا اللون مستخدم من اللاعب الآخر. اختر لونًا مختلفًا.');
-      return;
-    }
-  }
-  myName=name;
-  send({type:'settings',name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}});
-  ready=!ready;
-  send({type:'ready',ready});
-  $('online-ready-btn').textContent=ready?'إلغاء الجاهزية':'جاهز';
+ if(currentRole==='host'){setStatus('أنت صاحب الغرفة ومستعد تلقائيًا.');return;}
+ if(!currentRoom||!ws||ws.readyState!==1){setStatus('لا يمكن تغيير الجاهزية بدون اتصال بالسيرفر.');return;}
+ const name=($('online-room-player-name')?.value||'').trim().slice(0,18);
+ if(!name){setStatus('اكتب اسمك أولاً.');$('online-room-player-name')?.focus();return;}
+ const players=Array.isArray(window.__onlineRoomPlayers)?window.__onlineRoomPlayers:[];
+ const other=players.find(p=>String(p.id)!==String(myId));
+ if(other){const otherColor=(other.settings?.color||other.color||'').toLowerCase();if(otherColor&&otherColor===String(myColor).toLowerCase()){setStatus('هذا اللون مستخدم من اللاعب الآخر. اختر لونًا مختلفًا.');return;}}
+ myName=name;
+ send({type:'settings',name:myName,settings:{money:3000,color:myColor,colorName:myColorName}});
+ ready=!ready;
+ send({type:'ready',ready});
+ $('online-ready-btn').textContent='مستعد';
 }
 function onlineStartRoom(){if(currentRole==='host')send({type:'start_battle'})}
 function onlineLeaveRoom(){send({type:'leave_room'});$('online-room-screen').hidden=true;currentRoom=null;currentRole=null;ready=false;refreshPanels()}
