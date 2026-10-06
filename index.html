@@ -13957,8 +13957,17 @@ function onlineLocalUnits(){
     seen.add(u);
     if(!u.__netId)u.__netId=(myId||'player')+'_u_'+Math.random().toString(36).slice(2,10);
     const pos=u.mesh.position;
-    out.push({id:u.__netId,type:onlineUnitType(u),x:pos.x,z:pos.z,yaw:u.mesh.rotation.y||0,
-      hp:Number.isFinite(u.hp)?u.hp:(u.maxHp||100),maxHp:u.maxHp||u.hp||100,destroyed:!!u.isDestroyed});
+    const target=u.target?.mesh?u.target.mesh.position:u.target;
+    out.push({
+      id:u.__netId,
+      type:onlineUnitType(u),
+      x:pos.x,z:pos.z,yaw:u.mesh.rotation.y||0,
+      hp:Number.isFinite(u.hp)?u.hp:(u.maxHp||100),maxHp:u.maxHp||u.hp||100,
+      destroyed:!!u.isDestroyed,
+      shotAt:Number(u.lastShot)||0,
+      moving:!!(u.target||u.hasPlayerMoveOrder||u.factoryExiting||u.barracksExiting),
+      target:target&&Number.isFinite(target.x)&&Number.isFinite(target.z)?{x:target.x,z:target.z}:null
+    });
   }
   return out;
 }
@@ -14085,7 +14094,10 @@ function applyOnlineRemoteState(st){
     let u=onlineRemoteUnits.get(d.id);
     if(!u){u=onlineCreateRemoteUnit(d);if(u)onlineRemoteUnits.set(d.id,u);}
     if(!u?.mesh)continue;
-    u.__remoteTarget={x:d.x,z:d.z,yaw:d.yaw||0};u.hp=d.hp;u.maxHp=d.maxHp||u.maxHp;
+    u.__remoteTarget={x:d.x,z:d.z,yaw:d.yaw||0};
+    u.__remoteMoveTarget=d.target||null;
+    u.__remoteMoving=!!d.moving;
+    u.hp=d.hp;u.maxHp=d.maxHp||u.maxHp;
     if((d.shotAt||0)>((u.__lastRemoteShot)||0)){
       u.__lastRemoteShot=d.shotAt||0;
       try{
@@ -14125,6 +14137,11 @@ function onlineSmoothRemoteWorld(){
     u.mesh.position.x+=(t.x-u.mesh.position.x)*.30;
     u.mesh.position.z+=(t.z-u.mesh.position.z)*.30;
     u.mesh.position.y=getTerrainHeight(u.mesh.position.x,u.mesh.position.z);
+    if(u.__remoteMoving){
+      u.mesh.userData.remoteMoving=true;
+    }else{
+      u.mesh.userData.remoteMoving=false;
+    }
     let dy=(t.yaw||0)-u.mesh.rotation.y;dy=Math.atan2(Math.sin(dy),Math.cos(dy));u.mesh.rotation.y+=dy*.30;
   }
 }
@@ -14195,6 +14212,7 @@ function showRoom(m){
  const nameInput=$('online-room-player-name'); if(nameInput) nameInput.value=roomMe?.name||myName||'Commander';
  updateMyRoomColorUI();
  const p=Array.isArray(m.players)?m.players:[];
+ window.__onlineRoomPlayers=p;
  for(let i=0;i<2;i++){
   const q=p[i],n=$('online-p'+(i+1)+'-name'),st=$('online-p'+(i+1)+'-state'),slot=$('online-p'+(i+1)+'-slot'),dot=$('online-p'+(i+1)+'-color'),cn=$('online-p'+(i+1)+'-color-name');
   if(q){
@@ -14237,7 +14255,25 @@ function saveRoomProfile(){
   send({type:'settings',name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}});
   setStatus('تم حفظ اسمك ولونك في الغرفة.');
 }
-function onlineToggleReady(){saveRoomProfile();if(!currentRoom||!ws||ws.readyState!==1){setStatus('لا يمكن تغيير الجاهزية بدون اتصال بالسيرفر.');return}ready=!ready;send({type:'ready',ready});$('online-ready-btn').textContent=ready?'إلغاء الجاهزية':'جاهز'}
+function onlineToggleReady(){
+  if(!currentRoom||!ws||ws.readyState!==1){setStatus('لا يمكن تغيير الجاهزية بدون اتصال بالسيرفر.');return}
+  const name=($('online-room-player-name')?.value||myName||'Commander').trim().slice(0,18);
+  if(!name){setStatus('اكتب اسم اللاعب أولاً.');return}
+  const players=Array.isArray(window.__onlineRoomPlayers)?window.__onlineRoomPlayers:[];
+  const other=players.find(p=>String(p.id)!==String(myId));
+  if(other){
+    const otherColor=(other.settings?.color||other.color||'').toLowerCase();
+    if(otherColor && otherColor===String(myColor).toLowerCase()){
+      setStatus('هذا اللون مستخدم من اللاعب الآخر. اختر لونًا مختلفًا.');
+      return;
+    }
+  }
+  myName=name;
+  send({type:'settings',name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}});
+  ready=!ready;
+  send({type:'ready',ready});
+  $('online-ready-btn').textContent=ready?'إلغاء الجاهزية':'جاهز';
+}
 function onlineStartRoom(){if(currentRole==='host')send({type:'start_battle'})}
 function onlineLeaveRoom(){send({type:'leave_room'});$('online-room-screen').hidden=true;currentRoom=null;currentRole=null;ready=false;refreshPanels()}
 function startActualPvp(m){
@@ -14691,6 +14727,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 })();
 </script>
+
 
 </body>
 </html>
