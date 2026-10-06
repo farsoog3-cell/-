@@ -2126,6 +2126,8 @@
         <div class="main-menu-actions" id="main-menu-actions">
             <button class="menu-btn" id="start-btn" onclick="playClickSound(); openBattleSetup()">START GAME</button>
             <button class="menu-btn" id="sound-settings-btn" onclick="playClickSound(); toggleSoundSettings()">AUDIO SETTINGS</button>
+            <button class="menu-btn online-menu-btn" id="create-room-btn" onclick="playClickSound(); openOnlineCreate()">CREATE MULTIPLAYER ROOM</button>
+            <button class="menu-btn online-menu-btn" id="room-list-btn" onclick="playClickSound(); openOnlineRoomList()">ROOM LIST</button>
         </div>
         <div class="settings-group" id="sound-settings-panel">
             <div class="settings-label">MUSIC VOLUME: <span id="bgm-val">10%</span></div>
@@ -13110,5 +13112,124 @@ window.updateCameraSensitivity=function(v){
   };
 })();
 </script>
+
+
+<!-- ===== ONLINE MULTIPLAYER ROOMS ===== -->
+<style id="online-rooms-ui">
+#online-room-modal,#online-room-list-modal{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.76);backdrop-filter:blur(8px);direction:rtl;font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+#online-room-modal.show,#online-room-list-modal.show{display:flex}
+.online-room-card{width:min(430px,94vw);max-height:90vh;overflow:auto;padding:18px;border:1px solid #5e7181;border-radius:10px;background:linear-gradient(145deg,#1c252b,#080c0f);box-shadow:0 20px 60px #000,inset 0 1px 0 rgba(255,255,255,.1);color:#fff}
+.online-room-card h2{font-size:20px;margin-bottom:5px;color:#eaf5ff}.online-room-card p{font-size:11px;color:#9eabb5;margin-bottom:14px}
+.online-field{margin:9px 0;text-align:right}.online-field label{display:block;font-size:11px;font-weight:800;color:#c9d4dc;margin-bottom:5px}.online-field input,.online-field select{width:100%;height:42px;border:1px solid #53626c;border-radius:6px;background:#10171b;color:#fff;padding:0 10px;font-size:13px;outline:none}
+.online-money-grid,.online-color-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.online-choice{height:36px;border:1px solid #52616b;border-radius:5px;background:#172026;color:#fff;font-size:10px;font-weight:800;cursor:pointer}.online-choice.active{border-color:#7dd3fc;background:#075985;box-shadow:0 0 0 1px #38bdf8}
+.online-color{height:32px;border:2px solid #26323a;border-radius:5px;cursor:pointer;background:var(--c)}.online-color.active{border-color:#fff;box-shadow:0 0 0 2px #38bdf8}
+.online-actions{display:flex;gap:7px;margin-top:14px}.online-action{flex:1;height:42px;border:1px solid #71808a;border-radius:6px;color:#fff;background:linear-gradient(#41505a,#20282d);font-weight:900;cursor:pointer}.online-action.primary{background:linear-gradient(#159cff,#0755a9);border-color:#67cbff}.online-action.ready{background:linear-gradient(#168447,#0b4e2c);border-color:#65d391}.online-action:disabled{opacity:.45;cursor:not-allowed}
+.online-status{margin-top:10px;padding:9px;border:1px solid #394852;background:#0b1115;border-radius:6px;font-size:11px;color:#b8c4cb;line-height:1.7}.online-status strong{color:#fff}.online-player-list{display:grid;gap:7px;margin:10px 0}.online-player{display:flex;justify-content:space-between;align-items:center;padding:9px;background:#10171b;border:1px solid #303e47;border-radius:6px;font-size:11px}.online-dot{width:11px;height:11px;border-radius:50%;display:inline-block;margin-left:5px;background:var(--c)}
+.online-room-item{padding:11px;background:#0f171b;border:1px solid #34444e;border-radius:7px;margin-bottom:7px}.online-room-item .room-top{display:flex;justify-content:space-between;gap:8px}.online-room-item b{font-size:13px}.online-room-item small{color:#9eabb5}.online-room-item button{width:100%;height:34px;margin-top:8px;border:1px solid #4e9bd0;border-radius:5px;background:#0a4f82;color:#fff;font-weight:800;cursor:pointer}.online-empty{text-align:center;padding:22px;color:#9aa7ae;font-size:12px}
+@media(max-width:500px){.online-room-card{padding:12px}.online-money-grid{grid-template-columns:repeat(2,1fr)}.online-color-grid{grid-template-columns:repeat(5,1fr)}}
+</style>
+
+<div id="online-room-modal" aria-hidden="true">
+  <div class="online-room-card">
+    <h2>إنشاء غرفة جماعية</h2>
+    <p>أنشئ الغرفة، حدد المال واللون، ثم اضغط «مستعد». ينتظر السيرفر لاعباً آخر.</p>
+    <div class="online-field"><label>اسم الغرفة</label><input id="online-room-name" maxlength="28" placeholder="مثال: معركة الصحراء"></div>
+    <div class="online-field"><label>المال الابتدائي</label><div class="online-money-grid" id="online-money-grid">
+      <button class="online-choice active" data-money="1000">$1,000</button><button class="online-choice" data-money="2000">$2,000</button><button class="online-choice" data-money="3000">$3,000</button><button class="online-choice" data-money="5000">$5,000</button>
+    </div></div>
+    <div class="online-field"><label>لون اللاعب</label><div class="online-color-grid" id="online-color-grid">
+      <button class="online-color active" data-color="#168cff" style="--c:#168cff" title="أزرق"></button><button class="online-color" data-color="#ef4444" style="--c:#ef4444" title="أحمر"></button><button class="online-color" data-color="#22c55e" style="--c:#22c55e" title="أخضر"></button><button class="online-color" data-color="#f59e0b" style="--c:#f59e0b" title="ذهبي"></button><button class="online-color" data-color="#a855f7" style="--c:#a855f7" title="بنفسجي"></button><button class="online-color" data-color="#06b6d4" style="--c:#06b6d4" title="سماوي"></button><button class="online-color" data-color="#f472b6" style="--c:#f472b6" title="وردي"></button><button class="online-color" data-color="#f8fafc" style="--c:#f8fafc" title="أبيض"></button>
+    </div></div>
+    <div class="online-actions"><button class="online-action primary" id="online-create-room-btn">إنشاء الغرفة</button><button class="online-action" onclick="closeOnlineRoomModal()">إلغاء</button></div>
+    <div class="online-status" id="online-create-status">السيرفر: غير متصل</div>
+    <div class="online-player-list" id="online-create-players"></div>
+    <div class="online-actions" id="online-create-ready-actions" style="display:none"><button class="online-action ready" id="online-create-ready-btn">مستعد</button><button class="online-action" id="online-create-leave-btn">مغادرة الغرفة</button></div>
+  </div>
+</div>
+
+<div id="online-room-list-modal" aria-hidden="true">
+  <div class="online-room-card">
+    <h2>قائمة الغرف</h2><p>اختر غرفة مفتوحة للانضمام إليها. السيرفر يحدد صاحب الغرفة وإعداداتها.</p>
+    <div id="online-room-list"><div class="online-empty">جاري تحميل الغرف...</div></div>
+    <div class="online-actions"><button class="online-action primary" id="online-refresh-rooms-btn">تحديث</button><button class="online-action" onclick="closeOnlineRoomList()">إغلاق</button></div>
+    <div class="online-status" id="online-list-status">السيرفر: غير متصل</div>
+  </div>
+</div>
+
+<script id="online-room-runtime">
+(function(){
+  'use strict';
+  const DEFAULT_WS = 'wss://tank-game-server-o650.onrender.com';
+  const WS_URL = window.GAME_SERVER_URL || DEFAULT_WS;
+  const colors = ['#168cff','#ef4444','#22c55e','#f59e0b','#a855f7','#06b6d4','#f472b6','#f8fafc'];
+  let socket=null, clientId=null, room=null, creating=false, selectedMoney=1000, selectedColor='#168cff', pendingJoin=null;
+  const $=id=>document.getElementById(id);
+  function status(id,msg){const e=$(id);if(e)e.innerHTML=msg;}
+  function show(id){const e=$(id);if(e){e.classList.add('show');e.setAttribute('aria-hidden','false');}}
+  function hide(id){const e=$(id);if(e){e.classList.remove('show');e.setAttribute('aria-hidden','true');}}
+  function send(type,payload={}){if(!socket||socket.readyState!==WebSocket.OPEN){status(creating?'online-create-status':'online-list-status','<strong>السيرفر:</strong> غير متصل');return false}socket.send(JSON.stringify({type,...payload}));return true}
+  function connect(){
+    if(socket&&[WebSocket.OPEN,WebSocket.CONNECTING].includes(socket.readyState))return;
+    status('online-create-status','<strong>السيرفر:</strong> جاري الاتصال...');status('online-list-status','<strong>السيرفر:</strong> جاري الاتصال...');
+    try{socket=new WebSocket(WS_URL);}catch(e){status('online-create-status','<strong>السيرفر:</strong> فشل الاتصال');return;}
+    socket.onopen=()=>{status('online-create-status','<strong>السيرفر:</strong> متصل ✓');status('online-list-status','<strong>السيرفر:</strong> متصل ✓');send('list_rooms');};
+    socket.onclose=()=>{status('online-create-status','<strong>السيرفر:</strong> انقطع الاتصال');status('online-list-status','<strong>السيرفر:</strong> انقطع الاتصال');};
+    socket.onerror=()=>{};
+    socket.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(_){return}handle(m)};
+  }
+  function handle(m){
+    if(m.type==='hello'){clientId=m.clientId;return;}
+    if(m.type==='rooms'){renderRooms(m.rooms||[]);return;}
+    if(m.type==='room_created'){room=m.room;creating=true;updateRoomUI();return;}
+    if(m.type==='room_joined'){room=m.room;creating=false;hide('online-room-list-modal');show('online-room-modal');updateRoomUI();return;}
+    if(m.type==='room_update'){room=m.room;updateRoomUI();return;}
+    if(m.type==='room_error'){alert(m.message||'تعذر تنفيذ العملية');return;}
+    if(m.type==='game_start'){startOnlineMatch(m);return;}
+    if(m.type==='peer_message'){window.dispatchEvent(new CustomEvent('onlinePeerMessage',{detail:m.payload}));return;}
+    if(m.type==='server_state'){window.dispatchEvent(new CustomEvent('onlineServerState',{detail:m.state}));return;}
+  }
+  function updateRoomUI(){
+    if(!room)return;
+    show('online-room-modal');
+    $('online-create-room-btn').style.display='none';$('online-create-ready-actions').style.display='flex';
+    const me=room.players.find(p=>p.id===clientId), host=room.hostId===clientId;
+    status('online-create-status','<strong>الغرفة:</strong> '+escapeHtml(room.name)+' · '+room.players.length+'/2 لاعبين'+(host?' · أنت المضيف':''));
+    $('online-create-players').innerHTML=room.players.map(p=>'<div class="online-player"><span><i class="online-dot" style="--c:'+p.color+'"></i>'+escapeHtml(p.name)+(p.id===room.hostId?' ★':'')+'</span><b>'+ (p.ready?'مستعد ✓':'ينتظر') +'</b></div>').join('');
+    const rb=$('online-create-ready-btn'); if(rb){rb.textContent=me&&me.ready?'إلغاء الاستعداد':'مستعد';rb.classList.toggle('ready',!(me&&me.ready));}
+    if(room.started)status('online-create-status','<strong>المباراة:</strong> السيرفر بدأ الغرفة، جاري الدخول...');
+  }
+  function renderRooms(rooms){
+    const box=$('online-room-list');if(!box)return;
+    if(!rooms.length){box.innerHTML='<div class="online-empty">لا توجد غرف مفتوحة حالياً.</div>';return;}
+    box.innerHTML=rooms.map(r=>'<div class="online-room-item"><div class="room-top"><b>'+escapeHtml(r.name)+'</b><small>'+r.players+'/2 لاعبين</small></div><small>المال: $'+Number(r.money).toLocaleString()+'</small><button data-join-room="'+escapeAttr(r.id)+'" '+(r.players>=2?'disabled':'')+'>انضمام إلى الغرفة</button></div>').join('');
+    box.querySelectorAll('[data-join-room]').forEach(b=>b.onclick=()=>joinRoom(b.dataset.joinRoom));
+  }
+  function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+  function escapeAttr(v){return escapeHtml(v).replace(/`/g,'&#96;');}
+  function joinRoom(id){pendingJoin=id;creating=false;hide('online-room-list-modal');show('online-room-modal');$('online-create-room-btn').style.display='none';$('online-create-ready-actions').style.display='none';status('online-create-status','<strong>السيرفر:</strong> اختر لونك للانضمام...');$('online-room-name').value='';connect();setTimeout(()=>send('join_room',{roomId:id,name:'لاعب',color:selectedColor}),150);}
+  function startOnlineMatch(m){
+    const cfg=m.config||{}; room=m.room||room;
+    if(window.battleConfig){battleConfig.money=Number(cfg.money)||3000;battleConfig.playerColor=cfg.playerColor||selectedColor;battleConfig.playerColorName=cfg.playerColorName||'ONLINE';battleConfig.bot='medium';battleConfig.enemyColor=cfg.enemyColor||'#ef4444';battleConfig.enemyColorName=cfg.enemyColorName||'OPPONENT';}
+    window.onlineMatch={roomId:m.roomId,clientId,playerId:m.playerId,opponentId:m.opponentId,seed:m.seed,serverTime:m.serverTime};
+    hide('online-room-modal');hide('online-room-list-modal');
+    if(typeof beginConfiguredGame==='function')beginConfiguredGame();
+    setTimeout(()=>{if(typeof showFloatingMsg==='function')showFloatingMsg('⚔ ONLINE MATCH — '+(m.playerId===0?'PLAYER 1':'PLAYER 2'));},500);
+  }
+  window.openOnlineCreate=function(){creating=true;room=null;selectedMoney=1000;selectedColor='#168cff';document.querySelectorAll('#online-money-grid .online-choice').forEach(b=>b.classList.toggle('active',b.dataset.money==='1000'));document.querySelectorAll('#online-color-grid .online-color').forEach(b=>b.classList.toggle('active',b.dataset.color.toLowerCase()===selectedColor));$('online-room-name').value='';$('online-create-room-btn').style.display='block';$('online-create-ready-actions').style.display='none';status('online-create-status','<strong>السيرفر:</strong> جاري الاتصال...');show('online-room-modal');connect();};
+  window.closeOnlineRoomModal=function(){hide('online-room-modal');if(room&&!room.started)send('leave_room');room=null;};
+  window.openOnlineRoomList=function(){show('online-room-list-modal');connect();setTimeout(()=>send('list_rooms'),100);};
+  window.closeOnlineRoomList=function(){hide('online-room-list-modal');};
+  $('online-money-grid').querySelectorAll('.online-choice').forEach(b=>b.onclick=()=>{selectedMoney=Number(b.dataset.money);$('online-money-grid').querySelectorAll('.online-choice').forEach(x=>x.classList.toggle('active',x===b));});
+  $('online-color-grid').querySelectorAll('.online-color').forEach(b=>b.onclick=()=>{selectedColor=b.dataset.color;$('online-color-grid').querySelectorAll('.online-color').forEach(x=>x.classList.toggle('active',x===b));if(room&&room.id)send('set_color',{color:selectedColor});});
+  $('online-create-room-btn').onclick=()=>{const name=($('online-room-name').value||'غرفة جماعية').trim();send('create_room',{name:name||'غرفة جماعية',money:selectedMoney,color:selectedColor});};
+  $('online-create-ready-btn').onclick=()=>send('toggle_ready');
+  $('online-create-leave-btn').onclick=()=>{send('leave_room');room=null;$('online-create-ready-actions').style.display='none';$('online-create-room-btn').style.display='block';status('online-create-status','<strong>السيرفر:</strong> خرجت من الغرفة');};
+  $('online-refresh-rooms-btn').onclick=()=>{connect();send('list_rooms');};
+  // Forward optional gameplay events through the server. The server never trusts these as game truth.
+  window.sendOnlineEvent=function(payload){if(window.onlineMatch)send('game_event',{payload});};
+  window.addEventListener('beforeunload',()=>{try{send('leave_room')}catch(e){}});
+})();
+</script>
+
 </body>
 </html>
