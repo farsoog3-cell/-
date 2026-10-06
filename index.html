@@ -1008,13 +1008,6 @@
   clip-path:polygon(0 0,97% 0,100% 22%,100% 78%,97% 100%,0 100%,3% 78%,3% 22%) !important;
   transition:transform .08s ease,filter .12s ease,box-shadow .12s ease !important;
 }
-.settings-card-overlay #start-btn{
-  background:linear-gradient(180deg,#607b4d 0%,#3f5b35 48%,#263a22 100%) !important;
-  border-color:#a7bc91 !important;
-}
-.settings-card-overlay #start-btn::before{
-  content:'▶'; margin-left:9px; color:#bde59f; font-size:12px;
-}
 .settings-card-overlay #sound-settings-btn{
   background:linear-gradient(180deg,#4d554b 0%,#30372f 50%,#1c211d 100%) !important;
   border-color:#7f8978 !important;
@@ -1289,10 +1282,6 @@
   transform:translateY(1px) !important;
   filter:brightness(.9) !important;
 }
-.settings-card-overlay #start-btn{
-  background:linear-gradient(180deg,#657653,#38452f) !important;
-  border-color:#a5b68b !important;
-}
 .settings-card-overlay #sound-settings-btn{
   background:linear-gradient(180deg,#414b3d,#252c23) !important;
 }
@@ -1373,26 +1362,6 @@
   position:absolute;
   left:0;top:0;bottom:0;width:3px;
   background:#718b60;
-}
-.settings-card-overlay #start-btn{
-  background:linear-gradient(180deg,rgba(78,105,63,.98),rgba(25,40,23,.98))!important;
-  border-color:#a4bc91!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 5px 15px rgba(0,0,0,.5),0 0 12px rgba(91,130,69,.14)!important;
-}
-.settings-card-overlay #start-btn::before{
-  content:"▶";
-  display:inline-block;
-  margin-left:10px;
-  color:#b9d69e;
-  font-size:12px;
-}
-.settings-card-overlay #start-btn{font-size:0!important}
-.settings-card-overlay #start-btn::after{
-  content:"البدء لعب";
-  position:absolute;right:18px;left:auto;width:auto;
-  background:#789366;color:#eaf4e3;
-  height:6px;top:0;bottom:auto;
-  font-size:0;
 }
 .settings-card-overlay #sound-settings-btn{
   background:linear-gradient(180deg,rgba(62,67,59,.96),rgba(22,25,21,.98))!important;
@@ -2124,7 +2093,6 @@
     <div class="menu-card" id="main-menu-card">
         <h1>COMMAND CENTER</h1>
         <div class="main-menu-actions" id="main-menu-actions">
-            <button class="menu-btn" id="start-btn" onclick="playClickSound(); openBattleSetup()">START GAME</button>
             <button class="menu-btn" id="sound-settings-btn" onclick="playClickSound(); toggleSoundSettings()">AUDIO SETTINGS</button>
             <button class="menu-btn online-menu-btn" id="create-room-btn" onclick="playClickSound(); openOnlineCreate()">CREATE MULTIPLAYER ROOM</button>
             <button class="menu-btn online-menu-btn" id="room-list-btn" onclick="playClickSound(); openOnlineRoomList()">ROOM LIST</button>
@@ -2141,86 +2109,6 @@
     </div>
 </div>
 
-
-<div id="battle-setup-modal" aria-hidden="true">
-  <div class="battle-setup-card">
-    <div class="battle-setup-head">
-      <div class="battle-title">
-        <span class="battle-title-mark">⚔</span>
-        <h2>BATTLE COMMAND · FIELD SETUP</h2>
-      </div>
-      <button class="battle-close" onclick="closeBattleSetup()" aria-label="CLOSE">×</button>
-    </div>
-
-    <div class="battle-setup-grid">
-      <section class="battle-panel map-panel">
-        <div class="panel-title-row">
-          <h3>OPERATIONS AREA</h3>
-          <span class="map-live-badge">TACTICAL</span>
-        </div>
-        <div class="battle-map-preview" id="battle-map-preview">
-          <canvas id="battle-real-map" width="640" height="420"></canvas>
-        </div>
-      </section>
-
-      <section class="battle-panel options-panel">
-        <div class="battle-field">
-          <div class="battle-label"><span>BUDGET</span><b id="battle-money-value">3000$</b></div>
-          <div class="money-grid" id="battle-money-grid">
-            <button type="button" class="money-option" data-money="1000" onclick="selectBattleMoney(1000,this)">1000$</button>
-            <button type="button" class="money-option" data-money="2000" onclick="selectBattleMoney(2000,this)">2000$</button>
-            <button type="button" class="money-option active" data-money="3000" onclick="selectBattleMoney(3000,this)">3000$</button>
-            <button type="button" class="money-option" data-money="4000" onclick="selectBattleMoney(4000,this)">4000$</button>
-
-          </div>
-        </div>
-
-        <div class="battle-field ai-rules-field">
-          <div class="battle-label"><span>AI BATTLE RULES</span><b>STANDARD</b></div>
-          <div class="ai-rules-card">
-            <span class="ai-rule-icon">⚙</span>
-            <div><strong>FAIR RTS AI</strong><small>نفس قوانين الشراء والإنتاج والوقت والاقتصاد للاعب</small></div>
-          </div>
-        </div>
-
-        <div class="battle-field unified-color-field">
-          <div class="battle-label"><span>TEAM COLOR</span><b id="battle-color-target-value">PLAYER</b></div>
-          <div class="color-target-switch" role="tablist" aria-label="Choose team">
-            <button type="button" class="color-target-btn active" data-target="player" onclick="selectBattleColorTarget('player',this)">PLAYER BASE</button>
-            <button type="button" class="color-target-btn" data-target="enemy" onclick="selectBattleColorTarget('enemy',this)">ENEMY BASE</button>
-          </div>
-          <div class="unified-color-grid" id="unified-color-grid" aria-label="Team color selection">
-            <button type="button" class="unified-color-option active" data-color="#168cff" data-name="BLUE" style="--swatch:#168cff" onclick="selectUnifiedBattleColor('#168cff','BLUE',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#00a8ff" data-name="CYAN" style="--swatch:#00a8ff" onclick="selectUnifiedBattleColor('#00a8ff','CYAN',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#00d9ff" data-name="ICE" style="--swatch:#00d9ff" onclick="selectUnifiedBattleColor('#00d9ff','ICE',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#ffd21f" data-name="GOLD" style="--swatch:#ffd21f" onclick="selectUnifiedBattleColor('#ffd21f','GOLD',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#f59e0b" data-name="AMBER" style="--swatch:#f59e0b" onclick="selectUnifiedBattleColor('#f59e0b','AMBER',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#ff7a00" data-name="ORANGE" style="--swatch:#ff7a00" onclick="selectUnifiedBattleColor('#ff7a00','ORANGE',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#ff3b5c" data-name="ROSE" style="--swatch:#ff3b5c" onclick="selectUnifiedBattleColor('#ff3b5c','ROSE',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#e11d48" data-name="CRIMSON" style="--swatch:#e11d48" onclick="selectUnifiedBattleColor('#e11d48','CRIMSON',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#a855f7" data-name="VIOLET" style="--swatch:#a855f7" onclick="selectUnifiedBattleColor('#a855f7','VIOLET',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#7c3aed" data-name="PURPLE" style="--swatch:#7c3aed" onclick="selectUnifiedBattleColor('#7c3aed','PURPLE',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#ec4899" data-name="PINK" style="--swatch:#ec4899" onclick="selectUnifiedBattleColor('#ec4899','PINK',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#06b6d4" data-name="AQUA" style="--swatch:#06b6d4" onclick="selectUnifiedBattleColor('#06b6d4','AQUA',this)"></button>
-            <button type="button" class="unified-color-option" data-color="#f43f5e" data-name="RED" style="--swatch:#f43f5e" onclick="selectUnifiedBattleColor('#f43f5e','RED',this)"></button>
-          </div>
-          <div class="selected-color-readout"><span id="selected-color-dot"></span><b id="selected-color-name">BLUE</b></div>
-        </div>
-
-        <div class="battle-summary">
-          <div class="battle-stat"><b id="summary-map">CONTROL BATTLE</b><span>MAP</span></div>
-          <div class="battle-stat"><b id="summary-money">3000$</b><span>BUDGET</span></div>
-          <div class="battle-stat"><b id="summary-bot">MEDIUM</b><span>ENEMY</span></div>
-        </div>
-      </section>
-    </div>
-
-    <div class="battle-actions">
-      <button class="battle-action cancel" onclick="closeBattleSetup()">CANCEL</button>
-      <button class="battle-action start" onclick="playClickSound(); beginConfiguredGame()">START BATTLE</button>
-    </div>
-  </div>
-</div>
 
 <style id="battle-setup-military-new">
 #battle-setup-modal{
@@ -3030,11 +2918,6 @@
 
     let playerMoney = 2000;
     let enemyMoney = 5000;
-    // الذكاء الاستراتيجي للعدو: دفاع / هجوم / اقتصاد + ذاكرة للصراع
-    let enemyStrategy = 'economy';
-    let enemyStrategyUntil = 0;
-    let enemyIntel = { playerStrength:0, enemyStrength:0, contestedOil:0, lostOil:0, playerNearBase:false, enemyNearBase:false, lastEvent:0 };
-    let enemyThreatMemory = [];
     let totalMoneySpent = 0;
     let totalTanksLost = 0;
     let enemyTanksLost = 0;
@@ -3838,173 +3721,8 @@
         try{ if(window.__introCleanup) window.__introCleanup(); }catch(e){}
     }
 
-    let battleConfig = { map:'main', money:3000, bot:'medium', playerColor:'#168cff', playerColorName:'BLUE', enemyColor:'#f43f5e', enemyColorName:'RED' };
-let battleColorTarget = 'player';
-
-function openBattleSetup(){
-    const modal=document.getElementById('battle-setup-modal');
-    if(!modal)return;
-    modal.classList.add('show'); modal.setAttribute('aria-hidden','false');
-    selectBattleMoney(battleConfig.money, document.querySelector('.money-option[data-money="'+battleConfig.money+'"]'));
-    const botBtn=document.querySelector('.bot-strength[data-bot="'+battleConfig.bot+'"]');
-    selectBattleBot(battleConfig.bot,botBtn);
-    const colorBtn=document.querySelector('.player-color-option[data-color="'+battleConfig.playerColor+'"]');
-    selectPlayerColor(battleConfig.playerColor,battleConfig.playerColorName,colorBtn);
-    const enemyColorBtn=document.querySelector('.enemy-color-option[data-color="'+battleConfig.enemyColor+'"]');
-    selectEnemyColor(battleConfig.enemyColor,battleConfig.enemyColorName,enemyColorBtn);
-    selectBattleColorTarget('player');
-    requestAnimationFrame(()=>drawRealBattleMap());
-}
-function closeBattleSetup(){
-    const modal=document.getElementById('battle-setup-modal');
-    if(!modal)return; modal.classList.remove('show'); modal.setAttribute('aria-hidden','true');
-}
-function selectBattleMoney(value,el){
-    battleConfig.money=Math.max(1000,Math.min(4000,Number(value)||3000));
-    document.querySelectorAll('.money-option').forEach(b=>b.classList.toggle('active',Number(b.dataset.money)===battleConfig.money));
-    const valueEl=document.getElementById('battle-money-value'), summary=document.getElementById('summary-money');
-    if(valueEl)valueEl.textContent=battleConfig.money+'$'; if(summary)summary.textContent=battleConfig.money+'$';
-}
-function updateBattleMoney(v){selectBattleMoney(v);}
-function selectBattleBot(bot,el){
-    battleConfig.bot=bot;
-    document.querySelectorAll('.bot-strength').forEach(b=>b.classList.toggle('active',b.dataset.bot===bot));
-    const summary=document.getElementById('summary-bot'); if(summary)summary.textContent='STANDARD';
-    drawRealBattleMap();
-}
-function selectBattleColorTarget(target,el){
-    battleColorTarget=(target==='enemy')?'enemy':'player';
-    document.querySelectorAll('.color-target-btn').forEach(b=>b.classList.toggle('active',b.dataset.target===battleColorTarget));
-    const label=document.getElementById('battle-color-target-value');
-    if(label) label.textContent=battleColorTarget==='enemy'?'ENEMY':'PLAYER';
-    const color=battleColorTarget==='enemy'?battleConfig.enemyColor:battleConfig.playerColor;
-    const name=battleColorTarget==='enemy'?battleConfig.enemyColorName:battleConfig.playerColorName;
-    document.querySelectorAll('.unified-color-option').forEach(b=>b.classList.toggle('active',b.dataset.color.toLowerCase()===String(color).toLowerCase()));
-    const n=document.getElementById('selected-color-name'),d=document.getElementById('selected-color-dot');
-    if(n)n.textContent=name; if(d)d.style.background=color;
-}
-function selectUnifiedBattleColor(color,name,el){
-    if(!/^#[0-9a-fA-F]{6}$/.test(color)) return;
-    if(battleColorTarget==='enemy'){
-        battleConfig.enemyColor=color; battleConfig.enemyColorName=name||color.toUpperCase(); enemyFlagType=color;
-        refreshAllTeamFlags();
-    }else{
-        battleConfig.playerColor=color; battleConfig.playerColorName=name||color.toUpperCase(); playerFlagType=color;
-        refreshAllTeamFlags();
-    }
-    document.querySelectorAll('.unified-color-option').forEach(b=>b.classList.toggle('active',b.dataset.color.toLowerCase()===color.toLowerCase()));
-    const n=document.getElementById('selected-color-name'),d=document.getElementById('selected-color-dot');
-    if(n)n.textContent=name||color.toUpperCase(); if(d)d.style.background=color;
-    drawRealBattleMap();
-}
-function selectPlayerColor(color,name,el){
-    battleColorTarget='player'; selectBattleColorTarget('player'); selectUnifiedBattleColor(color,name,el);
-}
-function selectEnemyColor(color,name,el){
-    battleColorTarget='enemy'; selectBattleColorTarget('enemy'); selectUnifiedBattleColor(color,name,el);
-}
-
-
-function refreshAllTeamFlags(){
-  try{
-    if(typeof scene==='undefined' || !scene || typeof createFlagTexture!=='function') return;
-    scene.traverse(obj=>{
-      if(!obj || !obj.userData || !obj.userData.teamFlag || !obj.material) return;
-      let team = obj.userData.team;
-      let parent = obj.parent;
-      while(!team && parent){ team = parent.userData && parent.userData.team; parent = parent.parent; }
-      if(team==='enemy') obj.material.map=createFlagTexture(enemyFlagType);
-      else if(team==='player') obj.material.map=createFlagTexture(playerFlagType);
-      else if(obj.material.map && obj.userData.flagOwner==='enemy') obj.material.map=createFlagTexture(enemyFlagType);
-      else if(obj.material.map && obj.userData.flagOwner==='player') obj.material.map=createFlagTexture(playerFlagType);
-      if(obj.material.map) obj.material.needsUpdate=true;
-    });
-    if(enemyFlagDataRef && enemyFlagDataRef.mesh && enemyFlagDataRef.mesh.material){ enemyFlagDataRef.mesh.material.map=createFlagTexture(enemyFlagType); enemyFlagDataRef.mesh.material.needsUpdate=true; }
-    if(playerFlagDataRef && playerFlagDataRef.mesh && playerFlagDataRef.mesh.material){ playerFlagDataRef.mesh.material.map=createFlagTexture(playerFlagType); playerFlagDataRef.mesh.material.needsUpdate=true; }
-  }catch(e){}
-}
-
-function refreshEnemyFlagMeshes(){
-  try{
-    document.querySelectorAll('.enemy-color-option').forEach(b=>b.classList.toggle('active',b.dataset.color.toLowerCase()===String(enemyFlagType).toLowerCase()));
-    document.querySelectorAll('[data-team="enemy"]').forEach(el=>{});
-    if(typeof scene!=='undefined' && scene && typeof createFlagTexture==='function'){
-      scene.traverse(obj=>{
-        if(obj && obj.userData && (obj.userData.team==='enemy' || obj.userData.teamFlag==='enemy')){
-          if(obj.material && obj.material.map){obj.material.map=createFlagTexture(enemyFlagType);obj.material.needsUpdate=true;}
-        }
-      });
-    }
-  }catch(e){}
-}
-
-function updateBattlePreview(){drawRealBattleMap();}
-
-function drawRealBattleMap(){
-    const canvas=document.getElementById('battle-real-map');
-    if(!canvas || typeof getTerrainHeight!=='function')return;
-    const ctx=canvas.getContext('2d'); const w=canvas.width,h=canvas.height;
-    const min=-450,max=450, span=max-min;
-    const px=x=>((x-min)/span)*w, pz=z=>((z-min)/span)*h;
-    const samples=72, cw=w/samples,ch=h/samples;
-    const shade=(hh)=>{
-        const t=Math.max(0,Math.min(1,(hh+18)/42));
-        const r=Math.round(38+t*74),g=Math.round(67+t*76),b=Math.round(43+t*45);
-        return `rgb(${r},${g},${b})`;
-    };
-    for(let gx=0;gx<samples;gx++)for(let gz=0;gz<samples;gz++){
-        const x=min+(gx+.5)*span/samples,z=min+(gz+.5)*span/samples;
-        ctx.fillStyle=shade(getTerrainHeight(x,z));ctx.fillRect(gx*cw,gz*ch,cw+1,ch+1);
-    }
-    // ظلال خفيفة للتضاريس حسب الارتفاع
-    ctx.globalAlpha=.16;ctx.fillStyle='#d8e6c5';
-    for(let i=0;i<12;i++){const x=(i*83+70)%w,y=(i*137+40)%h;ctx.beginPath();ctx.arc(x,y,25+i*3,0,Math.PI*2);ctx.fill();}
-    ctx.globalAlpha=1;
-    // شبكة تكتيكية
-    ctx.strokeStyle='rgba(220,255,230,.10)';ctx.lineWidth=1;for(let i=1;i<10;i++){ctx.beginPath();ctx.moveTo(i*w/10,0);ctx.lineTo(i*w/10,h);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*h/10);ctx.lineTo(w,i*h/10);ctx.stroke();}
-    // طرق تقريبية متطابقة مع منطقة MAP الحالية
-    ctx.strokeStyle='rgba(214,194,143,.45)';ctx.lineWidth=10;ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(px(-420),pz(-90));ctx.quadraticCurveTo(px(0),pz(80),px(420),pz(0));ctx.stroke();
-    ctx.beginPath();ctx.moveTo(px(-20),pz(-420));ctx.quadraticCurveTo(px(30),pz(0),px(60),pz(420));ctx.stroke();
-    function marker(x,z,fill,stroke,label,size=15){const X=px(x),Y=pz(z);ctx.save();ctx.shadowBlur=16;ctx.shadowColor=fill;ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=3;ctx.beginPath();ctx.arc(X,Y,size,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.shadowBlur=0;ctx.fillStyle='#061009';ctx.font='900 '+Math.max(10,size*.85)+'px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,X,Y+1);ctx.restore();}
-    marker(CORNER_OFFSET,CORNER_OFFSET,'#42e879','#c8ffda','P',18);
-    marker(-CORNER_OFFSET,-CORNER_OFFSET,'#e84e4e','#ffd0d0',battleConfig.bot==='strong'?'!':'B',18);
-    [[50,-50],[-50,50],[-70,-70],[70,70]].forEach(([x,z])=>marker(x,z,'#d7a72e','#ffe8a0','$',10));
-    ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=2;ctx.strokeRect(1,1,w-2,h-2);
-}
-function applyBattleBotConfig(){
-    const presets={weak:{money:.85,speed:1.0,aggression:.72},medium:{money:1.0,speed:1.0,aggression:1.0},strong:{money:1.3,speed:1.0,aggression:1.25}};
-    const preset=presets[battleConfig.bot]||presets.medium;
-    enemyMoney=Math.max(0,Math.round(battleConfig.money));
-    window.battleBotStrength=battleConfig.bot;
-    window.battleBotAggression=preset.aggression;
-    window.battleBotSpeedMultiplier=preset.speed;
-    window.battleBotProductionMultiplier=1.0;
-    getEnemyAllUnits().forEach(u=>{u.__battleBotSpeedApplied=true;u.__battleBotCombatSpeedApplied=true;});
-}
-function beginConfiguredGame(){
-    playerMoney=battleConfig.money;
-    totalMoneySpent=0;
-    battleAudioActive=true;
-    updateEconomyUI();
-    applyBattleBotConfig();
-    refreshAllTeamFlags();
-    closeBattleSetup();
-    menuBgmAudio.pause(); menuBgmAudio.currentTime=0;
-    unlockGameAudio();
-    try { startWindAudio(); } catch(e) {}
-    playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});
-    cleanupIntroBackground();
-    document.getElementById('settings-modal').style.display='none';
-    document.getElementById('start-menu').style.display='none';
-    document.getElementById('ui-overlay').style.display='block';
-    playSound('buy');
-    let playerCampX=CORNER_OFFSET, playerCampZ=CORNER_OFFSET, terrainH=getTerrainHeight(playerCampX,playerCampZ);
-    targetLookAt.set(playerCampX,terrainH,playerCampZ);
-    targetCameraRadius=110; cameraPhi=Math.PI/3.8; cameraRadius=targetCameraRadius; updateCameraPosition();
-    showFloatingMsg(`⚔ Battle started! Bot strength: ${{weak:'WEAK',medium:'MEDIUM',strong:'STRONG'}}[battleConfig.bot]||'MEDIUM'}.`);
-}
-function startGame(){openBattleSetup();}
+    // إعدادات المعركة أصبحت ثابتة؛ لا توجد قائمة إعدادات معركة أو مستويات بوت.
+    let battleConfig = { map:'main', money:3000, playerColor:'#168cff', playerColorName:'BLUE', enemyColor:'#f43f5e', enemyColorName:'RED' };
 
     function setupLighting() {
         scene.add(new THREE.AmbientLight(0xf0e7d8, 0.64));
@@ -7598,7 +7316,6 @@ function createArmyFactory(x,z,ghost=false){
     let enemyFactoryConstruction = null;
     let enemyFactoryProduction = null;
     let enemyBarracksConstruction = null;
-    let enemyAIThink = 0;
 
     function enemyTintFactory(factory) {
         if(!factory||!factory.mesh)return;
@@ -7848,117 +7565,6 @@ function createArmyFactory(x,z,ghost=false){
         return preferred||base.clone();
     }
 
-    function chooseEnemyBuildPoint(){
-        const base=new THREE.Vector3(-CORNER_OFFSET,0,-CORNER_OFFSET), a=Math.random()*Math.PI*2, r=46+Math.random()*14;
-        const p=new THREE.Vector3(base.x+Math.cos(a)*r,0,base.z+Math.sin(a)*r); p.y=getTerrainHeight(p.x,p.z); return p;
-    }
-
-    function enemyDistanceToBase(unit, enemyBasePos){
-        return unit && unit.mesh ? unit.mesh.position.distanceTo(enemyBasePos) : 9999;
-    }
-
-    
-
-    function getEnemyAllUnits(){
-        const list=[...enemyTanks,...ambulances.filter(u=>u.team==='enemy'),...reconVehicles.filter(u=>u.team==='enemy')];
-        return [...new Set(list)].filter(u=>u&&!u.isDestroyed);
-    }
-
-    function enemyOilPoint(rig){
-        return new THREE.Vector3(rig.x,getTerrainHeight(rig.x,rig.z),rig.z);
-    }
-
-    function chooseEnemyOilTarget(fromUnit=null){
-        const candidates=oilRigs.filter(r=>!r.isDestroyed&&r.owner!=='enemy');
-        if(!candidates.length)return null;
-        return candidates.slice().sort((a,b)=>{
-            const score=rig=>{
-                const d=fromUnit&&fromUnit.mesh?fromUnit.mesh.position.distanceTo(enemyOilPoint(rig)):0;
-                const ownership=rig.owner==='player'?-120:0;
-                const progress=-(rig.captureProgress||0)*0.25;
-                return d+ownership+progress;
-            };
-            return score(a)-score(b);
-        })[0];
-    }
-
-    function enemySetStrategy(mode,reason){
-        if(enemyStrategy===mode && Date.now()<enemyStrategyUntil)return;
-        enemyStrategy=mode; enemyStrategyUntil=Date.now()+7000;
-        enemyIntel.lastReason=reason||'';
-        enemyIntel.lastEvent=Date.now();
-    }
-
-    function updateEnemyIntel(liveEnemy,livePlayer){
-        const enemyBase=new THREE.Vector3(-CORNER_OFFSET,getTerrainHeight(-CORNER_OFFSET,-CORNER_OFFSET),-CORNER_OFFSET);
-        const playerBase=new THREE.Vector3(CORNER_OFFSET,getTerrainHeight(CORNER_OFFSET,CORNER_OFFSET),CORNER_OFFSET);
-        const enemyAll=getEnemyAllUnits();
-        const enemyCombat=enemyAll.filter(u=>!u.isBuilder&&u.type!=='ambulance'&&!u.isRecon).length;
-        const playerCombat=livePlayer.filter(u=>!u.isBuilder&&u.type!=='ambulance'&&!u.isRecon).length;
-        const playerNearBase=livePlayer.some(u=>u.mesh.position.distanceTo(enemyBase)<145);
-        const enemyNearBase=enemyAll.some(u=>u.mesh.position.distanceTo(playerBase)<165);
-        const enemyOil=oilRigs.filter(r=>r.owner==='enemy').length;
-        const playerOil=oilRigs.filter(r=>r.owner==='player').length;
-        const neutralOil=oilRigs.filter(r=>r.owner!=='enemy'&&r.owner!=='player').length;
-        enemyIntel={...enemyIntel,playerStrength:playerCombat,enemyStrength:enemyCombat,contestedOil:neutralOil,lostOil:playerOil,playerNearBase,enemyNearBase,enemyOil,playerOil};
-        enemyThreatMemory.push({t:Date.now(),player:playerCombat,enemy:enemyCombat,oil:playerOil});
-        if(enemyThreatMemory.length>30)enemyThreatMemory.shift();
-        return {enemyBase,playerBase,playerNearBase,enemyNearBase,enemyOil,playerOil,enemyAll};
-    }
-
-    function issueEnemyStrategicOrders(info){
-        const units=info.enemyAll.filter(u=>!u.isBuilder&&!u.isBuilding);
-        if(!units.length)return;
-        const oil=oilRigs.filter(r=>!r.isDestroyed&&r.owner!=='enemy');
-        const playerForces=playerTanks.filter(u=>!u.isDestroyed&&!u.isBuilder);
-        const enemyBase=info.enemyBase, playerBase=info.playerBase;
-
-        // ترتيب أهداف العدو حسب الخطر والقيمة، وليس عشوائياً.
-        const nearestPlayer=(u,max=9999)=>playerForces.slice().sort((a,b)=>u.mesh.position.distanceTo(a.mesh.position)-u.mesh.position.distanceTo(b.mesh.position)).find(a=>u.mesh.position.distanceTo(a.mesh.position)<=max)||null;
-        const nearestOil=(u)=>chooseEnemyOilTarget(u);
-
-        units.forEach((u,i)=>{
-            let target=null;
-            const ownedEnemyOil=oilRigs.filter(r=>r.owner==='enemy'&&!r.isDestroyed);
-            if(u.isInfantry && oil.length){
-                // مشاة العدو هم قوة الاستيلاء الوحيدة على النفط.
-                // الأولوية للنفط المحايد أو الذي يسيطر عليه اللاعب، وليس للبقاء في القاعدة.
-                const rig=nearestOil(u);
-                if(rig) target=enemyOilPoint(rig);
-            }else if(enemyStrategy==='defense'){
-                // إبقاء الآليات حول النفط والقاعدة مع اعتراض أي قوة تقترب.
-                const threatenedOil=ownedEnemyOil.find(r=>playerForces.some(p=>p.mesh.position.distanceTo(enemyOilPoint(r))<95));
-                const threat=nearestPlayer(u,220);
-                if(threatenedOil) target=enemyOilPoint(threatenedOil);
-                else if(threat && (info.playerNearBase || i%4===0)) target=threat.mesh.position.clone();
-                else {
-                    const r=ownedEnemyOil.length?ownedEnemyOil[i%ownedEnemyOil.length]:null;
-                    if(r) target=enemyOilPoint(r);
-                    else target=enemyBase.clone().add(new THREE.Vector3(Math.sin(i)*52,0,Math.cos(i)*52));
-                }
-            }else if(enemyStrategy==='attack'){
-                // حصار مستمر مع إبقاء جزء من القوة لحماية النفط.
-                const threat=nearestPlayer(u,340);
-                if(ownedEnemyOil.length && i%4===0){
-                    target=enemyOilPoint(ownedEnemyOil[i%ownedEnemyOil.length]);
-                }else if(threat && i%4!==3) target=threat.mesh.position.clone();
-                else target=playerBase.clone();
-            }else{
-                const rig=nearestOil(u);
-                if(rig) target=enemyOilPoint(rig);
-                else target=enemyBase.clone();
-            }
-            if(target){
-                target.y=getTerrainHeight(target.x,target.z);
-                u.aiTarget=target.clone();
-                u.target=target.clone();
-                u.aiOrder=enemyStrategy;
-                u.aiOrderTime=Date.now();
-            }
-        });
-    }
-
-    
     function animateVehicleWheels(unit,delta){
         if(!unit||!unit.mesh)return;
         const speed=Math.hypot(unit.vx||0,unit.vz||0);
@@ -7969,96 +7575,6 @@ function createArmyFactory(x,z,ghost=false){
             if(o.userData.trackSprocket===true){ o.rotation.x += speed*delta*1.15; }
         });
     }
-
-    function updateEnemyAI(){
-        enemyAIThink++; if(enemyAIThink%8!==0)return;
-        const liveEnemy=enemyTanks.filter(t=>!t.isDestroyed), livePlayer=playerTanks.filter(t=>!t.isDestroyed);
-        const info=updateEnemyIntel(liveEnemy,livePlayer);
-        const builder=liveEnemy.find(t=>t.isBuilder), factory=enemyFactories.find(f=>f.done&&!f.isDestroyed);
-
-        // العدو القوي: يفضل الهجوم المستمر، ويحوّل الدفاع إلى هجوم مضاد سريع.
-        if(info.playerNearBase) enemySetStrategy('attack','⚔️ اختراق محيط قاعدة اللاعب');
-        else if(info.enemyNearBase) enemySetStrategy('attack','⚔️ قوات العدو وصلت إلى قاعدة اللاعب');
-        else if(Date.now()>enemyStrategyUntil) enemySetStrategy('attack','⚔️ هجوم مستمر');
-
-        // إنشاء مصنع العدو مرة واحدة، ثم ترك الشاحنة تنفذ البناء فعلياً.
-        if(!factory&&!enemyFactoryConstruction){
-            if(!builder&&enemyMoney>=300){
-                enemyMoney-=300;
-                const a=-(3*Math.PI)/4;
-                const x=-CORNER_OFFSET+Math.sin(a)*20, z=-CORNER_OFFSET+Math.cos(a)*20;
-                const b=createConstructionTruck(x,z,'enemy');
-                b.mesh.rotation.y=a;
-                const firstBuildPoint=findNearestValidEnemyBuildPoint(chooseEnemyBuildPoint(),'factory');
-                b.target=firstBuildPoint.clone();
-                b.buildTarget=firstBuildPoint.clone();
-                b.hasPlayerMoveOrder=false;
-                enemyTanks.push(b);
-            }else if(builder&&enemyMoney>=400){
-                startEnemyFactoryConstruction(builder,findNearestValidEnemyBuildPoint(chooseEnemyBuildPoint(),'factory'),builder.mesh.rotation.y);
-            }
-        }
-
-        // بعد بناء مصنع الجيش، يبني العدو معسكر جنود مستقلًا بنفس قواعد اللاعب.
-        const enemyBarracks=constructedBarracks.find(b=>b&&b.owner==='enemy'&&b.done&&!b.isDestroyed);
-        if(factory&&!enemyBarracks&&!enemyBarracksConstruction){
-            const enemyBuilder=liveEnemy.find(t=>t.isBuilder&&!t.isBuilding);
-            if(enemyBuilder&&enemyMoney>=150){
-                const a=Math.PI/4;
-                const base=new THREE.Vector3(-CORNER_OFFSET,0,-CORNER_OFFSET);
-                let point=base.clone().add(new THREE.Vector3(Math.cos(a)*34,0,Math.sin(a)*34));
-                point.y=getTerrainHeight(point.x,point.z);
-                point=findNearestValidEnemyBuildPoint(point,'barracks');
-                startEnemyBarracksConstruction(enemyBuilder,point,a);
-            }
-        }
-
-        // بعد المصنع والمعسكر: ينتج العدو المشاة فقط عندما يحتاجهم للنفط،
-        // وبعد تأمين النفط يترك المعسكر هادئاً ويحوّل المال للآليات المطلوبة.
-        const activeEnemyBarracks=constructedBarracks.find(b=>b&&b.owner==='enemy'&&b.done&&!b.isDestroyed);
-        const activeOilCount=oilRigs.filter(r=>r&&!r.isDestroyed).length;
-        const neutralOrPlayerOilCount=oilRigs.filter(r=>r&&!r.isDestroyed&&r.owner!=='enemy').length;
-        const enemyOilCount=oilRigs.filter(r=>r&&!r.isDestroyed&&r.owner==='enemy').length;
-        const enemyInfantryCount=enemyTanks.filter(u=>u&&!u.isDestroyed&&u.isInfantry).length;
-        // لا ننتظر امتلاك النفط لإنتاج المشاة: المشاة هم من سيذهبون لاحتلال النفط.
-        // إذا كان هناك نفط غير تابع للعدو، يخصص العدو مشاة تلقائياً للاستيلاء عليه.
-        const needOilInfantry=neutralOrPlayerOilCount>0 && enemyInfantryCount<Math.max(4,neutralOrPlayerOilCount*2);
-        if(activeEnemyBarracks&&!activeEnemyBarracks.productionJob&&enemyMoney>=250&&needOilInfantry){
-            enemyMoney-=250;
-            activeEnemyBarracks.productionJob={
-                barracks:activeEnemyBarracks,type:'infantry',cost:250,elapsed:0,
-                duration:REAL_TRAIN_INFANTRY_SEC*REAL_TICKS_PER_SECOND
-            };
-        }
-
-        // إنتاج الآليات لا يتوقف فقط لأن العدو لم يسيطر على النفط بعد؛
-        // المصنع يجب أن يبقى نشطاً ويكوّن قوة تستطيع التقدم والدفاع والهجوم.
-        if(factory&&!enemyFactoryProduction){
-            const costs={rocket:800,normal:500,ambulance:600,scout:500};
-            const affordable=Object.keys(costs).filter(k=>enemyMoney>=costs[k]);
-            if(!affordable.length) return;
-            // العدو حر في اختيار كامل ترسانة المصنع، مع أوزان بسيطة تتغير حسب المعركة.
-            const weights={rocket:2.8,normal:3.0,ambulance:1.15,scout:1.8};
-            if(needOilInfantry){ weights.rocket*=.65; weights.normal*=.85; weights.scout*=1.15; }
-            if(enemyStrategy==='attack'){ weights.rocket+=2.8; weights.normal+=2.4; }
-            if(info.playerStrength>info.enemyStrength*1.25){ weights.normal+=2.0; weights.ambulance+=1.6; weights.scout+=1.0; }
-            if(info.playerNearBase){ weights.rocket+=2.5; weights.normal+=2.0; }
-            let total=affordable.reduce((sum,k)=>sum+weights[k],0), roll=Math.random()*total, type=affordable[0];
-            for(const k of affordable){ roll-=weights[k]; if(roll<=0){type=k;break;} }
-            if(enemyMoney>=costs[type]){
-                enemyMoney-=costs[type];
-                enemyFactoryProduction={factory,type,cost:costs[type],elapsed:0,duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND};
-            }
-        }
-
-        issueEnemyStrategicOrders(info);
-        if(enemyAIThink%180===0){
-            const labels={defense:'🛡️ Enemy is defending',attack:'⚔️ Enemy attack started',economy:'⛽ Enemy is focusing on oil and economy'};
-            showFloatingMsg(labels[enemyStrategy]||'🤖 Enemy strategy changed');
-        }
-    }
-
-
 
     function findFactoryAtRay() {
         if(!constructedFactories.length) return null;
@@ -10538,7 +10054,7 @@ function createArmyFactory(x,z,ghost=false){
                             tankData.isBuilding = true;
                             myFactoryBuild.started = true;
                             myFactoryBuild.elapsed = 0;
-                            showFloatingMsg(tankData.team==='enemy' ? '🤖 Enemy construction started' : '🏭 Construction dozer started building the factory — 10 seconds');
+                            showFloatingMsg(tankData.team==='enemy' ? 'Enemy construction started' : '🏭 Construction dozer started building the factory — 10 seconds');
                         } else {
                             if (tankData.target === playerTargetPos) targetMarkerMesh.visible = false;
                             tankData.target = null;
@@ -10874,7 +10390,6 @@ function createArmyFactory(x,z,ghost=false){
         updateSpatialListener();
         updateWindAudio();
         updateTankHpLabels();
-        updateEnemyAI();
         updateEnemyFactoryConstruction();
         updateEnemyBarracksConstruction();
         updateEnemyFactoryProduction();
@@ -11390,24 +10905,6 @@ function createArmyFactory(x,z,ghost=false){
   }
 }
 </style>
-<script id="battle-setup-scroll-helper">
-(function(){
-  function fixBattleScroll(){
-    const modal=document.getElementById('battle-setup-modal');
-    const card=modal && modal.querySelector('.battle-setup-card');
-    if(!modal || !card) return;
-    modal.style.touchAction='pan-y';
-    card.style.touchAction='pan-y';
-  }
-  document.addEventListener('DOMContentLoaded',fixBattleScroll);
-  document.addEventListener('click',function(e){
-    if(e.target.closest && (e.target.closest('#start-btn') || e.target.closest('#battle-setup-modal'))){
-      setTimeout(fixBattleScroll,50);
-    }
-  },true);
-})();
-</script>
-
 <style id="final-modern-blue-earth-menu">
 /* =========================================================
    FINAL MAIN MENU — MODERN BLUE / EARTH / WINGED BUTTONS
@@ -11520,7 +11017,6 @@ function createArmyFactory(x,z,ghost=false){
 }
 #settings-modal .menu-btn:active{transform:translateY(2px) scale(.99) !important;}
 #settings-modal #sound-settings-btn{background:linear-gradient(180deg,#0a96ff,#063d9e) !important;}
-#settings-modal #start-btn{background:linear-gradient(180deg,#0db9ff,#0751bd) !important;}
 #settings-modal #sound-settings-panel{
   position:relative !important;
   z-index:5 !important;
@@ -11588,111 +11084,6 @@ function createArmyFactory(x,z,ghost=false){
 #construction-bar .unit-button.active,#construction-bar button.active{border-color:var(--team-main)!important;box-shadow:0 0 8px color-mix(in srgb,var(--team-main) 45%,transparent)!important}
 @media(max-width:600px){#battle-setup-modal .battle-setup-card{width:94vw!important;max-height:84vh!important;padding:6px!important}#battle-setup-modal .battle-setup-grid{grid-template-columns:112px minmax(0,1fr)!important;gap:4px!important}#battle-setup-modal .battle-map-preview{height:104px!important}#battle-setup-modal .battle-field{padding:4px!important}#battle-setup-modal .unified-color-option{height:18px!important;min-height:18px!important}}
 </style>
-
-
-<script id="battle-setup-runtime-final">
-(function(){
-  function hexToInt(h){return parseInt(String(h).replace('#',''),16)}
-  function darkHex(h,f=.5){
-    const n=hexToInt(h),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
-    return '#'+[r,g,b].map(v=>Math.max(0,Math.round(v*(1-f))).toString(16).padStart(2,'0')).join('');
-  }
-  function setTeamUI(team,color){
-    const root=document.documentElement;
-    if(team==='player'){
-      root.style.setProperty('--player-color',color);
-      root.style.setProperty('--team-color',color);
-      const bar=document.getElementById('construction-bar');
-      if(bar){bar.style.setProperty('--team-main',color);bar.style.setProperty('--team-dark',darkHex(color,.55));}
-    }
-  }
-  window.applySelectedTeamColor=function(team,color){
-    if(!color)return;
-    if(team==='player') playerFlagType=color; else enemyFlagType=color;
-    setTeamUI(team,color);
-    if(typeof scene!=='undefined'&&scene&&typeof THREE!=='undefined'){
-      scene.traverse(o=>{
-        if(!o||!o.isMesh||!o.material)return;
-        let t=o.userData&&o.userData.team;
-        let p=o.parent;
-        while(!t&&p){t=p.userData&&p.userData.team;p=p.parent}
-        if(t!==team)return;
-        if(o.userData&&o.userData.teamFlag)return;
-        const mats=Array.isArray(o.material)?o.material:[o.material];
-        mats.forEach(m=>{if(!m||!m.color)return; if(o.userData&&o.userData.keepTeamColor===false)return; m.color.lerp(new THREE.Color(color),.65); m.needsUpdate=true;});
-      });
-    }
-    if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();
-    if(typeof drawRealBattleMap==='function')drawRealBattleMap();
-  };
-  window.selectUnifiedBattleColor=function(color,name){
-    if(!/^#[0-9a-fA-F]{6}$/.test(color))return;
-    name=name||color.toUpperCase();
-    if(battleColorTarget==='enemy'){
-      battleConfig.enemyColor=color;battleConfig.enemyColorName=name;enemyFlagType=color;
-      applySelectedTeamColor('enemy',color);
-    }else{
-      battleConfig.playerColor=color;battleConfig.playerColorName=name;playerFlagType=color;
-      applySelectedTeamColor('player',color);
-    }
-    document.querySelectorAll('.unified-color-option').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===color.toLowerCase()));
-    const n=document.getElementById('selected-color-name'),d=document.getElementById('selected-color-dot');
-    if(n)n.textContent=name;if(d){d.style.background=color;d.style.boxShadow='0 0 8px '+color;}
-    const target=document.getElementById('battle-color-target-value');if(target)target.textContent=battleColorTarget==='enemy'?'ENEMY':'PLAYER';
-  };
-  window.selectBattleColorTarget=function(target){
-    battleColorTarget=target==='enemy'?'enemy':'player';
-    document.querySelectorAll('.color-target-btn').forEach(b=>b.classList.toggle('active',b.dataset.target===battleColorTarget));
-    const color=battleColorTarget==='enemy'?battleConfig.enemyColor:battleConfig.playerColor;
-    const name=battleColorTarget==='enemy'?battleConfig.enemyColorName:battleConfig.playerColorName;
-    document.querySelectorAll('.unified-color-option').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===String(color).toLowerCase()));
-    const n=document.getElementById('selected-color-name'),d=document.getElementById('selected-color-dot');
-    if(n)n.textContent=name;if(d)d.style.background=color;
-    const targetBox=document.getElementById('battle-color-target-value');if(targetBox)targetBox.textContent=battleColorTarget==='enemy'?'ENEMY':'PLAYER';
-  };
-  window.openBattleSetup=function(){
-    const modal=document.getElementById('battle-setup-modal');if(!modal)return;
-    modal.classList.add('show');modal.setAttribute('aria-hidden','false');
-    if(typeof selectBattleMoney==='function')selectBattleMoney(battleConfig.money,document.querySelector('.money-option[data-money="'+battleConfig.money+'"]'));
-    if(typeof selectBattleBot==='function')selectBattleBot(battleConfig.bot,document.querySelector('.bot-strength[data-bot="'+battleConfig.bot+'"]'));
-    selectBattleColorTarget('player');
-    requestAnimationFrame(()=>typeof drawRealBattleMap==='function'&&drawRealBattleMap());
-  };
-  window.beginConfiguredGame=function(){
-    playerMoney=battleConfig.money;totalMoneySpent=0;
-    battleAudioActive=true;
-    playerFlagType=battleConfig.playerColor;enemyFlagType=battleConfig.enemyColor;
-    if(typeof applyBattleBotConfig==='function')applyBattleBotConfig();
-    setTeamUI('player',battleConfig.playerColor);
-    if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();
-    if(typeof updateEconomyUI==='function')updateEconomyUI();
-    closeBattleSetup();
-    menuBgmAudio.pause();menuBgmAudio.currentTime=0;
-    unlockGameAudio();playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});
-    cleanupIntroBackground();
-    document.getElementById('settings-modal').style.display='none';
-    document.getElementById('start-menu').style.display='none';
-    document.getElementById('ui-overlay').style.display='block';
-    playSound('buy');
-    let playerCampX=CORNER_OFFSET,playerCampZ=CORNER_OFFSET,terrainH=getTerrainHeight(playerCampX,playerCampZ);
-    targetLookAt.set(playerCampX,terrainH,playerCampZ);targetCameraRadius=110;cameraPhi=Math.PI/3.8;cameraRadius=targetCameraRadius;updateCameraPosition();
-    showFloatingMsg('⚔ Battle started!');
-  };
-  /* Factory accent follows selected enemy color instead of fixed red. */
-  window.enemyTintFactory=function(factory){
-    if(!factory||!factory.mesh)return;
-    const c=new THREE.Color(battleConfig.enemyColor||'#f43f5e');
-    // لا نلون جسم المصنع باللون الأحمر: اللون المعادي يظهر فقط في العلم والعلامات الصغيرة.
-    factory.mesh.traverse(o=>{
-      if(!o.isMesh||!o.material)return;
-      const mats=Array.isArray(o.material)?o.material:[o.material];
-      mats.forEach(m=>{ if(m&&m.userData&&m.userData.teamAccent&&m.color){m.color.copy(c);m.needsUpdate=true;} });
-    });
-    if(typeof updateFactoryFlagOwner==='function') updateFactoryFlagOwner(factory,'enemy');
-  };
-  document.addEventListener('DOMContentLoaded',()=>{setTeamUI('player',(typeof battleConfig!=='undefined'&&battleConfig.playerColor)||'#168cff');});
-})();
-</script>
 
 
 <style id="barracks-final-rules">
@@ -12683,7 +12074,6 @@ body.waiting-menu-active #intro-flag-fullscreen-canvas{display:none !important;}
   width:100%!important;
 }
 .settings-card-overlay .menu-btn,
-.settings-card-overlay #start-btn,
 .settings-card-overlay #sound-settings-btn{
   width:100%!important;
   min-width:0!important;
@@ -12702,7 +12092,6 @@ body.waiting-menu-active #intro-flag-fullscreen-canvas{display:none !important;}
   filter:brightness(1.2)!important;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.28),0 0 22px rgba(65,190,255,.7),0 5px 16px rgba(0,0,0,.55)!important;
 }
-.settings-card-overlay #start-btn::before,
 .settings-card-overlay #sound-settings-btn::before{color:#bcecff!important;}
 .settings-card-overlay .settings-group{
   width:100%!important;
@@ -12791,7 +12180,6 @@ body.waiting-menu-active #intro-flag-fullscreen-canvas{display:none !important;}
   width:100%!important;
 }
 .settings-card-overlay .menu-btn,
-.settings-card-overlay #start-btn,
 .settings-card-overlay #sound-settings-btn{
   position:relative!important;
   isolation:isolate!important;
@@ -13037,76 +12425,40 @@ window.updateCameraSensitivity=function(v){
   function applyTeamVisual(team,color){
     if(!HEX.test(color))return;
     if(team==='player'){
-      playerFlagType=color;
-      setBarColor(color);
+      playerFlagType=color; setBarColor(color);
       if(typeof playerBaseGroup!=='undefined'&&playerBaseGroup)recolorMaterials(playerBaseGroup,color,true);
       if(typeof playerTanks!=='undefined')playerTanks.forEach(u=>recolorUnit(u,color));
       if(typeof ambulances!=='undefined')ambulances.filter(u=>u.team==='player').forEach(u=>recolorUnit(u,color));
       if(typeof constructedFactories!=='undefined')constructedFactories.filter(f=>f.owner!=='enemy').forEach(f=>recolorMaterials(f.mesh,color,true));
     }else{
       enemyFlagType=color;
-      let eg=null;
-      if(typeof scene!=='undefined'&&scene)eg=scene.getObjectByName('__ENEMY_BASE_GROUP__');
+      let eg=null;if(typeof scene!=='undefined'&&scene)eg=scene.getObjectByName('__ENEMY_BASE_GROUP__');
       if(eg)recolorMaterials(eg,color,true);
       if(typeof enemyTanks!=='undefined')enemyTanks.forEach(u=>recolorUnit(u,color));
       if(typeof ambulances!=='undefined')ambulances.filter(u=>u.team==='enemy').forEach(u=>recolorUnit(u,color));
-      if(typeof enemyFactories!=='undefined')enemyFactories.forEach(f=>{updateFactoryFlagOwner(f,'enemy');if(typeof enemyTintFactory==='function')enemyTintFactory(f);else recolorMaterials(f.mesh,color,true);});
+      if(typeof enemyFactories!=='undefined')enemyFactories.forEach(f=>{if(typeof updateFactoryFlagOwner==='function')updateFactoryFlagOwner(f,'enemy');recolorMaterials(f.mesh,color,true);});
     }
     if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();
-    if(typeof drawRealBattleMap==='function')drawRealBattleMap();
   }
   window.applySelectedTeamColor=applyTeamVisual;
-  window.selectUnifiedBattleColor=function(color,name){
-    if(!HEX.test(color))return;
-    name=name||color.toUpperCase();
-    if(battleColorTarget==='enemy'){
-      battleConfig.enemyColor=color;battleConfig.enemyColorName=name;
-      applyTeamVisual('enemy',color);
-    }else{
-      battleConfig.playerColor=color;battleConfig.playerColorName=name;
-      applyTeamVisual('player',color);
-    }
-    document.querySelectorAll('.unified-color-option').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===color.toLowerCase()));
-    const n=document.getElementById('selected-color-name'),d=document.getElementById('selected-color-dot');
-    if(n)n.textContent=name;if(d){d.style.background=color;d.style.boxShadow='0 0 6px '+color;}
-    const t=document.getElementById('battle-color-target-value');if(t)t.textContent=battleColorTarget==='enemy'?'ENEMY':'PLAYER';
-  };
-  window.selectBattleColorTarget=function(target){
-    battleColorTarget=target==='enemy'?'enemy':'player';
-    document.querySelectorAll('.color-target-btn').forEach(b=>b.classList.toggle('active',b.dataset.target===battleColorTarget));
-    const color=battleColorTarget==='enemy'?battleConfig.enemyColor:battleConfig.playerColor;
-    const name=battleColorTarget==='enemy'?battleConfig.enemyColorName:battleConfig.playerColorName;
-    document.querySelectorAll('.unified-color-option').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===String(color).toLowerCase()));
-    const n=document.getElementById('selected-color-name'),d=document.getElementById('selected-color-dot');
-    if(n)n.textContent=name;if(d)d.style.background=color;
-    const t=document.getElementById('battle-color-target-value');if(t)t.textContent=battleColorTarget==='enemy'?'ENEMY':'PLAYER';
-  };
-  window.openBattleSetup=function(){
-    const modal=document.getElementById('battle-setup-modal');if(!modal)return;
-    modal.classList.add('show');modal.setAttribute('aria-hidden','false');
-    if(typeof selectBattleMoney==='function')selectBattleMoney(battleConfig.money,document.querySelector('.money-option[data-money="'+battleConfig.money+'"]'));
-    if(typeof selectBattleBot==='function')selectBattleBot(battleConfig.bot,document.querySelector('.bot-strength[data-bot="'+battleConfig.bot+'"]'));
-    selectBattleColorTarget('player');
-    requestAnimationFrame(()=>{if(typeof drawRealBattleMap==='function')drawRealBattleMap();});
-  };
   window.beginConfiguredGame=function(){
-    playerMoney=battleConfig.money;totalMoneySpent=0;
-    battleAudioActive=true;
+    if(!window.onlineMatch){
+      try{showFloatingMsg('⚠ يجب دخول غرفة Multiplayer والبدء من السيرفر أولاً');}catch(e){}
+      return false;
+    }
+    playerMoney=battleConfig.money;totalMoneySpent=0;battleAudioActive=true;
     playerFlagType=battleConfig.playerColor;enemyFlagType=battleConfig.enemyColor;
-    if(typeof applyBattleBotConfig==='function')applyBattleBotConfig();
-    /* Apply both factions after the bases already exist. */
     applyTeamVisual('player',battleConfig.playerColor);
     applyTeamVisual('enemy',battleConfig.enemyColor);
     if(typeof updateEconomyUI==='function')updateEconomyUI();
-    closeBattleSetup();
     try{menuBgmAudio.pause();menuBgmAudio.currentTime=0;}catch(e){}
     try{unlockGameAudio();playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});}catch(e){}
     try{cleanupIntroBackground();}catch(e){}
-    const s=document.getElementById('settings-modal');if(s)s.style.display='none';
-    const m=document.getElementById('start-menu');if(m)m.style.display='none';
-    const u=document.getElementById('ui-overlay');if(u)u.style.display='block';
+    const settings=document.getElementById('settings-modal');if(settings)settings.style.display='none';
+    const start=document.getElementById('start-menu');if(start)start.style.display='none';
+    const ui=document.getElementById('ui-overlay');if(ui)ui.style.display='block';
     try{playSound('buy');}catch(e){}
-    let px=CORNER_OFFSET,pz=CORNER_OFFSET,th=getTerrainHeight(px,pz);
+    const px=CORNER_OFFSET,pz=CORNER_OFFSET,th=getTerrainHeight(px,pz);
     targetLookAt.set(px,th,pz);targetCameraRadius=110;cameraPhi=Math.PI/3.8;cameraRadius=targetCameraRadius;updateCameraPosition();
     showFloatingMsg('⚔ Battle started!');
   };
@@ -13209,7 +12561,7 @@ window.updateCameraSensitivity=function(v){
   function joinRoom(id){pendingJoin=id;creating=false;hide('online-room-list-modal');show('online-room-modal');$('online-create-room-btn').style.display='none';$('online-create-ready-actions').style.display='none';status('online-create-status','<strong>السيرفر:</strong> اختر لونك للانضمام...');$('online-room-name').value='';connect();setTimeout(()=>send('join_room',{roomId:id,name:'لاعب',color:selectedColor}),150);}
   function startOnlineMatch(m){
     const cfg=m.config||{}; room=m.room||room;
-    if(typeof battleConfig!=='undefined'){battleConfig.money=Number(cfg.money)||3000;battleConfig.playerColor=cfg.playerColor||selectedColor;battleConfig.playerColorName=cfg.playerColorName||'ONLINE';battleConfig.bot='medium';battleConfig.enemyColor=cfg.enemyColor||'#ef4444';battleConfig.enemyColorName=cfg.enemyColorName||'OPPONENT';}
+    if(typeof battleConfig!=='undefined'){battleConfig.money=Number(cfg.money)||3000;battleConfig.playerColor=cfg.playerColor||selectedColor;battleConfig.playerColorName=cfg.playerColorName||'ONLINE';battleConfig.enemyColor=cfg.enemyColor||'#ef4444';battleConfig.enemyColorName=cfg.enemyColorName||'OPPONENT';}
     window.onlineMatch={roomId:m.roomId,clientId,playerId:m.playerId,opponentId:m.opponentId,seed:m.seed,serverTime:m.serverTime};
     hide('online-room-modal');hide('online-room-list-modal');
     if(typeof beginConfiguredGame==='function')beginConfiguredGame();
