@@ -13901,9 +13901,17 @@ function renderFriends(){
 }
 function renderRooms(){
  const box=$('online-rooms-list'),badge=$('online-rooms-badge');if(!box)return;
- const arr=availableRooms.filter(r=>r.count===1&&!r.started);
+ const arr=availableRooms.filter(r=>!r.started && Number(r.count||r.players?.length||0)===1);
  if(badge)badge.textContent=arr.length;
- box.innerHTML=arr.length?arr.map(r=>`<div class="online-list-row"><i class="dot"></i><div class="info"><strong>${esc(r.name||('غرفة '+r.code))}</strong><small>${esc(r.code)} • ${esc(r.hostName||'Commander')} — لاعب واحد — ${esc(r.hostColorName||'COLOR')} — المال $${r.money||3000}</small></div><button onclick="joinOnlineRoom('${r.code}')">دخول</button></div>`).join(''):'<div class="online-status-text">لا توجد غرف متاحة حاليًا.</div>';
+ box.innerHTML=arr.length?arr.map(r=>{
+   const host=(r.players||[])[0]||{};
+   const hs=host.settings||{};
+   const hostName=r.hostName||host.name||'Commander';
+   const hostColor=hs.color||host.color||'#168cff';
+   const hostColorName=hs.colorName||host.colorName||'COLOR';
+   const code=String(r.room||r.code||'').replaceAll("'", "\\'");
+   return `<div class="online-list-row"><i class="dot" style="background:${hostColor};box-shadow:0 0 8px ${hostColor}"></i><div class="info"><strong>${esc(r.roomName||r.name||('غرفة '+code))}</strong><small>${esc(code)} • ${esc(hostName)} — 1 / 2 • ${esc(hostColorName)} • الغرفة مفتوحة</small></div><button onclick="joinOnlineRoom('${code}')">دخول الغرفة</button></div>`;
+ }).join(''):'<div class="online-status-text">لا توجد غرف مفتوحة. عندما ينشئ لاعب غرفة ستظهر هنا للاعب الآخر.</div>';
 }
 function handle(m){
  if(m.type==='hello'){myId=m.id;return}
@@ -13914,9 +13922,21 @@ function handle(m){
   for(const id of presenceSeen.keys()) if(!liveIds.has(String(id)) && now-(presenceSeen.get(id)||0)>PRESENCE_TIMEOUT) presenceSeen.delete(id);
   renderFriends();return
 }
- if(m.type==='rooms_list'){availableRooms=m.rooms||[];renderRooms();return}
- if(m.type==='room_created'||m.type==='room_joined'||m.type==='room_update'){
-   currentRoom=m.room;currentRole=m.role||currentRole;showRoom(m);return
+ if(m.type==='rooms_list'||m.type==='rooms'){
+   availableRooms=Array.isArray(m.rooms)?m.rooms:[];
+   renderRooms();
+   return
+ }
+ if(m.type==='room_created'||m.type==='room_joined'||m.type==='room_update'||m.type==='hello_room'){
+   currentRoom=m.room||currentRoom;
+   currentRole=m.role||currentRole;
+   showRoom({
+     ...m,
+     room:m.room||currentRoom,
+     roomName:m.roomName||m.name||'غرفة المعركة',
+     players:Array.isArray(m.players)?m.players:(window.__onlineRoomPlayers||[])
+   });
+   return
  }
  if(m.type==='room_error'){setStatus(m.message||'حدث خطأ');return}
  if(m.type==='invite'){
