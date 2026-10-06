@@ -5456,7 +5456,7 @@
     }
 
     function updateInfantryUnits(){
-        const list=[...playerTanks,...enemyTanks].filter(u=>u&&u.isInfantry);
+        const list=[...playerTanks,...enemyTanks].filter(u=>u&&u.isInfantry&&!u.__serverRemote);
         for(const u of list){
             if(u.oilCaptureAnim){ updateOilCaptureAnimation(u); continue; }
             // الجندي الميت يجب أن يستمر بتحديث حركة السقوط والاختفاء
@@ -6016,15 +6016,15 @@
         let eBuilderZ = -CORNER_OFFSET + 35;
 
         let playerBuilder = createConstructionTruck(pBuilderX, pBuilderZ, 'player');
-        let enemyBuilder = createConstructionTruck(eBuilderX, eBuilderZ, 'enemy');
         playerBuilder.mesh.rotation.y = -Math.PI / 4;
-        enemyBuilder.mesh.rotation.y = Math.PI / 4;
+        playerBuilder.__localPlayerUnit = true;
         playerTanks.push(playerBuilder);
-        enemyTanks.push(enemyBuilder);
 
-        // لا تبدأ اللعبة بثلاثة جنود للعدو. يبدأ العدو بتركس البناء فقط،
-        // ثم يتم إنتاج الوحدات لاحقاً من المنشآت حسب نظام اللعبة.
-            
+        // لا يتم إنشاء أي وحدة للخصم محلياً.
+        // وحدات الخصم لا تظهر إلا عندما تصل حالتها من السيرفر عبر غرفة المباراة.
+        enemyTanks.length = 0;
+        if (Array.isArray(enemyFactories)) enemyFactories.length = 0;
+
         enemyPoleFlagMesh = createFlagPole(new THREE.Group(), -CORNER_OFFSET, -CORNER_OFFSET, enemyFlagType, 'enemy');
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
@@ -9955,9 +9955,10 @@ function createArmyFactory(x,z,ghost=false){
 
         updateInfantryUnits();
 
-        let allTanksCombined = [...new Set([...playerTanks, ...reconVehicles, ...enemyTanks])];
+        let allTanksCombined = [...new Set([...playerTanks, ...reconVehicles, ...enemyTanks])].filter(u=>!u.__serverRemote);
         if ((performanceFrame % 3) === 0) rebuildCollisionCache([...allTanksCombined, ...ambulances]);
         allTanksCombined.forEach(tankData => {
+            if (tankData.__serverRemote) return;
             if (tankData.factoryExitLock) return;
             if (tankData.isInfantry) {
                 // تتم إدارة المشاة بالكامل عبر updateInfantryUnits للحركة والأنيميشن والهجوم.
@@ -10505,7 +10506,7 @@ function createArmyFactory(x,z,ghost=false){
             }
         });
 
-        [...playerTanks, ...enemyTanks].forEach(t => updateTankAudio(t, false));
+        [...playerTanks, ...enemyTanks].filter(t=>!t.__serverRemote).forEach(t => updateTankAudio(t, false));
         ambulances.forEach(a => updateAmbulanceAudio(a, false));
         if (redAlarmAudio) { redAlarmAudio.pause(); redAlarmAudio.currentTime = 0; }
         document.getElementById('ui-overlay').style.display = 'none';
@@ -10674,7 +10675,7 @@ function createArmyFactory(x,z,ghost=false){
         const factoryCard=document.getElementById('factory-build-card');
         const title=bar?bar.querySelector('.build-title'):null;
         if(!bar||!factoryCard)return;
-        const hasUnit=!!(selectedTank&&!selectedTank.isDestroyed);
+        const hasUnit=!!(selectedTank&&!selectedTank.isDestroyed&&!selectedTank.__serverRemote);
         const builderSelected=hasUnit&&getUnitKind(selectedTank)==='builder';
         const ambulanceSelected=hasUnit&&getUnitKind(selectedTank)==='ambulance';
         const combatSelected=hasUnit&&!builderSelected&&!ambulanceSelected;
@@ -12446,7 +12447,32 @@ window.updateCameraSensitivity=function(v){
       try{showFloatingMsg('⚠ يجب دخول غرفة Multiplayer والبدء من السيرفر أولاً');}catch(e){}
       return false;
     }
-    playerMoney=battleConfig.money;totalMoneySpent=0;battleAudioActive=true;
+
+    // Online only: لا يوجد خصم محلي. كل ما يخص الخصم يأتي من السيرفر.
+    if(typeof enemyTanks!=='undefined') enemyTanks.forEach(u=>{if(u&&u.__serverRemote&&u.mesh)scene.remove(u.mesh);});
+    if(typeof enemyTanks!=='undefined') enemyTanks.length=0;
+    if(typeof enemyFactories!=='undefined') enemyFactories.length=0;
+
+    const mySlot=Number(window.onlineMatch.playerId)===1?1:2;
+    const myX=mySlot===1?CORNER_OFFSET:-CORNER_OFFSET;
+    const myZ=mySlot===1?CORNER_OFFSET:-CORNER_OFFSET;
+    const enemyX=-myX, enemyZ=-myZ;
+    if(typeof playerBaseGroup!=='undefined'&&playerBaseGroup){
+      playerBaseGroup.position.set(myX,getTerrainHeight(myX,myZ),myZ);
+      playerBaseGroup.rotation.y=mySlot===1?-(3*Math.PI)/4:Math.PI/4;
+    }
+    if(typeof enemyBaseGroup!=='undefined'&&enemyBaseGroup){
+      enemyBaseGroup.position.set(enemyX,getTerrainHeight(enemyX,enemyZ),enemyZ);
+      enemyBaseGroup.rotation.y=mySlot===1?Math.PI/4:-(3*Math.PI)/4;
+    }
+    if(typeof playerTanks!=='undefined'){
+      playerTanks.filter(u=>u&&u.__localPlayerUnit).forEach(u=>{
+        u.mesh.position.set(myX+(mySlot===1?-35:35),getTerrainHeight(myX+(mySlot===1?-35:35),myZ+(mySlot===1?-35:35)),myZ+(mySlot===1?-35:35));
+        u.mesh.rotation.y=mySlot===1?-Math.PI/4:Math.PI/4;
+      });
+    }
+
+    playerMoney=Number(battleConfig.money)||3000;totalMoneySpent=0;battleAudioActive=true;
     playerFlagType=battleConfig.playerColor;enemyFlagType=battleConfig.enemyColor;
     applyTeamVisual('player',battleConfig.playerColor);
     applyTeamVisual('enemy',battleConfig.enemyColor);
@@ -12532,9 +12558,9 @@ window.updateCameraSensitivity=function(v){
   function handle(m){
     if(m.type==='hello'){clientId=m.clientId;return;}
     if(m.type==='rooms'){renderRooms(m.rooms||[]);return;}
-    if(m.type==='room_created'){room=m.room;creating=true;updateRoomUI();return;}
-    if(m.type==='room_joined'){room=m.room;creating=false;hide('online-room-list-modal');show('online-room-modal');updateRoomUI();return;}
-    if(m.type==='room_update'){room=m.room;updateRoomUI();return;}
+    if(m.type==='room_created'){room=m.room||room;creating=true;updateRoomUI();return;}
+    if(m.type==='room_joined'){room=m.room||room;creating=false;hide('online-room-list-modal');show('online-room-modal');updateRoomUI();return;}
+    if(m.type==='room_update'||m.type==='room_state'){room=m.room||m;updateRoomUI();return;}
     if(m.type==='room_error'){alert(m.message||'تعذر تنفيذ العملية');return;}
     if(m.type==='game_start'){startOnlineMatch(m);return;}
     if(m.type==='peer_message'){window.dispatchEvent(new CustomEvent('onlinePeerMessage',{detail:m.payload}));return;}
@@ -12561,8 +12587,15 @@ window.updateCameraSensitivity=function(v){
   function joinRoom(id){pendingJoin=id;creating=false;hide('online-room-list-modal');show('online-room-modal');$('online-create-room-btn').style.display='none';$('online-create-ready-actions').style.display='none';status('online-create-status','<strong>السيرفر:</strong> اختر لونك للانضمام...');$('online-room-name').value='';connect();setTimeout(()=>send('join_room',{roomId:id,name:'لاعب',color:selectedColor}),150);}
   function startOnlineMatch(m){
     const cfg=m.config||{}; room=m.room||room;
-    if(typeof battleConfig!=='undefined'){battleConfig.money=Number(cfg.money)||3000;battleConfig.playerColor=cfg.playerColor||selectedColor;battleConfig.playerColorName=cfg.playerColorName||'ONLINE';battleConfig.enemyColor=cfg.enemyColor||'#ef4444';battleConfig.enemyColorName=cfg.enemyColorName||'OPPONENT';}
-    window.onlineMatch={roomId:m.roomId,clientId,playerId:m.playerId,opponentId:m.opponentId,seed:m.seed,serverTime:m.serverTime};
+    const my=cfg.player||{}; const opp=cfg.opponent||{};
+    if(typeof battleConfig!=='undefined'){
+      battleConfig.money=Number(cfg.money)||3000;
+      battleConfig.playerColor=my.color||cfg.playerColor||selectedColor;
+      battleConfig.playerColorName=my.colorName||'ONLINE';
+      battleConfig.enemyColor=opp.color||cfg.enemyColor||'#ef4444';
+      battleConfig.enemyColorName=opp.colorName||'OPPONENT';
+    }
+    window.onlineMatch={roomId:m.roomId,clientId,playerId:m.playerId,opponentId:m.opponentId,seed:m.seed,serverTime:m.serverTime,hiddenPlayerId:m.hiddenPlayerId||clientId};
     hide('online-room-modal');hide('online-room-list-modal');
     if(typeof beginConfiguredGame==='function')beginConfiguredGame();
     setTimeout(()=>{if(typeof showFloatingMsg==='function')showFloatingMsg('⚔ ONLINE MATCH — '+(m.playerId===0?'PLAYER 1':'PLAYER 2'));},500);
@@ -12743,9 +12776,11 @@ window.updateCameraSensitivity=function(v){
       created.team='enemy';
       created.manualControl=true;
       created.__serverRemote=true;
+      created.__remoteOwner=playerId;
       created.hp=s.hp;
       created.maxHp=s.maxHp||created.maxHp||100;
       remote.set(s.id,created);
+      if(!enemyTanks.includes(created) && (created.team==='enemy')) enemyTanks.push(created);
       return created;
     }catch(e){ return null; }
   }
@@ -12785,13 +12820,18 @@ window.updateCameraSensitivity=function(v){
       const ids=new Set((p.state.units||[]).map(x=>x.id));
       (p.state.units||[]).forEach(s=>applyUnit(s,p.id));
 
-      // Hide/remove remote units that the server says no longer exist.
+      // الخصم الحقيقي هو اللاعب الآخر فقط؛ لا يوجد عدو مولد محلياً.
       for(const [id,u] of remote){
         if(!ids.has(id) && u && u.mesh && u.__remoteOwner===p.id){
           u.isDestroyed=true;
           u.mesh.visible=false;
         }
       }
+      if(p.state.base && typeof enemyBaseGroup!=='undefined' && enemyBaseGroup){
+        enemyBaseGroup.hp=safeNum(p.state.base.hp,enemyBaseGroup.hp||1600);
+        enemyBaseGroup.maxHp=safeNum(p.state.base.maxHp,enemyBaseGroup.maxHp||1600);
+      }
+      window.remoteOpponentMoney=Math.max(0,Math.floor(safeNum(p.state.money,0)));
     }
 
     // Server economy is authoritative for our own money.
