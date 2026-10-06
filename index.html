@@ -13745,14 +13745,14 @@ function safeUnitType(u){
   return u.type||'normal';
 }
 function localUnitsSnapshot(){
-  const all=[...(window.playerTanks||[]),...(window.reconVehicles||[]),...(window.ambulances||[])];
+  const all=[...(playerTanks||[]),...(reconVehicles||[]),...(ambulances||[])];
   const seen=new Set(),out=[];
   for(const u of all){
     if(!u||u.__remote||u.team!=='player'||seen.has(u))continue;
     seen.add(u);
     if(!u.mesh)continue;
     if(!u.__netId)u.__netId=(pvpPlayerId||'p')+'_'+Math.random().toString(36).slice(2,9);
-    out.push({id:u.__netId,type:safeUnitType(u),x:u.mesh.position.x,z:u.mesh.position.z,yaw:u.mesh.rotation.y,hp:u.hp,maxHp:u.maxHp||u.hp,target:u.target?{x:u.target.x,z:u.target.z}:null,destroyed:!!u.isDestroyed});
+    out.push({id:u.__netId,type:safeUnitType(u),x:u.mesh.position.x,z:u.mesh.position.z,yaw:u.mesh.rotation.y,hp:u.hp,maxHp:u.maxHp||u.hp,target:u.target?{x:u.target.x,z:u.target.z}:null,destroyed:!!u.isDestroyed,shotAt:Number(u.lastShot)||0,target:u.target?.mesh?{x:u.target.mesh.position.x,z:u.target.mesh.position.z}:u.target?{x:u.target.x,z:u.target.z}:null});
   }
   return out;
 }
@@ -13808,7 +13808,7 @@ function applyRemoteState(st){
     if(!d.destroyed&&!u.isDestroyed)u.mesh.visible=true;
   }
   for(const [id,u] of pvpRemoteUnits){if(!incoming.has(id)){removeRemoteUnit(u);pvpRemoteUnits.delete(id)}}
-  if(st.baseHp!=null&&window.enemyBaseGroup)window.enemyBaseGroup.hp=st.baseHp;
+  if(st.baseHp!=null&&enemyBaseGroup)enemyBaseGroup.hp=st.baseHp;
 }
 function smoothRemoteUnits(){
   for(const u of pvpRemoteUnits.values()){
@@ -13909,7 +13909,208 @@ function handle(m){
  }
  if(m.type==='battle_start'){startActualPvp(m);return}
  if(m.type==='peer_left'){setStatus('غادر اللاعب الآخر.');battleStarted=false;return}
- if(m.type==='state'&&window.applyRemoteState)window.applyRemoteState(m.state);
+ if(m.type==='state'){applyOnlineRemoteState(m.state);return}
+}
+
+/* ================================================================
+   REAL PVP WORLD SYNCHRONIZATION
+   The room WebSocket is the authoritative connection for the battle.
+   Every client sends its actual player-side units/buildings/oil/base state
+   and receives the opponent's state. No bots or fake units are created.
+   ================================================================ */
+const onlineRemoteUnits=new Map();
+const onlineRemoteBuildings=new Map();
+let onlineLastStateSend=0;
+let onlineBattleLoopStarted=false;
+
+function onlineUnitType(u){
+  if(!u)return 'normal';
+  if(u.isBuilder||u.isConstructionTruck||u.type==='builder')return 'builder';
+  if(u.isInfantry)return 'infantry';
+  if(u.isRecon||u.type==='scout')return 'scout';
+  if(u.type==='rocket')return 'rocket';
+  if(u.type==='ambulance'||ambulances.includes(u))return 'ambulance';
+  return u.type||'normal';
+}
+
+function onlineLocalUnits(){
+  const all=[...(playerTanks||[]),...(reconVehicles||[]),...(ambulances||[])];
+  const out=[],seen=new Set();
+  for(const u of all){
+    if(!u||u.__remote||u.team!=='player'||!u.mesh||seen.has(u))continue;
+    seen.add(u);
+    if(!u.__netId)u.__netId=(myId||'player')+'_u_'+Math.random().toString(36).slice(2,10);
+    const pos=u.mesh.position;
+    out.push({id:u.__netId,type:onlineUnitType(u),x:pos.x,z:pos.z,yaw:u.mesh.rotation.y||0,
+      hp:Number.isFinite(u.hp)?u.hp:(u.maxHp||100),maxHp:u.maxHp||u.hp||100,destroyed:!!u.isDestroyed});
+  }
+  return out;
+}
+
+function onlineLocalBuildings(){
+  const out=[];
+  for(const f of (constructedFactories||[])){
+    if(!f||f.__remote||f.owner!=='player'||!f.done||f.isDestroyed||!f.mesh)continue;
+    if(!f.__netId)f.__netId=(myId||'player')+'_f_'+Math.random().toString(36).slice(2,9);
+    out.push({id:f.__netId,type:'factory',x:f.mesh.position.x,z:f.mesh.position.z,yaw:f.mesh.rotation.y||0,hp:f.hp,maxHp:f.maxHp||1600,destroyed:!!f.isDestroyed});
+  }
+  for(const b of (constructedBarracks||[])){
+    if(!b||b.__remote||b.owner!=='player'||!b.done||b.isDestroyed||!b.mesh)continue;
+    if(!b.__netId)b.__netId=(myId||'player')+'_b_'+Math.random().toString(36).slice(2,9);
+    out.push({id:b.__netId,type:'barracks',x:b.mesh.position.x,z:b.mesh.position.z,yaw:b.mesh.rotation.y||0,hp:b.hp,maxHp:b.maxHp||900,destroyed:!!b.isDestroyed});
+  }
+  return out;
+}
+
+function onlineLocalOil(){
+  return (oilRigs||[]).map((r,i)=>({id:'oil_'+i,x:r.x,z:r.z,owner:r.owner||'none',hp:r.hp,maxHp:r.maxHp||700,destroyed:!!r.isDestroyed}));
+}
+
+function onlineSendState(force=false){
+  if(!battleStarted||!ws||ws.readyState!==1||!currentRoom)return;
+  const now=performance.now();
+  if(!force&&now-onlineLastStateSend<80)return;
+  onlineLastStateSend=now;
+  send({type:'state',state:{
+    units:onlineLocalUnits(),
+    buildings:onlineLocalBuildings(),
+    oil:onlineLocalOil(),
+    baseHp:playerBaseGroup?.hp??6500,
+    money:playerMoney??myMoney,
+    color:myColor,
+    colorName:myColorName,
+    sentAt:Date.now()
+  }});
+}
+
+function onlineCreateRemoteUnit(d){
+  let u=null;
+  try{
+    const enemyColor=battleConfig.enemyColor||'#ef3d4e';
+    if(d.type==='builder')u=createConstructionTruck(d.x,d.z,'enemy');
+    else if(d.type==='infantry')u=createInfantrySoldier(d.x,d.z,'enemy');
+    else if(d.type==='scout')u=createReconVehicle(d.x,d.z,'enemy');
+    else if(d.type==='ambulance')u=createModernAmbulance(d.x,d.z,'enemy');
+    else u=createTank(d.x,d.z,enemyColor,'enemy',d.type||'normal');
+  }catch(_){return null}
+  if(!u)return null;
+  u.__remote=true;u.__netId=d.id;u.manualControl=false;u.aiTarget=null;u.aiOrder=null;u.target=null;u.hasPlayerMoveOrder=false;
+  if(u.mesh){u.mesh.position.set(d.x,getTerrainHeight(d.x,d.z),d.z);u.mesh.rotation.y=d.yaw||0;}
+  try{applySilverArmyStyle(u);addUnitTeamMarkings(u,'enemy');if(typeof recolorUnit==='function')recolorUnit(u,battleConfig.enemyColor||'#ef3d4e');}catch(_){}
+  if(u.isRecon){if(!reconVehicles.includes(u))reconVehicles.push(u);}
+  else if(u.team==='enemy'&&!enemyTanks.includes(u))enemyTanks.push(u);
+  return u;
+}
+
+function onlineRemoveRemoteUnit(u){
+  try{if(u?.mesh?.parent)u.mesh.parent.remove(u.mesh);if(u?.hpLabel)u.hpLabel.remove();}catch(_){}
+  for(const a of [enemyTanks,reconVehicles,ambulances]){if(a){const i=a.indexOf(u);if(i>=0)a.splice(i,1);}}
+}
+
+function onlineCreateRemoteBuilding(d){
+  let b=null;
+  try{
+    if(d.type==='factory'){
+      b=createArmyFactory(d.x,d.z,false);
+      b.owner='enemy';b.mesh.userData.factoryOwner='enemy';
+      if(typeof recolorMaterials==='function')recolorMaterials(b.mesh,battleConfig.enemyColor||'#ef3d4e',true);
+    }else{
+      b=createMilitaryBarracks(d.x,d.z,false,'enemy');
+    }
+  }catch(_){return null}
+  if(!b)return null;
+  b.__remote=true;b.__netId=d.id;b.owner='enemy';b.isDestroyed=false;
+
+  if(d.type==='factory'){if(!constructedFactories.includes(b))constructedFactories.push(b);}
+  else if(!constructedBarracks.includes(b))constructedBarracks.push(b);
+  return b;
+}
+
+function onlineRemoveRemoteBuilding(b){
+  try{if(b?.mesh?.parent)b.mesh.parent.remove(b.mesh);if(b?.mesh?.userData?.hpLabel)b.mesh.userData.hpLabel.remove();if(b?.hpLabel)b.hpLabel.remove();}catch(_){}
+  for(const a of [constructedFactories,constructedBarracks]){if(a){const i=a.indexOf(b);if(i>=0)a.splice(i,1);}}
+}
+
+function onlineApplyOilState(oil){
+  const rigs=oilRigs||[];
+  for(const d of (oil||[])){
+    const r=rigs.find(x=>Math.abs(x.x-d.x)<.5&&Math.abs(x.z-d.z)<.5);
+    if(!r)continue;
+    r.hp=d.hp;r.maxHp=d.maxHp||r.maxHp;
+    const remoteOwner=d.owner==='player'?'enemy':(d.owner==='enemy'?'player':'none');
+    r.owner=remoteOwner;r.isDestroyed=!!d.destroyed;
+    if(r.flagData){
+      r.flagData.owner=r.owner;
+      r.flagData.type=r.owner==='player'?myColor:(r.owner==='enemy'?(battleConfig.enemyColor||'#ef3d4e'):'white');
+      if(r.flagData.mesh){
+        r.flagData.mesh.visible=!r.isDestroyed;
+        const typ=r.owner==='player'?myColor:(r.owner==='enemy'?(battleConfig.enemyColor||'#ef3d4e'):'white');
+        try{r.flagData.mesh.material.map=createFlagTexture(typ);r.flagData.mesh.material.needsUpdate=true;}catch(_){}
+      }
+    }
+    if(r.group)r.group.visible=!r.isDestroyed;
+    if(r.wreckBase)r.wreckBase.visible=!!r.isDestroyed;
+  }
+}
+
+function applyOnlineRemoteState(st){
+  if(!battleStarted||!st)return;
+  const incomingUnits=new Set();
+  for(const d of (st.units||[])){
+    if(!d?.id)continue;incomingUnits.add(d.id);
+    let u=onlineRemoteUnits.get(d.id);
+    if(!u){u=onlineCreateRemoteUnit(d);if(u)onlineRemoteUnits.set(d.id,u);}
+    if(!u?.mesh)continue;
+    u.__remoteTarget={x:d.x,z:d.z,yaw:d.yaw||0};u.hp=d.hp;u.maxHp=d.maxHp||u.maxHp;
+    if((d.shotAt||0)>((u.__lastRemoteShot)||0)){
+      u.__lastRemoteShot=d.shotAt||0;
+      try{
+        if(u.isInfantry){
+          const pos=u.mesh.position.clone();pos.y+=1.8;createInfantryMuzzleFX(pos,u.mesh.rotation.y);createInfantryGunSmoke(pos,u.mesh.rotation.y);
+        }else if(u.type==='rocket'){
+          createModernMuzzleFlash(u);createTankFireSmokeBurst(u);
+        }else{
+          createModernMuzzleFlash(u);createTankFireSmokeBurst(u);
+        }
+      }catch(_){}
+    }
+    if(d.destroyed&&!u.isDestroyed){u.isDestroyed=true;u.mesh.visible=false;}
+    else if(!d.destroyed&&!u.isDestroyed)u.mesh.visible=true;
+  }
+  for(const [id,u] of onlineRemoteUnits){if(!incomingUnits.has(id)){onlineRemoveRemoteUnit(u);onlineRemoteUnits.delete(id);}}
+
+  const incomingBuildings=new Set();
+  for(const d of (st.buildings||[])){
+    if(!d?.id)continue;incomingBuildings.add(d.id);
+    let b=onlineRemoteBuildings.get(d.id);
+    if(!b){b=onlineCreateRemoteBuilding(d);if(b)onlineRemoteBuildings.set(d.id,b);}
+    if(!b)continue;b.hp=d.hp;b.maxHp=d.maxHp||b.maxHp;b.isDestroyed=!!d.destroyed;
+    if(b.mesh)b.mesh.visible=!b.isDestroyed;
+  }
+  for(const [id,b] of onlineRemoteBuildings){if(!incomingBuildings.has(id)){onlineRemoveRemoteBuilding(b);onlineRemoteBuildings.delete(id);}}
+
+  onlineApplyOilState(st.oil);
+  if(st.baseHp!=null&&enemyBaseGroup)enemyBaseGroup.hp=st.baseHp;
+}
+
+function onlineSmoothRemoteWorld(){
+  for(const u of onlineRemoteUnits.values()){
+    if(!u?.mesh||!u.__remoteTarget||u.isDestroyed)continue;
+    const t=u.__remoteTarget;
+    u.mesh.position.x+=(t.x-u.mesh.position.x)*.30;
+    u.mesh.position.z+=(t.z-u.mesh.position.z)*.30;
+    u.mesh.position.y=getTerrainHeight(u.mesh.position.x,u.mesh.position.z);
+    let dy=(t.yaw||0)-u.mesh.rotation.y;dy=Math.atan2(Math.sin(dy),Math.cos(dy));u.mesh.rotation.y+=dy*.30;
+  }
+}
+
+function startOnlineBattleLoop(){
+  if(onlineBattleLoopStarted)return;onlineBattleLoopStarted=true;
+  const loop=()=>{
+    if(battleStarted){onlineSendState(false);onlineSmoothRemoteWorld();}
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
 }
 function openPanel(which){
  connect();$('online-panel-overlay').hidden=false;
@@ -13999,16 +14200,22 @@ function onlineStartRoom(){if(currentRole==='host')send({type:'start_battle'})}
 function onlineLeaveRoom(){send({type:'leave_room'});$('online-room-screen').hidden=true;currentRoom=null;currentRole=null;ready=false;refreshPanels()}
 function startActualPvp(m){
  battleStarted=true;document.getElementById('online-main-menu')?.style.setProperty('display','none','important');
- const me=(m.players||[]).find(p=>p.id===myId),enemy=(m.players||[]).find(p=>p.id!==myId);
- if(me){myMoney=me.settings.money;myColor=me.settings.color;myColorName=me.settings.colorName}
+ const me=(m.players||[]).find(p=>String(p.id)===String(myId)),enemy=(m.players||[]).find(p=>String(p.id)!==String(myId));
+ if(me){myMoney=Number(me.settings?.money)||3000;myColor=me.settings?.color||myColor;myColorName=me.settings?.colorName||myColorName;}
  window.onlinePvp=true;
  window.battleConfig=window.battleConfig||{};battleConfig.bot='none';battleConfig.money=myMoney;
  battleConfig.playerColor=myColor;battleConfig.playerColorName=myColorName;
  battleConfig.enemyColor=enemy?.settings?.color||'#ef3d4e';battleConfig.enemyColorName=enemy?.settings?.colorName||'RED';
+ /* Both clients create the same map. Your local camp uses YOUR color; the
+    opposite camp uses the opponent's color. This keeps the battlefield
+    visually identical from either side. */
+ playerFlagType=myColor;enemyFlagType=battleConfig.enemyColor;
  $('online-room-screen').hidden=true;
- // Start the real game using the existing game initializer, without AI.
  if(typeof beginConfiguredGame==='function')beginConfiguredGame();
- setStatus('تم بدء الكيم — اللاعبان داخل المعركة الآن.');
+ if(typeof applyTeamVisual==='function'){try{applyTeamVisual('player',myColor);applyTeamVisual('enemy',battleConfig.enemyColor);}catch(_){}}
+ startOnlineBattleLoop();
+ setTimeout(()=>onlineSendState(true),350);
+ setStatus('تم بدء الكيم — العالم والوحدات والقتال يتم مزامنتها مع اللاعب الآخر.');
 }
 window.openFriendsPanel=openFriendsPanel;window.openRoomsPanel=openRoomsPanel;window.openCreateRoomPanel=openCreateRoomPanel;
 window.closeOnlinePanels=closeOnlinePanels;window.chooseOnlineColor=chooseOnlineColor;window.createOnlineRoomFromMenu=createOnlineRoomFromMenu;
@@ -14024,6 +14231,7 @@ document.addEventListener('DOMContentLoaded',()=>{
      // Heartbeat: this is the only source used by the visible friends list.
      send({type:'presence',name:myName,settings:{money:myMoney,color:myColor,colorName:myColorName}});
      send({type:'presence'});
+     if(battleStarted) onlineSendState(true);
    }
  },4000);
 });
