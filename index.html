@@ -11857,9 +11857,14 @@ window.updateCameraSensitivity=function(v){
     const state=ownState();state.__seq=window.__onlineStateSeq;state.__clientTime=Date.now();
     window.sendOnlineEvent({kind:'authoritative_snapshot',clientTick:Math.floor(now/50),state});
   }
-  function findLocalUnit(id){for(const arr of [playerTanks,reconVehicles,ambulances])if(Array.isArray(arr)){const u=arr.find(x=>x&&x.__netId===id);if(u)return u;}return null;}
+  // معرفات الوحدات المحلية تبدأ عادةً من 1 عند كل متصفح، لذلك لا يجوز
+  // مطابقة معرف لاعب آخر بالـ__netId المحلي. نستخدم مفتاحاً مركباً باللاعب المرسل.
+  function remoteKey(playerId,id){return String(playerId)+':'+String(id);}
+  function findLocalUnit(id){for(const arr of [playerTanks,reconVehicles,ambulances])if(Array.isArray(arr)){const u=arr.find(x=>x&&x.__netId===id&&!x.__serverRemote);if(u)return u;}return null;}
   function makeRemoteUnit(s,playerId,color){
-    if(!s?.id)return null;let u=remote.get(s.id);if(u?.mesh)return u;
+    if(!s?.id)return null;
+    const key=remoteKey(playerId,s.id);
+    let u=remote.get(key);if(u?.mesh)return u;
     try{
       const x=s.x||0,z=s.z||0,type=s.type||'normal',team='enemy';let created=null;
       if((type==='builder'||s.builder)&&typeof createConstructionTruck==='function')created=createConstructionTruck(x,z,team);
@@ -11868,30 +11873,36 @@ window.updateCameraSensitivity=function(v){
       else if(s.infantry&&typeof createInfantrySoldier==='function')created=createInfantrySoldier(x,z,team);
       else if(typeof createTank==='function')created=createTank(x,z,color||battleConfig.enemyColor||'#ef4444',team,type==='rocket'?'rocket':'normal');
       if(!created)return null;
-      created.__netId=s.id;created.team='enemy';created.manualControl=true;created.__serverRemote=true;created.__remoteOwner=playerId;created.hp=s.hp;created.maxHp=s.maxHp||created.maxHp||100;created.__lastNetSeen=performance.now();remote.set(s.id,created);
+      // مهم: هذه نسخة للخصم فقط. لا نضع عليها __netId المحلي، ولا نسمح لها
+      // بالدخول في مسار ملكية اللاعب المحلي أو في لقطة الإرسال.
+      created.__netId=key;created.team='enemy';created.owner='enemy';created.manualControl=false;created.__serverRemote=true;created.__remoteOwner=playerId;created.hp=s.hp;created.maxHp=s.maxHp||created.maxHp||100;created.__lastNetSeen=performance.now();remote.set(key,created);
       if(created.isInfantry){if(!enemyTanks.includes(created))enemyTanks.push(created);}else if(type==='scout'){if(!reconVehicles.includes(created))reconVehicles.push(created);}else if(type==='ambulance'){if(!ambulances.includes(created))ambulances.push(created);}else if(!enemyTanks.includes(created))enemyTanks.push(created);
       if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color||battleConfig.enemyColor||'#ef4444');
       return created;
     }catch(_){return null;}
   }
   function applyUnit(s,playerId,color){
-    if(!s)return;let u=findLocalUnit(s.id)||makeRemoteUnit(s,playerId,color);if(!u?.mesh)return;
+    if(!s)return;
+    // لا نبحث عن الوحدة المحلية هنا: هذا state صادر من اللاعب الآخر.
+    // البحث بالـid المحلي كان سبب اختفاء/استبدال تركس اللاعب الثاني.
+    const u=makeRemoteUnit(s,playerId,color);
+    if(!u?.mesh)return;
     u.__serverRemote=true;u.__remoteOwner=playerId;u.__lastNetSeen=performance.now();
     const t=.42;u.mesh.position.x+=(s.x-u.mesh.position.x)*t;u.mesh.position.z+=(s.z-u.mesh.position.z)*t;if(Number.isFinite(s.y))u.mesh.position.y+=(s.y-u.mesh.position.y)*t;if(Number.isFinite(s.rot))u.mesh.rotation.y=lerpAngle(u.mesh.rotation.y,s.rot,t);
     u.hp=Math.max(0,Number(s.hp)||0);u.maxHp=Math.max(1,Number(s.maxHp)||100);u.isDestroyed=!!s.destroyed;if(s.target)u.serverTarget=s.target;if(s.guard)u.serverGuard=s.guard;if(u.mesh)u.mesh.visible=!u.isDestroyed;
   }
   function makeRemoteBuilding(s,playerId,color){
-    if(!s?.id)return null;let b=remoteBuildings.get(s.id);if(b)return b;
+    if(!s?.id)return null;const key=remoteKey(playerId,s.id);let b=remoteBuildings.get(key);if(b)return b;
     try{
       let created=null;
       if(s.type==='factory'&&typeof createArmyFactory==='function'){const old=window.__remoteFactoryOwner;window.__remoteFactoryOwner='enemy';created=createArmyFactory(s.x,s.z,!s.done);window.__remoteFactoryOwner=old;if(created){created.owner='enemy';created.mesh.userData.factoryOwner='enemy';if(typeof updateFactoryFlagOwner==='function')updateFactoryFlagOwner(created,'enemy');if(!enemyFactories.includes(created))enemyFactories.push(created);}}
       else if(s.type==='barracks'&&typeof createMilitaryBarracks==='function'){created=createMilitaryBarracks(s.x,s.z,!s.done,'enemy');if(created){created.owner='enemy';if(!constructedBarracks.includes(created))constructedBarracks.push(created);}}
       if(!created)return null;
-      created.__netId=s.id;created.__serverRemote=true;created.__remoteOwner=playerId;created.owner='enemy';created.__lastNetSeen=performance.now();remoteBuildings.set(s.id,created);if(created.mesh){created.mesh.rotation.y=s.rot||0;created.mesh.visible=true;}if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color);return created;
+      created.__netId=key;created.__serverRemote=true;created.__remoteOwner=playerId;created.owner='enemy';created.__lastNetSeen=performance.now();remoteBuildings.set(key,created);if(created.mesh){created.mesh.rotation.y=s.rot||0;created.mesh.visible=true;}if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color);return created;
     }catch(_){return null;}
   }
   function applyBuilding(s,playerId,color){
-    if(!s)return;let b=remoteBuildings.get(s.id)||makeRemoteBuilding(s,playerId,color);if(!b?.mesh)return;b.__serverRemote=true;b.__remoteOwner=playerId;b.__lastNetSeen=performance.now();b.owner='enemy';
+    if(!s)return;const key=remoteKey(playerId,s.id);let b=remoteBuildings.get(key)||makeRemoteBuilding(s,playerId,color);if(!b?.mesh)return;b.__serverRemote=true;b.__remoteOwner=playerId;b.__lastNetSeen=performance.now();b.owner='enemy';
     b.mesh.position.x=s.x;b.mesh.position.z=s.z;b.mesh.position.y=Number.isFinite(s.y)?s.y:b.mesh.position.y;b.mesh.rotation.y=s.rot||0;b.hp=Math.max(0,Number(s.hp)||0);b.maxHp=Math.max(1,Number(s.maxHp)||1000);b.done=s.done!==false;b.progress=Math.max(0,Math.min(1,s.progress==null?(b.done?1:0):Number(s.progress)));b.isDestroyed=!!s.destroyed;b.mesh.visible=!b.isDestroyed;
     if(s.production)b.productionJob={type:s.production.type,elapsed:s.production.elapsed,duration:s.production.duration};else b.productionJob=null;
   }
@@ -11900,9 +11911,9 @@ window.updateCameraSensitivity=function(v){
     const me=window.onlineMatch?.playerServerId;if(!me)return;let found=false;
     for(const p of packet.players){
       if(!p||p.id===me||!p.state)continue;found=true;const color=p.color||battleConfig.enemyColor||'#ef4444';
-      const seenUnits=new Set();for(const s of p.state.units||[]){seenUnits.add(s.id);applyUnit(s,p.id,color);}
+      const seenUnits=new Set();for(const s of p.state.units||[]){seenUnits.add(remoteKey(p.id,s.id));applyUnit(s,p.id,color);}
       for(const [id,u] of remote){if(u?.__remoteOwner!==p.id||seenUnits.has(id))continue;if(performance.now()-safeNum(u.__lastNetSeen,0)>REMOTE_UNIT_GRACE){u.isDestroyed=true;if(u.mesh)u.mesh.visible=false;}}
-      const seenBuildings=new Set();for(const s of p.state.buildings||[]){seenBuildings.add(s.id);applyBuilding(s,p.id,color);}
+      const seenBuildings=new Set();for(const s of p.state.buildings||[]){seenBuildings.add(remoteKey(p.id,s.id));applyBuilding(s,p.id,color);}
       for(const [id,b] of remoteBuildings){if(b?.__remoteOwner!==p.id||seenBuildings.has(id))continue;if(performance.now()-safeNum(b.__lastNetSeen,0)>REMOTE_BUILDING_GRACE){b.isDestroyed=true;if(b.mesh)b.mesh.visible=false;}}
       if(p.state.base&&typeof enemyBaseGroup!=='undefined'&&enemyBaseGroup){enemyBaseGroup.hp=safeNum(p.state.base.hp,enemyBaseGroup.hp||1600);enemyBaseGroup.maxHp=safeNum(p.state.base.maxHp,enemyBaseGroup.maxHp||1600);}
       window.remoteOpponentMoney=Math.max(0,Math.floor(safeNum(p.state.money,0)));window.remoteOpponentColor=color;battleConfig.enemyColor=color;
