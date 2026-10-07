@@ -1882,6 +1882,24 @@
 }
 #construction-bar:after{display:none!important;content:none!important}
 </style>
+
+<style id="construction-bar-interaction-fix">
+/* تثبيت التفاعل مع شريط البناء على الهاتف والكمبيوتر */
+#construction-bar.open .factory-build-card,
+#construction-bar.open .barracks-build-card,
+#construction-bar.open .build-card{
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  position:relative!important;
+  z-index:20!important;
+}
+#construction-bar.open .factory-build-card.disabled,
+#construction-bar.open .barracks-build-card.disabled{
+  pointer-events:auto!important;
+}
+</style>
 </head>
 <body>
 
@@ -1958,7 +1976,7 @@
             </div>
             <div class="build-price">300$</div>
         </div>
-        <div class="factory-build-card" id="factory-build-card" onclick="event.stopPropagation(); playClickSound(); armFactoryBuild()" onpointerdown="event.stopPropagation(); if(event.pointerType==='touch') armFactoryBuild()">
+        <div class="factory-build-card" id="factory-build-card" onclick="constructionBarFactoryClick(event)" onpointerdown="constructionBarFactoryPointerDown(event)">
             <div class="factory-preview" aria-label="مصنع جيش">
                 <div class="f-tower"></div><div class="f-roof"></div><div class="f-base"></div><div class="f-door"></div><div class="f-light"></div>
             </div>
@@ -2527,6 +2545,7 @@
     let barracksPlacementMode = false;
     let barracksPlacementRotation = 0;
     let barracksPlacementPoint = null;
+    let barracksBuildBuilder = null;
     let activeBarracksProduction = null;
     let enemyFlagDataRef, playerFlagDataRef;
     let enemyFlagHeight = 35.0;
@@ -6534,6 +6553,18 @@
         return activeFactoryConstructions.find(c=>c && c.builder===builder && c.build && !c.build.done) || null;
     }
 
+    function constructionBarFactoryPointerDown(e){
+        if(e){e.stopPropagation(); if(e.cancelable)e.preventDefault();}
+        if(e && e.pointerType==='touch') armFactoryBuild();
+    }
+    function constructionBarFactoryClick(e){
+        if(e)e.stopPropagation();
+        playClickSound();
+        // على اللمس تم التسليح بالفعل في pointerdown؛ إعادة التسليح آمنة وتضمن
+        // عمل المتصفح الذي لا يرسل pointerdown بشكل موثوق لبعض عناصر الواجهة.
+        armFactoryBuild();
+    }
+
     function armFactoryBuild() {
         // ابحث عن تركس اللاعب المحدد حتى لو تغيّر selectedTank أثناء لمس شريط القيادة.
         let builder = (selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed && !selectedTank.__serverRemote) ? selectedTank : null;
@@ -6576,7 +6607,7 @@
 
     function hideFactoryPlacement() {
         factoryBuildArmed=false; factoryPlacementMode=false; factoryPlacementPoint=null; factoryBuildBuilder=null;
-        barracksBuildArmed=false; barracksPlacementMode=false; barracksPlacementPoint=null;
+        barracksBuildArmed=false; barracksPlacementMode=false; barracksPlacementPoint=null; barracksBuildBuilder=null;
         if(factoryPlacementGhost){ scene.remove(factoryPlacementGhost.mesh); factoryPlacementGhost=null; }
         if(barracksPlacementGhost){ scene.remove(barracksPlacementGhost.mesh); barracksPlacementGhost=null; }
     }
@@ -6620,6 +6651,7 @@
         factoryPlacementPoint=null;
         if(factoryPlacementGhost){scene.remove(factoryPlacementGhost.mesh);factoryPlacementGhost=null;}
         if(barracksPlacementGhost){scene.remove(barracksPlacementGhost.mesh);barracksPlacementGhost=null;}
+        barracksBuildBuilder=builder;
         barracksBuildArmed=true;
         barracksPlacementMode=true;
         barracksPlacementRotation=builder.mesh.rotation.y;
@@ -6676,7 +6708,7 @@
         if(playerMoney<150){showFloatingMsg('Insufficient funds — barracks costs $150');return;}
         point.y=getBuildingGroundLevel(point.x,point.z,'barracks',rotation);
         if(!isBuildingPlacementValid(point,'barracks',rotation,'player').valid){showFloatingMsg('🚫 موقع الثكنة غير صالح للبناء');return;}
-        hideFactoryPlacement();playerMoney-=150;totalMoneySpent+=150;updateEconomyUI();
+        hideFactoryPlacement();playerMoney-=150;totalMoneySpent+=150;syncMoneyNow();
         const build=createMilitaryBarracks(point.x,point.z,true);build.owner='player';
         build.mesh.position.y=point.y+.03;build.mesh.userData.barracksOwner='player';build.mesh.visible=true;build.mesh.scale.setScalar(.06);build.mesh.rotation.y=rotation;build.rotation=rotation;build.mesh.position.y=getTerrainHeight(point.x,point.z)-8;
         // تأكيد أن مبنى البناء موجود في المشهد، وليس مجرد بيانات منطقية.
@@ -7243,7 +7275,7 @@ function createArmyFactory(x,z,ghost=false){
         if(type==='infantry'){showFloatingMsg('🪖 Train soldiers from the Military Barracks');return;}
         const costs={rocket:800,normal:500,ambulance:600,scout:500};const cost=costs[type]||500;
         if(playerMoney<cost){showFloatingMsg(`Insufficient funds — cost: $${cost}`);return;}
-        playerMoney-=cost;totalMoneySpent+=cost;updateEconomyUI();playSound('buy');
+        playerMoney-=cost;totalMoneySpent+=cost;syncMoneyNow();playSound('buy');
         selectedFactory.productionJob={factory:selectedFactory,type,cost,elapsed:0,duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND};
         activeFactoryProduction=selectedFactory.productionJob;
         showFloatingMsg(type==='scout'?'🏭 Scout vehicle preparation started — 12 seconds':'🏭 Production started — 15 seconds');
@@ -7466,9 +7498,7 @@ function createArmyFactory(x,z,ghost=false){
         exitTarget.y=getTerrainHeight(exitTarget.x,exitTarget.z); truck.target=exitTarget;
         playerTanks.push(truck);
         closeConstructionBar();
-        updateEconomyUI();
-        // أرسل الرصيد الجديد فوراً حتى يرى الطرف الآخر عملية الشراء في نفس الدورة.
-        if(online() && typeof serverSendSnapshot==='function'){ try{ lastUpload=0; serverSendSnapshot(); }catch(e){} }
+        syncMoneyNow();
         showFloatingMsg('🚧 Construction dozer purchased for $300 — double-tap to control');
     }
 
@@ -7487,7 +7517,7 @@ function createArmyFactory(x,z,ghost=false){
         const cost = 500;
         if (reconActivated && reconVehicles.some(v => !v.isDestroyed)) { showFloatingMsg('📡 Scout vehicle already exists'); return; }
         if (playerMoney < cost) { showFloatingMsg('Insufficient funds — scout vehicle costs $500'); return; }
-        playerMoney -= cost; totalMoneySpent += cost; updateEconomyUI(); playSound('buy');
+        playerMoney -= cost; totalMoneySpent += cost; syncMoneyNow(); playSound('buy');
         const mySlot = Math.max(1, Math.min(2, Number(window.onlineMatch?.playerSlot || 1)));
         const baseX = mySlot===1 ? CORNER_OFFSET : -CORNER_OFFSET;
         const baseZ = mySlot===1 ? CORNER_OFFSET : -CORNER_OFFSET;
@@ -7802,8 +7832,8 @@ function createArmyFactory(x,z,ghost=false){
                 if (placementHits.length) {
                     const p = placementHits[0].point.clone(); p.y=getTerrainHeight(p.x,p.z);
                     barracksPlacementPoint=p;barracksPlacementGhost.mesh.position.set(p.x,getBuildingGroundLevel(p.x,p.z,'barracks',barracksPlacementRotation)+.03,p.z);barracksPlacementGhost.mesh.rotation.y=barracksPlacementRotation;
-                    const builder=selectedTank&&getUnitKind(selectedTank)==='builder'&&!selectedTank.isDestroyed?selectedTank:null;
-                    if(builder){ const chk=isBuildingPlacementValid(p,'barracks',barracksPlacementRotation,'player'); if(!chk.valid){showFloatingMsg('🚫 لا يمكن بناء الثكنة هنا: الأرض غير مستوية أو المكان مشغول'); showInvalidBuildGhost(barracksPlacementGhost,false); return;} startBarracksConstruction(builder,p,barracksPlacementRotation); } else {hideFactoryPlacement();showFloatingMsg('Select the construction dozer first');}
+                    const builder=(barracksBuildBuilder&&!barracksBuildBuilder.isDestroyed&&!barracksBuildBuilder.__serverRemote)?barracksBuildBuilder:(selectedTank&&getUnitKind(selectedTank)==='builder'&&!selectedTank.isDestroyed&&!selectedTank.__serverRemote?selectedTank:null);
+                    if(builder){ selectedTank=builder; selectedUnitKind='builder'; const chk=isBuildingPlacementValid(p,'barracks',barracksPlacementRotation,'player'); showInvalidBuildGhost(barracksPlacementGhost,chk.valid); if(!chk.valid){showFloatingMsg('🚫 لا يمكن بناء الثكنة هنا: الأرض غير مستوية أو المكان مشغول'); return;} startBarracksConstruction(builder,p,barracksPlacementRotation); } else {hideFactoryPlacement();showFloatingMsg('🚧 تركس البناء لم يعد متاحاً');}
                 }
                 return;
             }
@@ -7816,14 +7846,18 @@ function createArmyFactory(x,z,ghost=false){
                     factoryPlacementGhost.mesh.position.set(p.x, getBuildingGroundLevel(p.x,p.z,'factory',factoryPlacementRotation)+.03, p.z);
                     factoryPlacementGhost.mesh.rotation.y = factoryPlacementRotation;
 
-                    const builder = selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed ? selectedTank : null;
+                    const builder = (factoryBuildBuilder && !factoryBuildBuilder.isDestroyed && !factoryBuildBuilder.__serverRemote)
+                        ? factoryBuildBuilder
+                        : (selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed && !selectedTank.__serverRemote ? selectedTank : null);
                     if (builder) {
+                        selectedTank=builder; selectedUnitKind='builder';
                         const chk=isBuildingPlacementValid(p,'factory',factoryPlacementRotation,'player');
-                        if(!chk.valid){ showFloatingMsg('🚫 لا يمكن بناء المصنع هنا: الأرض غير مستوية أو المكان مشغول'); showInvalidBuildGhost(factoryPlacementGhost,false); return; }
-                        startFactoryConstruction(builder, p, factoryPlacementRotation);
+                        showInvalidBuildGhost(factoryPlacementGhost,chk.valid);
+                        if(!chk.valid){ showFloatingMsg('🚫 لا يمكن بناء المصنع هنا: الأرض غير مستوية أو المكان مشغول'); return; }
+                        confirmFactoryPlacement();
                     } else {
                         hideFactoryPlacement();
-                        showFloatingMsg('Select the construction dozer first');
+                        showFloatingMsg('🚧 تركس البناء لم يعد متاحاً');
                     }
                 }
                 return;
@@ -7876,7 +7910,7 @@ function createArmyFactory(x,z,ghost=false){
             // وضع بناء المصنع: أولاً نثبت خيال المصنع في المكان الذي لمسه اللاعب،
             // ثم نبدأ البناء فعلياً. هذا يمنع فقدان نقرة البناء بسبب إعادة تموضع الخيال.
             const terrainHits = raycaster.intersectObject(terrainMesh);
-            if (factoryPlacementMode && factoryPlacementGhost && selectedTank && getUnitKind(selectedTank) === 'builder' && terrainHits.length) {
+            if (factoryPlacementMode && factoryPlacementGhost && factoryBuildBuilder && !factoryBuildBuilder.isDestroyed && !factoryBuildBuilder.__serverRemote && terrainHits.length) {
                 const buildPoint = terrainHits[0].point.clone();
                 buildPoint.y = getTerrainHeight(buildPoint.x, buildPoint.z);
                 factoryPlacementPoint = buildPoint.clone();
@@ -9980,6 +10014,14 @@ function createArmyFactory(x,z,ghost=false){
         updateFactoryVisuals();
     }
 
+    // مزامنة اقتصادية فورية: لا ننتظر دورة الـ80ms بعد الشراء/البناء.
+    function syncMoneyNow(){
+        try{ updateEconomyUI(); }catch(e){}
+        if(online() && typeof serverSendSnapshot==='function'){
+            try{ lastUpload=0; serverSendSnapshot(); }catch(e){}
+        }
+    }
+
     function updateEconomyUI() {
         document.getElementById('money-display').innerText = playerMoney;
         const purchaseMoney = document.getElementById('purchase-money-display');
@@ -10360,8 +10402,7 @@ function createArmyFactory(x,z,ghost=false){
         if(playerMoney<400){showFloatingMsg('Insufficient funds to build the factory');return;}
         point.y=getTerrainHeight(point.x,point.z);
         if(!isBuildingPlacementValid(point,'factory',rotation,'player').valid){showFloatingMsg('🚫 موقع المصنع غير صالح للبناء');return;}
-        hideFactoryPlacement();playerMoney-=400;totalMoneySpent+=400;updateEconomyUI();
-        if(online() && typeof serverSendSnapshot==='function'){ try{ lastUpload=0; serverSendSnapshot(); }catch(e){} }
+        hideFactoryPlacement();playerMoney-=400;totalMoneySpent+=400;syncMoneyNow();
         // اتجاه المصنع يُحسب من معسكر اللاعب الحالي، وليس من معسكر Slot 1 دائماً.
         const mySlot = Math.max(1, Math.min(2, Number(window.onlineMatch?.playerSlot || 1)));
         const base=new THREE.Vector3(mySlot===1?CORNER_OFFSET:-CORNER_OFFSET,0,mySlot===1?CORNER_OFFSET:-CORNER_OFFSET);
