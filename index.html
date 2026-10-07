@@ -1,6 +1,455 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>TANK COMMAND</title><style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#080b0c;color:#fff;touch-action:manipulation}body{background:radial-gradient(circle at 50% 20%,#344044 0,#151a1b 42%,#070909 100%)}#app{height:100%;display:flex;align-items:center;justify-content:center;padding:16px}.screen{width:min(940px,100%);max-height:96vh;overflow:auto;border:1px solid #66706d66;background:linear-gradient(145deg,#18201fcc,#0a0d0eeF);box-shadow:0 25px 80px #000b;border-radius:24px;padding:clamp(20px,4vw,42px);backdrop-filter:blur(14px)}.hidden{display:none!important}.brand{text-align:center;margin-bottom:26px}.brand h1{font-size:clamp(32px,7vw,68px);letter-spacing:5px;margin:0;text-shadow:0 5px 25px #000}.brand p{color:#b8c1bd;margin:8px 0;font-size:clamp(12px,2.5vw,16px)}.line{height:2px;background:linear-gradient(90deg,transparent,#c6a35b,transparent);margin:20px 0 28px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.btn{border:1px solid #77807866;border-radius:15px;padding:17px 18px;background:linear-gradient(180deg,#29312f,#151a19);color:#fff;font-size:17px;font-weight:700;cursor:pointer;min-height:58px;transition:.18s}.btn:hover,.btn:active{transform:translateY(-2px);border-color:#c7a75e;background:linear-gradient(180deg,#4a4b39,#22261f)}.primary{background:linear-gradient(180deg,#b18e4e,#745a2d);border-color:#e0c27d;color:#fff}.wide{grid-column:1/-1}.title{font-size:25px;margin:0 0 18px}.sub{color:#aeb8b3;font-size:14px;margin:-8px 0 18px}.row{display:flex;gap:10px;align-items:center}.input{width:100%;padding:16px;border-radius:13px;border:1px solid #66716d66;background:#090d0e;color:#fff;font-size:16px;outline:none}.input:focus{border-color:#c5a45d}.room{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0}.card{border:1px solid #68716d55;background:#111718;border-radius:16px;padding:18px}.card h3{margin:0 0 8px}.card p{margin:0;color:#9fa9a4;font-size:13px;line-height:1.6}.status{margin-top:15px;padding:12px;border-radius:12px;background:#0b1011;color:#b9c1bd;text-align:center;font-size:13px}.players{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.pill{padding:9px 12px;border-radius:30px;background:#27302d;border:1px solid #69736c55;font-size:13px}.back{margin-top:16px;background:#171d1d}.game{width:100%;height:100%;position:relative}.game canvas{width:100%;height:100%;display:block}.hud{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;pointer-events:none}.hud .box{background:#080b0dcc;border:1px solid #ffffff22;border-radius:12px;padding:10px 14px}.exit{pointer-events:auto;cursor:pointer}.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0b0e0f;color:#fff;border:1px solid #c3a45c88;border-radius:12px;padding:12px 18px;opacity:0;transition:.25s;z-index:50}.toast.show{opacity:1}@media(max-width:620px){.grid{grid-template-columns:1fr}.room{grid-template-columns:1fr}.screen{border-radius:18px;padding:22px 16px}.btn{font-size:15px}.brand{margin-bottom:18px}}
-</style></head><body><div id="app"><section id="home" class="screen"><div class="brand"><h1>TANK COMMAND</h1><p>ساحة المعركة ثلاثية الأبعاد</p></div><div class="line"></div><div class="grid"><button class="btn primary wide" onclick="show('online')">🌐 لعب جماعي</button><button class="btn" onclick="show('local')">⚔️ معركة محلية</button><button class="btn" onclick="toast('إعدادات المحرك جاهزة للإضافة')">⚙️ الإعدادات</button></div></section><section id="online" class="screen hidden"><h2 class="title">اللعب الجماعي</h2><p class="sub">أنشئ غرفة لصديقك أو أدخل رمز غرفة موجودة.</p><div class="grid"><button class="btn primary" onclick="createRoom()">إنشاء غرفة</button><button class="btn" onclick="joinBox()">انضمام لغرفة</button></div><div id="join" class="card hidden" style="margin-top:16px"><h3>رمز الغرفة</h3><div class="row"><input id="code" class="input" placeholder="مثال: A7K92"><button class="btn primary" onclick="joinRoom()">دخول</button></div></div><div id="roomPanel" class="hidden"><div class="room"><div class="card"><h3>الغرفة</h3><p>شارك رمز الغرفة مع صديقك ليدخل معك.</p><div class="status" id="roomCode">—</div></div><div class="card"><h3>الخريطة</h3><p>ساحة رملية ثلاثية الأبعاد.</p><div class="status">متاحة</div></div></div><div class="players" id="players"><span class="pill">أنت</span></div><button class="btn primary wide" onclick="startGame()">بدء المعركة</button></div><button class="btn back wide" onclick="show('home')">رجوع</button></section><section id="local" class="screen hidden"><h2 class="title">معركة محلية</h2><p class="sub">نسخة تجريبية من الساحة ثلاثية الأبعاد.</p><button class="btn primary wide" onclick="startGame()">بدء المعركة</button><button class="btn back wide" onclick="show('home')">رجوع</button></section></div><div id="game" class="game hidden"><div class="hud"><div class="box">TANK COMMAND<br><small>ساحة رملية</small></div><button class="box exit" onclick="exitGame()">خروج</button></div></div><div id="toast" class="toast"></div><script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script><script>
-const SERVER='https://tank-game-server-o650.onrender.com/';let roomId='';function show(id){document.querySelectorAll('.screen').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden')}function toast(t){let x=document.getElementById('toast');x.textContent=t;x.classList.add('show');setTimeout(()=>x.classList.remove('show'),2200)}function joinBox(){document.getElementById('join').classList.remove('hidden');document.getElementById('code').focus()}function createRoom(){roomId=Math.random().toString(36).slice(2,7).toUpperCase();document.getElementById('roomCode').textContent=roomId;document.getElementById('roomPanel').classList.remove('hidden');toast('تم إنشاء الغرفة: '+roomId)}function joinRoom(){let c=document.getElementById('code').value.trim().toUpperCase();if(!c)return toast('اكتب رمز الغرفة');roomId=c;document.getElementById('roomCode').textContent=c;document.getElementById('roomPanel').classList.remove('hidden');toast('تم تجهيز الانضمام للغرفة')}function startGame(){document.getElementById('app').classList.add('hidden');document.getElementById('game').classList.remove('hidden');init3D()}function exitGame(){location.reload()}
-let started=false;function init3D(){if(started)return;started=true;const game=document.getElementById('game');const scene=new THREE.Scene();scene.background=new THREE.Color(0x87a8b5);scene.fog=new THREE.Fog(0x87a8b5,70,230);const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,500);camera.position.set(0,24,34);const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.outputColorSpace=THREE.SRGBColorSpace;game.appendChild(renderer.domElement);scene.add(new THREE.HemisphereLight(0xffe5c0,0x55452e,2));let sun=new THREE.DirectionalLight(0xffdfaa,3);sun.position.set(-50,90,40);sun.castShadow=true;scene.add(sun);let g=new THREE.PlaneGeometry(180,180,100,100),p=g.attributes.position;for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i);p.setZ(i,(Math.sin(x*.05)*1.1+Math.cos(y*.06)*.9+Math.sin((x+y)*.025)*1.4)*Math.min(Math.hypot(x,y)/45,1))}g.computeVertexNormals();let ground=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0xc79d63,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);for(let i=0;i<450;i++){let r=new THREE.Mesh(new THREE.IcosahedronGeometry(.05+Math.random()*.16,0),new THREE.MeshStandardMaterial({color:Math.random()>.5?0xa98351:0xd0aa70,roughness:1}));r.position.set((Math.random()-.5)*170,.08,(Math.random()-.5)*170);r.scale.y=.3+Math.random()*.7;scene.add(r)}let yaw=0,pitch=-.45,dist=34,target=new THREE.Vector3();function cam(){let x=Math.sin(yaw)*Math.cos(pitch)*dist,y=-Math.sin(pitch)*dist,z=Math.cos(yaw)*Math.cos(pitch)*dist;camera.position.set(target.x+x,target.y+y,target.z+z);camera.lookAt(target)}let lx=0,ly=0,down=false;renderer.domElement.addEventListener('pointerdown',e=>{down=true;lx=e.clientX;ly=e.clientY});window.addEventListener('pointerup',()=>down=false);window.addEventListener('pointermove',e=>{if(!down)return;yaw-=(e.clientX-lx)*.006;pitch-=(e.clientY-ly)*.004;pitch=Math.max(-1.3,Math.min(-.08,pitch));lx=e.clientX;ly=e.clientY});renderer.domElement.addEventListener('wheel',e=>{dist=Math.max(6,Math.min(90,dist+e.deltaY*.03))});addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});function loop(){requestAnimationFrame(loop);cam();renderer.render(scene,camera)}loop()}
-</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>TANK COMMAND - MULTIPLAYER</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#080b0c;color:#fff;touch-action:manipulation}body{background:radial-gradient(circle at 50% 20%,#344044 0,#151a1b 42%,#070909 100%)}#app{height:100%;display:flex;align-items:center;justify-content:center;padding:16px}.screen{width:min(940px,100%);max-height:96vh;overflow:auto;border:1px solid #66706d66;background:linear-gradient(145deg,#18201fcc,#0a0d0eeF);box-shadow:0 25px 80px #000b;border-radius:24px;padding:clamp(20px,4vw,42px);backdrop-filter:blur(14px)}.hidden{display:none!important}.brand{text-align:center;margin-bottom:26px}.brand h1{font-size:clamp(32px,7vw,68px);letter-spacing:5px;margin:0;text-shadow:0 5px 25px #000}.brand p{color:#b8c1bd;margin:8px 0;font-size:clamp(12px,2.5vw,16px)}.line{height:2px;background:linear-gradient(90deg,transparent,#c6a35b,transparent);margin:20px 0 28px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.btn{border:1px solid #77807866;border-radius:15px;padding:17px 18px;background:linear-gradient(180deg,#29312f,#151a19);color:#fff;font-size:17px;font-weight:700;cursor:pointer;min-height:58px;transition:.18s}.btn:hover,.btn:active{transform:translateY(-2px);border-color:#c7a75e;background:linear-gradient(180deg,#4a4b39,#22261f)}.primary{background:linear-gradient(180deg,#b18e4e,#745a2d);border-color:#e0c27d;color:#fff}.wide{grid-column:1/-1}.title{font-size:25px;margin:0 0 18px}.sub{color:#aeb8b3;font-size:14px;margin:-8px 0 18px}.row{display:flex;gap:10px;align-items:center}.input{width:100%;padding:16px;border-radius:13px;border:1px solid #66716d66;background:#090d0e;color:#fff;font-size:16px;outline:none}.input:focus{border-color:#c5a45d}.room{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0}.card{border:1px solid #68716d55;background:#111718;border-radius:16px;padding:18px}.card h3{margin:0 0 8px}.card p{margin:0;color:#9fa9a4;font-size:13px;line-height:1.6}.status{margin-top:15px;padding:12px;border-radius:12px;background:#0b1011;color:#b9c1bd;text-align:center;font-size:13px}.players{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.pill{padding:9px 12px;border-radius:30px;background:#27302d;border:1px solid #69736c55;font-size:13px}.back{margin-top:16px;background:#171d1d}.game{width:100%;height:100%;position:relative}.game canvas{width:100%;height:100%;display:block}
+.hud{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;pointer-events:none;z-index:10}
+.hud .box{background:#080b0dcc;border:1px solid #ffffff22;border-radius:12px;padding:10px 14px;font-size:14px}
+.exit{pointer-events:auto;cursor:pointer;background:#441111!important;border-color:#ff4444!important}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0b0e0f;color:#fff;border:1px solid #c3a45c88;border-radius:12px;padding:12px 18px;opacity:0;transition:.25s;z-index:50}
+.toast.show{opacity:1}
+
+/* لوحة التحكم الافتراضية وأزرار الأسلحة والكاميرا */
+.controls-overlay{position:absolute;bottom:20px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;z-index:10}
+.joystick-zone{width:130px;height:130px;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.2);border-radius:50%;pointer-events:auto;position:relative;touch-action:none}
+.joystick-knob{width:50px;height:50px;background:#c6a35b;border-radius:50%;position:absolute;top:40px;left:40px;pointer-events:none;box-shadow:0 4px 10px rgba(0,0,0,0.5)}
+.action-buttons{display:flex;gap:10px;pointer-events:auto}
+.action-btn{background:linear-gradient(180deg,#29312f,#151a19);border:1px solid #77807866;color:#fff;padding:15px 20px;border-radius:14px;font-size:15px;font-weight:bold;cursor:pointer;min-width:70px;text-align:center;box-shadow:0 5px 15px rgba(0,0,0,0.4)}
+.action-btn:active{background:#c6a35b;color:#000}
+.crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:10px;height:10px;border:2px solid rgba(255,255,255,0.6);border-radius:50%;pointer-events:none;z-index:10}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="home" class="screen">
+    <div class="brand"><h1>TANK COMMAND</h1><p>ساحة المعركة الجماعية الحديثة</p></div>
+    <div class="line"></div>
+    <div class="grid">
+      <button class="btn primary wide" onclick="show('online')">🌐 الغرف والسيرفر</button>
+      <button class="btn" onclick="startLocalGame()">⚔️ معركة سريعة</button>
+    </div>
+  </section>
+
+  <section id="online" class="screen hidden">
+    <h2 class="title">إدارة الغرف الحديثة</h2>
+    <p class="sub">انشئ غرفتك الخاصة أو انضم لأي غرفة نشطة عبر السيرفر.</p>
+    <div class="grid">
+      <button class="btn primary" onclick="createRoom()">إنشاء غرفة جديدة</button>
+      <button class="btn" onclick="joinBox()">انضمام برمز</button>
+    </div>
+    <div id="join" class="card hidden" style="margin-top:16px">
+      <h3>رمز الغرفة</h3>
+      <div class="row">
+        <input id="code" class="input" placeholder="مثال: ROOM1">
+        <button class="btn primary" onclick="joinRoom()">دخول</button>
+      </div>
+    </div>
+    <div id="roomPanel" class="hidden">
+      <div class="room">
+        <div class="card">
+          <h3>معلومات الغرفة</h3>
+          <p>شارك الرمز مع أصدقائك للاتصال بك في نفس الساحة.</p>
+          <div class="status" id="roomCode">—</div>
+        </div>
+        <div class="card">
+          <h3>حالة السيرفر</h3>
+          <div class="status" style="color:#52c41a">متصل بالسيرفر النشط</div>
+        </div>
+      </div>
+      <div class="players" id="players"><span class="pill">أنت (متصل)</span></div>
+      <button class="btn primary wide" onclick="startServerGame()">بدء المعركة الآن</button>
+    </div>
+    <button class="btn back wide" onclick="show('home')">رجوع</button>
+  </section>
+</div>
+
+<!-- شاشة اللعب والتحكم -->
+<div id="game" class="game hidden">
+  <div class="crosshair"></div>
+  <div class="hud">
+    <div class="box" id="healthBox">الدم: 100 ❤️</div>
+    <div class="box" id="ammoBox">الذخيرة: 3/3 🔋 (R للتلغيم)</div>
+    <button class="box exit" onclick="exitGame()">خروج للوبي</button>
+  </div>
+  <div class="controls-overlay">
+    <div class="joystick-zone" id="joyZone"><div class="joystick-knob" id="joyKnob"></div></div>
+    <div class="action-buttons">
+      <button class="action-btn" onclick="switchCamera()">📷 الكاميرا</button>
+      <button class="action-btn" onclick="playerJump()">⬆️ قفز</button>
+      <button class="action-btn" onclick="playerReload()">🔄 تلقيم</button>
+      <button class="action-btn primary" onclick="playerShoot()">🔥 إطلاق</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- شاشة الخسارة -->
+<div id="gameOverScreen" class="screen hidden" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;text-align:center;">
+  <h1 style="color:#ff4444;font-size:40px;margin-bottom:10px;">خسرت المعركة!</h1>
+  <p style="color:#bbb;margin-bottom:20px;">لقد نفد نقاط الدم الخاصة بك.</p>
+  <button class="btn primary wide" onclick="exitGame()">خروج إلي الوبي</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://tank-game-server-o650.onrender.com/socket.io/socket.io.js"></script>
+<script>
+const SERVER='https://tank-game-server-o650.onrender.com/';
+let socket=null;
+let roomId='', myId='';
+let scene, camera, renderer;
+let player, playersMap={};
+let moveX=0, moveZ=0;
+let health=100, ammo=3, maxAmmo=3, isReloading=false;
+let isJumping=false, velocityY=0, gravity=-0.015;
+let camMode=1; // 1: منظور ثالث خلفي، 2: منظور ثاني، 3: منظور أول (مين كرافت)
+let started=false;
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(x=>x.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+function toast(t){
+  let x=document.getElementById('toast');
+  x.textContent=t;
+  x.classList.add('show');
+  setTimeout(()=>x.classList.remove('show'),2200);
+}
+function joinBox(){document.getElementById('join').classList.remove('hidden');document.getElementById('code').focus()}
+
+function initSocketConnection(){
+  if(socket) return;
+  socket = io(SERVER);
+  socket.on('connect', ()=>{ myId = socket.id; });
+  socket.on('roomJoined', (id)=>{ roomId = id; document.getElementById('roomCode').textContent=roomId; document.getElementById('roomPanel').classList.remove('hidden'); toast('تم الانضمام للغرفة بنجاح'); });
+  socket.on('currentPlayers', (serverPlayers)=>{
+    for(let id in serverPlayers){
+      if(id !== myId && !playersMap[id]) createRemotePlayer(id, serverPlayers[id]);
+    }
+  });
+  socket.on('newPlayer', (data)=>{
+    if(data.id !== myId) createRemotePlayer(data.id, data);
+  });
+  socket.on('playerMoved', (data)=>{
+    if(playersMap[data.id]){
+      playersMap[data.id].mesh.position.set(data.x, data.y, data.z);
+      playersMap[data.id].mesh.rotation.y = data.rotY;
+    }
+  });
+  socket.on('playerShot', (data)=>{
+    createBulletEffect(data.x, data.y, data.z, data.dirX, data.dirZ);
+  });
+  socket.on('playerDamaged', (data)=>{
+    if(data.targetId === myId){
+      health = Math.max(0, health - data.damage);
+      document.getElementById('healthBox').textContent = `الدم: ${health} ❤️`;
+      if(health <= 0) triggerGameOver();
+    }
+  });
+  socket.on('playerDisconnected', (id)=>{
+    if(playersMap[id]){
+      scene.remove(playersMap[id].mesh);
+      delete playersMap[id];
+    }
+  });
+}
+
+function createRoom(){
+  initSocketConnection();
+  roomId = Math.random().toString(36).slice(2,7).toUpperCase();
+  socket.emit('createRoom', roomId);
+  document.getElementById('roomCode').textContent = roomId;
+  document.getElementById('roomPanel').classList.remove('hidden');
+  toast('تم إنشاء الغرفة: '+roomId);
+}
+
+function joinRoom(){
+  let c = document.getElementById('code').value.trim().toUpperCase();
+  if(!c) return toast('اكتب رمز الغرفة');
+  initSocketConnection();
+  roomId = c;
+  socket.emit('joinRoom', roomId);
+  document.getElementById('roomCode').textContent = c;
+  document.getElementById('roomPanel').classList.remove('hidden');
+}
+
+function startServerGame(){
+  initSocketConnection();
+  startGameSession();
+}
+
+function startLocalGame(){
+  roomId = 'LOCAL_' + Math.random().toString(36).slice(2,5);
+  startGameSession();
+}
+
+function startGameSession(){
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('game').classList.remove('hidden');
+  init3D();
+}
+
+function exitGame(){
+  location.reload();
+}
+
+function triggerGameOver(){
+  document.getElementById('gameOverScreen').classList.remove('hidden');
+}
+
+/* تهيئة محرك الرسوميات وثلاثي الأبعاد */
+function init3D(){
+  if(started) return;
+  started = true;
+  const game = document.getElementById('game');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87a8b5);
+  scene.fog = new THREE.Fog(0x87a8b5, 70, 230);
+
+  camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 500);
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  game.appendChild(renderer.domElement);
+
+  scene.add(new THREE.HemisphereLight(0xffe5c0, 0x55452e, 2));
+  let sun = new THREE.DirectionalLight(0xffdfaa, 3);
+  sun.position.set(-50, 90, 40);
+  sun.castShadow = true;
+  scene.add(sun);
+
+  // الأرضية التضاريسية
+  let g = new THREE.PlaneGeometry(180, 180, 100, 100), p = g.attributes.position;
+  for(let i=0; i<p.count; i++){
+    let x = p.getX(i), y = p.getY(i);
+    p.setZ(i, (Math.sin(x*.05)*1.1 + Math.cos(y*.06)*.9 + Math.sin((x+y)*.025)*1.4)*Math.min(Math.hypot(x,y)/45,1));
+  }
+  g.computeVertexNormals();
+  let ground = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xc79d63, roughness:1}));
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // بناء مجسم اللاعب (يشبه شخصية مكعبة بأسلوب مين كرافت مع سلاح دبابات/بندقية)
+  const playerGroup = new THREE.Group();
+  
+  // الجسم
+  const bodyMat = new THREE.MeshStandardMaterial({color: 0x4a5d4e});
+  const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 2), bodyMat);
+  bodyMesh.position.y = 0.9;
+  bodyMesh.castShadow = true;
+  playerGroup.add(bodyMesh);
+
+  // البرج أو الرأس
+  const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.MeshStandardMaterial({color: 0x2c382f}));
+  headMesh.position.set(0, 1.8, 0);
+  playerGroup.add(headMesh);
+
+  // السلاح (ماسورة أو بندقية مدمجة)
+  const gunMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 8), new THREE.MeshStandardMaterial({color: 0x111111}));
+  gunMesh.rotation.x = Math.PI/2;
+  gunMesh.position.set(0.4, 1.5, 1.2);
+  playerGroup.add(gunMesh);
+
+  playerGroup.position.set(0, 0, 0);
+  scene.add(playerGroup);
+  player = playerGroup;
+
+  setupJoystick();
+  setupKeyboardControls();
+
+  function loop(){
+    requestAnimationFrame(loop);
+    updatePlayerPhysics();
+    updateCameraPosition();
+    renderer.render(scene, camera);
+  }
+  loop();
+}
+
+/* إنشاء اللاعبين الآخرين في السيرفر */
+function createRemotePlayer(id, data){
+  const group = new THREE.Group();
+  const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 2), new THREE.MeshStandardMaterial({color: 0x8b3a3a}));
+  bodyMesh.position.y = 0.9;
+  group.add(bodyMesh);
+  
+  group.position.set(data.x || 0, data.y || 0, data.z || 0);
+  scene.add(group);
+  playersMap[id] = { mesh: group };
+}
+
+/* نظام التحكم باللمس والجويستيك الافتراضي */
+function setupJoystick(){
+  const zone = document.getElementById('joyZone');
+  const knob = document.getElementById('joyKnob');
+  let active = false, centerX=0, centerY=0;
+
+  zone.addEventListener('pointerdown', e=>{
+    active = true;
+    let rect = zone.getBoundingClientRect();
+    centerX = rect.left + rect.width/2;
+    centerY = rect.top + rect.height/2;
+  });
+  window.addEventListener('pointermove', e=>{
+    if(!active) return;
+    let dx = e.clientX - centerX;
+    let dy = e.clientY - centerY;
+    let dist = Math.hypot(dx, dy);
+    let maxDist = 40;
+    if(dist > maxDist){ dx = (dx/dist)*maxDist; dy = (dy/dist)*maxDist; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    moveX = dx / maxDist;
+    moveZ = dy / maxDist;
+  });
+  window.addEventListener('pointerup', ()=>{
+    if(!active) return;
+    active = false;
+    moveX = 0; moveZ = 0;
+    knob.style.transform = `translate(0px, 0px)`;
+  });
+}
+
+function setupKeyboardControls(){
+  window.addEventListener('keydown', e=>{
+    if(e.key === 'ArrowUp' || e.key === 'w') moveZ = -1;
+    if(e.key === 'ArrowDown' || e.key === 's') moveZ = 1;
+    if(e.key === 'ArrowLeft' || e.key === 'a') moveX = -1;
+    if(e.key === 'ArrowRight' || e.key === 'd') moveX = 1;
+    if(e.key === ' ') playerJump();
+    if(e.key === 'r' || e.key === 'R') playerReload();
+    if(e.key === 'c' || e.key === 'C') switchCamera();
+  });
+  window.addEventListener('keyup', e=>{
+    if(['ArrowUp','w','ArrowDown','s'].includes(e.key)) moveZ = 0;
+    if(['ArrowLeft','a','ArrowRight','d'].includes(e.key)) moveX = 0;
+  });
+}
+
+/* فيزياء الحركة والقسف ولمس الأرض */
+function updatePlayerPhysics(){
+  if(!player) return;
+  let speed = 0.12;
+  if(moveX !== 0 || moveZ !== 0){
+    player.position.x += moveX * speed;
+    player.position.z += moveZ * speed;
+    player.rotation.y = Math.atan2(moveX, moveZ);
+  }
+
+  // حساب القفز والجاذبية ولمس الأرض
+  if(isJumping){
+    velocityY += gravity;
+    player.position.y += velocityY;
+    if(player.position.y <= 0){
+      player.position.y = 0;
+      isJumping = false;
+      velocityY = 0;
+    }
+  }
+
+  // إرسال الموقع عبر السيرفر إن وجد
+  if(socket && roomId && (moveX !== 0 || moveZ !== 0)){
+    socket.emit('playerMove', { roomId, x: player.position.x, y: player.position.y, z: player.position.z, rotY: player.rotation.y });
+  }
+}
+
+function playerJump(){
+  if(!isJumping){
+    isJumping = true;
+    velocityY = 0.32; // قوة القفز
+    toast('قفز!');
+  }
+}
+
+/* التبديل بين أوضاع الكاميرا (ثالث، ثاني، أول) */
+function switchCamera(){
+  camMode = camMode >= 3 ? 1 : camMode + 1;
+  toast(camMode === 1 ? 'منظور ثالث خلفي' : camMode === 2 ? 'منظور ثاني (أمامي)' : 'منظور أول (مين كرافت)');
+}
+
+function updateCameraPosition(){
+  if(!player) return;
+  let px = player.position.x;
+  let py = player.position.y;
+  let pz = player.position.z;
+  let rotY = player.rotation.y;
+
+  if(camMode === 1){ // منظور ثالث
+    camera.position.set(px - Math.sin(rotY)*10, py + 5, pz - Math.cos(rotY)*10);
+    camera.lookAt(px, py + 1, pz);
+  } else if(camMode === 2){ // منظور ثاني (أمام اللاعب)
+    camera.position.set(px + Math.sin(rotY)*8, py + 3, pz + Math.cos(rotY)*8);
+    camera.lookAt(px, py, pz);
+  } else if(camMode === 3){ // منظور أول (داخل عيون اللاعب - مين كرافت)
+    camera.position.set(px, py + 1.8, pz);
+    let lookX = px - Math.sin(rotY)*10;
+    let lookZ = pz - Math.cos(rotY)*10;
+    camera.lookAt(lookX, py + 1.8, lookZ);
+  }
+}
+
+/* نظام إطلاق النار والتلقيم والدمج */
+function playerShoot(){
+  if(isReloading) return toast('جاري التلقيم...');
+  if(ammo <= 0) return toast('نفذت الذخيرة! اضغط زر التلقيم R');
+
+  ammo--;
+  document.getElementById('ammoBox').textContent = `الذخيرة: ${ammo}/${maxAmmo}`;
+  toast('🔥 إطلاق نار!');
+
+  let dirX = -Math.sin(player.rotation.y);
+  let dirZ = -Math.cos(player.rotation.y);
+
+  if(socket && roomId){
+    socket.emit('playerShoot', { roomId, x: player.position.x, y: player.position.y + 1.5, z: player.position.z, dirX, dirZ });
+  }
+
+  // فحص الإصابة للاعبين الآخرين في السيرفر المحلي أو المتصل
+  for(let id in playersMap){
+    let pObj = playersMap[id].mesh;
+    let dist = pObj.position.distanceTo(player.position);
+    if(dist < 5 && socket && roomId){
+      socket.emit('damagePlayer', { roomId, targetId: id, damage: 25 });
+      toast('أصبت الهدف بنجاح!');
+    }
+  }
+}
+
+function playerReload(){
+  if(isReloading || ammo === maxAmmo) return;
+  isReloading = true;
+  toast('جاري تلقيم السلاح...');
+  setTimeout(()=>{
+    ammo = maxAmmo;
+    isReloading = false;
+    document.getElementById('ammoBox').textContent = `الذخيرة: ${ammo}/${maxAmmo}`;
+    toast('تم التلقيم بنجاح!');
+  }, 1500);
+}
+
+function createBulletEffect(x, y, z, dx, dz){
+  let bulletGeo = new THREE.SphereGeometry(0.2, 8, 8);
+  let bulletMat = new THREE.MeshBasicMaterial({color: 0xffff00});
+  let bullet = new THREE.Mesh(bulletGeo, bulletMat);
+  bullet.position.set(x, y, z);
+  scene.add(bullet);
+
+  let step = 0;
+  let interval = setInterval(()=>{
+    bullet.position.x += dx * 0.8;
+    bullet.position.z += dz * 0.8;
+    step++;
+    if(step > 30){
+      clearInterval(interval);
+      scene.remove(bullet);
+    }
+  }, 30);
+}
+</script>
+</body>
+</html>
