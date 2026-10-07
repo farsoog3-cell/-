@@ -2908,6 +2908,7 @@
     const REAL_BUILD_FACTORY_SEC = 20;
     const REAL_BUILD_BARRACKS_SEC = 12;
     const REAL_TRAIN_INFANTRY_SEC = 8;
+    let gameClockNow=performance.now(), gameDeltaSeconds=1/60, gameDeltaTicks=1;
     const REAL_BUILD_VEHICLE_SEC = 15;
     const REAL_BUILD_SCOUT_SEC = 12;
     const SIM_STEP_MS = 1000 / 60;
@@ -7010,9 +7011,9 @@
         const hasArmyFactory=constructedFactories.some(f=>f&&f.done&&!f.isDestroyed&&f.owner!=='enemy');
         if(!hasArmyFactory){showFloatingMsg('🪖 Build the Army Factory first');return;}
         if(playerMoney<150){showFloatingMsg('Insufficient funds — barracks costs $150');return;}
-        hideFactoryPlacement();playerMoney-=150;totalMoneySpent+=150;updateEconomyUI();
         point.y=getBuildingGroundLevel(point.x,point.z,'barracks',rotation);
         if(!isBuildingPlacementValid(point,'barracks',rotation,'player').valid){showFloatingMsg('🚫 موقع الثكنة غير صالح للبناء');return;}
+        hideFactoryPlacement();playerMoney-=150;totalMoneySpent+=150;updateEconomyUI();
         const build=createMilitaryBarracks(point.x,point.z,true);build.owner='player';
         build.mesh.position.y=point.y+.03;build.mesh.userData.barracksOwner='player';build.mesh.visible=true;build.mesh.scale.setScalar(.06);build.mesh.rotation.y=rotation;build.rotation=rotation;build.mesh.position.y=getTerrainHeight(point.x,point.z)-8;
         // تأكيد أن مبنى البناء موجود في المشهد، وليس مجرد بيانات منطقية.
@@ -7067,7 +7068,7 @@
         for(const barracks of constructedBarracks){
             const p=barracks&&barracks.productionJob;
             if(!p||!barracks.done||barracks.isDestroyed)continue;
-            any=true;p.elapsed++;
+            any=true;p.elapsed+=gameDeltaTicks;
             if(p.elapsed>=p.duration){
                 produceBarracksUnit(barracks);
                 barracks.productionJob=null;
@@ -7207,7 +7208,9 @@ function createArmyFactory(x,z,ghost=false){
         const concrete=M(0xb9bab3,.94,.04), wall=M(0xd0d2cc,.84,.08), panel=M(0xaeb3b0,.68,.30);
         const roof=M(0x59615f,.58,.68), dark=M(0x1e2523,.86,.28), steel=M(0x858d8a,.46,.76);
         const glass=M(0x243d3d,.26,.60), sand=M(0x81765a,.98,.02);
-        const accentColor=group.userData.factoryOwner==='enemy'?(battleConfig.enemyColor||'#f43f5e'):(battleConfig.playerColor||'#168cff');
+        const factoryOwner=(group.userData.factoryOwner||(window.__remoteFactoryOwner||'player'));
+        group.userData.factoryOwner=factoryOwner;
+        const accentColor=factoryOwner==='enemy'?(battleConfig.enemyColor||'#f43f5e'):(battleConfig.playerColor||'#168cff');
         const accent=new THREE.MeshStandardMaterial({color:accentColor,roughness:.58,metalness:.25}); accent.userData.teamAccent=true;
         const box=(w,h,d,mat,px,py,pz,ry=0)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);o.position.set(px,py,pz);o.rotation.y=ry;o.castShadow=true;o.receiveShadow=true;group.add(o);return o;};
         const cyl=(r,h,mat,px,py,pz,seg=18,rx=0,rz=0)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),mat);o.position.set(px,py,pz);o.rotation.x=rx;o.rotation.z=rz;o.castShadow=true;o.receiveShadow=true;group.add(o);return o;};
@@ -7306,7 +7309,7 @@ function createArmyFactory(x,z,ghost=false){
         for(let i=0;i<4;i++) box(1.0,.9,1.0,panel,5.2+i*.95,1.05,8.5);
 
         // أعلام المصنع.
-        const factoryFlagTeam=ghost?(typeof playerFlagType==='string'?playerFlagType:(battleConfig.playerColor||'#168cff')):((group.userData.factoryOwner==='enemy')?(typeof enemyFlagType==='string'?enemyFlagType:(battleConfig.enemyColor||'#f43f5e')):(typeof playerFlagType==='string'?playerFlagType:(battleConfig.playerColor||'#168cff')));
+        const factoryFlagTeam=ghost?(typeof playerFlagType==='string'?playerFlagType:(battleConfig.playerColor||'#168cff')):((factoryOwner==='enemy')?(typeof enemyFlagType==='string'?enemyFlagType:(battleConfig.enemyColor||'#f43f5e')):(typeof playerFlagType==='string'?playerFlagType:(battleConfig.playerColor||'#168cff')));
         const makeFlag=(px,pz,h,scale=1)=>{
             const pole=new THREE.Mesh(new THREE.CylinderGeometry(.08,.12,h,10),steel);pole.position.set(px,h/2,pz);group.add(pole);
             const fm=new THREE.MeshStandardMaterial({map:createFlagTexture(factoryFlagTeam),side:THREE.DoubleSide,transparent:true,roughness:.68,metalness:.02});
@@ -7403,7 +7406,7 @@ function createArmyFactory(x,z,ghost=false){
         const c=enemyFactoryConstruction;if(!c)return;const b=c.builder;
         if(!b||b.isDestroyed){removeConstructionLift(c);enemyFactoryConstruction=null;return;}
         if(!c.started){if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;}return;}
-        c.elapsed++;updateConstructionLift(c.lift);updateFactoryConstructionCage(c,Math.min(1,c.elapsed/c.build.duration));const p=Math.min(1,c.elapsed/Math.max(1,c.build.duration||REAL_BUILD_FACTORY_SEC*REAL_TICKS_PER_SECOND));c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*.92);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.12+p*1.05);});
+        c.elapsed+=gameDeltaTicks;updateConstructionLift(c.lift);updateFactoryConstructionCage(c,Math.min(1,c.elapsed/c.build.duration));const p=Math.min(1,c.elapsed/Math.max(1,c.build.duration||REAL_BUILD_FACTORY_SEC*REAL_TICKS_PER_SECOND));c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*.92);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.12+p*1.05);});
         if(p>=1){c.build.done=true;c.build.mesh.scale.setScalar(1);removeFactoryConstructionCage(c);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});removeConstructionLift(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}b.isBuilding=false;b.buildTarget=null;const r=c.build.rotation||0;const retreat=c.build.mesh.position.clone().sub(new THREE.Vector3(Math.sin(r),0,Math.cos(r)).multiplyScalar(13));retreat.y=getTerrainHeight(retreat.x,retreat.z);b.target=retreat;b.factoryRetreating=true;enemyFactories.push(c.build);constructedFactories.push(c.build);enemyFactoryConstruction=null;}
     }
 
@@ -7706,7 +7709,7 @@ function createArmyFactory(x,z,ghost=false){
         let any=false;
         for(const factory of constructedFactories){
             const p=factory&&factory.productionJob;if(!p||!factory.done||factory.isDestroyed)continue;
-            any=true;p.elapsed++;
+            any=true;p.elapsed+=gameDeltaTicks;
             if(p.elapsed>=p.duration){produceFactoryUnit(factory,p.type);factory.productionJob=null;}
         }
         activeFactoryProduction=selectedFactory&&selectedFactory.productionJob?selectedFactory.productionJob:null;
@@ -10473,11 +10476,11 @@ function createArmyFactory(x,z,ghost=false){
             const enemyInf=enemyTanks.filter(t=>t&&t.isInfantry&&!t.isDestroyed&&t.mesh.position.distanceTo(base)<13);
             const playerNear=playerInf.length>0, enemyNear=enemyInf.length>0;
             if(playerNear && !enemyNear && rig.owner!=='player'){
-                rig.captureProgress=Math.min(100,rig.captureProgress+(100/(5*REAL_TICKS_PER_SECOND)));
+                rig.captureProgress=Math.min(100,rig.captureProgress+(100/5)*gameDeltaSeconds);
                 const soldier=playerInf[0];
                 if(rig.captureProgress>=100 && rig.owner!=='player') beginOilCaptureAnimation(soldier,rig);
             }else if(enemyNear && !playerNear && rig.owner!=='enemy'){
-                rig.captureProgress=Math.max(-100,rig.captureProgress-(100/(5*REAL_TICKS_PER_SECOND)));
+                rig.captureProgress=Math.max(-100,rig.captureProgress-(100/5)*gameDeltaSeconds);
                 const soldier=enemyInf[0];
                 if(rig.captureProgress<=-100 && rig.owner!=='enemy') beginOilCaptureAnimation(soldier,rig);
             }else if(playerNear&&enemyNear){
@@ -10791,9 +10794,9 @@ function createArmyFactory(x,z,ghost=false){
     function startFactoryConstruction(builder,point,rotation=0){
         if(!builder || isBuilderFactoryBusy(builder)) return;
         if(playerMoney<400){showFloatingMsg('Insufficient funds to build the factory');return;}
-        hideFactoryPlacement();playerMoney-=400;totalMoneySpent+=400;updateEconomyUI();
         point.y=getTerrainHeight(point.x,point.z);
         if(!isBuildingPlacementValid(point,'factory',rotation,'player').valid){showFloatingMsg('🚫 موقع المصنع غير صالح للبناء');return;}
+        hideFactoryPlacement();playerMoney-=400;totalMoneySpent+=400;updateEconomyUI();
         const base=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);
         const away=new THREE.Vector3(point.x-base.x,0,point.z-base.z);
         if(away.lengthSq()>0.01)rotation=Math.atan2(away.x,away.z);
@@ -10818,7 +10821,7 @@ function createArmyFactory(x,z,ghost=false){
                 if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
                 remaining.push(c);continue;
             }
-            c.elapsed++;updateConstructionLift(c.lift);
+            c.elapsed+=gameDeltaTicks;updateConstructionLift(c.lift);
             if(b.buildBlade){const a=Math.sin(c.elapsed*.12)*.24;b.buildBlade.rotation.x=a;b.buildBlade.position.y=.15+Math.max(0,Math.sin(c.elapsed*.12))*.22;}
             const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*.92);
             c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)-8+8*p+.03;
@@ -12494,6 +12497,13 @@ window.updateCameraSensitivity=function(v){
     playerFlagType=battleConfig.playerColor;enemyFlagType=battleConfig.enemyColor;
     applyTeamVisual('player',battleConfig.playerColor);
     applyTeamVisual('enemy',battleConfig.enemyColor);
+    // Re-apply the selected online colors after all base/unit meshes exist.
+    setTimeout(()=>{
+      applyTeamVisual('player',battleConfig.playerColor);
+      applyTeamVisual('enemy',battleConfig.enemyColor);
+      if(typeof playerBaseGroup!=='undefined'&&playerBaseGroup) playerBaseGroup.userData.team='player';
+      if(typeof enemyBaseGroup!=='undefined'&&enemyBaseGroup) enemyBaseGroup.userData.team='enemy';
+    },0);
     if(typeof updateEconomyUI==='function')updateEconomyUI();
     try{menuBgmAudio.pause();menuBgmAudio.currentTime=0;}catch(e){}
     try{unlockGameAudio();playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});}catch(e){}
@@ -12617,8 +12627,8 @@ window.updateCameraSensitivity=function(v){
       roomId:m.roomId,
       clientId,
       playerSlot:Number(m.playerId)||0,
-      playerServerId:m.playerServerId||m.clientId||clientId,
-      opponentServerId:m.opponentId||null,
+      playerServerId:m.playerServerId||my.id||m.clientId||clientId,
+      opponentServerId:m.opponentServerId||opp.id||m.opponentId||null,
       playerId:m.playerId,
       opponentId:m.opponentId,
       seed:m.seed,
@@ -12670,7 +12680,8 @@ window.updateCameraSensitivity=function(v){
     if(!u.__netId){
       const owner=u.team||u.owner||'neutral';
       const kind=u.type||(u.isInfantry?'infantry':prefix);
-      u.__netId=owner+':'+kind+':'+prefix+':'+Math.random().toString(36).slice(2,8);
+      window.__netObjectCounter=(window.__netObjectCounter||0)+1;
+      u.__netId=owner+':'+kind+':'+prefix+':'+window.__netObjectCounter;
     }
     return u.__netId;
   }
@@ -12707,13 +12718,15 @@ window.updateCameraSensitivity=function(v){
   }
   function collectOil(){
     if(!Array.isArray(oilRigs))return [];
-    return oilRigs.filter(r=>r&&!r.isDestroyed).map((r,i)=>({id:r.__netId||(r.__netId='oil:'+i+':'+Math.random().toString(36).slice(2,7)),x:safeNum(r.x),z:safeNum(r.z),hp:Math.max(0,safeNum(r.hp,700)),maxHp:Math.max(1,safeNum(r.maxHp,700)),owner:r.owner||'none',captureProgress:safeNum(r.captureProgress)}));
+    return oilRigs.filter(r=>r&&!r.isDestroyed).map((r,i)=>({id:r.__netId||(r.__netId='oil:'+i),x:safeNum(r.x),z:safeNum(r.z),hp:Math.max(0,safeNum(r.hp,700)),maxHp:Math.max(1,safeNum(r.maxHp,700)),owner:r.owner||'none',captureProgress:safeNum(r.captureProgress)}));
   }
   function ownState(){return {money:Math.max(0,Math.floor(safeNum(playerMoney,0))),units:collectUnits(),buildings:collectBuildings(),oil:collectOil(),base:{hp:playerBaseGroup&&safeNum(playerBaseGroup.hp,1600),maxHp:playerBaseGroup&&safeNum(playerBaseGroup.maxHp,1600)}};}
   function serverSendSnapshot(){
     if(!online()||!window.sendOnlineEvent)return;
     const now=performance.now(); if(now-lastUpload<SEND_MS)return; lastUpload=now;
-    window.sendOnlineEvent({kind:'authoritative_snapshot',clientTick:Math.floor(now/50),state:ownState()});
+    window.__onlineStateSeq=(window.__onlineStateSeq||0)+1;
+    const state=ownState(); state.__seq=window.__onlineStateSeq; state.__clientTime=Date.now();
+    window.sendOnlineEvent({kind:'authoritative_snapshot',clientTick:Math.floor(now/50),state});
   }
   function findLocalUnit(id){
     const arrays=[playerTanks,reconVehicles,ambulances];
@@ -12757,7 +12770,9 @@ window.updateCameraSensitivity=function(v){
     try{
       let created=null;
       if(s.type==='factory'&&typeof createArmyFactory==='function'){
+        const oldOwner=window.__remoteFactoryOwner; window.__remoteFactoryOwner='enemy';
         created=createArmyFactory(s.x,s.z,false);
+        window.__remoteFactoryOwner=oldOwner;
         if(created){created.owner='enemy';created.mesh.userData.factoryOwner='enemy';if(typeof updateFactoryFlagOwner==='function')updateFactoryFlagOwner(created,'enemy');if(Array.isArray(enemyFactories)&&!enemyFactories.includes(created))enemyFactories.push(created);}
       }else if(s.type==='barracks'&&typeof createMilitaryBarracks==='function'){
         created=createMilitaryBarracks(s.x,s.z,false,'enemy');
@@ -12784,23 +12799,44 @@ window.updateCameraSensitivity=function(v){
     if(!packet||!packet.players)return;
     if(Number.isFinite(packet.tick)&&packet.tick<lastServerTick)return;lastServerTick=Number(packet.tick)||lastServerTick;
     const me=window.onlineMatch&&window.onlineMatch.playerServerId;
+    if(!me) return;
+    let foundOpponent=false;
     for(const p of packet.players){
       if(!p||p.id===me||!p.state)continue;
+      foundOpponent=true;
       const color=p.color||battleConfig.enemyColor||'#ef4444';
       const unitIds=new Set((p.state.units||[]).map(x=>x.id));
-      (p.state.units||[]).forEach(s=>applyUnit(s,p.id,color));
-      for(const [id,u] of remote){if(u&&u.__remoteOwner===p.id&&!unitIds.has(id)){u.isDestroyed=true;if(u.mesh)u.mesh.visible=false;}}
+      (p.state.units||[]).forEach(s=>{applyUnit(s,p.id,color); const ru=remote.get(s.id); if(ru) ru.__lastNetSeen=performance.now();});
+      // Do not delete a remote unit because one packet was lost. Hide it only after a grace period.
+      for(const [id,u] of remote){
+        if(!u||u.__remoteOwner!==p.id||unitIds.has(id))continue;
+        if(!u.__lastNetSeen)u.__lastNetSeen=performance.now();
+        if(performance.now()-u.__lastNetSeen>1800){u.isDestroyed=true;if(u.mesh)u.mesh.visible=false;}
+      }
       const buildingIds=new Set((p.state.buildings||[]).map(x=>x.id));
-      (p.state.buildings||[]).forEach(s=>applyBuilding(s,p.id,color));
-      hideMissingRemoteBuildings(buildingIds,p.id);
+      (p.state.buildings||[]).forEach(s=>{applyBuilding(s,p.id,color); const rb=remoteBuildings.get(s.id); if(rb) rb.__lastNetSeen=performance.now();});
+      for(const [id,b] of remoteBuildings){
+        if(!b||b.__remoteOwner!==p.id||buildingIds.has(id))continue;
+        if(!b.__lastNetSeen)b.__lastNetSeen=performance.now();
+        if(performance.now()-b.__lastNetSeen>2200){b.isDestroyed=true;if(b.mesh)b.mesh.visible=false;}
+      }
       if(p.state.base&&typeof enemyBaseGroup!=='undefined'&&enemyBaseGroup){
         enemyBaseGroup.hp=safeNum(p.state.base.hp,enemyBaseGroup.hp||1600);enemyBaseGroup.maxHp=safeNum(p.state.base.maxHp,enemyBaseGroup.maxHp||1600);
         if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color);
       }
       window.remoteOpponentMoney=Math.max(0,Math.floor(safeNum(p.state.money,0)));
+      window.remoteOpponentColor=color;
     }
     const mine=packet.players.find(p=>p&&p.id===me);
-    if(mine&&mine.state&&Number.isFinite(Number(mine.state.money))){playerMoney=Math.max(0,Math.floor(Number(mine.state.money)));if(typeof updateEconomyUI==='function')updateEconomyUI();}
+    if(mine&&mine.state&&Number.isFinite(Number(mine.state.money))){
+      const seq=Number(mine.state.__seq||0);
+      const last=Number(window.__lastAppliedMineMoneySeq||0);
+      if(seq>=last){window.__lastAppliedMineMoneySeq=seq;playerMoney=Math.max(0,Math.floor(Number(mine.state.money)));if(typeof updateEconomyUI==='function')updateEconomyUI();}
+    }
+    if(foundOpponent && window.remoteOpponentColor){
+      battleConfig.enemyColor=window.remoteOpponentColor;
+      applyTeamVisual('enemy',window.remoteOpponentColor);
+    }
   }
   window.addEventListener('onlineServerState',e=>applyRemoteState(e.detail));
   function watch(){
