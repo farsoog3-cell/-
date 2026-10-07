@@ -6667,21 +6667,18 @@
         build.mesh.position.y=point.y+.03;build.mesh.userData.barracksOwner='player';build.mesh.visible=true;build.mesh.scale.setScalar(.06);build.mesh.rotation.y=rotation;build.rotation=rotation;build.mesh.position.y=getTerrainHeight(point.x,point.z)-8;
         // تأكيد أن مبنى البناء موجود في المشهد، وليس مجرد بيانات منطقية.
         if(build.mesh.parent!==scene) scene.add(build.mesh);
-        activeBarracksConstruction={builder,point:point.clone(),build,started:false,elapsed:0,workPoint:point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-11)),cage:null,lift:null};
+        activeBarracksConstruction={builder,point:point.clone(),build,started:true,elapsed:0,workPoint:point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-11)),cage:null,lift:null};
         activeBarracksConstruction.workPoint.y=getTerrainHeight(activeBarracksConstruction.workPoint.x,activeBarracksConstruction.workPoint.z);
         const foundationMat=new THREE.MeshStandardMaterial({color:0x747a70,roughness:.82,metalness:.12}); const foundation=new THREE.Mesh(new THREE.BoxGeometry(18.2,.42,12.8),foundationMat); foundation.position.set(point.x,getTerrainHeight(point.x,point.z)+.21,point.z); foundation.rotation.y=rotation; foundation.castShadow=true; foundation.receiveShadow=true; scene.add(foundation); build.mesh.userData.constructionFoundation=foundation;
         activeBarracksConstruction.cage=createBarracksConstructionCage(build);
         activeBarracksConstruction.lift=createBarracksConstructionLift(build);
-        barracksPlacementPoint=null;builder.buildTarget=activeBarracksConstruction.workPoint.clone();builder.target=builder.buildTarget.clone();builder.isBuilding=false;
+        barracksPlacementPoint=null;builder.buildTarget=activeBarracksConstruction.workPoint.clone();builder.target=builder.buildTarget.clone();builder.isBuilding=true;
         updateConstructionBarForSelection();showFloatingMsg('🏗️ Construction dozer and crane moving to the barracks');
     }
     function updateBarracksConstruction(){
         const c=activeBarracksConstruction;if(!c)return;const b=c.builder;
         if(!b||b.isDestroyed){removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);activeBarracksConstruction=null;updateConstructionBarForSelection();return;}
-        if(!c.started){
-            if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;showFloatingMsg('🪖 Barracks construction started — crane operating');}
-            return;
-        }
+        if(!c.started){ c.started=true; c.elapsed=0; b.isBuilding=true; }
         c.elapsed++;updateBarracksConstructionLift(c.lift);
         if(b.buildBlade){const a=Math.sin(c.elapsed*.10)*.30;b.buildBlade.rotation.x=a;b.buildBlade.position.y=(b.buildBlade.userData.baseY||.10)+Math.max(0,Math.sin(c.elapsed*.10))*.55;}
         const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;
@@ -10353,8 +10350,11 @@ function createArmyFactory(x,z,ghost=false){
         const foundationMat=new THREE.MeshStandardMaterial({color:0x747a70,roughness:.82,metalness:.12});
         const foundation=new THREE.Mesh(new THREE.BoxGeometry(25,.45,20),foundationMat); foundation.position.set(point.x,point.y+.22,point.z); foundation.rotation.y=rotation; foundation.castShadow=true; foundation.receiveShadow=true; scene.add(foundation); build.mesh.userData.constructionFoundation=foundation;
         c.cage=createFactoryConstructionCage(build);c.lift=createConstructionLift(build);
+        // يبدأ البناء فور تثبيت الموقع. التركس يتجه إلى نقطة العمل بينما
+        // العداد والقفص والرافعة يعملون فعلياً، فلا يبقى اللاعب منتظراً حالة مخفية.
+        c.started=true; c.elapsed=0;
         activeFactoryConstructions.push(c);activeFactoryConstruction=c;
-        factoryPlacementPoint=null;builder.buildTarget=c.workPoint.clone();builder.target=c.workPoint.clone();builder.isBuilding=false;
+        factoryPlacementPoint=null;builder.buildTarget=c.workPoint.clone();builder.target=c.workPoint.clone();builder.isBuilding=true;
         updateConstructionBarForSelection();showFloatingMsg('🏗️ Construction dozer and crane moving to the factory');
     }
     function updateFactoryConstruction(){
@@ -10364,8 +10364,7 @@ function createArmyFactory(x,z,ghost=false){
             const b=c.builder;
             if(!b||b.isDestroyed){removeConstructionLift(c);removeFactoryConstructionCage(c);continue;}
             if(!c.started){
-                if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
-                remaining.push(c);continue;
+                c.started=true; c.elapsed=0; b.isBuilding=true;
             }
             c.elapsed+=gameDeltaTicks;updateConstructionLift(c.lift);
             if(b.buildBlade){const a=Math.sin(c.elapsed*.12)*.24;b.buildBlade.rotation.x=a;b.buildBlade.position.y=.15+Math.max(0,Math.sin(c.elapsed*.12))*.22;}
@@ -11602,6 +11601,19 @@ window.updateCameraSensitivity=function(v){
       enemyBaseGroup.position.set(enemyX,getTerrainHeight(enemyX,enemyZ),enemyZ);
       enemyBaseGroup.rotation.y=mySlot===1?Math.PI/4:-(3*Math.PI)/4;
     }
+    // أعلام المعسكر الرئيسية يجب أن تتحرك مع المعسكر الفعلي في المباراة،
+    // خصوصاً للاعب رقم 2 الذي يبدأ في الركن المقابل.
+    const syncMainFlag = (ref,x,z) => {
+      try{
+        const parent=ref&&ref.mesh&&ref.mesh.parent;
+        if(parent){
+          parent.position.set(x,getTerrainHeight(x,z),z);
+          parent.rotation.y=(x>0 ? -(3*Math.PI)/4 : Math.PI/4);
+        }
+      }catch(_){}
+    };
+    syncMainFlag(playerFlagDataRef,myX,myZ);
+    syncMainFlag(enemyFlagDataRef,enemyX,enemyZ);
     if(typeof playerTanks!=='undefined'){
       playerTanks.filter(u=>u&&u.__localPlayerUnit).forEach(u=>{
         u.mesh.position.set(myX+(mySlot===1?-35:35),getTerrainHeight(myX+(mySlot===1?-35:35),myZ+(mySlot===1?-35:35)),myZ+(mySlot===1?-35:35));
@@ -11617,6 +11629,10 @@ window.updateCameraSensitivity=function(v){
     applyTeamVisual('enemy',battleConfig.enemyColor);
     // Re-apply the selected online colors after all base/unit meshes exist.
     setTimeout(()=>{
+      try{
+        if(playerFlagDataRef?.mesh?.parent){playerFlagDataRef.mesh.parent.position.set(myX,getTerrainHeight(myX,myZ),myZ);}
+        if(enemyFlagDataRef?.mesh?.parent){enemyFlagDataRef.mesh.parent.position.set(enemyX,getTerrainHeight(enemyX,enemyZ),enemyZ);}
+      }catch(_){}
       applyTeamVisual('player',battleConfig.playerColor);
       applyTeamVisual('enemy',battleConfig.enemyColor);
       if(typeof playerBaseGroup!=='undefined'&&playerBaseGroup) playerBaseGroup.userData.team='player';
