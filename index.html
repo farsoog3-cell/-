@@ -3825,20 +3825,27 @@
             ctx.putImageData(img,0,0);
 
             // طبقات تمويه ترابي ناعمة، بدون بقع دائرية واضحة.
+            // مهم للمباراة الشبكية: لا نستخدم Math.random هنا، وإلا سيحصل كل جهاز
+            // على نسيج أرض مختلف بصرياً رغم أن ارتفاعات الخريطة متطابقة.
+            const seeded=(n)=>{
+                let v=(n*1664525+1013904223)>>>0;
+                v^=v>>>16; v=Math.imul(v,2246822519)>>>0; v^=v>>>13;
+                return (v>>>0)/4294967295;
+            };
             for(let i=0;i<90;i++){
-                const x=Math.random()*size,y=Math.random()*size;
-                const rx=18+Math.random()*95, ry=7+Math.random()*38;
+                const x=seeded(i*17+3)*size,y=seeded(i*29+7)*size;
+                const rx=18+seeded(i*31+11)*95, ry=7+seeded(i*37+13)*38;
                 const g=ctx.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
-                const dark=Math.random()<.52;
+                const dark=seeded(i*41+17)<.52;
                 g.addColorStop(0,dark?'rgba(104,76,48,.10)':'rgba(236,211,169,.09)');
                 g.addColorStop(1,'rgba(0,0,0,0)');
-                ctx.save();ctx.translate(x,y);ctx.rotate(Math.random()*Math.PI);ctx.scale(rx/Math.max(rx,ry),ry/Math.max(rx,ry));
+                ctx.save();ctx.translate(x,y);ctx.rotate(seeded(i*43+19)*Math.PI);ctx.scale(rx/Math.max(rx,ry),ry/Math.max(rx,ry));
                 ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,Math.max(rx,ry),0,Math.PI*2);ctx.fill();ctx.restore();
             }
-            // حبيبات صغيرة واضحة عند الاقتراب بالكاميرا.
+            // حبيبات صغيرة واضحة عند الاقتراب بالكاميرا، أيضاً ثابتة بين اللاعبين.
             for(let i=0;i<2600;i++){
-                const x=Math.random()*size,y=Math.random()*size,r=.25+Math.random()*.8;
-                ctx.fillStyle=Math.random()<.72?'rgba(105,78,52,.16)':'rgba(245,224,190,.18)';
+                const x=seeded(i*47+23)*size,y=seeded(i*53+29)*size,r=.25+seeded(i*59+31)*.8;
+                ctx.fillStyle=seeded(i*61+37)<.72?'rgba(105,78,52,.16)':'rgba(245,224,190,.18)';
                 ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
             }
             const tex=new THREE.CanvasTexture(c);
@@ -4154,7 +4161,7 @@
             const white = mat(0xd7d4c6,.91,.02);
             const sand = mat(0xa49d83,1,.0);
             const black = mat(0x202522,.84,.05);
-            const teamMat = mat(teamHex,.72,.12);
+            const teamMat = mat(teamHex,.72,.12); teamMat.userData.teamAccent=true;
             const glass = new THREE.MeshStandardMaterial({color:0x26383a,roughness:.24,metalness:.38,transparent:true,opacity:.78});
 
             const addBox = (w,h,d,material,x,y,z,rotY=0,rotX=0,rotZ=0) => {
@@ -5554,9 +5561,9 @@
     function createReconVehicle(x, z, team = 'player') {
         const group = new THREE.Group();
         group.name = 'reconVehicle';
-        const body = new THREE.MeshStandardMaterial({color:(team==='enemy' ? (battleConfig.enemyColor || '#f43f5e') : (battleConfig.playerColor || '#168cff')), roughness:.52, metalness:.48});
+        const body = new THREE.MeshStandardMaterial({color:(team==='enemy' ? (battleConfig.enemyColor || '#f43f5e') : (battleConfig.playerColor || '#168cff')), roughness:.52, metalness:.48}); body.userData.teamAccent=true;
         const dark = new THREE.MeshStandardMaterial({color:0x141b16, roughness:.72, metalness:.35});
-        const panel = new THREE.MeshStandardMaterial({color:(team==='enemy' ? (battleConfig.enemyColor || '#f43f5e') : (battleConfig.playerColor || '#168cff')), roughness:.46, metalness:.5});
+        const panel = new THREE.MeshStandardMaterial({color:(team==='enemy' ? (battleConfig.enemyColor || '#f43f5e') : (battleConfig.playerColor || '#168cff')), roughness:.46, metalness:.5}); panel.userData.teamAccent=true;
         const glass = new THREE.MeshStandardMaterial({color:0x183b3a, roughness:.12, metalness:.7, transparent:true, opacity:.9});
         const green = new THREE.MeshStandardMaterial({color:0x22c55e, emissive:0x166534, emissiveIntensity:2.0, roughness:.28, metalness:.3});
 
@@ -6095,7 +6102,7 @@
         
         let baseColor = isRocketTank ? 0x4a5d4e : colorHex;
         
-        const armorMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.4, metalness: 0.5 });
+        const armorMat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.4, metalness: 0.5 }); armorMat.userData.teamAccent=true;
         const wheelMat = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.6, metalness: 0.3 });
 
         if (isRocketTank) {
@@ -12484,7 +12491,7 @@ window.updateCameraSensitivity=function(v){
     const start=document.getElementById('start-menu');if(start)start.style.display='none';
     const ui=document.getElementById('ui-overlay');if(ui)ui.style.display='block';
     try{playSound('buy');}catch(e){}
-    const px=CORNER_OFFSET,pz=CORNER_OFFSET,th=getTerrainHeight(px,pz);
+    const px=myX,pz=myZ,th=getTerrainHeight(px,pz);
     targetLookAt.set(px,th,pz);targetCameraRadius=110;cameraPhi=Math.PI/3.8;cameraRadius=targetCameraRadius;updateCameraPosition();
     showFloatingMsg('⚔ Battle started!');
   };
@@ -12624,247 +12631,160 @@ window.updateCameraSensitivity=function(v){
 (function(){
   'use strict';
 
-  const SEND_MS = 100;       // 10 state uploads/sec
-  const APPLY_MS = 50;      // 20 visual reconciliation passes/sec
+  const SEND_MS = 80; // 12.5 snapshots/sec for responsive PvP movement/building sync.
   let lastUpload = 0;
   let lastServerTick = -1;
   let syncTimer = null;
-  let applyTimer = null;
   let onlineStarted = false;
   const remote = new Map();
+  const remoteBuildings = new Map();
+  const remoteOil = new Map();
 
   function online(){ return !!window.onlineMatch; }
-
-  function safeNum(v, fallback=0){
-    return Number.isFinite(Number(v)) ? Number(v) : fallback;
-  }
+  function safeNum(v, fallback=0){ return Number.isFinite(Number(v)) ? Number(v) : fallback; }
 
   function idFor(u, prefix){
     if(!u) return null;
     if(!u.__netId){
-      const owner = u.team || 'neutral';
-      const kind = u.type || (u.isInfantry ? 'infantry' : prefix);
-      u.__netId = owner + ':' + kind + ':' + prefix + ':' +
-        Math.random().toString(36).slice(2,8);
+      const owner=u.team||u.owner||'neutral';
+      const kind=u.type||(u.isInfantry?'infantry':prefix);
+      u.__netId=owner+':'+kind+':'+prefix+':'+Math.random().toString(36).slice(2,8);
     }
     return u.__netId;
   }
-
-  function unitSnapshot(u, prefix){
-    if(!u || !u.mesh || u.isDestroyed) return null;
+  function unitSnapshot(u,prefix){
+    if(!u||!u.mesh||u.isDestroyed)return null;
     const p=u.mesh.position;
-    return {
-      id:idFor(u,prefix),
-      type:u.type || (u.isInfantry?'infantry':prefix),
-      infantry:!!u.isInfantry,
-      x:safeNum(p.x), z:safeNum(p.z),
-      y:safeNum(p.y), rot:safeNum(u.mesh.rotation.y),
-      hp:Math.max(0,safeNum(u.hp,100)),
-      maxHp:Math.max(1,safeNum(u.maxHp,100)),
-      destroyed:false,
-      target:u.target ? {x:safeNum(u.target.x),z:safeNum(u.target.z)} : null,
-      guard:u.guardPoint ? {x:safeNum(u.guardPoint.x),z:safeNum(u.guardPoint.z)} : null
-    };
+    return {id:idFor(u,prefix),type:u.type||(u.isInfantry?'infantry':prefix),infantry:!!u.isInfantry,
+      x:safeNum(p.x),z:safeNum(p.z),y:safeNum(p.y),rot:safeNum(u.mesh.rotation.y),
+      hp:Math.max(0,safeNum(u.hp,100)),maxHp:Math.max(1,safeNum(u.maxHp,100)),destroyed:false,
+      target:u.target&&u.target.x!==undefined?{x:safeNum(u.target.x),z:safeNum(u.target.z)}:null,
+      guard:u.guardPoint?{x:safeNum(u.guardPoint.x),z:safeNum(u.guardPoint.z)}:null};
   }
-
   function collectUnits(){
     const out=[];
-    const add=(arr,prefix)=>{
-      if(!Array.isArray(arr)) return;
-      arr.forEach(u=>{ const s=unitSnapshot(u,prefix); if(s) out.push(s); });
-    };
-    add(playerTanks,'tank');
-    add(reconVehicles,'scout');
-    add(ambulances,'ambulance');
+    const add=(arr,prefix)=>{if(!Array.isArray(arr))return;arr.forEach(u=>{const s=unitSnapshot(u,prefix);if(s)out.push(s);});};
+    add(playerTanks.filter(u=>u&&!u.__serverRemote),'tank');
+    add(reconVehicles.filter(u=>u&&!u.__serverRemote),'scout');
+    add(ambulances.filter(u=>u&&!u.__serverRemote),'ambulance');
     return out;
   }
-
   function buildingSnapshot(b,prefix){
-    if(!b || !b.mesh || b.isDestroyed) return null;
+    if(!b||!b.mesh||b.isDestroyed)return null;
     const p=b.mesh.position;
-    return {
-      id:idFor(b,prefix),
-      type:b.type || prefix,
-      x:safeNum(p.x),z:safeNum(p.z),y:safeNum(p.y),
-      rot:safeNum(b.mesh.rotation.y),
-      hp:Math.max(0,safeNum(b.hp,1000)),
-      maxHp:Math.max(1,safeNum(b.maxHp,1000)),
-      done:b.done!==false,
-      destroyed:false
-    };
+    return {id:idFor(b,prefix),type:b.type||prefix,x:safeNum(p.x),z:safeNum(p.z),y:safeNum(p.y),
+      rot:safeNum(b.mesh.rotation.y),hp:Math.max(0,safeNum(b.hp,1000)),maxHp:Math.max(1,safeNum(b.maxHp,1000)),
+      done:b.done!==false,destroyed:false,owner:'player'};
   }
-
   function collectBuildings(){
     const out=[];
-    const add=(arr,prefix)=>{
-      if(!Array.isArray(arr)) return;
-      arr.forEach(b=>{const s=buildingSnapshot(b,prefix);if(s)out.push(s);});
-    };
-    add(constructedFactories,'factory');
-    add(constructedBarracks,'barracks');
+    const add=(arr,prefix)=>{if(!Array.isArray(arr))return;arr.forEach(b=>{const s=buildingSnapshot(b,prefix);if(s)out.push(s);});};
+    add(constructedFactories.filter(f=>f&&f.owner!=='enemy'),'factory');
+    add(constructedBarracks.filter(b=>b&&b.owner!=='enemy'),'barracks');
     return out;
   }
-
   function collectOil(){
-    if(!Array.isArray(oilRigs)) return [];
-    return oilRigs.filter(r=>r&&!r.isDestroyed).map((r,i)=>({
-      id:r.__netId || (r.__netId='oil:'+i+':'+Math.random().toString(36).slice(2,7)),
-      x:safeNum(r.x),z:safeNum(r.z),
-      hp:Math.max(0,safeNum(r.hp,700)),
-      maxHp:Math.max(1,safeNum(r.maxHp,700)),
-      owner:r.owner||'none',
-      captureProgress:safeNum(r.captureProgress)
-    }));
+    if(!Array.isArray(oilRigs))return [];
+    return oilRigs.filter(r=>r&&!r.isDestroyed).map((r,i)=>({id:r.__netId||(r.__netId='oil:'+i+':'+Math.random().toString(36).slice(2,7)),x:safeNum(r.x),z:safeNum(r.z),hp:Math.max(0,safeNum(r.hp,700)),maxHp:Math.max(1,safeNum(r.maxHp,700)),owner:r.owner||'none',captureProgress:safeNum(r.captureProgress)}));
   }
-
-  function ownState(){
-    return {
-      money:Math.max(0,Math.floor(safeNum(playerMoney,0))),
-      units:collectUnits(),
-      buildings:collectBuildings(),
-      oil:collectOil(),
-      base:{
-        hp:playerBaseGroup && safeNum(playerBaseGroup.hp,1600),
-        maxHp:playerBaseGroup && safeNum(playerBaseGroup.maxHp,1600)
-      }
-    };
-  }
-
+  function ownState(){return {money:Math.max(0,Math.floor(safeNum(playerMoney,0))),units:collectUnits(),buildings:collectBuildings(),oil:collectOil(),base:{hp:playerBaseGroup&&safeNum(playerBaseGroup.hp,1600),maxHp:playerBaseGroup&&safeNum(playerBaseGroup.maxHp,1600)}};}
   function serverSendSnapshot(){
-    if(!online() || !window.sendOnlineEvent) return;
-    const now=performance.now();
-    if(now-lastUpload<SEND_MS) return;
-    lastUpload=now;
-    window.sendOnlineEvent({
-      kind:'authoritative_snapshot',
-      clientTick:Math.floor(now/50),
-      state:ownState()
-    });
+    if(!online()||!window.sendOnlineEvent)return;
+    const now=performance.now(); if(now-lastUpload<SEND_MS)return; lastUpload=now;
+    window.sendOnlineEvent({kind:'authoritative_snapshot',clientTick:Math.floor(now/50),state:ownState()});
   }
-
   function findLocalUnit(id){
     const arrays=[playerTanks,reconVehicles,ambulances];
-    for(const arr of arrays){
-      if(!Array.isArray(arr)) continue;
-      const hit=arr.find(u=>u&&u.__netId===id);
-      if(hit) return hit;
-    }
+    for(const arr of arrays){if(!Array.isArray(arr))continue;const hit=arr.find(u=>u&&u.__netId===id);if(hit)return hit;}
     return null;
   }
-
-  function makeRemoteUnit(s, playerId){
-    if(!s || !s.id) return null;
-    let u=remote.get(s.id);
-    if(u && u.mesh) return u;
-
+  function makeRemoteUnit(s,playerId,color){
+    if(!s||!s.id)return null;
+    let u=remote.get(s.id); if(u&&u.mesh)return u;
     try{
-      const team='enemy';
-      const type=s.type||'normal';
-      let created=null;
-      const x=s.x||0, z=s.z||0;
-      if(type==='scout' && typeof window.createReconVehicle==='function'){
-        created=window.createReconVehicle(x,z,team);
-      }else if(type==='ambulance' && typeof window.createModernAmbulance==='function'){
-        created=window.createModernAmbulance(x,z,team);
-      }else if(s.infantry && typeof window.createInfantrySoldier==='function'){
-        created=window.createInfantrySoldier(x,z,team);
-      }else if(typeof window.createTank==='function'){
-        created=window.createTank(x,z,((typeof battleConfig!=='undefined'&&battleConfig.enemyColor)||'#ef4444'),team,type==='rocket'?'rocket':'normal');
-      }
-      if(!created) return null;
-      created.__netId=s.id;
-      created.team='enemy';
-      created.manualControl=true;
-      created.__serverRemote=true;
-      created.__remoteOwner=playerId;
-      created.hp=s.hp;
-      created.maxHp=s.maxHp||created.maxHp||100;
-      remote.set(s.id,created);
-      if(!enemyTanks.includes(created) && (created.team==='enemy')) enemyTanks.push(created);
+      const team='enemy',x=s.x||0,z=s.z||0,type=s.type||'normal';let created=null;
+      if(type==='scout'&&typeof createReconVehicle==='function')created=createReconVehicle(x,z,team);
+      else if(type==='ambulance'&&typeof createModernAmbulance==='function')created=createModernAmbulance(x,z,team);
+      else if(s.infantry&&typeof createInfantrySoldier==='function')created=createInfantrySoldier(x,z,team);
+      else if(typeof createTank==='function')created=createTank(x,z,color||battleConfig.enemyColor||'#ef4444',team,type==='rocket'?'rocket':'normal');
+      if(!created)return null;
+      created.__netId=s.id;created.team='enemy';created.manualControl=true;created.__serverRemote=true;created.__remoteOwner=playerId;
+      created.hp=s.hp;created.maxHp=s.maxHp||created.maxHp||100;remote.set(s.id,created);
+      if(created.isInfantry){if(!enemyTanks.includes(created))enemyTanks.push(created);}
+      else if(type==='scout'){if(!reconVehicles.includes(created))reconVehicles.push(created);}
+      else if(type==='ambulance'){if(!ambulances.includes(created))ambulances.push(created);}
+      else if(!enemyTanks.includes(created))enemyTanks.push(created);
+      if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color||battleConfig.enemyColor||'#ef4444');
       return created;
-    }catch(e){ return null; }
+    }catch(e){return null;}
   }
-
-  function applyUnit(s, playerId){
-    if(!s) return;
-    let u=findLocalUnit(s.id);
-    if(!u) u=makeRemoteUnit(s,playerId);
-    if(!u || !u.mesh) return;
-
-    // Server owns the remote player's transform and HP.
-    const blend=.35;
-    u.mesh.position.x += (s.x-u.mesh.position.x)*blend;
-    u.mesh.position.z += (s.z-u.mesh.position.z)*blend;
-    if(Number.isFinite(s.y)) u.mesh.position.y += (s.y-u.mesh.position.y)*blend;
-    if(Number.isFinite(s.rot)){
-      let d=s.rot-u.mesh.rotation.y;
-      while(d>Math.PI)d-=Math.PI*2;
-      while(d<-Math.PI)d+=Math.PI*2;
-      u.mesh.rotation.y += d*blend;
-    }
-    u.hp=Math.max(0,Number(s.hp)||0);
-    u.maxHp=Math.max(1,Number(s.maxHp)||100);
-    u.isDestroyed=!!s.destroyed;
-    if(s.target) u.serverTarget=s.target;
-    if(s.guard) u.serverGuard=s.guard;
+  function applyUnit(s,playerId,color){
+    if(!s)return;let u=findLocalUnit(s.id);if(!u)u=makeRemoteUnit(s,playerId,color);if(!u||!u.mesh)return;
+    u.__serverRemote=true;u.__remoteOwner=playerId;
+    const blend=.42;u.mesh.position.x+=(s.x-u.mesh.position.x)*blend;u.mesh.position.z+=(s.z-u.mesh.position.z)*blend;
+    if(Number.isFinite(s.y))u.mesh.position.y+=(s.y-u.mesh.position.y)*blend;
+    if(Number.isFinite(s.rot)){let d=s.rot-u.mesh.rotation.y;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;u.mesh.rotation.y+=d*blend;}
+    u.hp=Math.max(0,Number(s.hp)||0);u.maxHp=Math.max(1,Number(s.maxHp)||100);u.isDestroyed=!!s.destroyed;
+    if(s.target)u.serverTarget=s.target;if(s.guard)u.serverGuard=s.guard;
+    if(u.mesh)u.mesh.visible=!u.isDestroyed;
   }
-
-  function applyRemoteState(packet){
-    if(!packet || !packet.players) return;
-    if(Number.isFinite(packet.tick) && packet.tick<lastServerTick) return;
-    lastServerTick=Number(packet.tick)||lastServerTick;
-
-    const me=window.onlineMatch && window.onlineMatch.playerId;
-    for(const p of packet.players){
-      if(!p || p.id===me || !p.state) continue;
-      const ids=new Set((p.state.units||[]).map(x=>x.id));
-      (p.state.units||[]).forEach(s=>applyUnit(s,p.id));
-
-      // الخصم الحقيقي هو اللاعب الآخر فقط؛ لا يوجد عدو مولد محلياً.
-      for(const [id,u] of remote){
-        if(!ids.has(id) && u && u.mesh && u.__remoteOwner===p.id){
-          u.isDestroyed=true;
-          u.mesh.visible=false;
-        }
+  function findRemoteBuilding(id){return remoteBuildings.get(id)||null;}
+  function makeRemoteBuilding(s,playerId,color){
+    if(!s||!s.id)return null;let b=findRemoteBuilding(s.id);if(b)return b;
+    try{
+      let created=null;
+      if(s.type==='factory'&&typeof createArmyFactory==='function'){
+        created=createArmyFactory(s.x,s.z,false);
+        if(created){created.owner='enemy';created.mesh.userData.factoryOwner='enemy';if(typeof updateFactoryFlagOwner==='function')updateFactoryFlagOwner(created,'enemy');if(Array.isArray(enemyFactories)&&!enemyFactories.includes(created))enemyFactories.push(created);}
+      }else if(s.type==='barracks'&&typeof createMilitaryBarracks==='function'){
+        created=createMilitaryBarracks(s.x,s.z,false,'enemy');
+        if(created){created.owner='enemy';if(!constructedBarracks.includes(created))constructedBarracks.push(created);}
       }
-      if(p.state.base && typeof enemyBaseGroup!=='undefined' && enemyBaseGroup){
-        enemyBaseGroup.hp=safeNum(p.state.base.hp,enemyBaseGroup.hp||1600);
-        enemyBaseGroup.maxHp=safeNum(p.state.base.maxHp,enemyBaseGroup.maxHp||1600);
+      if(!created)return null;
+      created.__netId=s.id;created.__serverRemote=true;created.__remoteOwner=playerId;created.owner='enemy';remoteBuildings.set(s.id,created);
+      if(created.mesh){created.mesh.rotation.y=s.rot||0;created.mesh.visible=true;}
+      if(typeof recolorMaterials==='function')recolorMaterials(created.mesh,color,true);
+      else if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color);
+      return created;
+    }catch(e){return null;}
+  }
+  function applyBuilding(s,playerId,color){
+    if(!s)return;let b=findRemoteBuilding(s.id)||makeRemoteBuilding(s,playerId,color);if(!b||!b.mesh)return;
+    b.__serverRemote=true;b.__remoteOwner=playerId;b.owner='enemy';
+    b.mesh.position.x=s.x;b.mesh.position.z=s.z;b.mesh.position.y=s.y!==undefined?s.y:b.mesh.position.y;b.mesh.rotation.y=s.rot||0;
+    b.hp=Math.max(0,Number(s.hp)||0);b.maxHp=Math.max(1,Number(s.maxHp)||1000);b.done=s.done!==false;b.isDestroyed=!!s.destroyed;b.mesh.visible=!b.isDestroyed;
+  }
+  function hideMissingRemoteBuildings(seen,ownerId){
+    for(const [id,b] of remoteBuildings){if(!b||b.__remoteOwner!==ownerId)continue;if(!seen.has(id)){b.isDestroyed=true;if(b.mesh)b.mesh.visible=false;}}
+  }
+  function applyRemoteState(packet){
+    if(!packet||!packet.players)return;
+    if(Number.isFinite(packet.tick)&&packet.tick<lastServerTick)return;lastServerTick=Number(packet.tick)||lastServerTick;
+    const me=window.onlineMatch&&window.onlineMatch.playerId;
+    for(const p of packet.players){
+      if(!p||p.id===me||!p.state)continue;
+      const color=p.color||battleConfig.enemyColor||'#ef4444';
+      const unitIds=new Set((p.state.units||[]).map(x=>x.id));
+      (p.state.units||[]).forEach(s=>applyUnit(s,p.id,color));
+      for(const [id,u] of remote){if(u&&u.__remoteOwner===p.id&&!unitIds.has(id)){u.isDestroyed=true;if(u.mesh)u.mesh.visible=false;}}
+      const buildingIds=new Set((p.state.buildings||[]).map(x=>x.id));
+      (p.state.buildings||[]).forEach(s=>applyBuilding(s,p.id,color));
+      hideMissingRemoteBuildings(buildingIds,p.id);
+      if(p.state.base&&typeof enemyBaseGroup!=='undefined'&&enemyBaseGroup){
+        enemyBaseGroup.hp=safeNum(p.state.base.hp,enemyBaseGroup.hp||1600);enemyBaseGroup.maxHp=safeNum(p.state.base.maxHp,enemyBaseGroup.maxHp||1600);
+        if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color);
       }
       window.remoteOpponentMoney=Math.max(0,Math.floor(safeNum(p.state.money,0)));
     }
-
-    // Server economy is authoritative for our own money.
-    const mine=packet.players.find(p=>p && p.id===me);
-    if(mine && mine.state && Number.isFinite(Number(mine.state.money))){
-      playerMoney=Math.max(0,Math.floor(Number(mine.state.money)));
-      if(typeof updateEconomyUI==='function') updateEconomyUI();
-    }
+    const mine=packet.players.find(p=>p&&p.id===me);
+    if(mine&&mine.state&&Number.isFinite(Number(mine.state.money))){playerMoney=Math.max(0,Math.floor(Number(mine.state.money)));if(typeof updateEconomyUI==='function')updateEconomyUI();}
   }
-
   window.addEventListener('onlineServerState',e=>applyRemoteState(e.detail));
-
-  // Start the bridge after the existing room runtime sets onlineMatch.
   function watch(){
-    if(online() && !onlineStarted){
-      onlineStarted=true;
-      lastUpload=0;
-      if(syncTimer) clearInterval(syncTimer);
-      if(applyTimer) clearInterval(applyTimer);
-      syncTimer=setInterval(serverSendSnapshot,SEND_MS);
-      applyTimer=setInterval(()=>{},APPLY_MS);
-    }
-    if(!online() && onlineStarted){
-      onlineStarted=false;
-      if(syncTimer) clearInterval(syncTimer);
-      if(applyTimer) clearInterval(applyTimer);
-      syncTimer=applyTimer=null;
-      remote.clear();
-    }
+    if(online()&&!onlineStarted){onlineStarted=true;lastUpload=0;lastServerTick=-1;if(syncTimer)clearInterval(syncTimer);syncTimer=setInterval(serverSendSnapshot,SEND_MS);}
+    if(!online()&&onlineStarted){onlineStarted=false;if(syncTimer)clearInterval(syncTimer);syncTimer=null;remote.clear();remoteBuildings.clear();}
   }
-
-  setInterval(watch,250);
-  window.addEventListener('beforeunload',()=>{try{if(syncTimer)clearInterval(syncTimer)}catch(e){}});
+  setInterval(watch,200);
 })();
 </script>
 
