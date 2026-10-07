@@ -2515,6 +2515,8 @@
     let factoryPlacementMode = false;
     let factoryPlacementRotation = 0;
     let factoryPlacementPoint = null;
+    // مرجع ثابت للتركس الذي بدأ بناء المصنع، حتى لا يضيع عند لمس واجهة البناء.
+    let factoryBuildBuilder = null;
     let activeFactoryProduction = null; // compatibility pointer; each factory now owns its own production job
     let constructedBarracks = [];
     let selectedBarracks = null;
@@ -6541,6 +6543,7 @@
         if (!builder) { showFloatingMsg('🚧 اشترِ تركس البناء وحدده أولاً'); return; }
         selectedTank = builder;
         selectedUnitKind = 'builder';
+        factoryBuildBuilder = builder;
         builder.manualControl = true;
         if (isBuilderFactoryBusy(builder)) { showFloatingMsg('This construction dozer is already building a factory'); return; }
         if (playerMoney < 400) { showFloatingMsg('Insufficient funds — factory costs $400'); return; }
@@ -6572,7 +6575,7 @@
     }
 
     function hideFactoryPlacement() {
-        factoryBuildArmed=false; factoryPlacementMode=false; factoryPlacementPoint=null;
+        factoryBuildArmed=false; factoryPlacementMode=false; factoryPlacementPoint=null; factoryBuildBuilder=null;
         barracksBuildArmed=false; barracksPlacementMode=false; barracksPlacementPoint=null;
         if(factoryPlacementGhost){ scene.remove(factoryPlacementGhost.mesh); factoryPlacementGhost=null; }
         if(barracksPlacementGhost){ scene.remove(barracksPlacementGhost.mesh); barracksPlacementGhost=null; }
@@ -6590,8 +6593,12 @@
         if (!factoryPlacementPoint) { showFloatingMsg('📍 اختر مكان المصنع أولاً'); return; }
         const placementCheck=isBuildingPlacementValid(factoryPlacementPoint,'factory',factoryPlacementRotation,'player');
         if(!placementCheck.valid){ showFloatingMsg('🚫 لا يمكن بناء المصنع هنا: الأرض غير مستوية أو المكان مشغول'); return; }
-        const builder = selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed ? selectedTank : null;
-        if (!builder) { hideFactoryPlacement(); showFloatingMsg('Select the construction dozer first'); return; }
+        const builder = (factoryBuildBuilder && !factoryBuildBuilder.isDestroyed && !factoryBuildBuilder.__serverRemote)
+          ? factoryBuildBuilder
+          : (selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed && !selectedTank.__serverRemote ? selectedTank : null);
+        if (!builder) { hideFactoryPlacement(); showFloatingMsg('🚧 تركس البناء لم يعد متاحاً'); return; }
+        selectedTank = builder;
+        selectedUnitKind = 'builder';
         startFactoryConstruction(builder, factoryPlacementPoint.clone(), factoryPlacementRotation);
     }
 
@@ -11989,7 +11996,15 @@ window.updateCameraSensitivity=function(v){
       window.remoteOpponentMoney=Math.max(0,Math.floor(safeNum(p.state.money,0)));window.remoteOpponentColor=color;battleConfig.enemyColor=color;
       if(Array.isArray(p.state.oil))for(const ro of p.state.oil){const local=oilRigs.find(r=>r&&r.__netId===ro.id||r&&r.x===ro.x&&r.z===ro.z);if(local){local.remoteOwner=ro.owner;local.remoteCaptureProgress=ro.captureProgress;}}
     }
-    const mine=packet.players.find(p=>p?.id===me);if(mine?.state&&Number.isFinite(Number(mine.state.money))){const seq=Number(mine.state.__seq||0),last=Number(window.__lastAppliedMineMoneySeq||-1);if(seq>=last){window.__lastAppliedMineMoneySeq=seq;playerMoney=Math.max(0,Math.floor(Number(mine.state.money)));if(typeof updateEconomyUI==='function')updateEconomyUI();}}
+    // لا نعيد كتابة رصيد اللاعب المحلي من snapshot راجع من السيرفر.
+    // السيرفر الحالي Relay/Sync وليس محرك اقتصاد authoritative، لذلك قد تصل لقطة أقدم
+    // بعد عملية شراء محلية وتعيد العداد إلى قيمته السابقة. رصيدنا المحلي هو المرجع،
+    // بينما نحتفظ برصيد الخصم من الحالة البعيدة أعلاه.
+    const mine=packet.players.find(p=>p?.id===me);
+    if(mine?.state&&Number.isFinite(Number(mine.state.money))){
+      window.__lastSeenMineMoney= Math.max(0, Math.floor(Number(mine.state.money)));
+      window.__lastAppliedMineMoneySeq=Number(mine.state.__seq||0);
+    }
     if(found&&window.remoteOpponentColor&&typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',window.remoteOpponentColor);
   }
   window.addEventListener('onlineServerState',e=>applyRemoteState(e.detail));
