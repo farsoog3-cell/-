@@ -3,77 +3,89 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>TANK COMMAND - MULTIPLAYER</title>
+<title>TANK COMMAND - MODERN BATTLE</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#080b0c;color:#fff;touch-action:manipulation}body{background:radial-gradient(circle at 50% 20%,#344044 0,#151a1b 42%,#070909 100%)}#app{height:100%;display:flex;align-items:center;justify-content:center;padding:16px}.screen{width:min(940px,100%);max-height:96vh;overflow:auto;border:1px solid #66706d66;background:linear-gradient(145deg,#18201fcc,#0a0d0eeF);box-shadow:0 25px 80px #000b;border-radius:24px;padding:clamp(20px,4vw,42px);backdrop-filter:blur(14px)}.hidden{display:none!important}.brand{text-align:center;margin-bottom:26px}.brand h1{font-size:clamp(32px,7vw,68px);letter-spacing:5px;margin:0;text-shadow:0 5px 25px #000}.brand p{color:#b8c1bd;margin:8px 0;font-size:clamp(12px,2.5vw,16px)}.line{height:2px;background:linear-gradient(90deg,transparent,#c6a35b,transparent);margin:20px 0 28px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.btn{border:1px solid #77807866;border-radius:15px;padding:17px 18px;background:linear-gradient(180deg,#29312f,#151a19);color:#fff;font-size:17px;font-weight:700;cursor:pointer;min-height:58px;transition:.18s}.btn:hover,.btn:active{transform:translateY(-2px);border-color:#c7a75e;background:linear-gradient(180deg,#4a4b39,#22261f)}.primary{background:linear-gradient(180deg,#b18e4e,#745a2d);border-color:#e0c27d;color:#fff}.wide{grid-column:1/-1}.title{font-size:25px;margin:0 0 18px}.sub{color:#aeb8b3;font-size:14px;margin:-8px 0 18px}.row{display:flex;gap:10px;align-items:center}.input{width:100%;padding:16px;border-radius:13px;border:1px solid #66716d66;background:#090d0e;color:#fff;font-size:16px;outline:none}.input:focus{border-color:#c5a45d}.room{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0}.card{border:1px solid #68716d55;background:#111718;border-radius:16px;padding:18px}.card h3{margin:0 0 8px}.card p{margin:0;color:#9fa9a4;font-size:13px;line-height:1.6}.status{margin-top:15px;padding:12px;border-radius:12px;background:#0b1011;color:#b9c1bd;text-align:center;font-size:13px}.players{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.pill{padding:9px 12px;border-radius:30px;background:#27302d;border:1px solid #69736c55;font-size:13px}.back{margin-top:16px;background:#171d1d}.game{width:100%;height:100%;position:relative}.game canvas{width:100%;height:100%;display:block}
-.hud{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;pointer-events:none;z-index:10}
-.hud .box{background:#080b0dcc;border:1px solid #ffffff22;border-radius:12px;padding:10px 14px;font-size:14px}
-.exit{pointer-events:auto;cursor:pointer;background:#441111!important;border-color:#ff4444!important}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0b0e0f;color:#fff;border:1px solid #c3a45c88;border-radius:12px;padding:12px 18px;opacity:0;transition:.25s;z-index:50}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#050708;color:#fff;touch-action:manipulation}body{background:radial-gradient(circle at 50% 20%,#243034 0,#101415 42%,#040505 100%)}#app{height:100%;display:flex;align-items:center;justify-content:center;padding:16px}.screen{width:min(940px,100%);max-height:96vh;overflow:auto;border:1px solid #55605d66;background:linear-gradient(145deg,#141c1bcc,#080a0beF);box-shadow:0 25px 80px #000b;border-radius:24px;padding:clamp(20px,4vw,42px);backdrop-filter:blur(14px)}.hidden{display:none!important}.brand{text-align:center;margin-bottom:26px}.brand h1{font-size:clamp(28px,6vw,58px);letter-spacing:4px;margin:0;text-shadow:0 5px 25px #000;color:#e2c27d}.brand p{color:#a8b1ad;margin:8px 0;font-size:clamp(12px,2.5vw,15px)}.line{height:2px;background:linear-gradient(90deg,transparent,#c6a35b,transparent);margin:20px 0 28px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.btn{border:1px solid #67706866;border-radius:15px;padding:17px 18px;background:linear-gradient(180deg,#222a28,#121615);color:#fff;font-size:17px;font-weight:700;cursor:pointer;min-height:58px;transition:.18s}.btn:hover,.btn:active{transform:translateY(-2px);border-color:#c7a75e;background:linear-gradient(180deg,#3a3b29,#1c2019)}.primary{background:linear-gradient(180deg,#b18e4e,#745a2d);border-color:#e0c27d;color:#fff}.wide{grid-column:1/-1}.title{font-size:24px;margin:0 0 14px;color:#e2c27d}.sub{color:#9fb0a8;font-size:14px;margin:-6px 0 16px}.row{display:flex;gap:10px;align-items:center}.input{width:100%;padding:16px;border-radius:13px;border:1px solid #55615d66;background:#070a0b;color:#fff;font-size:16px;outline:none}.input:focus{border-color:#c5a45d}.room{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0}.card{border:1px solid #58615d55;background:#0d1213;border-radius:16px;padding:18px}.card h3{margin:0 0 8px;color:#c6a35b}.card p{margin:0;color:#8f9994;font-size:13px;line-height:1.6}.status{margin-top:12px;padding:10px;border-radius:10px;background:#070a0b;color:#a9c1bd;text-align:center;font-size:13px}.rooms-list{display:flex;flex-direction:column;gap:10px;margin:15px 0}.room-item{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#0f1516;border:1px solid #48545044;border-radius:14px}.game{width:100%;height:100%;position:relative}.game canvas{width:100%;height:100%;display:block}
+
+/* لوحة تحكم اللاعب الحديثة HUD */
+.hud{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:10}
+.hud-group{display:flex;gap:12px;align-items:center}
+.hud-box{background:rgba(8,11,13,0.85);border:1px solid rgba(255,255,255,0.15);border-radius:14px;padding:10px 16px;font-size:14px;backdrop-filter:blur(8px);box-shadow:0 4px 15px rgba(0,0,0,0.5)}
+.health-bar-container{width:120px;height:10px;background:#222;border-radius:5px;overflow:hidden;margin-top:4px;border:1px solid #444}
+.health-bar-fill{width:100%;height:100%;background:linear-gradient(90deg,#ff4444,#00ff88);transition:width 0.3s}
+.exit{pointer-events:auto;cursor:pointer;background:linear-gradient(180deg,#551a1a,#330f0f)!important;border-color:#ff4444!important}
+.toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:#0b0e0f;color:#fff;border:1px solid #c3a45c88;border-radius:12px;padding:12px 20px;opacity:0;transition:.25s;z-index:50;font-weight:bold;box-shadow:0 5px 20px rgba(0,0,0,0.6)}
 .toast.show{opacity:1}
 
-/* لوحة التحكم الافتراضية وأزرار الأسلحة والكاميرا */
+/* عناصر التحكم باللمس */
 .controls-overlay{position:absolute;bottom:20px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none;z-index:10}
-.joystick-zone{width:130px;height:130px;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.2);border-radius:50%;pointer-events:auto;position:relative;touch-action:none}
-.joystick-knob{width:50px;height:50px;background:#c6a35b;border-radius:50%;position:absolute;top:40px;left:40px;pointer-events:none;box-shadow:0 4px 10px rgba(0,0,0,0.5)}
-.action-buttons{display:flex;gap:10px;pointer-events:auto}
-.action-btn{background:linear-gradient(180deg,#29312f,#151a19);border:1px solid #77807866;color:#fff;padding:15px 20px;border-radius:14px;font-size:15px;font-weight:bold;cursor:pointer;min-width:70px;text-align:center;box-shadow:0 5px 15px rgba(0,0,0,0.4)}
-.action-btn:active{background:#c6a35b;color:#000}
-.crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:10px;height:10px;border:2px solid rgba(255,255,255,0.6);border-radius:50%;pointer-events:none;z-index:10}
+.joystick-zone{width:130px;height:130px;background:rgba(255,255,255,0.04);border:2px solid rgba(255,255,255,0.15);border-radius:50%;pointer-events:auto;position:relative;touch-action:none;box-shadow:inset 0 0 15px rgba(0,0,0,0.5)}
+.joystick-knob{width:50px;height:50px;background:linear-gradient(180deg,#e2c27d,#b18e4e);border-radius:50%;position:absolute;top:40px;left:40px;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.6)}
+.action-buttons{display:flex;gap:10px;pointer-events:auto;flex-wrap:wrap;max-width:340px;justify-content:flex-end}
+.action-btn{background:linear-gradient(180deg,#252d2b,#131716);border:1px solid #67706855;color:#fff;padding:14px 16px;border-radius:14px;font-size:14px;font-weight:bold;cursor:pointer;min-width:65px;text-align:center;box-shadow:0 5px 15px rgba(0,0,0,0.4);transition:0.1s}
+.action-btn:active{background:#c6a35b;color:#000;transform:scale(0.95)}
+
+/* مؤشر الرشاش المتقدم (زوم وسلاح) */
+.crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;border:2px solid rgba(255,255,255,0.7);border-radius:50%;pointer-events:none;z-index:10;display:flex;align-items:center;justify-content:center}
+.crosshair::before{content:'';width:4px;height:4px;background:#ff4444;border-radius:50%}
 </style>
 </head>
 <body>
 <div id="app">
+  <!-- القائمة الرئيسية -->
   <section id="home" class="screen">
-    <div class="brand"><h1>TANK COMMAND</h1><p>ساحة المعركة الجماعية الحديثة</p></div>
+    <div class="brand"><h1>TACTICAL BATTLE</h1><p>لعبة ساحة المعركة البشرية الجماعية الفورية</p></div>
     <div class="line"></div>
     <div class="grid">
-      <button class="btn primary wide" onclick="show('online')">🌐 الغرف والسيرفر</button>
-      <button class="btn" onclick="startLocalGame()">⚔️ معركة سريعة</button>
+      <button class="btn primary wide" onclick="openRoomsList()">🌐 الغرف النشطة (انضمام سريع)</button>
+      <button class="btn wide" onclick="startLocalGame()">⚔️ معركة فردية سريعة</button>
     </div>
   </section>
 
-  <section id="online" class="screen hidden">
-    <h2 class="title">إدارة الغرف الحديثة</h2>
-    <p class="sub">انشئ غرفتك الخاصة أو انضم لأي غرفة نشطة عبر السيرفر.</p>
-    <div class="grid">
-      <button class="btn primary" onclick="createRoom()">إنشاء غرفة جديدة</button>
-      <button class="btn" onclick="joinBox()">انضمام برمز</button>
-    </div>
-    <div id="join" class="card hidden" style="margin-top:16px">
-      <h3>رمز الغرفة</h3>
-      <div class="row">
-        <input id="code" class="input" placeholder="مثال: ROOM1">
-        <button class="btn primary" onclick="joinRoom()">دخول</button>
-      </div>
-    </div>
-    <div id="roomPanel" class="hidden">
-      <div class="room">
-        <div class="card">
-          <h3>معلومات الغرفة</h3>
-          <p>شارك الرمز مع أصدقائك للاتصال بك في نفس الساحة.</p>
-          <div class="status" id="roomCode">—</div>
-        </div>
-        <div class="card">
-          <h3>حالة السيرفر</h3>
-          <div class="status" style="color:#52c41a">متصل بالسيرفر النشط</div>
-        </div>
-      </div>
-      <div class="players" id="players"><span class="pill">أنت (متصل)</span></div>
-      <button class="btn primary wide" onclick="startServerGame()">بدء المعركة الآن</button>
+  <!-- شاشة قائمة الغرف المتاحة -->
+  <section id="roomsScreen" class="screen hidden">
+    <h2 class="title">غرف اللاعبين المتاحة</h2>
+    <p class="sub">اختر غرفة وانضم إليها بضغطة زر واحدة للعب مع الأصدقاء.</p>
+    <button class="btn primary wide" onclick="createNewServerRoom()">➕ إنشاء غرفة جديدة الآن</button>
+    <div class="rooms-list" id="roomsListContainer">
+      <div class="room-item"><span>جاري البحث عن غرف نشطة...</span></div>
     </div>
     <button class="btn back wide" onclick="show('home')">رجوع</button>
   </section>
+
+  <!-- شاشة انتظار الغرفة -->
+  <section id="roomPanel" class="screen hidden">
+    <h2 class="title">غرفة المعركة النشطة</h2>
+    <div class="room">
+      <div class="card">
+        <h3>معلومات الغرفة</h3>
+        <p>أنت متصل الآن وجاهز لبدء المعركة مع بقية اللاعبين.</p>
+        <div class="status" id="roomCodeDisplay">—</div>
+      </div>
+      <div class="card">
+        <h3>حالة الاتصال</h3>
+        <div class="status" style="color:#00ff88">متصل بالسيرفر بنجاح ✅</div>
+      </div>
+    </div>
+    <button class="btn primary wide" onclick="startServerGameSession()">🚀 بدء المعركة الآن</button>
+    <button class="btn back wide" onclick="show('home')">مغادرة الغرفة</button>
+  </section>
 </div>
 
-<!-- شاشة اللعب والتحكم -->
+<!-- واجهة اللعب وثلاثي الأبعاد -->
 <div id="game" class="game hidden">
   <div class="crosshair"></div>
   <div class="hud">
-    <div class="box" id="healthBox">الدم: 100 ❤️</div>
-    <div class="box" id="ammoBox">الذخيرة: 3/3 🔋 (R للتلغيم)</div>
-    <button class="box exit" onclick="exitGame()">خروج للوبي</button>
+    <div class="hud-group">
+      <div class="hud-box">
+        <span id="healthText">الدم: 100 / 100 ❤️</span>
+        <div class="health-bar-container"><div id="healthFill" class="health-bar-fill"></div></div>
+      </div>
+      <div class="hud-box" id="ammoBox">الذخيرة: 30 / 30 🔋 (زر R للتلقيم)</div>
+    </div>
+    <button class="hud-box exit" onclick="exitGame()">خروج للوبي</button>
   </div>
+
   <div class="controls-overlay">
     <div class="joystick-zone" id="joyZone"><div class="joystick-knob" id="joyKnob"></div></div>
     <div class="action-buttons">
@@ -87,11 +99,11 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- شاشة الخسارة -->
-<div id="gameOverScreen" class="screen hidden" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;text-align:center;">
-  <h1 style="color:#ff4444;font-size:40px;margin-bottom:10px;">خسرت المعركة!</h1>
-  <p style="color:#bbb;margin-bottom:20px;">لقد نفد نقاط الدم الخاصة بك.</p>
-  <button class="btn primary wide" onclick="exitGame()">خروج إلي الوبي</button>
+<!-- شاشة الخسارة (Game Over) -->
+<div id="gameOverScreen" class="screen hidden" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100;text-align:center;width:min(450px,90vw);">
+  <h1 style="color:#ff4444;font-size:38px;margin-bottom:10px;">انتهت المعركة!</h1>
+  <p style="color:#bbb;margin-bottom:20px;">لقد تعرضت لإصابات قاتلة ونفد دمك بالكامل.</p>
+  <button class="btn primary wide" onclick="exitGame()">العودة للرئيسية</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
@@ -103,9 +115,9 @@ let roomId='', myId='';
 let scene, camera, renderer;
 let player, playersMap={};
 let moveX=0, moveZ=0;
-let health=100, ammo=3, maxAmmo=3, isReloading=false;
-let isJumping=false, velocityY=0, gravity=-0.015;
-let camMode=1; // 1: منظور ثالث خلفي، 2: منظور ثاني، 3: منظور أول (مين كرافت)
+let health=100, maxHealth=100, ammo=30, maxAmmo=30, isReloading=false;
+let isJumping=false, velocityY=0, gravity=-0.018;
+let camMode=1; // 1: منظور ثالث خلفي، 2: منظور أمامي، 3: منظور أول (حقيقي)
 let started=false;
 
 function show(id){
@@ -118,20 +130,24 @@ function toast(t){
   x.classList.add('show');
   setTimeout(()=>x.classList.remove('show'),2200);
 }
-function joinBox(){document.getElementById('join').classList.remove('hidden');document.getElementById('code').focus()}
 
 function initSocketConnection(){
   if(socket) return;
   socket = io(SERVER);
   socket.on('connect', ()=>{ myId = socket.id; });
-  socket.on('roomJoined', (id)=>{ roomId = id; document.getElementById('roomCode').textContent=roomId; document.getElementById('roomPanel').classList.remove('hidden'); toast('تم الانضمام للغرفة بنجاح'); });
+  socket.on('roomJoined', (id)=>{ 
+    roomId = id; 
+    document.getElementById('roomCodeDisplay').textContent = `غرفة رقم: ${roomId}`; 
+    show('roomPanel');
+    toast('تم الانضمام للغرفة بنجاح'); 
+  });
   socket.on('currentPlayers', (serverPlayers)=>{
     for(let id in serverPlayers){
-      if(id !== myId && !playersMap[id]) createRemotePlayer(id, serverPlayers[id]);
+      if(id !== myId && !playersMap[id]) createHumanPlayerMesh(id, serverPlayers[id]);
     }
   });
   socket.on('newPlayer', (data)=>{
-    if(data.id !== myId) createRemotePlayer(data.id, data);
+    if(data.id !== myId) createHumanPlayerMesh(data.id, data);
   });
   socket.on('playerMoved', (data)=>{
     if(playersMap[data.id]){
@@ -145,7 +161,8 @@ function initSocketConnection(){
   socket.on('playerDamaged', (data)=>{
     if(data.targetId === myId){
       health = Math.max(0, health - data.damage);
-      document.getElementById('healthBox').textContent = `الدم: ${health} ❤️`;
+      updateHealthUI();
+      toast('⚠️ تم اصابتك بنيران العدو!');
       if(health <= 0) triggerGameOver();
     }
   });
@@ -157,27 +174,41 @@ function initSocketConnection(){
   });
 }
 
-function createRoom(){
+function openRoomsList(){
   initSocketConnection();
-  roomId = Math.random().toString(36).slice(2,7).toUpperCase();
+  show('roomsScreen');
+  // محاكاة جلب الغرف المتاحة وتحديث القائمة
+  setTimeout(()=>{
+    let container = document.getElementById('roomsListContainer');
+    container.innerHTML = `
+      <div class="room-item">
+        <div><strong>غرفة المعركة العامة #1</strong><br><small style="color:#888">متاحة للانضمام الفوري</small></div>
+        <button class="btn primary" style="padding:10px 16px;min-height:auto" onclick="joinSpecificRoom('PUBLIC_1')">دخول سريع</button>
+      </div>
+      <div class="room-item">
+        <div><strong>غرفة المحترفين #2</strong><br><small style="color:#888">تحدي جماعي مفتوح</small></div>
+        <button class="btn primary" style="padding:10px 16px;min-height:auto" onclick="joinSpecificRoom('PUBLIC_2')">دخول سريع</button>
+      </div>
+    `;
+  }, 500);
+}
+
+function createNewServerRoom(){
+  initSocketConnection();
+  roomId = 'ROOM_' + Math.floor(Math.random()*9000 + 1000);
   socket.emit('createRoom', roomId);
-  document.getElementById('roomCode').textContent = roomId;
-  document.getElementById('roomPanel').classList.remove('hidden');
-  toast('تم إنشاء الغرفة: '+roomId);
+  document.getElementById('roomCodeDisplay').textContent = `غرفة رقم: ${roomId}`;
+  show('roomPanel');
+  toast('تم إنشاء غرفتك الخاصة بنجاح');
 }
 
-function joinRoom(){
-  let c = document.getElementById('code').value.trim().toUpperCase();
-  if(!c) return toast('اكتب رمز الغرفة');
+function joinSpecificRoom(id){
   initSocketConnection();
-  roomId = c;
+  roomId = id;
   socket.emit('joinRoom', roomId);
-  document.getElementById('roomCode').textContent = c;
-  document.getElementById('roomPanel').classList.remove('hidden');
 }
 
-function startServerGame(){
-  initSocketConnection();
+function startServerGameSession(){
   startGameSession();
 }
 
@@ -196,20 +227,75 @@ function exitGame(){
   location.reload();
 }
 
+function updateHealthUI(){
+  document.getElementById('healthText').textContent = `الدم: ${health} / ${maxHealth} ❤️`;
+  let pct = Math.max(0, (health / maxHealth) * 100);
+  document.getElementById('healthFill').style.width = pct + '%';
+}
+
 function triggerGameOver(){
   document.getElementById('gameOverScreen').classList.remove('hidden');
 }
 
-/* تهيئة محرك الرسوميات وثلاثي الأبعاد */
+/* تصميم الشخصية البشرية الحقيقية (بشر وليس روبوت) مع الرشاش */
+fn_createHumanBody = function(isMainPlayer = false) {
+  const group = new THREE.Group();
+
+  // خامات البشرة والملابس العسكرية الواقعية
+  const skinMat = new THREE.MeshStandardMaterial({color: 0xdfb18c, roughness: 0.8});
+  const clothMat = new THREE.MeshStandardMaterial({color: isMainPlayer ? 0x2e4a3d : 0x4a2e2e, roughness: 0.9});
+  const pantsMat = new THREE.MeshStandardMaterial({color: 0x1f2423, roughness: 0.9});
+  const gunMat = new THREE.MeshStandardMaterial({color: 0x1a1a1a, metalness: 0.8, roughness: 0.2});
+
+  // الجذع (الجسم)
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.45), clothMat);
+  torso.position.y = 1.1;
+  torso.castShadow = true;
+  group.add(torso);
+
+  // الرأس البشري
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 0.45), skinMat);
+  head.position.y = 1.75;
+  head.castShadow = true;
+  group.add(head);
+
+  // الشعر / القبعة العسكرية
+  const hair = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.18, 0.48), new THREE.MeshStandardMaterial({color: 0x151515}));
+  hair.position.y = 1.95;
+  group.add(hair);
+
+  // الأرجل
+  const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.85, 0.35), pantsMat);
+  leftLeg.position.set(-0.22, 0.45, 0);
+  group.add(leftLeg);
+
+  const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.85, 0.35), pantsMat);
+  rightLeg.position.set(0.22, 0.45, 0);
+  group.add(rightLeg);
+
+  // شكل الرشاش الحقيقي (بندقية هجومية تفصيلية)
+  const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.2, 0.9), gunMat);
+  gunBody.position.set(0.4, 1.25, 0.45);
+  group.add(gunBody);
+
+  const gunBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 8), gunMat);
+  gunBarrel.rotation.x = Math.PI / 2;
+  gunBarrel.position.set(0.4, 1.25, 0.85);
+  group.add(gunBarrel);
+
+  return group;
+};
+
+/* تهيئة المشهد ثلاثي الأبعاد والبيئة */
 function init3D(){
   if(started) return;
   started = true;
   const game = document.getElementById('game');
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x87a8b5);
-  scene.fog = new THREE.Fog(0x87a8b5, 70, 230);
+  scene.background = new THREE.Color(0x6b8c99);
+  scene.fog = new THREE.Fog(0x6b8c99, 50, 200);
 
-  camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 500);
+  camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, .1, 500);
   renderer = new THREE.WebGLRenderer({antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setSize(innerWidth, innerHeight);
@@ -217,48 +303,28 @@ function init3D(){
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   game.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xffe5c0, 0x55452e, 2));
-  let sun = new THREE.DirectionalLight(0xffdfaa, 3);
-  sun.position.set(-50, 90, 40);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.8));
+  let sun = new THREE.DirectionalLight(0xfff5e6, 2.5);
+  sun.position.set(40, 80, 50);
   sun.castShadow = true;
   scene.add(sun);
 
-  // الأرضية التضاريسية
-  let g = new THREE.PlaneGeometry(180, 180, 100, 100), p = g.attributes.position;
-  for(let i=0; i<p.count; i++){
-    let x = p.getX(i), y = p.getY(i);
-    p.setZ(i, (Math.sin(x*.05)*1.1 + Math.cos(y*.06)*.9 + Math.sin((x+y)*.025)*1.4)*Math.min(Math.hypot(x,y)/45,1));
+  // أرضية واقعية مع تضاريس خفيفة
+  let g = new THREE.PlaneGeometry(200, 200, 80, 80), posAttr = g.attributes.position;
+  for(let i=0; i<posAttr.count; i++){
+    let x = posAttr.getX(i), y = posAttr.getY(i);
+    posAttr.setZ(i, Math.sin(x*.04)*0.8 + Math.cos(y*.04)*0.8);
   }
   g.computeVertexNormals();
-  let ground = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xc79d63, roughness:1}));
+  let ground = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color: 0x4d6651, roughness: 0.9}));
   ground.rotation.x = -Math.PI/2;
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // بناء مجسم اللاعب (يشبه شخصية مكعبة بأسلوب مين كرافت مع سلاح دبابات/بندقية)
-  const playerGroup = new THREE.Group();
-  
-  // الجسم
-  const bodyMat = new THREE.MeshStandardMaterial({color: 0x4a5d4e});
-  const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 2), bodyMat);
-  bodyMesh.position.y = 0.9;
-  bodyMesh.castShadow = true;
-  playerGroup.add(bodyMesh);
-
-  // البرج أو الرأس
-  const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), new THREE.MeshStandardMaterial({color: 0x2c382f}));
-  headMesh.position.set(0, 1.8, 0);
-  playerGroup.add(headMesh);
-
-  // السلاح (ماسورة أو بندقية مدمجة)
-  const gunMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 8), new THREE.MeshStandardMaterial({color: 0x111111}));
-  gunMesh.rotation.x = Math.PI/2;
-  gunMesh.position.set(0.4, 1.5, 1.2);
-  playerGroup.add(gunMesh);
-
-  playerGroup.position.set(0, 0, 0);
-  scene.add(playerGroup);
-  player = playerGroup;
+  // إنشاء اللاعب الأساسي البشري
+  player = fn_createHumanBody(true);
+  player.position.set(0, 0, 0);
+  scene.add(player);
 
   setupJoystick();
   setupKeyboardControls();
@@ -272,19 +338,14 @@ function init3D(){
   loop();
 }
 
-/* إنشاء اللاعبين الآخرين في السيرفر */
-function createRemotePlayer(id, data){
-  const group = new THREE.Group();
-  const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 2), new THREE.MeshStandardMaterial({color: 0x8b3a3a}));
-  bodyMesh.position.y = 0.9;
-  group.add(bodyMesh);
-  
+function createHumanPlayerMesh(id, data){
+  const group = fn_createHumanBody(false);
   group.position.set(data.x || 0, data.y || 0, data.z || 0);
   scene.add(group);
   playersMap[id] = { mesh: group };
 }
 
-/* نظام التحكم باللمس والجويستيك الافتراضي */
+/* نظام التحكم باللعبة */
 function setupJoystick(){
   const zone = document.getElementById('joyZone');
   const knob = document.getElementById('joyKnob');
@@ -301,7 +362,7 @@ function setupJoystick(){
     let dx = e.clientX - centerX;
     let dy = e.clientY - centerY;
     let dist = Math.hypot(dx, dy);
-    let maxDist = 40;
+    let maxDist = 42;
     if(dist > maxDist){ dx = (dx/dist)*maxDist; dy = (dy/dist)*maxDist; }
     knob.style.transform = `translate(${dx}px, ${dy}px)`;
     moveX = dx / maxDist;
@@ -317,31 +378,29 @@ function setupJoystick(){
 
 function setupKeyboardControls(){
   window.addEventListener('keydown', e=>{
-    if(e.key === 'ArrowUp' || e.key === 'w') moveZ = -1;
-    if(e.key === 'ArrowDown' || e.key === 's') moveZ = 1;
-    if(e.key === 'ArrowLeft' || e.key === 'a') moveX = -1;
-    if(e.key === 'ArrowRight' || e.key === 'd') moveX = 1;
-    if(e.key === ' ') playerJump();
+    if(e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') moveZ = -1;
+    if(e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') moveZ = 1;
+    if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moveX = -1;
+    if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moveX = 1;
+    if(e.code === 'Space') playerJump();
     if(e.key === 'r' || e.key === 'R') playerReload();
     if(e.key === 'c' || e.key === 'C') switchCamera();
   });
   window.addEventListener('keyup', e=>{
-    if(['ArrowUp','w','ArrowDown','s'].includes(e.key)) moveZ = 0;
-    if(['ArrowLeft','a','ArrowRight','d'].includes(e.key)) moveX = 0;
+    if(['ArrowUp','w','W','ArrowDown','s','S'].includes(e.key)) moveZ = 0;
+    if(['ArrowLeft','a','A','ArrowRight','d','D'].includes(e.key)) moveX = 0;
   });
 }
 
-/* فيزياء الحركة والقسف ولمس الأرض */
 function updatePlayerPhysics(){
   if(!player) return;
-  let speed = 0.12;
+  let speed = 0.14;
   if(moveX !== 0 || moveZ !== 0){
     player.position.x += moveX * speed;
     player.position.z += moveZ * speed;
     player.rotation.y = Math.atan2(moveX, moveZ);
   }
 
-  // حساب القفز والجاذبية ولمس الأرض
   if(isJumping){
     velocityY += gravity;
     player.position.y += velocityY;
@@ -352,7 +411,6 @@ function updatePlayerPhysics(){
     }
   }
 
-  // إرسال الموقع عبر السيرفر إن وجد
   if(socket && roomId && (moveX !== 0 || moveZ !== 0)){
     socket.emit('playerMove', { roomId, x: player.position.x, y: player.position.y, z: player.position.z, rotY: player.rotation.y });
   }
@@ -361,15 +419,13 @@ function updatePlayerPhysics(){
 function playerJump(){
   if(!isJumping){
     isJumping = true;
-    velocityY = 0.32; // قوة القفز
-    toast('قفز!');
+    velocityY = 0.35;
   }
 }
 
-/* التبديل بين أوضاع الكاميرا (ثالث، ثاني، أول) */
 function switchCamera(){
   camMode = camMode >= 3 ? 1 : camMode + 1;
-  toast(camMode === 1 ? 'منظور ثالث خلفي' : camMode === 2 ? 'منظور ثاني (أمامي)' : 'منظور أول (مين كرافت)');
+  toast(camMode === 1 ? '📷 منظور ثالث خلفي' : camMode === 2 ? '📷 منظور أمامي' : '🎯 منظور أول (زوم الرشاش)');
 }
 
 function updateCameraPosition(){
@@ -380,28 +436,26 @@ function updateCameraPosition(){
   let rotY = player.rotation.y;
 
   if(camMode === 1){ // منظور ثالث
-    camera.position.set(px - Math.sin(rotY)*10, py + 5, pz - Math.cos(rotY)*10);
+    camera.position.set(px - Math.sin(rotY)*8, py + 4, pz - Math.cos(rotY)*8);
+    camera.lookAt(px, py + 1.2, pz);
+  } else if(camMode === 2){ // منظور أمامي
+    camera.position.set(px + Math.sin(rotY)*6, py + 2.5, pz + Math.cos(rotY)*6);
     camera.lookAt(px, py + 1, pz);
-  } else if(camMode === 2){ // منظور ثاني (أمام اللاعب)
-    camera.position.set(px + Math.sin(rotY)*8, py + 3, pz + Math.cos(rotY)*8);
-    camera.lookAt(px, py, pz);
-  } else if(camMode === 3){ // منظور أول (داخل عيون اللاعب - مين كرافت)
+  } else if(camMode === 3){ // منظور أول دقيق مع زوم الرشاش
     camera.position.set(px, py + 1.8, pz);
-    let lookX = px - Math.sin(rotY)*10;
-    let lookZ = pz - Math.cos(rotY)*10;
+    let lookX = px - Math.sin(rotY)*15;
+    let lookZ = pz - Math.cos(rotY)*15;
     camera.lookAt(lookX, py + 1.8, lookZ);
   }
 }
 
-/* نظام إطلاق النار والتلقيم والدمج */
 function playerShoot(){
-  if(isReloading) return toast('جاري التلقيم...');
-  if(ammo <= 0) return toast('نفذت الذخيرة! اضغط زر التلقيم R');
+  if(isReloading) return toast('⚠️ جاري تلقيم السلاح...');
+  if(ammo <= 0) return toast('🔋 نفدت الذخيرة! اضغط زر التلقيم (R)');
 
   ammo--;
-  document.getElementById('ammoBox').textContent = `الذخيرة: ${ammo}/${maxAmmo}`;
-  toast('🔥 إطلاق نار!');
-
+  document.getElementById('ammoBox').textContent = `الذخيرة: ${ammo} / ${maxAmmo} 🔋`;
+  
   let dirX = -Math.sin(player.rotation.y);
   let dirZ = -Math.cos(player.rotation.y);
 
@@ -409,13 +463,15 @@ function playerShoot(){
     socket.emit('playerShoot', { roomId, x: player.position.x, y: player.position.y + 1.5, z: player.position.z, dirX, dirZ });
   }
 
-  // فحص الإصابة للاعبين الآخرين في السيرفر المحلي أو المتصل
+  createBulletEffect(player.position.x, player.position.y + 1.5, player.position.z, dirX, dirZ);
+
+  // فحص إصابة الأهداف في السيرفر أو اللعب الفردي
   for(let id in playersMap){
     let pObj = playersMap[id].mesh;
     let dist = pObj.position.distanceTo(player.position);
-    if(dist < 5 && socket && roomId){
-      socket.emit('damagePlayer', { roomId, targetId: id, damage: 25 });
-      toast('أصبت الهدف بنجاح!');
+    if(dist < 6 && socket && roomId){
+      socket.emit('damagePlayer', { roomId, targetId: id, damage: 20 });
+      toast('🎯 إصابة مباشرة للهدف!');
     }
   }
 }
@@ -423,32 +479,32 @@ function playerShoot(){
 function playerReload(){
   if(isReloading || ammo === maxAmmo) return;
   isReloading = true;
-  toast('جاري تلقيم السلاح...');
+  toast('🔄 جاري تلقيم الذخيرة...');
   setTimeout(()=>{
     ammo = maxAmmo;
     isReloading = false;
-    document.getElementById('ammoBox').textContent = `الذخيرة: ${ammo}/${maxAmmo}`;
-    toast('تم التلقيم بنجاح!');
-  }, 1500);
+    document.getElementById('ammoBox').textContent = `الذخيرة: ${ammo} / ${maxAmmo} 🔋`;
+    toast('✅ تم تلقيم السلاح بنجاح');
+  }, 1400);
 }
 
 function createBulletEffect(x, y, z, dx, dz){
-  let bulletGeo = new THREE.SphereGeometry(0.2, 8, 8);
-  let bulletMat = new THREE.MeshBasicMaterial({color: 0xffff00});
+  let bulletGeo = new THREE.SphereGeometry(0.12, 8, 8);
+  let bulletMat = new THREE.MeshBasicMaterial({color: 0xffea00});
   let bullet = new THREE.Mesh(bulletGeo, bulletMat);
   bullet.position.set(x, y, z);
   scene.add(bullet);
 
   let step = 0;
   let interval = setInterval(()=>{
-    bullet.position.x += dx * 0.8;
-    bullet.position.z += dz * 0.8;
+    bullet.position.x += dx * 0.9;
+    bullet.position.z += dz * 0.9;
     step++;
-    if(step > 30){
+    if(step > 35){
       clearInterval(interval);
       scene.remove(bullet);
     }
-  }, 30);
+  }, 25);
 }
 </script>
 </body>
