@@ -1958,7 +1958,7 @@
             </div>
             <div class="build-price">300$</div>
         </div>
-        <div class="factory-build-card" id="factory-build-card" onclick="playClickSound(); armFactoryBuild()">
+        <div class="factory-build-card" id="factory-build-card" onclick="event.stopPropagation(); playClickSound(); armFactoryBuild()" onpointerdown="event.stopPropagation(); if(event.pointerType==='touch') armFactoryBuild()">
             <div class="factory-preview" aria-label="مصنع جيش">
                 <div class="f-tower"></div><div class="f-roof"></div><div class="f-base"></div><div class="f-door"></div><div class="f-light"></div>
             </div>
@@ -6533,26 +6533,33 @@
     }
 
     function armFactoryBuild() {
-        const builder = selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed ? selectedTank : null;
-        if (!builder) { showFloatingMsg('Select the construction dozer first'); return; }
+        // ابحث عن تركس اللاعب المحدد حتى لو تغيّر selectedTank أثناء لمس شريط القيادة.
+        let builder = (selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed && !selectedTank.__serverRemote) ? selectedTank : null;
+        if (!builder) {
+            builder = playerTanks.find(u => u && u.team === 'player' && getUnitKind(u) === 'builder' && !u.isDestroyed && !u.__serverRemote) || null;
+        }
+        if (!builder) { showFloatingMsg('🚧 اشترِ تركس البناء وحدده أولاً'); return; }
+        selectedTank = builder;
+        selectedUnitKind = 'builder';
+        builder.manualControl = true;
         if (isBuilderFactoryBusy(builder)) { showFloatingMsg('This construction dozer is already building a factory'); return; }
         if (playerMoney < 400) { showFloatingMsg('Insufficient funds — factory costs $400'); return; }
         factoryBuildArmed = true;
         factoryPlacementMode = true;
         factoryPlacementRotation = builder.mesh.rotation.y;
         factoryPlacementPoint = null;
-        showFactoryPlacementGhost();
+        showFactoryPlacementGhost(builder);
         updateConstructionBarForSelection();
         showFloatingMsg('🏭 Choose a factory location; construction will start automatically');
     }
 
-    function showFactoryPlacementGhost() {
+    function showFactoryPlacementGhost(builder) {
         // لا تستدعِ hideFactoryPlacement هنا، لأنها كانت تلغي factoryPlacementMode
         // مباشرة بعد تفعيله، وبالتالي كان لمس الأرض لا يبدأ البناء.
         if (factoryPlacementGhost && factoryPlacementGhost.mesh) {
             scene.remove(factoryPlacementGhost.mesh);
         }
-        const g = createArmyFactory(0, 0, true);
+        const g = createArmyFactory(builder.mesh.position.x, builder.mesh.position.z, true);
         factoryPlacementGhost = g;
         factoryPlacementMode = true;
         factoryBuildArmed = true;
