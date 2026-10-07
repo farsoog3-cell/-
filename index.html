@@ -3281,14 +3281,19 @@
             new THREE.Color(0xf1dfbd)
         ];
 
+        const seeded = (n) => {
+            let v = (n * 1664525 + 1013904223) >>> 0;
+            v ^= v >>> 16; v = Math.imul(v, 2246822519) >>> 0; v ^= v >>> 13;
+            return (v >>> 0) / 4294967295;
+        };
         for (let i = 0; i < count; i++) {
-            const x = (Math.random() - 0.5) * 1040;
-            const z = (Math.random() - 0.5) * 1040;
-            const y = getTerrainHeight(x, z) + 0.18 + Math.random() * 0.16;
+            const x = (seeded(i*7+11) - 0.5) * 1040;
+            const z = (seeded(i*11+17) - 0.5) * 1040;
+            const y = getTerrainHeight(x, z) + 0.18 + seeded(i*13+23) * 0.16;
 
             positions.push(x, y, z);
-            const c = palette[Math.floor(Math.random() * palette.length)];
-            const variation = 0.90 + Math.random() * 0.10;
+            const c = palette[Math.floor(seeded(i*19+31) * palette.length)];
+            const variation = 0.90 + seeded(i*23+37) * 0.10;
             colors.push(c.r * variation, c.g * variation, c.b * variation);
         }
 
@@ -3360,6 +3365,9 @@
         updateCameraPosition();
 
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.15));
         renderer.shadowMap.enabled = true;
@@ -4067,6 +4075,7 @@
 
     function animateCloudShadows(){
         if(!cloudShadowField) return;
+        if(window.onlineMatch) return;
         const t=performance.now()*0.001;
         const tex=cloudShadowField.material.map;
         tex.offset.x=(t*0.0022)%1;
@@ -4758,6 +4767,7 @@
         const M=(c,r=.8,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
         const skin=M(0x9a634b,.92), skinHi=M(0xc48768,.9), skinDark=M(0x5b372b,.98);
         const cloth=M(0x303a32,.96), cloth2=M(0x1c241f,.98), camo=M(0x56604e,.94);
+        camo.userData.teamAccent=true;
         const armor=M(0x141917,.88,.12), gear=M(0x252d28,.92), helmet=M(0x3f4941,.88,.08);
         const helmetHi=M(0x667066,.82,.08), boot=M(0x111412,.98), rubber=M(0x080a09,.99);
         const gun=M(0x20231f,.76,.35), gunHi=M(0x59605a,.55,.75), gunDark=M(0x0b0d0c,.92,.2);
@@ -5843,6 +5853,7 @@
         if (gameOver) return;
 
         ambulances.forEach(ambulance => {
+            if(ambulance.__serverRemote) return;
             if(ambulance.factoryExitLock) return;
             let ambulanceIsMoving = false;
             // الإسعاف الذي اشتراه اللاعب لا يتحرك من تلقاء نفسه.
@@ -12602,7 +12613,18 @@ window.updateCameraSensitivity=function(v){
       battleConfig.enemyColor=opp.color||cfg.enemyColor||'#ef4444';
       battleConfig.enemyColorName=opp.colorName||'OPPONENT';
     }
-    window.onlineMatch={roomId:m.roomId,clientId,playerId:m.playerId,opponentId:m.opponentId,seed:m.seed,serverTime:m.serverTime,hiddenPlayerId:m.hiddenPlayerId||clientId};
+    window.onlineMatch={
+      roomId:m.roomId,
+      clientId,
+      playerSlot:Number(m.playerId)||0,
+      playerServerId:m.playerServerId||m.clientId||clientId,
+      opponentServerId:m.opponentId||null,
+      playerId:m.playerId,
+      opponentId:m.opponentId,
+      seed:m.seed,
+      serverTime:m.serverTime,
+      hiddenPlayerId:m.hiddenPlayerId||clientId
+    };
     hide('online-room-modal');hide('online-room-list-modal');
     if(typeof beginConfiguredGame==='function')beginConfiguredGame();
     setTimeout(()=>{if(typeof showFloatingMsg==='function')showFloatingMsg('⚔ ONLINE MATCH — '+(m.playerId===0?'PLAYER 1':'PLAYER 2'));},500);
@@ -12703,7 +12725,8 @@ window.updateCameraSensitivity=function(v){
     let u=remote.get(s.id); if(u&&u.mesh)return u;
     try{
       const team='enemy',x=s.x||0,z=s.z||0,type=s.type||'normal';let created=null;
-      if(type==='scout'&&typeof createReconVehicle==='function')created=createReconVehicle(x,z,team);
+      if(type==='builder'&&typeof createConstructionTruck==='function')created=createConstructionTruck(x,z,team);
+      else if(type==='scout'&&typeof createReconVehicle==='function')created=createReconVehicle(x,z,team);
       else if(type==='ambulance'&&typeof createModernAmbulance==='function')created=createModernAmbulance(x,z,team);
       else if(s.infantry&&typeof createInfantrySoldier==='function')created=createInfantrySoldier(x,z,team);
       else if(typeof createTank==='function')created=createTank(x,z,color||battleConfig.enemyColor||'#ef4444',team,type==='rocket'?'rocket':'normal');
@@ -12760,7 +12783,7 @@ window.updateCameraSensitivity=function(v){
   function applyRemoteState(packet){
     if(!packet||!packet.players)return;
     if(Number.isFinite(packet.tick)&&packet.tick<lastServerTick)return;lastServerTick=Number(packet.tick)||lastServerTick;
-    const me=window.onlineMatch&&window.onlineMatch.playerId;
+    const me=window.onlineMatch&&window.onlineMatch.playerServerId;
     for(const p of packet.players){
       if(!p||p.id===me||!p.state)continue;
       const color=p.color||battleConfig.enemyColor||'#ef4444';
