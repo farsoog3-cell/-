@@ -5569,10 +5569,9 @@
                         ambulance.mesh.position.copy(next); ambulanceIsMoving = true;
                     }
                 } else if (!best) {
-                    const bx = ambulance.team === 'player'
-                        ? CORNER_OFFSET - 18 : -CORNER_OFFSET + 18;
-                    const bz = ambulance.team === 'player'
-                        ? CORNER_OFFSET - 18 : -CORNER_OFFSET + 18;
+                    const localBase=ambulance.team === 'player' ? getLocalBaseAnchor() : {x:-CORNER_OFFSET,z:-CORNER_OFFSET};
+                    const bx = localBase.x + (ambulance.team === 'player' ? (getLocalOnlineSlot()===1?-18:18) : 18);
+                    const bz = localBase.z + (ambulance.team === 'player' ? (getLocalOnlineSlot()===1?-18:18) : 18);
                     const home = new THREE.Vector3(
                         bx, getTerrainHeight(bx, bz), bz
                     );
@@ -6741,7 +6740,8 @@
         unit.barracksExiting=true;unit.barracksExitLock=true;unit.barracksExitTarget=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(14));unit.barracksExitTarget.y=getTerrainHeight(unit.barracksExitTarget.x,unit.barracksExitTarget.z);unit.target=null;unit.factoryFinalTarget=null;
         unit.barracksExitSpeed=Math.max(0.10, Math.min(0.18, (unit.speed||0.10)*1.15));
         if(team==='enemy'){
-            unit.target=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);unit.target.y=getTerrainHeight(unit.target.x,unit.target.z);unit.aiTarget=unit.target.clone();unit.aiOrder='attack';
+            const localBase=getLocalBaseAnchor();
+            unit.target=new THREE.Vector3(localBase.x,0,localBase.z);unit.target.y=getTerrainHeight(unit.target.x,unit.target.z);unit.aiTarget=unit.target.clone();unit.aiOrder='attack';
             enemyTanks.push(unit);
         }else playerTanks.push(unit);
         showFloatingMsg('🪖 Soldier exiting military barracks');
@@ -7437,16 +7437,34 @@ function createArmyFactory(x,z,ghost=false){
         return unit;
     }
 
+    // ONLINE LOCAL BASE HELPERS: كل لاعب يستخدم معسكره الحقيقي حسب Slot.
+    function getLocalOnlineSlot(){
+        const m=window.onlineMatch;
+        return Math.max(1,Math.min(2,Number(m&&m.playerSlot||m&&m.playerId||1)));
+    }
+    function getLocalBaseAnchor(){
+        const slot=getLocalOnlineSlot();
+        const sign=slot===1?1:-1;
+        return {
+            slot,
+            x:CORNER_OFFSET*sign,
+            z:CORNER_OFFSET*sign,
+            angle:slot===1?-(3*Math.PI)/4:Math.PI/4
+        };
+    }
+
     function buyConstructionTruck() {
         const cost = 300;
         if (playerMoney < cost) { showFloatingMsg('Insufficient funds — construction dozer costs $300'); return; }
         playerMoney -= cost; totalMoneySpent += cost;
-        const spawnAngle = -(3*Math.PI)/4;
-        const pX = CORNER_OFFSET + Math.sin(spawnAngle)*20;
-        const pZ = CORNER_OFFSET + Math.cos(spawnAngle)*20;
+        const base=getLocalBaseAnchor();
+        const spawnAngle = base.angle;
+        const pX = base.x + Math.sin(spawnAngle)*20;
+        const pZ = base.z + Math.cos(spawnAngle)*20;
         const truck = createConstructionTruck(pX,pZ,'player');
+        truck.__localPlayerUnit=true;
         truck.mesh.rotation.y=spawnAngle;
-        const exitTarget = new THREE.Vector3(CORNER_OFFSET + Math.sin(spawnAngle)*75,0,CORNER_OFFSET + Math.cos(spawnAngle)*75);
+        const exitTarget = new THREE.Vector3(base.x + Math.sin(spawnAngle)*75,0,base.z + Math.cos(spawnAngle)*75);
         exitTarget.y=getTerrainHeight(exitTarget.x,exitTarget.z); truck.target=exitTarget;
         playerTanks.push(truck);
         closeConstructionBar();
@@ -7469,12 +7487,13 @@ function createArmyFactory(x,z,ghost=false){
         if (reconActivated && reconVehicles.some(v => !v.isDestroyed)) { showFloatingMsg('📡 Scout vehicle already exists'); return; }
         if (playerMoney < cost) { showFloatingMsg('Insufficient funds — scout vehicle costs $500'); return; }
         playerMoney -= cost; totalMoneySpent += cost; updateEconomyUI(); playSound('buy');
-        const spawnAngle = -(3*Math.PI)/4;
-        const pX = CORNER_OFFSET + Math.sin(spawnAngle)*18;
-        const pZ = CORNER_OFFSET + Math.cos(spawnAngle)*18;
+        const base=getLocalBaseAnchor();
+        const spawnAngle = base.angle;
+        const pX = base.x + Math.sin(spawnAngle)*18;
+        const pZ = base.z + Math.cos(spawnAngle)*18;
         const scout = createReconVehicle(pX,pZ,'player');
         scout.mesh.rotation.y=spawnAngle;
-        const exitTarget = new THREE.Vector3(CORNER_OFFSET + Math.sin(spawnAngle)*62,0,CORNER_OFFSET + Math.cos(spawnAngle)*62);
+        const exitTarget = new THREE.Vector3(base.x + Math.sin(spawnAngle)*62,0,base.z + Math.cos(spawnAngle)*62);
         exitTarget.y=getTerrainHeight(exitTarget.x,exitTarget.z);
         scout.target=exitTarget;
         reconVehicles.push(scout);
@@ -10333,7 +10352,8 @@ function createArmyFactory(x,z,ghost=false){
         point.y=getTerrainHeight(point.x,point.z);
         if(!isBuildingPlacementValid(point,'factory',rotation,'player').valid){showFloatingMsg('🚫 موقع المصنع غير صالح للبناء');return;}
         hideFactoryPlacement();playerMoney-=400;totalMoneySpent+=400;updateEconomyUI();
-        const base=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);
+        const localBase=getLocalBaseAnchor();
+        const base=new THREE.Vector3(localBase.x,0,localBase.z);
         const away=new THREE.Vector3(point.x-base.x,0,point.z-base.z);
         if(away.lengthSq()>0.01)rotation=Math.atan2(away.x,away.z);
         const build=createArmyFactory(point.x,point.z,true);build.owner='player';
