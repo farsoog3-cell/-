@@ -7922,25 +7922,6 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
 
-            // وضع بناء المعسكر: تثبيت موقع المعسكر ثم بدء البناء فعلياً.
-            // يجب معالجة هذا قبل أمر الحركة العادي حتى لا تتحول نقرة البناء إلى أمر تحريك.
-            if (barracksPlacementMode && barracksPlacementGhost && barracksBuildBuilder && !barracksBuildBuilder.isDestroyed && !barracksBuildBuilder.__serverRemote && terrainHits.length) {
-                const buildPoint = terrainHits[0].point.clone();
-                buildPoint.y = getTerrainHeight(buildPoint.x, buildPoint.z);
-                barracksPlacementPoint = buildPoint.clone();
-                if (barracksPlacementGhost.mesh) {
-                    barracksPlacementGhost.mesh.userData.placementPoint = buildPoint.clone();
-                }
-                const check = isBuildingPlacementValid(buildPoint,'barracks',barracksPlacementRotation,'player');
-                showInvalidBuildGhost(barracksPlacementGhost,check.valid);
-                if(!check.valid){
-                    showFloatingMsg('🚫 لا يمكن بناء المعسكر هنا: الأرض غير مستوية أو المكان مشغول');
-                    return;
-                }
-                startBarracksConstruction(barracksBuildBuilder, barracksPlacementPoint.clone(), barracksPlacementRotation);
-                return;
-            }
-
             // Normal single tap on ground gives a move order to the current selection.
             if (!terrainHits.length) return;
 
