@@ -7452,6 +7452,9 @@ function createArmyFactory(x,z,ghost=false){
         exitTarget.y=getTerrainHeight(exitTarget.x,exitTarget.z); truck.target=exitTarget;
         playerTanks.push(truck);
         closeConstructionBar();
+        updateEconomyUI();
+        // أرسل الرصيد الجديد فوراً حتى يرى الطرف الآخر عملية الشراء في نفس الدورة.
+        if(online() && typeof serverSendSnapshot==='function'){ try{ lastUpload=0; serverSendSnapshot(); }catch(e){} }
         showFloatingMsg('🚧 Construction dozer purchased for $300 — double-tap to control');
     }
 
@@ -7725,8 +7728,9 @@ function createArmyFactory(x,z,ghost=false){
         const valid=isBuildingPlacementValid(p,'factory',factoryPlacementRotation,'player').valid;
         factoryPlacementGhost.mesh.position.set(p.x, getBuildingGroundLevel(p.x,p.z,'factory',factoryPlacementRotation)+.03, p.z);
         factoryPlacementGhost.mesh.rotation.y = factoryPlacementRotation;
-        showInvalidBuildGhost(factoryPlacementGhost,valid);
+        factoryPlacementPoint=p.clone();
         factoryPlacementGhost.mesh.userData.placementPoint=p.clone();
+        showInvalidBuildGhost(factoryPlacementGhost,valid);
         return valid;
     }
 
@@ -7855,13 +7859,18 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
 
-            // وضع بناء المصنع: الصورة تعرض الخيال، والضغط على الأرض يثبت الموقع ثم يبدأ التركس.
+            // وضع بناء المصنع: أولاً نثبت خيال المصنع في المكان الذي لمسه اللاعب،
+            // ثم نبدأ البناء فعلياً. هذا يمنع فقدان نقرة البناء بسبب إعادة تموضع الخيال.
             const terrainHits = raycaster.intersectObject(terrainMesh);
-            if (factoryBuildArmed && selectedTank && getUnitKind(selectedTank) === 'builder' && terrainHits.length) {
+            if (factoryPlacementMode && factoryPlacementGhost && selectedTank && getUnitKind(selectedTank) === 'builder' && terrainHits.length) {
                 const buildPoint = terrainHits[0].point.clone();
                 buildPoint.y = getTerrainHeight(buildPoint.x, buildPoint.z);
-                if(!isBuildingPlacementValid(buildPoint,'factory',factoryPlacementRotation,'player').valid){ showFloatingMsg('🚫 لا يمكن بناء المصنع هنا: الأرض غير مستوية أو المكان مشغول'); return; }
-                startFactoryConstruction(selectedTank, buildPoint, factoryPlacementRotation);
+                factoryPlacementPoint = buildPoint.clone();
+                factoryPlacementGhost.mesh.userData.placementPoint = buildPoint.clone();
+                const check = isBuildingPlacementValid(buildPoint,'factory',factoryPlacementRotation,'player');
+                showInvalidBuildGhost(factoryPlacementGhost,check.valid);
+                if(!check.valid){ showFloatingMsg('🚫 لا يمكن بناء المصنع هنا: الأرض غير مستوية أو المكان مشغول'); return; }
+                confirmFactoryPlacement();
                 return;
             }
 
@@ -10338,6 +10347,7 @@ function createArmyFactory(x,z,ghost=false){
         point.y=getTerrainHeight(point.x,point.z);
         if(!isBuildingPlacementValid(point,'factory',rotation,'player').valid){showFloatingMsg('🚫 موقع المصنع غير صالح للبناء');return;}
         hideFactoryPlacement();playerMoney-=400;totalMoneySpent+=400;updateEconomyUI();
+        if(online() && typeof serverSendSnapshot==='function'){ try{ lastUpload=0; serverSendSnapshot(); }catch(e){} }
         // اتجاه المصنع يُحسب من معسكر اللاعب الحالي، وليس من معسكر Slot 1 دائماً.
         const mySlot = Math.max(1, Math.min(2, Number(window.onlineMatch?.playerSlot || 1)));
         const base=new THREE.Vector3(mySlot===1?CORNER_OFFSET:-CORNER_OFFSET,0,mySlot===1?CORNER_OFFSET:-CORNER_OFFSET);
