@@ -3406,6 +3406,15 @@
             root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
             scene.add(root);
             terrainMesh=firstMesh;
+
+            // IMPORTANT: the external terrain loads asynchronously. Oil fields are
+            // created during initial setup, so they may have been placed at Y=0
+            // before the terrain height sampler existed. Re-anchor every oil field
+            // to the real external terrain now that the sampler is ready.
+            if (typeof repositionOilRigsToTerrain === 'function') {
+                repositionOilRigsToTerrain();
+            }
+
             console.log('External terrain + external textures loaded.');
         }, undefined, function(error) {
             console.error('Could not load external terrain:', error);
@@ -5434,6 +5443,27 @@
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
+    // Keep oil installations attached to the independent external terrain.
+    // This is also called after the GLB finishes loading because createOilRigs()
+    // runs before the asynchronous terrain loader normally has its height sampler.
+    function repositionOilRigsToTerrain() {
+        if (!Array.isArray(oilRigs) || typeof getTerrainHeight !== 'function') return;
+
+        oilRigs.forEach(rig => {
+            if (!rig || !rig.group || rig.isDestroyed) return;
+            const y = getTerrainHeight(rig.x, rig.z);
+
+            // The entire oil installation is a local group: barrels, pump house,
+            // pole and flag all move together, preserving their local heights.
+            rig.group.position.y = y;
+
+            // Keep the selection/capture logic synchronized with the same ground.
+            if (rig.flagData && rig.flagData.mesh) {
+                rig.flagData.mesh.updateMatrixWorld(true);
+            }
+        });
+    }
+
     function createOilRigs() {
         const positions=[{x:95,z:-95},{x:-95,z:95},{x:-115,z:-105},{x:115,z:105}];
         positions.forEach((pos,index)=>{
@@ -5492,6 +5522,11 @@
             const oilHpLabel=document.createElement('div'); oilHpLabel.className='tank-hp-label hp-player'; const oilHpFill=document.createElement('div'); oilHpFill.className='tank-hp-fill'; oilHpLabel.appendChild(oilHpFill); document.getElementById('hp-labels-container').appendChild(oilHpLabel); oilHpLabel.style.display='none';
             oilRigs.push({x:pos.x,z:pos.z,group:rigGroup,beam:null,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:barrelGroup});
         });
+
+        // If the external GLB has already finished loading, correct the initial
+        // Y immediately. If not, loadExternalTerrainMap() will call the same
+        // function when its async load completes.
+        repositionOilRigsToTerrain();
     }
 
     function createTank(x, z, colorHex, team, type = 'normal') {
