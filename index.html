@@ -8,6 +8,12 @@
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
         #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        #terrain-loading-screen { position:absolute; inset:0; z-index:4; display:none; align-items:center; justify-content:center; flex-direction:column; background:radial-gradient(circle at 50% 42%,#3a3428 0%,#171511 48%,#070706 100%); color:#f3ead7; pointer-events:auto; direction:rtl; }
+        #terrain-loading-screen.show { display:flex; }
+        #terrain-loading-screen .tls-title { font-size:clamp(15px,3vw,23px); font-weight:900; letter-spacing:.8px; text-shadow:0 2px 8px #000; }
+        #terrain-loading-screen .tls-sub { margin-top:8px; font-size:11px; color:#bdb5a5; }
+        #terrain-loading-screen .tls-bar { width:min(78vw,360px); height:7px; margin-top:18px; border-radius:8px; overflow:hidden; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.16); }
+        #terrain-loading-screen .tls-fill { width:0%; height:100%; background:#c6a96b; transition:width .18s ease; }
         
         #start-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
@@ -2115,6 +2121,7 @@
 </div>
 
 <div id="canvas-container"></div>
+<div id="terrain-loading-screen" aria-hidden="true"><div class="tls-title">جاري تجهيز ساحة المعركة</div><div class="tls-sub" id="terrain-loading-text">تحميل التضاريس والخامات...</div><div class="tls-bar"><div class="tls-fill" id="terrain-loading-fill"></div></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -2960,6 +2967,9 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
+        const terrainLoadingScreen=document.getElementById('terrain-loading-screen');
+        if(terrainLoadingScreen){terrainLoadingScreen.classList.add('show');terrainLoadingScreen.setAttribute('aria-hidden','false');}
+        setTerrainLoadingProgress(5,'جاري تحميل التضاريس...');
 
         setupLighting();
         loadExternalTerrainMap();
@@ -3347,6 +3357,20 @@
     // GitHub structure:
     // index-terrain.html
     // assets/terrain_map.glb
+    window.__externalTerrainReady=false;
+    window.__externalTerrainGLBReady=false;
+    window.__externalTerrainTextureCount=0;
+    window.__externalTerrainReadyWaiters=[];
+    function setTerrainLoadingProgress(percent,text){const f=document.getElementById('terrain-loading-fill'),t=document.getElementById('terrain-loading-text');if(f)f.style.width=Math.max(0,Math.min(100,percent))+'%';if(t&&text)t.textContent=text;}
+    function finishExternalTerrainLoading(){
+        if(window.__externalTerrainReady||!window.__externalTerrainGLBReady||window.__externalTerrainTextureCount<3)return;
+        window.__externalTerrainReady=true; setTerrainLoadingProgress(100,'ساحة المعركة جاهزة');
+        if(typeof repositionOilRigsToTerrain==='function')repositionOilRigsToTerrain();
+        const screen=document.getElementById('terrain-loading-screen'); if(screen){screen.classList.remove('show');screen.setAttribute('aria-hidden','true');}
+        const waiters=window.__externalTerrainReadyWaiters.splice(0); waiters.forEach(fn=>{try{fn();}catch(e){console.error(e);}});
+    }
+    window.__whenExternalTerrainReady=function(fn){if(window.__externalTerrainReady){fn();return;}window.__externalTerrainReadyWaiters.push(fn);};
+
     function loadExternalTerrainMap() {
         if (typeof THREE.GLTFLoader !== 'function') {
             console.error('GLTFLoader is required. External terrain was not loaded.');
@@ -3389,9 +3413,11 @@
             if(!geo.attributes.normal) geo.computeVertexNormals();
 
             const texLoader=new THREE.TextureLoader();
-            const albedo=texLoader.load('assets/terrain_albedo.jpg');
-            const roughness=texLoader.load('assets/terrain_roughness.jpg');
-            const normal=texLoader.load('assets/terrain_normal.jpg');
+            const markTerrainTextureLoaded=function(){window.__externalTerrainTextureCount++;setTerrainLoadingProgress(40+(window.__externalTerrainTextureCount/3)*60,'تحميل خامات الأرض '+window.__externalTerrainTextureCount+'/3 ...');finishExternalTerrainLoading();};
+            const markTerrainTextureError=function(){markTerrainTextureLoaded();};
+            const albedo=texLoader.load('assets/terrain_albedo.jpg',markTerrainTextureLoaded,undefined,markTerrainTextureError);
+            const roughness=texLoader.load('assets/terrain_roughness.jpg',markTerrainTextureLoaded,undefined,markTerrainTextureError);
+            const normal=texLoader.load('assets/terrain_normal.jpg',markTerrainTextureLoaded,undefined,markTerrainTextureError);
             albedo.encoding=THREE.sRGBEncoding;
             albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;
             roughness.wrapS=roughness.wrapT=THREE.RepeatWrapping;
@@ -3406,6 +3432,8 @@
             root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
             scene.add(root);
             terrainMesh=firstMesh;
+            window.__externalTerrainGLBReady=true;
+            setTerrainLoadingProgress(40,'تم تحميل شكل الأرض — جاري تجهيز الخامات...');
 
             // IMPORTANT: the external terrain loads asynchronously. Oil fields are
             // created during initial setup, so they may have been placed at Y=0
@@ -3415,7 +3443,8 @@
                 repositionOilRigsToTerrain();
             }
 
-            console.log('External terrain + external textures loaded.');
+            console.log('External terrain geometry loaded; waiting for all terrain textures.');
+            finishExternalTerrainLoading();
         }, undefined, function(error) {
             console.error('Could not load external terrain:', error);
             // No fallback terrain is created.
@@ -11400,6 +11429,18 @@ window.updateCameraSensitivity=function(v){
       return false;
     }
 
+    // لا نبدأ المعركة قبل اكتمال ملف الأرض الخارجي وخاماته، حتى لا تظهر شاشة سوداء.
+    if(!window.__externalTerrainReady){
+      const loadingScreen=document.getElementById('terrain-loading-screen');
+      if(loadingScreen){loadingScreen.classList.add('show');loadingScreen.setAttribute('aria-hidden','false');}
+      setTerrainLoadingProgress(20,'جاري تجهيز ساحة المعركة...');
+      if(!window.__battleStartQueued){
+        window.__battleStartQueued=true;
+        window.__whenExternalTerrainReady(()=>{window.__battleStartQueued=false;if(window.onlineMatch)window.beginConfiguredGame();});
+      }
+      return false;
+    }
+
     // Online only: لا يوجد خصم محلي. كل ما يخص الخصم يأتي من السيرفر.
     if(typeof enemyTanks!=='undefined') enemyTanks.forEach(u=>{if(u&&u.__serverRemote&&u.mesh)scene.remove(u.mesh);});
     if(typeof enemyTanks!=='undefined') enemyTanks.length=0;
@@ -11641,7 +11682,7 @@ window.updateCameraSensitivity=function(v){
     if(typeof beginConfiguredGame==='function')beginConfiguredGame();
     setTimeout(()=>{
       if(typeof applySelectedTeamColor==='function'){applySelectedTeamColor('player',battleConfig.playerColor);applySelectedTeamColor('enemy',battleConfig.enemyColor);}
-      if(typeof showFloatingMsg==='function')showFloatingMsg('⚔ ONLINE MATCH — PLAYER '+slot);
+      if(window.__externalTerrainReady&&typeof showFloatingMsg==='function')showFloatingMsg('⚔ ONLINE MATCH — PLAYER '+slot);
     },80);
   }
   window.openOnlineCreate=function(){creating=true;pendingJoin=null;room=null;selectedMoney=1000;selectedColor='#168cff';const modal=$('online-room-modal');if(modal)modal.classList.remove('online-join-only');
