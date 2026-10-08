@@ -2122,6 +2122,29 @@
 
 <div id="canvas-container"></div>
 <div id="terrain-loading-screen" aria-hidden="true"><div class="tls-title">جاري تجهيز ساحة المعركة</div><div class="tls-sub" id="terrain-loading-text">تحميل التضاريس والخامات...</div><div class="tls-bar"><div class="tls-fill" id="terrain-loading-fill"></div></div></div>
+<style id="online-battle-waiting-ui">
+#online-battle-waiting{position:fixed;inset:0;z-index:600;display:none;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 35%,rgba(52,48,39,.98),rgba(8,9,8,.99) 72%);color:#fff;direction:rtl;font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+#online-battle-waiting.show{display:flex}
+.obw-card{width:min(620px,94vw);padding:22px 20px 18px;border:1px solid #665f4d;border-radius:12px;background:linear-gradient(145deg,rgba(29,31,27,.98),rgba(9,11,9,.98));box-shadow:0 25px 80px #000,inset 0 1px 0 rgba(255,255,255,.08)}
+.obw-title{text-align:center;font-size:clamp(18px,4vw,27px);font-weight:950;letter-spacing:1px;color:#eee7d5}.obw-sub{text-align:center;margin-top:6px;color:#a9a798;font-size:11px}
+.obw-players{display:grid;grid-template-columns:1fr 54px 1fr;align-items:center;gap:10px;margin-top:22px}.obw-player{min-height:108px;padding:13px;border:1px solid #3e443b;border-radius:9px;background:linear-gradient(145deg,#171c17,#0b0e0b);text-align:center}.obw-player.enemy{border-color:#4a3d3d}.obw-avatar{width:40px;height:40px;margin:0 auto 7px;border-radius:50%;background:var(--team,#168cff);border:2px solid rgba(255,255,255,.7)}.obw-name{font-size:13px;font-weight:900}.obw-role{font-size:9px;color:#8f988e;margin-top:3px}.obw-status{display:inline-flex;align-items:center;gap:5px;margin-top:9px;padding:4px 7px;border-radius:20px;background:#0d1710;color:#8fe0a0;font-size:9px;font-weight:800}.obw-dot{width:6px;height:6px;border-radius:50%;background:currentColor}.obw-vs{font-size:15px;font-weight:950;color:#9b9b8e;text-align:center}.obw-section{margin-top:18px;padding:12px;border:1px solid #343a32;border-radius:8px;background:#0b0e0b}.obw-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:10px;color:#aeb5aa}.obw-row b{color:#f0f1ea}.obw-progress{height:8px;margin-top:9px;background:#030403;border:1px solid #33382f;border-radius:9px;overflow:hidden}.obw-fill{height:100%;width:0%;background:linear-gradient(90deg,#806b3b,#d2b46b,#eee2bd);transition:width .18s ease}.obw-note{text-align:center;margin-top:12px;font-size:10px;color:#8d958b}.obw-pulse{animation:obwPulse 1.3s ease-in-out infinite}@keyframes obwPulse{50%{opacity:.55}}
+@media(max-width:520px){.obw-card{padding:16px 12px}.obw-players{grid-template-columns:1fr 34px 1fr;gap:5px}.obw-player{min-height:100px;padding:9px}.obw-title{font-size:18px}}
+</style>
+
+<div id="online-battle-waiting" aria-hidden="true">
+  <div class="obw-card">
+    <div class="obw-title">بانتظار دخول المعركة</div>
+    <div class="obw-sub">تم تجهيز المباراة بين اللاعبين — لن تبدأ المعركة حتى تصبح ساحة المعركة جاهزة فعلياً</div>
+    <div class="obw-players">
+      <div class="obw-player" id="obw-player-card"><div class="obw-avatar" id="obw-player-avatar"></div><div class="obw-name" id="obw-player-name">اللاعب 1</div><div class="obw-role">PLAYER</div><div class="obw-status"><span class="obw-dot"></span><span id="obw-player-status">متصل</span></div></div>
+      <div class="obw-vs">VS</div>
+      <div class="obw-player enemy" id="obw-enemy-card"><div class="obw-avatar" id="obw-enemy-avatar"></div><div class="obw-name" id="obw-enemy-name">اللاعب 2</div><div class="obw-role">OPPONENT</div><div class="obw-status"><span class="obw-dot"></span><span id="obw-enemy-status">متصل</span></div></div>
+    </div>
+    <div class="obw-section"><div class="obw-row"><span>حالة ساحة المعركة</span><b id="obw-terrain-text" class="obw-pulse">جاري تجهيز الأرض والخامات...</b></div><div class="obw-progress"><div class="obw-fill" id="obw-terrain-fill"></div></div></div>
+    <div class="obw-note">الرجاء الانتظار... سيتم فتح المعركة تلقائياً فور اكتمال الأرض.</div>
+  </div>
+</div>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -3361,10 +3384,34 @@
     window.__externalTerrainGLBReady=false;
     window.__externalTerrainTextureCount=0;
     window.__externalTerrainReadyWaiters=[];
-    function setTerrainLoadingProgress(percent,text){const f=document.getElementById('terrain-loading-fill'),t=document.getElementById('terrain-loading-text');if(f)f.style.width=Math.max(0,Math.min(100,percent))+'%';if(t&&text)t.textContent=text;}
+    function setTerrainLoadingProgress(percent,text){const f=document.getElementById('terrain-loading-fill'),t=document.getElementById('terrain-loading-text');if(f)f.style.width=Math.max(0,Math.min(100,percent))+'%';if(t&&text)t.textContent=text;updateOnlineBattleWaiting(percent,text);}
+    function showOnlineBattleWaiting(m){
+        const s=document.getElementById('online-battle-waiting'); if(!s)return;
+        const cfg=m&&m.config||{},me=cfg.player||{},op=cfg.opponent||{};
+        const slot=Number(m&&(m.playerSlot||m.slot||1))===2?2:1;
+        const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+        const team=(id,v)=>{const e=document.getElementById(id);if(e)e.style.setProperty('--team',v);};
+        set('obw-player-name',me.name||('اللاعب '+slot)); set('obw-enemy-name',op.name||('اللاعب '+(slot===1?2:1)));
+        set('obw-player-status','متصل — جاهز'); set('obw-enemy-status','متصل — جاهز');
+        team('obw-player-avatar',me.color||'#168cff'); team('obw-enemy-avatar',op.color||'#ef4444');
+        set('obw-terrain-text',window.__externalTerrainReady?'الأرض جاهزة':'جاري تجهيز الأرض والخامات...');
+        const fill=document.getElementById('obw-terrain-fill'); if(fill)fill.style.width=window.__externalTerrainReady?'100%':'8%';
+        s.classList.add('show'); s.setAttribute('aria-hidden','false');
+    }
+    function updateOnlineBattleWaiting(percent,text){
+        const s=document.getElementById('online-battle-waiting'); if(!s||!s.classList.contains('show'))return;
+        const fill=document.getElementById('obw-terrain-fill'),label=document.getElementById('obw-terrain-text');
+        if(fill)fill.style.width=Math.max(0,Math.min(100,Number(percent)||0))+'%';
+        if(label&&text)label.textContent=text;
+    }
+    function hideOnlineBattleWaiting(){
+        const s=document.getElementById('online-battle-waiting'); if(!s)return;
+        s.classList.remove('show'); s.setAttribute('aria-hidden','true');
+    }
+
     function finishExternalTerrainLoading(){
         if(window.__externalTerrainReady||!window.__externalTerrainGLBReady||window.__externalTerrainTextureCount<3)return;
-        window.__externalTerrainReady=true; setTerrainLoadingProgress(100,'ساحة المعركة جاهزة');
+        window.__externalTerrainReady=true; setTerrainLoadingProgress(100,'ساحة المعركة جاهزة'); updateOnlineBattleWaiting(100,'ساحة المعركة جاهزة — فتح المعركة...');
         if(typeof repositionOilRigsToTerrain==='function')repositionOilRigsToTerrain();
         const screen=document.getElementById('terrain-loading-screen'); if(screen){screen.classList.remove('show');screen.setAttribute('aria-hidden','true');}
         const waiters=window.__externalTerrainReadyWaiters.splice(0); waiters.forEach(fn=>{try{fn();}catch(e){console.error(e);}});
@@ -11431,8 +11478,9 @@ window.updateCameraSensitivity=function(v){
 
     // لا نبدأ المعركة قبل اكتمال ملف الأرض الخارجي وخاماته، حتى لا تظهر شاشة سوداء.
     if(!window.__externalTerrainReady){
+      showOnlineBattleWaiting({config:battleConfig,playerSlot:window.onlineMatch.playerSlot});
       const loadingScreen=document.getElementById('terrain-loading-screen');
-      if(loadingScreen){loadingScreen.classList.add('show');loadingScreen.setAttribute('aria-hidden','false');}
+      if(loadingScreen){loadingScreen.classList.remove('show');loadingScreen.setAttribute('aria-hidden','true');}
       setTerrainLoadingProgress(20,'جاري تجهيز ساحة المعركة...');
       if(!window.__battleStartQueued){
         window.__battleStartQueued=true;
@@ -11441,6 +11489,8 @@ window.updateCameraSensitivity=function(v){
       return false;
     }
 
+    // الأرض والخامات أصبحت جاهزة فعلياً؛ أغلق قائمة الانتظار وافتح المعركة الآن.
+    hideOnlineBattleWaiting();
     // Online only: لا يوجد خصم محلي. كل ما يخص الخصم يأتي من السيرفر.
     if(typeof enemyTanks!=='undefined') enemyTanks.forEach(u=>{if(u&&u.__serverRemote&&u.mesh)scene.remove(u.mesh);});
     if(typeof enemyTanks!=='undefined') enemyTanks.length=0;
@@ -11679,6 +11729,7 @@ window.updateCameraSensitivity=function(v){
     window.onlineMatch={roomId:m.roomId,clientId,playerSlot:slot,playerServerId:m.playerServerId||my.id||clientId,opponentServerId:m.opponentServerId||opp.id||m.opponentId||null,playerId:slot,opponentId:m.opponentId,seed:m.seed,serverTime:m.serverTime,hiddenPlayerId:m.hiddenPlayerId||null,protocolVersion:m.protocolVersion||3};
     saveResume({roomId:m.roomId,resumeToken:m.resumeToken||loadResume()?.resumeToken||null,playerId:window.onlineMatch.playerServerId});
     pendingJoin=null;hide('online-room-modal');hide('online-room-list-modal');
+    showOnlineBattleWaiting(m);
     if(typeof beginConfiguredGame==='function')beginConfiguredGame();
     setTimeout(()=>{
       if(typeof applySelectedTeamColor==='function'){applySelectedTeamColor('player',battleConfig.playerColor);applySelectedTeamColor('enemy',battleConfig.enemyColor);}
