@@ -2807,11 +2807,93 @@
     }
 
     function getTerrainHeight(x, z) {
-        // ارتفاعات الخريطة الخارجية فقط: لا يوجد Terrain إجرائي بديل.
-        if (window.__externalTerrainHeightSampler) {
-            return window.__externalTerrainHeightSampler(x, z);
+        // تموّجات رملية واسعة وناعمة جداً، مثل كثبان الصحراء الحقيقية.
+        // التردد منخفض والارتفاع محدود حتى تبقى حركة الدبابات سلسة ولا تظهر الأرض كجبال.
+        const duneA = Math.sin(x * 0.0105 + Math.sin(z * 0.0032) * 0.9) * 2.7;
+        const duneB = Math.cos(z * 0.0130 - x * 0.0042) * 1.65;
+        const duneC = Math.sin((x + z) * 0.0062) * Math.cos((x - z) * 0.0048) * 1.15;
+
+        // تموّج دقيق جداً للرمل، بدون خشونة مزعجة.
+        const detail = Math.sin(x * 0.030 + z * 0.019) * 0.10 +
+                       Math.cos(z * 0.034 - x * 0.013) * 0.07;
+
+        let h = duneA + duneB + duneC + detail;
+
+        // وسط MAP يبقى مناسباً للقتال والحركة.
+        const center = Math.hypot(x, z);
+        const centerBlend = smooth01(Math.max(0, Math.min(1, (center - 95) / 95)));
+        h *= 0.22 + centerBlend * 0.78;
+
+        // تلال مستديرة منخفضة، مع انتقال تدريجي عند القاعدة.
+        h += roundedHill(x, z, -235, 205, 105, 6.0);
+        h += roundedHill(x, z, 235, -205, 110, 5.2);
+        h += roundedHill(x, z, -220, -245, 92, 4.4);
+        h += roundedHill(x, z, 220, 245, 98, 4.0);
+
+        // منصات النفط أعلى بوضوح من الأرض المحيطة، لكن الارتفاع صغير ومناسب للدبابات.
+        // يوجد سطح شبه مستوٍ حول كل بئر ثم منحدر عريض وناعم حتى مستوى الأرض.
+        const oilPadLift = [
+            [95, -95], [-95, 95], [-115, -105], [115, 105]
+        ];
+        for (const [ox, oz] of oilPadLift) {
+            const d = Math.hypot(x - ox, z - oz);
+            // 0-24: منصة شبه مستوية، 24-58: انحدار ناعم، وبعدها مستوى الأرض.
+            const inner = THREE.MathUtils.clamp((58 - d) / 34, 0, 1);
+            const plateau = smooth01(inner);
+            h += plateau * 7.0;
         }
-        return 0;
+
+        // ممرات/انخفاضات عريضة جداً: انحدار خفيف وليس طريقاً محفوراً.
+        const passA = Math.exp(-Math.pow((z - (0.34 * x + 35)) / 82, 2)) * 1.35;
+        const passB = Math.exp(-Math.pow((x + 0.42 * z - 80) / 92, 2)) * 1.0;
+        h -= passA + passB;
+
+        // تسوية تدريجية حول المعسكرين: المركز مستوٍ والساحة تتصل بالأرض بمنحدر ناعم.
+        const baseZones=[[CORNER_OFFSET,CORNER_OFFSET],[-CORNER_OFFSET,-CORNER_OFFSET]];
+        for(const [bx,bz] of baseZones){
+            const d=Math.hypot(x-bx,z-bz);
+            const blend=1-smooth01(THREE.MathUtils.clamp((d-26)/38,0,1));
+            if(blend>0){
+                // مستوى الساحة قريب من مستوى مركز المعسكر.
+                h *= (1-blend);
+            }
+        }
+        // جبال حواف الخريطة من نفس سطح الأرض نفسه، وليست مجسمات منفصلة.
+        // الارتفاع يتدرج على مساحة واسعة حتى تبدو الخريطة كحوض طبيعي تحيط به
+        // سلاسل جبلية متوازنة، مع قمم مختلفة ووديان صغيرة بين القمم.
+        const ax=Math.abs(x), az=Math.abs(z);
+        const edge=Math.max(ax,az);
+        const mountainT=THREE.MathUtils.clamp((edge-335)/115,0,1);
+        const mountainBlend=smooth01(mountainT);
+        if(mountainBlend>0){
+            // سلسلة رئيسية طويلة بمحاذاة كل طرف. التردد منخفض حتى تكون التضاريس
+            // كبيرة وواضحة مثل خرائط RTS، وليست تموجات عشوائية صغيرة.
+            const ridgeA=Math.sin((ax+az)*0.018 + Math.sin((ax-az)*0.009)*1.25);
+            const ridgeB=Math.sin((ax*0.031 - az*0.014) + 1.7)*0.5;
+            const ridgeC=Math.cos((ax+az)*0.044 - 0.8)*0.22;
+            const ridge=Math.max(0, ridgeA*0.58 + ridgeB*0.30 + ridgeC);
+
+            // ارتفاع أساسي + قمم متدرجة؛ الجزء الأخير من الخريطة يصل إلى
+            // ارتفاع جبلي واضح، بينما تبقى منطقة اللعب الداخلية قابلة للحركة.
+            const baseMountain=10 + mountainT*38;
+            const peaks=mountainT*(16 + ridge*24);
+            h += mountainBlend*baseMountain + peaks;
+
+            // وديان صغيرة تفصل القمم حتى لا تتحول الحافة إلى جدار واحد مستوٍ.
+            const valley=Math.max(0, -Math.sin((ax*0.026 + az*0.021) + Math.cos((ax-az)*0.012)));
+            h -= mountainBlend*valley*8.5;
+        }
+
+        // منطقة المعسكرين: أرض مستوية واسعة صالحة للبناء والحركة، مع انتقال ناعم إلى التضاريس الطبيعية.
+        const baseFlattenRadius=78, baseBlendRadius=112;
+        for(const base of [{x:CORNER_OFFSET,z:CORNER_OFFSET},{x:-CORNER_OFFSET,z:-CORNER_OFFSET}]){
+            const d=Math.hypot(x-base.x,z-base.z);
+            if(d<baseBlendRadius){
+                const t=1-smooth01((d-baseFlattenRadius)/(baseBlendRadius-baseFlattenRadius));
+                h=THREE.MathUtils.lerp(h,0,Math.max(0,Math.min(1,t)));
+            }
+        }
+        return h;
     }
 
     // ميل الأرض عند نقطة معينة. يستخدم لتدوير جسم الدبابة قليلاً مع المنحدر.
@@ -3349,70 +3431,333 @@
     // assets/terrain_map.glb
     function loadExternalTerrainMap() {
         if (typeof THREE.GLTFLoader !== 'function') {
-            console.error('GLTFLoader is required. External terrain was not loaded.');
+            console.error('GLTFLoader is not available.');
+            createRealisticTerrainWithBlendedColors();
             return;
         }
+
         const loader = new THREE.GLTFLoader();
-        loader.load('assets/terrain_map.glb', function(gltf) {
-            const root = gltf.scene || gltf.scenes[0];
-            let firstMesh = null;
-            root.traverse(function(obj) { if (obj.isMesh && !firstMesh) firstMesh = obj; });
-            if (!firstMesh) { console.error('terrain_map.glb contains no mesh.'); return; }
+        loader.load(
+            'assets/terrain_map.glb',
+            function(gltf) {
+                const root = gltf.scene || gltf.scenes[0];
+                let firstMesh = null;
 
-            // Build an exact 161x161 height grid from the external GLB vertices.
-            const pos = firstMesh.geometry.attributes.position;
-            const count = pos.count;
-            const side = Math.round(Math.sqrt(count));
-            const heights = new Float32Array(count);
-            for (let i=0;i<count;i++) heights[i]=pos.getY(i);
-            const minX=-450, maxX=450, minZ=-450, maxZ=450;
-            window.__externalTerrainHeightSampler = function(x,z){
-                const fx = THREE.MathUtils.clamp((x-minX)/(maxX-minX)*(side-1),0,side-1);
-                const fz = THREE.MathUtils.clamp((z-minZ)/(maxZ-minZ)*(side-1),0,side-1);
-                const x0=Math.floor(fx), z0=Math.floor(fz);
-                const x1=Math.min(side-1,x0+1), z1=Math.min(side-1,z0+1);
-                const tx=fx-x0, tz=fz-z0;
-                const h00=heights[z0*side+x0], h10=heights[z0*side+x1];
-                const h01=heights[z1*side+x0], h11=heights[z1*side+x1];
-                return (h00+(h10-h00)*tx)*(1-tz)+(h01+(h11-h01)*tx)*tz;
-            };
+                root.traverse(function(obj) {
+                    if (obj.isMesh && !firstMesh) firstMesh = obj;
+                    if (obj.isMesh) {
+                        obj.castShadow = false;
+                        obj.receiveShadow = true;
+                        if (obj.material) {
+                            obj.material.roughness = 0.96;
+                            obj.material.metalness = 0.0;
+                        }
+                    }
+                });
 
-            // This GLB has geometry only; its material is deliberately external.
-            const geo=firstMesh.geometry;
-            const uv=[];
-            for(let i=0;i<pos.count;i++){
-                const u=(pos.getX(i)+450)/900*5;
-                const v=(pos.getZ(i)+450)/900*5;
-                uv.push(u,v);
+                if (!firstMesh) {
+                    console.error('terrain_map.glb contains no mesh.');
+                    createRealisticTerrainWithBlendedColors();
+                    return;
+                }
+
+                externalTerrainModel = root;
+                scene.add(root);
+
+                // The GLB is already authored at the game's 900x900 world size.
+                root.position.set(0, 0, 0);
+                root.rotation.set(0, 0, 0);
+                root.scale.set(1, 1, 1);
+
+                // IMPORTANT: existing gameplay/raycast/building code expects terrainMesh
+                // to be a Mesh, so keep the first terrain mesh as the authoritative raycast surface.
+                terrainMesh = firstMesh;
+
+                console.log('External terrain loaded:', 'assets/terrain_map.glb');
+            },
+            undefined,
+            function(error) {
+                console.error('Could not load assets/terrain_map.glb:', error);
+                // Safe fallback: keep the original procedural terrain if the asset is missing.
+                createRealisticTerrainWithBlendedColors();
             }
-            geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
-            if(!geo.attributes.normal) geo.computeVertexNormals();
-
-            const texLoader=new THREE.TextureLoader();
-            const albedo=texLoader.load('assets/terrain_albedo.jpg');
-            const roughness=texLoader.load('assets/terrain_roughness.jpg');
-            const normal=texLoader.load('assets/terrain_normal.jpg');
-            albedo.encoding=THREE.sRGBEncoding;
-            albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;
-            roughness.wrapS=roughness.wrapT=THREE.RepeatWrapping;
-            normal.wrapS=normal.wrapT=THREE.RepeatWrapping;
-            const mat=new THREE.MeshStandardMaterial({
-                map:albedo, roughnessMap:roughness, normalMap:normal,
-                roughness:0.96, metalness:0.0, normalScale:new THREE.Vector2(0.55,0.55)
-            });
-            firstMesh.material=mat;
-            firstMesh.castShadow=false; firstMesh.receiveShadow=true;
-            externalTerrainModel=root;
-            root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
-            scene.add(root);
-            terrainMesh=firstMesh;
-            console.log('External terrain + external textures loaded.');
-        }, undefined, function(error) {
-            console.error('Could not load external terrain:', error);
-            // No fallback terrain is created.
-        });
+        );
     }
-    
+
+    function createRealisticTerrainWithBlendedColors() {
+        const geometry = new THREE.PlaneGeometry(900, 900, 160, 160);
+        geometry.rotateX(-Math.PI / 2);
+        const positionAttr = geometry.attributes.position;
+        const colors = [];
+
+        for (let i = 0; i < positionAttr.count; i++) {
+            const px = positionAttr.getX(i);
+            const pz = positionAttr.getZ(i);
+            const h = getTerrainHeight(px, pz);
+            positionAttr.setY(i, h);
+
+            // لوحة ألوان أقرب لصحارى Generals / Zero Hour: بيج رملي دافئ،
+            // مناطق ترابية بنية واضحة، ولمسات صخرية رمادية-بنية بدون أصفر فاقع.
+            // تدرج رملي طبيعي ناعم مثل الصورة المرجعية، بدون دوائر أو بقع سوداء.
+            // تدرج واسع وناعم للرمل: لا توجد بقع حادة أو تمويه متقطع.
+            const broad = (Math.sin(px * 0.0048 + pz * 0.0036) +
+                           Math.cos(pz * 0.0058 - px * 0.0031)) * 0.5;
+            const soft = (Math.sin(px * 0.0105 - pz * 0.0072) +
+                          Math.cos(px * 0.0082 + pz * 0.011)) * 0.5;
+            const fine = Math.sin(px * 0.025 - pz * 0.019) * 0.5;
+            const heightTone = THREE.MathUtils.clamp(h / 30, -0.12, 0.12);
+
+            // رمل طبيعي أقل اصفراراً: بيج رملي + لمسة برتقالية ترابية + لمعات بيضاء خفيفة.
+            let r = 0.76 + broad * 0.045 + soft * 0.022 + fine * 0.008 + heightTone * 0.010;
+            let g = 0.63 + broad * 0.040 + soft * 0.020 + fine * 0.007 + heightTone * 0.009;
+            let b = 0.49 + broad * 0.032 + soft * 0.016 + fine * 0.006 + heightTone * 0.007;
+
+            // بعض مناطق الرمل المرتفعة تأخذ انعكاساً فاتحاً قريباً من الأبيض بشكل طبيعي.
+            const duneLight = Math.max(0, Math.sin(px * 0.008 + pz * 0.006)) * 0.045;
+            r += duneLight; g += duneLight * 0.92; b += duneLight * 0.78;
+
+            // تمويه لوني واسع جداً حتى يبقى الرمل ناعماً ومتدرجاً.
+            const soil = Math.sin(px * 0.0038 + pz * 0.0028) *
+                         Math.cos(pz * 0.0046 - px * 0.0024);
+            if (soil > 0.52) { r -= 0.025; g -= 0.018; b -= 0.008; }
+            if (soil < -0.55) { r += 0.018; g += 0.012; b += 0.005; }
+
+            if (h > 10) { r -= 0.008; g += 0.003; b -= 0.002; }
+
+            colors.push(
+                THREE.MathUtils.clamp(r, 0, 1),
+                THREE.MathUtils.clamp(g, 0, 1),
+                THREE.MathUtils.clamp(b, 0, 1)
+            );
+        }
+
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.computeVertexNormals();
+
+        // خامة أرض حقيقية مولدة محلياً: حبيبات رمل دقيقة، تدرجات ترابية، تموجات
+        // وخطوط طبيعية خفيفة بدل أن تبدو الأرض كلون مسطح واحد.
+        function createDesertGroundTexture(size=768){
+            const c=document.createElement('canvas');
+            c.width=c.height=size;
+            const ctx=c.getContext('2d');
+            const img=ctx.createImageData(size,size);
+            const data=img.data;
+            const hash=(x,y)=>{
+                let n=(x*374761393 + y*668265263)>>>0;
+                n=(n^(n>>>13))*1274126177>>>0;
+                return ((n^(n>>>16))>>>0)/4294967295;
+            };
+            for(let y=0;y<size;y++){
+                for(let x=0;x<size;x++){
+                    const i=(y*size+x)*4;
+                    const n1=hash(x,y)-.5;
+                    const n2=hash(Math.floor(x/7),Math.floor(y/7))-.5;
+                    const wave=Math.sin(x*.055 + Math.sin(y*.018)*2.2)*.5+.5;
+                    const ripple=Math.sin((x+y)*.11 + Math.sin(x*.025)*1.7)*.5+.5;
+                    const grain=n1*18+n2*10;
+                    const v=(wave*.32+ripple*.18)*8+grain;
+                    data[i]=Math.max(0,Math.min(255,188+v));
+                    data[i+1]=Math.max(0,Math.min(255,151+v*.86));
+                    data[i+2]=Math.max(0,Math.min(255,112+v*.62));
+                    data[i+3]=255;
+                }
+            }
+            ctx.putImageData(img,0,0);
+
+            // طبقات تمويه ترابي ناعمة، بدون بقع دائرية واضحة.
+            // مهم للمباراة الشبكية: لا نستخدم Math.random هنا، وإلا سيحصل كل جهاز
+            // على نسيج أرض مختلف بصرياً رغم أن ارتفاعات الخريطة متطابقة.
+            const seeded=(n)=>{
+                let v=(n*1664525+1013904223)>>>0;
+                v^=v>>>16; v=Math.imul(v,2246822519)>>>0; v^=v>>>13;
+                return (v>>>0)/4294967295;
+            };
+            for(let i=0;i<90;i++){
+                const x=seeded(i*17+3)*size,y=seeded(i*29+7)*size;
+                const rx=18+seeded(i*31+11)*95, ry=7+seeded(i*37+13)*38;
+                const g=ctx.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
+                const dark=seeded(i*41+17)<.52;
+                g.addColorStop(0,dark?'rgba(104,76,48,.10)':'rgba(236,211,169,.09)');
+                g.addColorStop(1,'rgba(0,0,0,0)');
+                ctx.save();ctx.translate(x,y);ctx.rotate(seeded(i*43+19)*Math.PI);ctx.scale(rx/Math.max(rx,ry),ry/Math.max(rx,ry));
+                ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,Math.max(rx,ry),0,Math.PI*2);ctx.fill();ctx.restore();
+            }
+            // حبيبات صغيرة واضحة عند الاقتراب بالكاميرا، أيضاً ثابتة بين اللاعبين.
+            for(let i=0;i<2600;i++){
+                const x=seeded(i*47+23)*size,y=seeded(i*53+29)*size,r=.25+seeded(i*59+31)*.8;
+                ctx.fillStyle=seeded(i*61+37)<.72?'rgba(105,78,52,.16)':'rgba(245,224,190,.18)';
+                ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+            }
+            const tex=new THREE.CanvasTexture(c);
+            tex.wrapS=THREE.RepeatWrapping; tex.wrapT=THREE.RepeatWrapping;
+            tex.repeat.set(5.5,5.5);
+            tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+            tex.encoding=THREE.sRGBEncoding;
+            return tex;
+        }
+        const groundTexture=createDesertGroundTexture();
+        groundTexture.needsUpdate=true;
+        terrainMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            map: groundTexture,
+            roughness: 0.96,
+            metalness: 0.0,
+            color: 0xffffff,
+            emissive: 0x2f2419,
+            emissiveIntensity: 0.012
+        }));
+        terrainMesh.receiveShadow = true;
+        scene.add(terrainMesh);
+
+        // حواف طبيعية للخريطة: كثبان وصخور منخفضة غير منتظمة بدل حدود مربعة مصطنعة.
+        // الهدف أن تبدو المنطقة كقطعة أرض حقيقية تنتهي تدريجياً عند أطراف الخريطة.
+        function createNaturalMapBorders(){
+            const border=new THREE.Group(); border.name='naturalMapBorders'; scene.add(border);
+            const rockMat=new THREE.MeshStandardMaterial({color:0x62513d,roughness:.97,metalness:.02});
+            const sandMat=new THREE.MeshStandardMaterial({color:0xb38b5d,roughness:1.0,metalness:0});
+            const darkSand=new THREE.MeshStandardMaterial({color:0x7d6245,roughness:1.0,metalness:0});
+            const edge=438;
+            const addMound=(x,z,sx,sy,sz,rot,mat)=>{
+                const m=new THREE.Mesh(new THREE.DodecahedronGeometry(1,1),mat);
+                m.position.set(x,getTerrainHeight(x,z)+sy*.42,z);
+                m.scale.set(sx,sy,sz); m.rotation.y=rot; m.castShadow=true; m.receiveShadow=true; border.add(m);
+            };
+            // كثبان طويلة ناعمة عند الجهات الأربع، مع فجوات حتى لا تبدو كجدار.
+            for(let i=0;i<18;i++){
+                const t=-410+i*48;
+                const j=Math.sin(i*2.7)*12;
+                addMound(t,edge+j,14+((i*7)%9),5+((i*3)%4),9+((i*5)%7),i*.37,i%3===0?rockMat:sandMat);
+                addMound(t,-edge-j,12+((i*5)%10),4+((i*4)%4),8+((i*7)%8),i*.29,i%4===0?rockMat:darkSand);
+                addMound(edge+j,t,9+((i*6)%8),4+((i*2)%4),14+((i*5)%9),i*.31,i%3===1?rockMat:sandMat);
+                addMound(-edge-j,t,9+((i*4)%8),4+((i*3)%4),13+((i*6)%9),i*.25,i%4===1?rockMat:darkSand);
+            }
+            // صخور صغيرة متناثرة في الداخل قرب الحافة لتكسر الخط المستقيم.
+            for(let i=0;i<44;i++){
+                const side=i%4, q=-390+((i*83)%780);
+                let x=0,z=0;
+                if(side===0){x=q;z=edge-7-(i%4)*3;}
+                if(side===1){x=q;z=-edge+7+(i%4)*3;}
+                if(side===2){x=edge-7-(i%4)*3;z=q;}
+                if(side===3){x=-edge+7+(i%4)*3;z=q;}
+                addMound(x,z,2.5+(i%4)*1.3,1.1+(i%3)*.45,2.1+(i%5)*.7,i*.71,i%2?rockMat:darkSand);
+            }
+        }
+        // الحدود الجبلية أصبحت جزءاً من تضاريس الخريطة نفسها، لذلك لا نضيف صخوراً منفصلة عند الحافة.
+
+        // تفاصيل سطحية بأسلوب خرائط RTS: بقع تراب، مسارات مركبات، وصخور صغيرة.
+        const detailGroup = new THREE.Group();
+        detailGroup.name = 'generalsStyleTerrainDetails';
+
+        // لا توجد دوائر أو بقع سوداء على سطح الأرض. تفاصيل اللون تأتي من خامة التضاريس نفسها.
+
+        // مسارات عسكرية متفرعة؛ لا تغطي MAP بالكامل.
+        const roadMat = new THREE.MeshBasicMaterial({
+            color: 0x6a5438, transparent: true, opacity: 0.30, depthWrite: false
+        });
+        const roads = [
+            [new THREE.Vector3(360,0,360), new THREE.Vector3(150,0,150)],
+            [new THREE.Vector3(-360,0,-360), new THREE.Vector3(-145,0,-145)],
+            [new THREE.Vector3(-300,0,230), new THREE.Vector3(120,0,-70)],
+            [new THREE.Vector3(300,0,-230), new THREE.Vector3(-100,0,85)]
+        ];
+        roads.forEach(([a,b], ri) => {
+            const len = a.distanceTo(b);
+            const width = 11 + (ri % 2) * 3;
+            const segments = 24;
+            const roadGeo = new THREE.BufferGeometry();
+            const verts = [];
+            const indices = [];
+            const dx = b.x - a.x, dz = b.z - a.z;
+            const L = Math.hypot(dx, dz);
+            const nx = -dz / L, nz = dx / L;
+
+            for (let j = 0; j <= segments; j++) {
+                const t = j / segments;
+                const cx = THREE.MathUtils.lerp(a.x, b.x, t);
+                const cz = THREE.MathUtils.lerp(a.z, b.z, t);
+                const cy = getTerrainHeight(cx, cz) + 0.08;
+                // عرض ثابت مع انحناء ارتفاع طبيعي من سطح الأرض.
+                verts.push(cx + nx * width * 0.5, cy, cz + nz * width * 0.5);
+                verts.push(cx - nx * width * 0.5, cy, cz - nz * width * 0.5);
+                if (j < segments) {
+                    const k = j * 2;
+                    indices.push(k, k+1, k+2, k+1, k+3, k+2);
+                }
+            }
+            roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+            roadGeo.setIndex(indices);
+            roadGeo.computeVertexNormals();
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            detailGroup.add(road);
+
+            // آثار عجلات تتبع نفس انحدار الطريق بشكل خفيف.
+            for (let lane = -2.4; lane <= 2.4; lane += 4.8) {
+                const trackVerts = [];
+                const trackIndices = [];
+                const tw = 0.95;
+                for (let j = 0; j <= segments; j++) {
+                    const t = j / segments;
+                    const cx = THREE.MathUtils.lerp(a.x, b.x, t) + nx * lane;
+                    const cz = THREE.MathUtils.lerp(a.z, b.z, t) + nz * lane;
+                    const cy = getTerrainHeight(cx, cz) + 0.11;
+                    trackVerts.push(cx + nx * tw * 0.5, cy, cz + nz * tw * 0.5);
+                    trackVerts.push(cx - nx * tw * 0.5, cy, cz - nz * tw * 0.5);
+                    if (j < segments) {
+                        const k = j * 2;
+                        trackIndices.push(k, k+1, k+2, k+1, k+3, k+2);
+                    }
+                }
+                const trackGeo = new THREE.BufferGeometry();
+                trackGeo.setAttribute('position', new THREE.Float32BufferAttribute(trackVerts, 3));
+                trackGeo.setIndex(trackIndices);
+                trackGeo.computeVertexNormals();
+                const track = new THREE.Mesh(trackGeo, new THREE.MeshBasicMaterial({
+                    color: 0x382c22, transparent: true, opacity: 0.17, depthWrite: false, side: THREE.DoubleSide
+                }));
+                detailGroup.add(track);
+            }
+        });
+
+        // خشائش صحراوية قليلة ومتفرقة، تترك مساحات واسعة من الرمل مكشوفة.
+        const grassGroup = new THREE.Group();
+        grassGroup.name = 'sparseDesertGrass';
+        const grassMats = [
+            new THREE.MeshStandardMaterial({ color: 0x667044, roughness: 1.0, side: THREE.DoubleSide }),
+            new THREE.MeshStandardMaterial({ color: 0x7b7548, roughness: 1.0, side: THREE.DoubleSide }),
+            new THREE.MeshStandardMaterial({ color: 0x4f5b3b, roughness: 1.0, side: THREE.DoubleSide })
+        ];
+        for (let i = 0; i < 95; i++) {
+            const a = i * 2.417;
+            const r = 85 + ((i * 47) % 410);
+            const gx = Math.sin(a) * r;
+            const gz = Math.cos(a * 1.37) * r;
+            if (Math.hypot(gx, gz) < 70) continue;
+            const baseY = getTerrainHeight(gx, gz);
+            const h = 0.55 + (i % 5) * 0.16;
+            const w = 0.28 + (i % 4) * 0.08;
+            const geo = new THREE.BufferGeometry();
+            const verts = [
+                -w,0,0,  w,0,0,  0,h,0,
+                 0,0,-w,  0,0,w,  0,h*0.92,0
+            ];
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(verts,3));
+            geo.setIndex([0,1,2,3,4,5]);
+            geo.computeVertexNormals();
+            const tuft = new THREE.Mesh(geo, grassMats[i % grassMats.length]);
+            tuft.position.set(gx, baseY + 0.015, gz);
+            tuft.rotation.y = a;
+            tuft.scale.setScalar(0.8 + (i % 3) * 0.18);
+            tuft.castShadow = true;
+            grassGroup.add(tuft);
+        }
+        // تم إلغاء الحشيش من أرض المعركة بناءً على الطلب.
+        grassGroup.visible = false;
+        // لا نضيف grassGroup إلى detailGroup.
+
+        // تم حذف الصخور والحصى من سطح الأرض لتبقى الصحراء ناعمة ونظيفة.
+
+        scene.add(detailGroup);
+    }
 
     // ===== Cloud-map shadow layer (draped over the terrain) =====
     // The shadow is a single large animated cloud map, not floating circles.
@@ -5434,63 +5779,91 @@
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
+    // ===== External oil-field assets =====
+    // Oil geometry, oil textures, flag geometry and flag textures live outside the game.
+    // No procedural oil replacement is created if an external asset fails to load.
     function createOilRigs() {
         const positions=[{x:95,z:-95},{x:-95,z:95},{x:-115,z:-105},{x:115,z:105}];
+        const gltfLoader = (typeof THREE.GLTFLoader === 'function') ? new THREE.GLTFLoader() : null;
+        const texLoader = new THREE.TextureLoader();
+        const oilTexture = texLoader.load('assets/oil/oil_albedo.png', t=>{t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;});
+        const oilRoughness = texLoader.load('assets/oil/oil_roughness.png');
+        const flagTexture = texLoader.load('assets/oil/flag_albedo.png', t=>{t.colorSpace=THREE.SRGBColorSpace;});
+        const flagRoughness = texLoader.load('assets/oil/flag_roughness.png');
+
         positions.forEach((pos,index)=>{
             const rigGroup=new THREE.Group();
             rigGroup.position.set(pos.x,getTerrainHeight(pos.x,pos.z),pos.z);
             rigGroup.name=`oilSite_${index}`;
-            const barrelMat=new THREE.MeshStandardMaterial({color:0x252a2d,roughness:.62,metalness:.72});
-            const rimMat=new THREE.MeshStandardMaterial({color:0x70777b,roughness:.42,metalness:.82});
-            const barrelGroup=new THREE.Group(); barrelGroup.name='oilBarrels';
-            [-2,0,2].forEach(x=>{
-                const barrel=new THREE.Mesh(new THREE.CylinderGeometry(1.05,1.05,2.65,20),barrelMat); barrel.position.set(x,1.35,0); barrel.castShadow=true; barrel.receiveShadow=true; barrelGroup.add(barrel);
-                [-1,1].forEach(y=>{const rim=new THREE.Mesh(new THREE.TorusGeometry(1,.075,8,20),rimMat);rim.rotation.x=Math.PI/2;rim.position.set(x,1.35+y*1.02,0);barrelGroup.add(rim);});
-            });
-            rigGroup.add(barrelGroup);
-            const valveMat=new THREE.MeshStandardMaterial({color:0x3b4144,roughness:.48,metalness:.78});
-            const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,2.8,10),valveMat); pipe.rotation.z=Math.PI/2; pipe.position.set(0,1.05,.95); pipe.castShadow=false; rigGroup.add(pipe);
-            const valve=new THREE.Mesh(new THREE.TorusGeometry(.32,.075,8,14),rimMat); valve.rotation.y=Math.PI/2; valve.position.set(0,1.05,2.35); valve.castShadow=false; rigGroup.add(valve);
-            const flagGroup=new THREE.Group(); flagGroup.position.set(4.2,0,0);
-            const pole=new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,10.5,12),rimMat); pole.position.y=5.25; pole.castShadow=true; flagGroup.add(pole);
-            const flagGeo=new THREE.PlaneGeometry(4.4,2.45,12,4);
-            const flagMat=new THREE.MeshBasicMaterial({map:createFlagTexture('white'),side:THREE.DoubleSide,transparent:true,depthWrite:false});
-            const flagMesh=new THREE.Mesh(flagGeo,flagMat); flagMesh.position.set(2.2,9.15,0); flagGroup.add(flagMesh); rigGroup.add(flagGroup);
-            flagMesh.visible=true;
-            const flagData={mesh:flagMesh,baseHeight:9.15,type:'white',isOil:true,owner:'none'}; activeFlagMeshes.push(flagData);
-            const wreckBase=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.9,.32,20),new THREE.MeshStandardMaterial({color:0x303335,roughness:.94,metalness:.1})); wreckBase.position.y=.16; wreckBase.visible=false; rigGroup.add(wreckBase);
+            rigGroup.userData.externalOil=true;
 
-            // مبنى نفط صغير مع أنبوب نازل إلى الأرض وعلم فوقه.
-            const pumpHouse=new THREE.Group(); pumpHouse.name='oilPumpHouse';
-            const houseMat=new THREE.MeshStandardMaterial({color:0x4a5148,roughness:.72,metalness:.28});
-            const roofMat=new THREE.MeshStandardMaterial({color:0x252a27,roughness:.55,metalness:.62});
-            const house=new THREE.Mesh(new THREE.BoxGeometry(4.8,2.9,3.8),houseMat);
-            house.position.set(-5.4,1.45,3.8); house.castShadow=true; house.receiveShadow=true; pumpHouse.add(house);
-            const roof=new THREE.Mesh(new THREE.BoxGeometry(5.1,.32,4.1),roofMat);
-            roof.position.set(-5.4,3.05,3.8); roof.castShadow=true; pumpHouse.add(roof);
-            const door=new THREE.Mesh(new THREE.BoxGeometry(1.0,1.75,.12),new THREE.MeshStandardMaterial({color:0x151916,roughness:.7,metalness:.2}));
-            door.position.set(-5.4,1.0,5.72); pumpHouse.add(door);
-            const groundPipe=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,2.9,12),roofMat);
-            groundPipe.position.set(-3.0,1.45,3.15); groundPipe.rotation.z=Math.PI/2; groundPipe.castShadow=true; pumpHouse.add(groundPipe);
-            const downPipe=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,1.45,12),roofMat);
-            downPipe.position.set(-1.65,.72,3.15); downPipe.castShadow=true; pumpHouse.add(downPipe);
-            const pipeCap=new THREE.Mesh(new THREE.TorusGeometry(.24,.07,8,16),rimMat);
-            pipeCap.rotation.y=Math.PI/2; pipeCap.position.set(-1.65,.08,3.15); pumpHouse.add(pipeCap);
+            const wreckBase=new THREE.Mesh(
+                new THREE.CylinderGeometry(2.6,2.9,.32,20),
+                new THREE.MeshStandardMaterial({color:0x303335,roughness:.94,metalness:.1})
+            );
+            wreckBase.position.y=.16; wreckBase.visible=false; rigGroup.add(wreckBase);
 
-            const siteFlag=new THREE.Group(); siteFlag.position.set(-5.4,0,3.8);
-            const sitePole=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,5.8,10),rimMat);
-            sitePole.position.y=2.9; siteFlag.add(sitePole);
-            const siteFlagMesh=new THREE.Mesh(new THREE.PlaneGeometry(2.0,1.0,8,3),
-                new THREE.MeshBasicMaterial({map:createFlagTexture('none'),side:THREE.DoubleSide,transparent:true,depthWrite:false}));
-            siteFlagMesh.position.set(1.0,5.0,0); siteFlag.add(siteFlagMesh);
-            siteFlagMesh.visible=false; pumpHouse.add(siteFlag);
-            rigGroup.add(pumpHouse);
+            // Logical rig is created immediately so economy/capture/network code can use it.
+            const oilHpLabel=document.createElement('div');
+            oilHpLabel.className='tank-hp-label hp-player';
+            const oilHpFill=document.createElement('div');
+            oilHpFill.className='tank-hp-fill';
+            oilHpLabel.appendChild(oilHpFill);
+            document.getElementById('hp-labels-container').appendChild(oilHpLabel);
+            oilHpLabel.style.display='none';
 
-            // تكبير منشأة النفط قليلاً مع الحفاظ على موضعها في الخريطة.
-            rigGroup.scale.setScalar(1.18);
-            scene.add(rigGroup); obstacles.push({x:pos.x,z:pos.z,radius:10});
-            const oilHpLabel=document.createElement('div'); oilHpLabel.className='tank-hp-label hp-player'; const oilHpFill=document.createElement('div'); oilHpFill.className='tank-hp-fill'; oilHpLabel.appendChild(oilHpFill); document.getElementById('hp-labels-container').appendChild(oilHpLabel); oilHpLabel.style.display='none';
-            oilRigs.push({x:pos.x,z:pos.z,group:rigGroup,beam:null,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:barrelGroup});
+            const flagData={mesh:null,baseHeight:6.6,type:'white',isOil:true,owner:'none',waveStart:performance.now()};
+            const rig={x:pos.x,z:pos.z,group:rigGroup,beam:null,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:null,externalOilRoot:null};
+            oilRigs.push(rig);
+            activeFlagMeshes.push(flagData);
+            obstacles.push({x:pos.x,z:pos.z,radius:10});
+            scene.add(rigGroup);
+
+            if(!gltfLoader){ console.error('GLTFLoader is unavailable; external oil assets cannot load.'); return; }
+
+            gltfLoader.load('assets/oil/oil_pump.gltf', gltf=>{
+                const root=gltf.scene||gltf.scenes[0];
+                root.name='externalOilPump';
+                root.scale.setScalar(1.18);
+                root.traverse(o=>{
+                    if(!o.isMesh) return;
+                    o.castShadow=true; o.receiveShadow=true;
+                    const mats=Array.isArray(o.material)?o.material:[o.material];
+                    mats.forEach(m=>{
+                        if(!m) return;
+                        m.map=oilTexture;
+                        m.roughnessMap=oilRoughness;
+                        m.roughness=.78;
+                        m.metalness=.42;
+                        m.needsUpdate=true;
+                    });
+                });
+                rig.externalOilRoot=root;
+                rig.towerAssembly=root;
+                rigGroup.add(root);
+            },undefined,err=>console.error('Could not load external oil pump:',err));
+
+            gltfLoader.load('assets/oil/flag.gltf', gltf=>{
+                const root=gltf.scene||gltf.scenes[0];
+                root.name='externalOilFlag';
+                root.position.set(4.2,0,0);
+                root.scale.setScalar(1.0);
+                let cloth=null;
+                root.traverse(o=>{
+                    if(!o.isMesh) return;
+                    o.castShadow=true; o.receiveShadow=true;
+                    if((o.name||'').toLowerCase().includes('cloth') || !cloth) cloth=o;
+                });
+                if(!cloth) return;
+                cloth.name='externalOilFlagCloth';
+                const flagMat=new THREE.MeshStandardMaterial({map:flagTexture,roughnessMap:flagRoughness,roughness:.68,metalness:.05,side:THREE.DoubleSide,transparent:true});
+                cloth.material=flagMat;
+                flagData.mesh=cloth;
+                flagData.baseHeight=cloth.position.y;
+                flagData.waveStart=performance.now();
+                cloth.visible=true;
+                rigGroup.add(root);
+            },undefined,err=>console.error('Could not load external oil flag:',err));
         });
     }
 
@@ -9784,6 +10157,7 @@ function createArmyFactory(x,z,ghost=false){
 
         // السيطرة على النفط تتم بالمشاة فقط. الآليات والتركس لا تستطيع التقاطه.
         oilRigs.forEach(rig => {
+            if(typeof updateOilExternalAnimation==='function') updateOilExternalAnimation(rig, gameDeltaSeconds);
             if(rig.isDestroyed)return;
             const base=new THREE.Vector3(rig.x,getTerrainHeight(rig.x,rig.z),rig.z);
             const playerInf=playerTanks.filter(t=>t&&t.isInfantry&&!t.isDestroyed&&t.mesh.position.distanceTo(base)<13);
@@ -11773,5 +12147,7 @@ window.updateCameraSensitivity=function(v){
 })();
 </script>
 
+
+<script src="assets/oil/oil-animation.js"></script>
 </body>
 </html>
