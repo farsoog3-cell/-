@@ -2118,6 +2118,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="assets/oil/oil-animation.js"></script>
 
 <script>
     // ===== نظام صوت موحّد وإصلاح تشغيل الأصوات على الهاتف =====
@@ -2806,94 +2807,24 @@
         return smooth01(t) * smooth01(Math.min(1, t * 1.18)) * height;
     }
 
+    const externalTerrainRaycaster = new THREE.Raycaster();
+    const externalTerrainRayOrigin = new THREE.Vector3();
+
+    function getExternalTerrainHeight(x,z){
+        if(!terrainMesh || !externalTerrainModel) return null;
+        externalTerrainRayOrigin.set(x, 1000, z);
+        externalTerrainRaycaster.set(externalTerrainRayOrigin, new THREE.Vector3(0,-1,0));
+        const hits=externalTerrainRaycaster.intersectObject(terrainMesh,true);
+        if(!hits.length || !Number.isFinite(hits[0].point.y)) return null;
+        return hits[0].point.y;
+    }
+
     function getTerrainHeight(x, z) {
-        // تموّجات رملية واسعة وناعمة جداً، مثل كثبان الصحراء الحقيقية.
-        // التردد منخفض والارتفاع محدود حتى تبقى حركة الدبابات سلسة ولا تظهر الأرض كجبال.
-        const duneA = Math.sin(x * 0.0105 + Math.sin(z * 0.0032) * 0.9) * 2.7;
-        const duneB = Math.cos(z * 0.0130 - x * 0.0042) * 1.65;
-        const duneC = Math.sin((x + z) * 0.0062) * Math.cos((x - z) * 0.0048) * 1.15;
-
-        // تموّج دقيق جداً للرمل، بدون خشونة مزعجة.
-        const detail = Math.sin(x * 0.030 + z * 0.019) * 0.10 +
-                       Math.cos(z * 0.034 - x * 0.013) * 0.07;
-
-        let h = duneA + duneB + duneC + detail;
-
-        // وسط MAP يبقى مناسباً للقتال والحركة.
-        const center = Math.hypot(x, z);
-        const centerBlend = smooth01(Math.max(0, Math.min(1, (center - 95) / 95)));
-        h *= 0.22 + centerBlend * 0.78;
-
-        // تلال مستديرة منخفضة، مع انتقال تدريجي عند القاعدة.
-        h += roundedHill(x, z, -235, 205, 105, 6.0);
-        h += roundedHill(x, z, 235, -205, 110, 5.2);
-        h += roundedHill(x, z, -220, -245, 92, 4.4);
-        h += roundedHill(x, z, 220, 245, 98, 4.0);
-
-        // منصات النفط أعلى بوضوح من الأرض المحيطة، لكن الارتفاع صغير ومناسب للدبابات.
-        // يوجد سطح شبه مستوٍ حول كل بئر ثم منحدر عريض وناعم حتى مستوى الأرض.
-        const oilPadLift = [
-            [95, -95], [-95, 95], [-115, -105], [115, 105]
-        ];
-        for (const [ox, oz] of oilPadLift) {
-            const d = Math.hypot(x - ox, z - oz);
-            // 0-24: منصة شبه مستوية، 24-58: انحدار ناعم، وبعدها مستوى الأرض.
-            const inner = THREE.MathUtils.clamp((58 - d) / 34, 0, 1);
-            const plateau = smooth01(inner);
-            h += plateau * 7.0;
-        }
-
-        // ممرات/انخفاضات عريضة جداً: انحدار خفيف وليس طريقاً محفوراً.
-        const passA = Math.exp(-Math.pow((z - (0.34 * x + 35)) / 82, 2)) * 1.35;
-        const passB = Math.exp(-Math.pow((x + 0.42 * z - 80) / 92, 2)) * 1.0;
-        h -= passA + passB;
-
-        // تسوية تدريجية حول المعسكرين: المركز مستوٍ والساحة تتصل بالأرض بمنحدر ناعم.
-        const baseZones=[[CORNER_OFFSET,CORNER_OFFSET],[-CORNER_OFFSET,-CORNER_OFFSET]];
-        for(const [bx,bz] of baseZones){
-            const d=Math.hypot(x-bx,z-bz);
-            const blend=1-smooth01(THREE.MathUtils.clamp((d-26)/38,0,1));
-            if(blend>0){
-                // مستوى الساحة قريب من مستوى مركز المعسكر.
-                h *= (1-blend);
-            }
-        }
-        // جبال حواف الخريطة من نفس سطح الأرض نفسه، وليست مجسمات منفصلة.
-        // الارتفاع يتدرج على مساحة واسعة حتى تبدو الخريطة كحوض طبيعي تحيط به
-        // سلاسل جبلية متوازنة، مع قمم مختلفة ووديان صغيرة بين القمم.
-        const ax=Math.abs(x), az=Math.abs(z);
-        const edge=Math.max(ax,az);
-        const mountainT=THREE.MathUtils.clamp((edge-335)/115,0,1);
-        const mountainBlend=smooth01(mountainT);
-        if(mountainBlend>0){
-            // سلسلة رئيسية طويلة بمحاذاة كل طرف. التردد منخفض حتى تكون التضاريس
-            // كبيرة وواضحة مثل خرائط RTS، وليست تموجات عشوائية صغيرة.
-            const ridgeA=Math.sin((ax+az)*0.018 + Math.sin((ax-az)*0.009)*1.25);
-            const ridgeB=Math.sin((ax*0.031 - az*0.014) + 1.7)*0.5;
-            const ridgeC=Math.cos((ax+az)*0.044 - 0.8)*0.22;
-            const ridge=Math.max(0, ridgeA*0.58 + ridgeB*0.30 + ridgeC);
-
-            // ارتفاع أساسي + قمم متدرجة؛ الجزء الأخير من الخريطة يصل إلى
-            // ارتفاع جبلي واضح، بينما تبقى منطقة اللعب الداخلية قابلة للحركة.
-            const baseMountain=10 + mountainT*38;
-            const peaks=mountainT*(16 + ridge*24);
-            h += mountainBlend*baseMountain + peaks;
-
-            // وديان صغيرة تفصل القمم حتى لا تتحول الحافة إلى جدار واحد مستوٍ.
-            const valley=Math.max(0, -Math.sin((ax*0.026 + az*0.021) + Math.cos((ax-az)*0.012)));
-            h -= mountainBlend*valley*8.5;
-        }
-
-        // منطقة المعسكرين: أرض مستوية واسعة صالحة للبناء والحركة، مع انتقال ناعم إلى التضاريس الطبيعية.
-        const baseFlattenRadius=78, baseBlendRadius=112;
-        for(const base of [{x:CORNER_OFFSET,z:CORNER_OFFSET},{x:-CORNER_OFFSET,z:-CORNER_OFFSET}]){
-            const d=Math.hypot(x-base.x,z-base.z);
-            if(d<baseBlendRadius){
-                const t=1-smooth01((d-baseFlattenRadius)/(baseBlendRadius-baseFlattenRadius));
-                h=THREE.MathUtils.lerp(h,0,Math.max(0,Math.min(1,t)));
-            }
-        }
-        return h;
+        const externalY=getExternalTerrainHeight(x,z);
+        if(externalY!==null) return externalY;
+        // Only a temporary gameplay height before the external map finishes loading.
+        // No visual fallback terrain is created.
+        return 0;
     }
 
     // ميل الأرض عند نقطة معينة. يستخدم لتدوير جسم الدبابة قليلاً مع المنحدر.
@@ -3050,6 +2981,7 @@
         createMovingCloudShadows();
         createBases();
         createOilRigs();
+        syncTerrainAnchoredObjects();
         createTargetMarker();
         createDefenseMarker();
         setupInteraction();
@@ -3431,57 +3363,54 @@
     // assets/terrain_map.glb
     function loadExternalTerrainMap() {
         if (typeof THREE.GLTFLoader !== 'function') {
-            console.error('GLTFLoader is not available.');
-            createRealisticTerrainWithBlendedColors();
+            console.error('GLTFLoader is not available. External terrain is required.');
             return;
         }
-
         const loader = new THREE.GLTFLoader();
-        loader.load(
-            'assets/terrain_map.glb',
-            function(gltf) {
-                const root = gltf.scene || gltf.scenes[0];
-                let firstMesh = null;
+        const texLoader = new THREE.TextureLoader();
+        const albedo = texLoader.load('assets/terrain_albedo.jpg', t=>{
+            t.wrapS=THREE.ClampToEdgeWrapping; t.wrapT=THREE.ClampToEdgeWrapping;
+            t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+            t.encoding=THREE.sRGBEncoding;
+        });
+        const roughness = texLoader.load('assets/terrain_roughness.jpg');
 
-                root.traverse(function(obj) {
-                    if (obj.isMesh && !firstMesh) firstMesh = obj;
-                    if (obj.isMesh) {
-                        obj.castShadow = false;
-                        obj.receiveShadow = true;
-                        if (obj.material) {
-                            obj.material.roughness = 0.96;
-                            obj.material.metalness = 0.0;
-                        }
-                    }
-                });
-
-                if (!firstMesh) {
-                    console.error('terrain_map.glb contains no mesh.');
-                    createRealisticTerrainWithBlendedColors();
-                    return;
+        loader.load('assets/terrain_map.glb', function(gltf) {
+            const root = gltf.scene || gltf.scenes[0];
+            let firstMesh = null;
+            root.traverse(function(obj) {
+                if(obj.isMesh && !firstMesh) firstMesh=obj;
+                if(obj.isMesh){
+                    obj.castShadow=false; obj.receiveShadow=true;
+                    obj.material=new THREE.MeshStandardMaterial({
+                        map:albedo, roughnessMap:roughness, roughness:.96, metalness:0.0, color:0xffffff
+                    });
                 }
+            });
+            if(!firstMesh){ console.error('terrain_map.glb contains no mesh.'); return; }
+            externalTerrainModel=root;
+            root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
+            scene.add(root);
+            terrainMesh=firstMesh;
+            syncTerrainAnchoredObjects();
+            console.log('External terrain + external textures loaded.');
+        }, undefined, function(error){
+            console.error('Could not load required external terrain:',error);
+            terrainMesh=null; externalTerrainModel=null;
+        });
+    }
 
-                externalTerrainModel = root;
-                scene.add(root);
-
-                // The GLB is already authored at the game's 900x900 world size.
-                root.position.set(0, 0, 0);
-                root.rotation.set(0, 0, 0);
-                root.scale.set(1, 1, 1);
-
-                // IMPORTANT: existing gameplay/raycast/building code expects terrainMesh
-                // to be a Mesh, so keep the first terrain mesh as the authoritative raycast surface.
-                terrainMesh = firstMesh;
-
-                console.log('External terrain loaded:', 'assets/terrain_map.glb');
-            },
-            undefined,
-            function(error) {
-                console.error('Could not load assets/terrain_map.glb:', error);
-                // Safe fallback: keep the original procedural terrain if the asset is missing.
-                createRealisticTerrainWithBlendedColors();
-            }
-        );
+    function syncTerrainAnchoredObjects(){
+        if(!terrainMesh || !externalTerrainModel) return;
+        const setGroupY=(g)=>{ if(g && Number.isFinite(g.position.x) && Number.isFinite(g.position.z)){ const y=getExternalTerrainHeight(g.position.x,g.position.z); if(y!==null) g.position.y=y; } };
+        setGroupY(playerBaseGroup); setGroupY(enemyBaseGroup);
+        (oilRigs||[]).forEach(r=>{ if(r&&r.group){ const y=getExternalTerrainHeight(r.x,r.z); if(y!==null) r.group.position.y=y; }});
+        (constructedFactories||[]).forEach(b=>{if(b&&b.mesh){const y=getExternalTerrainHeight(b.mesh.position.x,b.mesh.position.z);if(y!==null)b.mesh.position.y=y;}});
+        (constructedBarracks||[]).forEach(b=>{if(b&&b.mesh){const y=getExternalTerrainHeight(b.mesh.position.x,b.mesh.position.z);if(y!==null)b.mesh.position.y=y;}});
+        (playerTanks||[]).forEach(u=>{if(u&&u.mesh){const y=getExternalTerrainHeight(u.mesh.position.x,u.mesh.position.z);if(y!==null)u.mesh.position.y=y;}});
+        (enemyTanks||[]).forEach(u=>{if(u&&u.mesh){const y=getExternalTerrainHeight(u.mesh.position.x,u.mesh.position.z);if(y!==null)u.mesh.position.y=y;}});
+        (reconVehicles||[]).forEach(u=>{if(u&&u.mesh){const y=getExternalTerrainHeight(u.mesh.position.x,u.mesh.position.z);if(y!==null)u.mesh.position.y=y;}});
+        (ambulances||[]).forEach(u=>{if(u&&u.mesh){const y=getExternalTerrainHeight(u.mesh.position.x,u.mesh.position.z);if(y!==null)u.mesh.position.y=y;}});
     }
 
     function createRealisticTerrainWithBlendedColors() {
@@ -5779,91 +5708,41 @@
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
-    // ===== External oil-field assets =====
-    // Oil geometry, oil textures, flag geometry and flag textures live outside the game.
-    // No procedural oil replacement is created if an external asset fails to load.
     function createOilRigs() {
         const positions=[{x:95,z:-95},{x:-95,z:95},{x:-115,z:-105},{x:115,z:105}];
-        const gltfLoader = (typeof THREE.GLTFLoader === 'function') ? new THREE.GLTFLoader() : null;
-        const texLoader = new THREE.TextureLoader();
-        const oilTexture = texLoader.load('assets/oil/oil_albedo.png', t=>{t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;});
-        const oilRoughness = texLoader.load('assets/oil/oil_roughness.png');
-        const flagTexture = texLoader.load('assets/oil/flag_albedo.png', t=>{t.colorSpace=THREE.SRGBColorSpace;});
-        const flagRoughness = texLoader.load('assets/oil/flag_roughness.png');
-
+        const gltfLoader=(typeof THREE.GLTFLoader==='function')?new THREE.GLTFLoader():null;
+        const texLoader=new THREE.TextureLoader();
+        const oilTexture=texLoader.load('assets/oil/oil_albedo.png',t=>{t.encoding=THREE.sRGBEncoding;});
+        const oilRoughness=texLoader.load('assets/oil/oil_roughness.png');
+        const flagTexture=texLoader.load('assets/oil/flag_albedo.png',t=>{t.encoding=THREE.sRGBEncoding;});
+        const flagRoughness=texLoader.load('assets/oil/flag_roughness.png');
         positions.forEach((pos,index)=>{
             const rigGroup=new THREE.Group();
             rigGroup.position.set(pos.x,getTerrainHeight(pos.x,pos.z),pos.z);
-            rigGroup.name=`oilSite_${index}`;
-            rigGroup.userData.externalOil=true;
-
-            const wreckBase=new THREE.Mesh(
-                new THREE.CylinderGeometry(2.6,2.9,.32,20),
-                new THREE.MeshStandardMaterial({color:0x303335,roughness:.94,metalness:.1})
-            );
+            rigGroup.name=`oilSite_${index}`; rigGroup.userData.externalOil=true;
+            const wreckBase=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.9,.32,20),new THREE.MeshStandardMaterial({color:0x303335,roughness:.94,metalness:.1}));
             wreckBase.position.y=.16; wreckBase.visible=false; rigGroup.add(wreckBase);
-
-            // Logical rig is created immediately so economy/capture/network code can use it.
-            const oilHpLabel=document.createElement('div');
-            oilHpLabel.className='tank-hp-label hp-player';
-            const oilHpFill=document.createElement('div');
-            oilHpFill.className='tank-hp-fill';
-            oilHpLabel.appendChild(oilHpFill);
-            document.getElementById('hp-labels-container').appendChild(oilHpLabel);
-            oilHpLabel.style.display='none';
-
-            const flagData={mesh:null,baseHeight:6.6,type:'white',isOil:true,owner:'none',waveStart:performance.now()};
+            const oilHpLabel=document.createElement('div'); oilHpLabel.className='tank-hp-label hp-player';
+            const oilHpFill=document.createElement('div'); oilHpFill.className='tank-hp-fill'; oilHpLabel.appendChild(oilHpFill);
+            document.getElementById('hp-labels-container').appendChild(oilHpLabel); oilHpLabel.style.display='none';
+            const flagData={mesh:null,baseHeight:9.15,type:'white',isOil:true,owner:'none',waveStart:performance.now()};
             const rig={x:pos.x,z:pos.z,group:rigGroup,beam:null,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:null,externalOilRoot:null};
-            oilRigs.push(rig);
-            activeFlagMeshes.push(flagData);
-            obstacles.push({x:pos.x,z:pos.z,radius:10});
-            scene.add(rigGroup);
-
-            if(!gltfLoader){ console.error('GLTFLoader is unavailable; external oil assets cannot load.'); return; }
-
-            gltfLoader.load('assets/oil/oil_pump.gltf', gltf=>{
-                const root=gltf.scene||gltf.scenes[0];
-                root.name='externalOilPump';
-                root.scale.setScalar(1.18);
-                root.traverse(o=>{
-                    if(!o.isMesh) return;
-                    o.castShadow=true; o.receiveShadow=true;
-                    const mats=Array.isArray(o.material)?o.material:[o.material];
-                    mats.forEach(m=>{
-                        if(!m) return;
-                        m.map=oilTexture;
-                        m.roughnessMap=oilRoughness;
-                        m.roughness=.78;
-                        m.metalness=.42;
-                        m.needsUpdate=true;
-                    });
-                });
-                rig.externalOilRoot=root;
-                rig.towerAssembly=root;
-                rigGroup.add(root);
-            },undefined,err=>console.error('Could not load external oil pump:',err));
-
-            gltfLoader.load('assets/oil/flag.gltf', gltf=>{
-                const root=gltf.scene||gltf.scenes[0];
-                root.name='externalOilFlag';
-                root.position.set(4.2,0,0);
-                root.scale.setScalar(1.0);
-                let cloth=null;
-                root.traverse(o=>{
-                    if(!o.isMesh) return;
-                    o.castShadow=true; o.receiveShadow=true;
-                    if((o.name||'').toLowerCase().includes('cloth') || !cloth) cloth=o;
-                });
-                if(!cloth) return;
-                cloth.name='externalOilFlagCloth';
-                const flagMat=new THREE.MeshStandardMaterial({map:flagTexture,roughnessMap:flagRoughness,roughness:.68,metalness:.05,side:THREE.DoubleSide,transparent:true});
-                cloth.material=flagMat;
-                flagData.mesh=cloth;
-                flagData.baseHeight=cloth.position.y;
-                flagData.waveStart=performance.now();
-                cloth.visible=true;
-                rigGroup.add(root);
-            },undefined,err=>console.error('Could not load external oil flag:',err));
+            oilRigs.push(rig); activeFlagMeshes.push(flagData); obstacles.push({x:pos.x,z:pos.z,radius:10}); scene.add(rigGroup);
+            if(!gltfLoader) return;
+            gltfLoader.load('assets/oil/oil_pump.glb',gltf=>{
+                const root=gltf.scene||gltf.scenes[0]; root.name='externalOilPump'; root.scale.setScalar(1.0);
+                root.traverse(o=>{if(!o.isMesh)return;o.castShadow=true;o.receiveShadow=true;o.material=new THREE.MeshStandardMaterial({map:oilTexture,roughnessMap:oilRoughness,roughness:.78,metalness:.42});});
+                rig.externalOilRoot=root; rig.towerAssembly=root; rigGroup.add(root);
+            },undefined,e=>console.error('External oil pump failed',e));
+            gltfLoader.load('assets/oil/flag.glb',gltf=>{
+                const root=gltf.scene||gltf.scenes[0]; root.name='externalOilFlag'; root.position.set(4.2,0,0);
+                let cloth=root.getObjectByName('flag_cloth')||root.children.find(x=>x.isMesh)||null;
+                if(!cloth){root.traverse(o=>{if(o.isMesh&&!cloth)cloth=o;});}
+                root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+                if(!cloth)return;
+                const mat=new THREE.MeshStandardMaterial({map:flagTexture,roughnessMap:flagRoughness,roughness:.68,metalness:.05,side:THREE.DoubleSide,transparent:true});
+                cloth.material=mat; flagData.mesh=cloth; flagData.baseHeight=cloth.position.y; root.userData.flagRoot=true; rigGroup.add(root);
+            },undefined,e=>console.error('External oil flag failed',e));
         });
     }
 
@@ -7723,6 +7602,7 @@ function createArmyFactory(x,z,ghost=false){
         rotatingRadars.forEach(radar => { radar.rotation.y += 0.025; });
 
         activeFlagMeshes.forEach(item => {
+            if (!item.mesh || !item.mesh.geometry || !item.mesh.geometry.attributes || !item.mesh.geometry.attributes.position) return;
             if (item.isOil && item.type === 'none') return;
             const positions = item.mesh.geometry.attributes.position;
             const windStrength = 0.28 + (Math.sin(flagWaveTime * 0.42) + 1) * 0.30 + Math.sin(flagWaveTime * 0.91) * 0.08;
@@ -10157,7 +10037,6 @@ function createArmyFactory(x,z,ghost=false){
 
         // السيطرة على النفط تتم بالمشاة فقط. الآليات والتركس لا تستطيع التقاطه.
         oilRigs.forEach(rig => {
-            if(typeof updateOilExternalAnimation==='function') updateOilExternalAnimation(rig, gameDeltaSeconds);
             if(rig.isDestroyed)return;
             const base=new THREE.Vector3(rig.x,getTerrainHeight(rig.x,rig.z),rig.z);
             const playerInf=playerTanks.filter(t=>t&&t.isInfantry&&!t.isDestroyed&&t.mesh.position.distanceTo(base)<13);
@@ -10349,6 +10228,7 @@ function createArmyFactory(x,z,ghost=false){
             updateReconEnemyDetectionSound();
             checkLogicAndEconomy();
             animateFlags();
+            if(typeof window.animateExternalOilRig==='function') (oilRigs||[]).forEach(r=>{ if(r&&!r.isDestroyed) window.animateExternalOilRig(r,performance.now()); });
             updateInfantryCombatFX();
             animateDefenseMarker();
             steps++;
@@ -12147,7 +12027,5 @@ window.updateCameraSensitivity=function(v){
 })();
 </script>
 
-
-<script src="assets/oil/oil-animation.js"></script>
 </body>
 </html>
