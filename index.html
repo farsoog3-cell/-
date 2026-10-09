@@ -2557,6 +2557,8 @@
     let enemyBaseGroup = null;
     let buildPanelOpen = false;
     let factoryBuildArmed = false;
+    // قفل مستقل لأمر بناء المصنع؛ يبقى فعالاً حتى تثبيت الموقع أو الإلغاء.
+    let factoryPlacementCommandActive = false;
     let activeFactoryConstructions = [];
     let activeFactoryConstruction = null; // compatibility pointer to the most recently started construction
     let constructedFactories = [];
@@ -6382,7 +6384,7 @@
 
     function constructionBarFactoryPointerDown(e){
         if(e){e.stopPropagation(); if(e.cancelable)e.preventDefault();}
-        if(e && e.pointerType==='touch') armFactoryBuild();
+        armFactoryBuild();
     }
     function constructionBarFactoryClick(e){
         if(e)e.stopPropagation();
@@ -6401,6 +6403,7 @@
         selectedTank = builder;
         selectedUnitKind = 'builder';
         factoryBuildBuilder = builder;
+        factoryPlacementCommandActive = true;
         builder.manualControl = true;
         if (isBuilderFactoryBusy(builder)) { showFloatingMsg('This construction dozer is already building a factory'); return; }
         if (playerMoney < 400) { showFloatingMsg('Insufficient funds — factory costs $400'); return; }
@@ -6429,12 +6432,21 @@
         if (factoryPlacementGhost.mesh.parent !== scene) scene.add(factoryPlacementGhost.mesh);
         factoryPlacementGhost.mesh.scale.setScalar(1);
         factoryPlacementGhost.mesh.rotation.y = factoryPlacementRotation;
-        factoryPlacementGhost.mesh.traverse(o => { if (o.material) { const mats=Array.isArray(o.material)?o.material:[o.material]; mats.forEach(m=>{if(m){m.transparent=true;m.opacity=.28;m.depthWrite=false;m.needsUpdate=true;}}); } });
+        factoryPlacementGhost.mesh.traverse(o => { if (o.material) { const mats=Array.isArray(o.material)?o.material:[o.material]; mats.forEach(m=>{if(m){m.transparent=true;m.opacity=.42;m.depthWrite=false;m.needsUpdate=true; if(m.emissive && m.emissive.setHex){m.emissive.setHex(0x164b22);m.emissiveIntensity=.55;}}}); } });
+        // مؤشر واضح حتى على شاشات الهاتف: قاعدة شفافة خضراء وحدود المصنع.
+        if (!factoryPlacementGhost.mesh.getObjectByName('factoryPlacementFootprint')) {
+            const footprint = new THREE.Mesh(new THREE.BoxGeometry(29,.10,24), new THREE.MeshBasicMaterial({color:0x39ff75,transparent:true,opacity:.28,depthWrite:false}));
+            footprint.name='factoryPlacementFootprint'; footprint.position.set(0,.30,0); footprint.renderOrder=20; factoryPlacementGhost.mesh.add(footprint);
+            const edgeGeometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(29,7,24));
+            const edgeLines = new THREE.LineSegments(edgeGeometry,new THREE.LineBasicMaterial({color:0x74ff9a,transparent:true,opacity:.98,depthTest:false}));
+            edgeLines.name='factoryPlacementOutline'; edgeLines.position.set(0,3.55,0); edgeLines.renderOrder=21; factoryPlacementGhost.mesh.add(edgeLines);
+        }
+        factoryPlacementCommandActive = true;
         return true;
     }
 
     function hideFactoryPlacement() {
-        factoryBuildArmed=false; factoryPlacementMode=false; factoryPlacementPoint=null; factoryBuildBuilder=null;
+        factoryBuildArmed=false; factoryPlacementMode=false; factoryPlacementCommandActive=false; factoryPlacementPoint=null; factoryBuildBuilder=null;
         barracksBuildArmed=false; barracksPlacementMode=false; barracksPlacementPoint=null; barracksBuildBuilder=null;
         if(factoryPlacementGhost){ scene.remove(factoryPlacementGhost.mesh); factoryPlacementGhost=null; }
         if(barracksPlacementGhost){ scene.remove(barracksPlacementGhost.mesh); barracksPlacementGhost=null; }
@@ -7586,7 +7598,7 @@ function createArmyFactory(x,z,ghost=false){
     function triggerCameraShake(){ /* camera shake intentionally disabled; recoil is applied to the firing tank */ }
 
     function updateFactoryGhostFromScreen(clientX, clientY) {
-        if (factoryBuildArmed && (!factoryPlacementMode || !factoryPlacementGhost)) { factoryPlacementMode=true; if(!showFactoryPlacementGhost(factoryBuildBuilder)) return; }
+        if ((factoryBuildArmed || factoryPlacementCommandActive) && (!factoryPlacementMode || !factoryPlacementGhost)) { factoryPlacementMode=true; factoryBuildArmed=true; if(!showFactoryPlacementGhost(factoryBuildBuilder || selectedTank)) return; }
         if (!factoryPlacementMode || !factoryPlacementGhost) return;
         raycastAtPlacement(clientX, clientY);
     }
@@ -7668,9 +7680,10 @@ function createArmyFactory(x,z,ghost=false){
                 }
                 return;
             }
-            if ((factoryPlacementMode || factoryBuildArmed) && (factoryPlacementGhost || factoryBuildBuilder)) {
-                if (!factoryPlacementGhost && !showFactoryPlacementGhost(factoryBuildBuilder)) { showFloatingMsg('🚧 تعذّر إظهار خيال المصنع؛ أعد تحديد تركس البناء'); return; }
-                factoryPlacementMode = true; factoryBuildArmed = true;
+            if ((factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive) && (factoryPlacementGhost || factoryBuildBuilder || selectedTank)) {
+                if (!factoryBuildBuilder && selectedTank && getUnitKind(selectedTank)==='builder') factoryBuildBuilder=selectedTank;
+                if (!factoryPlacementGhost && !showFactoryPlacementGhost(factoryBuildBuilder || selectedTank)) { showFloatingMsg('🚧 تعذّر إظهار خيال المصنع؛ أعد تحديد تركس البناء'); return; }
+                factoryPlacementMode = true; factoryBuildArmed = true; factoryPlacementCommandActive = true;
                 const placementHits = raycaster.intersectObject(terrainMesh);
                 if (placementHits.length) {
                     const p = placementHits[0].point.clone();
@@ -7756,7 +7769,7 @@ function createArmyFactory(x,z,ghost=false){
             }
 
             // إذا تم تسليح البناء ولم يلتقط الفرع أعلاه اللمسة، امنع تحويلها إلى أمر حركة.
-            if (factoryBuildArmed || factoryPlacementMode) {
+            if (factoryBuildArmed || factoryPlacementMode || factoryPlacementCommandActive) {
                 if (!factoryPlacementGhost && factoryBuildBuilder) showFactoryPlacementGhost(factoryBuildBuilder);
                 if (factoryPlacementGhost) showFloatingMsg('📍 اختر مكان المصنع على الأرض');
                 return;
@@ -7798,7 +7811,7 @@ function createArmyFactory(x,z,ghost=false){
 
         dom.addEventListener('pointerdown', (e) => {
             if (gameOver || isCinematicEnding) return;
-            placementArmedAtPointerDown = !!(factoryBuildArmed || factoryPlacementMode || barracksBuildArmed || barracksPlacementMode);
+            placementArmedAtPointerDown = !!(factoryBuildArmed || factoryPlacementMode || factoryPlacementCommandActive || barracksBuildArmed || barracksPlacementMode);
 
             if (defenseCommandArmed && e.pointerType !== 'touch') {
                 updateDefenseMarkerFromScreen(e.clientX,e.clientY);
@@ -7884,7 +7897,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
 
                 if (touchMode === 'pan') {
-                    if (factoryPlacementMode || factoryBuildArmed || barracksPlacementMode || barracksBuildArmed) {
+                    if (factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive || barracksPlacementMode || barracksBuildArmed) {
                         if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                         lastX = e.clientX; lastY = e.clientY;
                         gestureMoved = true;
@@ -7909,7 +7922,7 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
 
-            if (factoryPlacementMode || factoryBuildArmed || barracksPlacementMode || barracksBuildArmed) {
+            if (factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive || barracksPlacementMode || barracksBuildArmed) {
                 if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                 return;
             }
@@ -7950,10 +7963,11 @@ function createArmyFactory(x,z,ghost=false){
                 pinchStartDistance = 0;
                 pinchStartRadius = targetCameraRadius;
 
-                if (placementArmedAtPointerDown || factoryPlacementMode || factoryBuildArmed || barracksPlacementMode || barracksBuildArmed) {
-                    if (placementArmedAtPointerDown && !barracksPlacementMode && !barracksBuildArmed && factoryBuildBuilder) {
-                        factoryBuildArmed = true; factoryPlacementMode = true;
-                        if (!factoryPlacementGhost) showFactoryPlacementGhost(factoryBuildBuilder);
+                if (placementArmedAtPointerDown || factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive || barracksPlacementMode || barracksBuildArmed) {
+                    if ((placementArmedAtPointerDown || factoryPlacementCommandActive) && !barracksPlacementMode && !barracksBuildArmed) {
+                        if (!factoryBuildBuilder && selectedTank && getUnitKind(selectedTank)==='builder') factoryBuildBuilder=selectedTank;
+                        factoryBuildArmed = true; factoryPlacementMode = true; factoryPlacementCommandActive = true;
+                        if (!factoryPlacementGhost) showFactoryPlacementGhost(factoryBuildBuilder || selectedTank);
                     }
                     if(barracksPlacementMode || barracksBuildArmed) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
                     handleTap(e.clientX, e.clientY);
@@ -7965,10 +7979,11 @@ function createArmyFactory(x,z,ghost=false){
             }
 
             isDragging = false;
-            if (placementArmedAtPointerDown || factoryPlacementMode || factoryBuildArmed || barracksPlacementMode || barracksBuildArmed) {
-                if (placementArmedAtPointerDown && !barracksPlacementMode && !barracksBuildArmed && factoryBuildBuilder) {
-                    factoryBuildArmed = true; factoryPlacementMode = true;
-                    if (!factoryPlacementGhost) showFactoryPlacementGhost(factoryBuildBuilder);
+            if (placementArmedAtPointerDown || factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive || barracksPlacementMode || barracksBuildArmed) {
+                if ((placementArmedAtPointerDown || factoryPlacementCommandActive) && !barracksPlacementMode && !barracksBuildArmed) {
+                    if (!factoryBuildBuilder && selectedTank && getUnitKind(selectedTank)==='builder') factoryBuildBuilder=selectedTank;
+                    factoryBuildArmed = true; factoryPlacementMode = true; factoryPlacementCommandActive = true;
+                    if (!factoryPlacementGhost) showFactoryPlacementGhost(factoryBuildBuilder || selectedTank);
                 }
                 if(barracksPlacementMode || barracksBuildArmed) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
                 handleTap(e.clientX, e.clientY);
