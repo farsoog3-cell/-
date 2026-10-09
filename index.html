@@ -7618,6 +7618,8 @@ function createArmyFactory(x,z,ghost=false){
         let pinchStartRadius = 0;
         let gestureMoved = false;
         let gestureStartX = 0, gestureStartY = 0;
+        // Latch build placement for the full pointer gesture on mobile browsers.
+        let placementArmedAtPointerDown = false;
 
         const getDistance = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 
@@ -7796,6 +7798,7 @@ function createArmyFactory(x,z,ghost=false){
 
         dom.addEventListener('pointerdown', (e) => {
             if (gameOver || isCinematicEnding) return;
+            placementArmedAtPointerDown = !!(factoryBuildArmed || factoryPlacementMode || barracksBuildArmed || barracksPlacementMode);
 
             if (defenseCommandArmed && e.pointerType !== 'touch') {
                 updateDefenseMarkerFromScreen(e.clientX,e.clientY);
@@ -7947,20 +7950,30 @@ function createArmyFactory(x,z,ghost=false){
                 pinchStartDistance = 0;
                 pinchStartRadius = targetCameraRadius;
 
-                if (factoryPlacementMode || factoryBuildArmed || barracksPlacementMode || barracksBuildArmed) {
-                    if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
+                if (placementArmedAtPointerDown || factoryPlacementMode || factoryBuildArmed || barracksPlacementMode || barracksBuildArmed) {
+                    if (placementArmedAtPointerDown && !barracksPlacementMode && !barracksBuildArmed && factoryBuildBuilder) {
+                        factoryBuildArmed = true; factoryPlacementMode = true;
+                        if (!factoryPlacementGhost) showFactoryPlacementGhost(factoryBuildBuilder);
+                    }
+                    if(barracksPlacementMode || barracksBuildArmed) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
                     handleTap(e.clientX, e.clientY);
                 } else if (!wasMoved) {
                     handleTap(e.clientX, e.clientY);
                 }
+                placementArmedAtPointerDown = false;
                 return;
             }
 
             isDragging = false;
-            if (factoryPlacementMode || factoryBuildArmed || barracksPlacementMode || barracksBuildArmed) {
-                if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
+            if (placementArmedAtPointerDown || factoryPlacementMode || factoryBuildArmed || barracksPlacementMode || barracksBuildArmed) {
+                if (placementArmedAtPointerDown && !barracksPlacementMode && !barracksBuildArmed && factoryBuildBuilder) {
+                    factoryBuildArmed = true; factoryPlacementMode = true;
+                    if (!factoryPlacementGhost) showFactoryPlacementGhost(factoryBuildBuilder);
+                }
+                if(barracksPlacementMode || barracksBuildArmed) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
                 handleTap(e.clientX, e.clientY);
             } else if (!hasMoved) handleTap(e.clientX, e.clientY);
+            placementArmedAtPointerDown = false;
         };
 
         dom.addEventListener('pointerup', endPointer);
