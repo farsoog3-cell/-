@@ -2556,11 +2556,7 @@
     let playerBaseGroup = null;
     let enemyBaseGroup = null;
     let buildPanelOpen = false;
-    let basePurchaseMenuOpen = false;
-    let baseProductionJob = null;
     let factoryBuildArmed = false;
-    // قفل مستقل لأمر بناء المصنع؛ يبقى فعالاً حتى تثبيت الموقع أو الإلغاء.
-    let factoryPlacementCommandActive = false;
     let activeFactoryConstructions = [];
     let activeFactoryConstruction = null; // compatibility pointer to the most recently started construction
     let constructedFactories = [];
@@ -6348,7 +6344,6 @@
 
     function openConstructionBar() {
         buildPanelOpen = true;
-        basePurchaseMenuOpen = true;
         selectedFactory = null;
         selectedTank = null;
         selectedUnitKind = null;
@@ -6369,7 +6364,6 @@
 
     function closeConstructionBar() {
         buildPanelOpen = false;
-        basePurchaseMenuOpen = false;
         factoryBuildArmed = false;
         const bar = document.getElementById('construction-bar');
         if (bar) bar.classList.remove('open','factory-mode','factory-selected','barracks-selected','base-mode','unit-selected');
@@ -6388,7 +6382,7 @@
 
     function constructionBarFactoryPointerDown(e){
         if(e){e.stopPropagation(); if(e.cancelable)e.preventDefault();}
-        armFactoryBuild();
+        if(e && e.pointerType==='touch') armFactoryBuild();
     }
     function constructionBarFactoryClick(e){
         if(e)e.stopPropagation();
@@ -6399,15 +6393,15 @@
     }
 
     function armFactoryBuild() {
-        // ثبّت مرجع تركس البناء قبل أن يغيّر لمس واجهة القيادة التحديد.
-        let builder = (factoryBuildBuilder && getUnitKind(factoryBuildBuilder) === 'builder' && !factoryBuildBuilder.isDestroyed && !factoryBuildBuilder.__serverRemote) ? factoryBuildBuilder : null;
-        if (!builder && selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed && !selectedTank.__serverRemote) builder = selectedTank;
-        if (!builder) builder = playerTanks.find(u => u && u.team === 'player' && getUnitKind(u) === 'builder' && !u.isDestroyed && !u.__serverRemote) || null;
+        // ابحث عن تركس اللاعب المحدد حتى لو تغيّر selectedTank أثناء لمس شريط القيادة.
+        let builder = (selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed && !selectedTank.__serverRemote) ? selectedTank : null;
+        if (!builder) {
+            builder = playerTanks.find(u => u && u.team === 'player' && getUnitKind(u) === 'builder' && !u.isDestroyed && !u.__serverRemote) || null;
+        }
         if (!builder) { showFloatingMsg('🚧 اشترِ تركس البناء وحدده أولاً'); return; }
         selectedTank = builder;
         selectedUnitKind = 'builder';
         factoryBuildBuilder = builder;
-        factoryPlacementCommandActive = true;
         builder.manualControl = true;
         if (isBuilderFactoryBusy(builder)) { showFloatingMsg('This construction dozer is already building a factory'); return; }
         if (playerMoney < 400) { showFloatingMsg('Insufficient funds — factory costs $400'); return; }
@@ -6421,13 +6415,12 @@
     }
 
     function showFactoryPlacementGhost(builder) {
-        // استرجاع تركس البناء المحفوظ، ولا نسمح بوضع البناء من دون وحدة مالكة واضحة.
-        builder = builder || factoryBuildBuilder || selectedTank;
-        if (!builder || !builder.mesh || builder.isDestroyed || builder.__serverRemote) return false;
-        factoryBuildBuilder = builder;
-        if (factoryPlacementGhost && factoryPlacementGhost.mesh) scene.remove(factoryPlacementGhost.mesh);
+        // لا تستدعِ hideFactoryPlacement هنا، لأنها كانت تلغي factoryPlacementMode
+        // مباشرة بعد تفعيله، وبالتالي كان لمس الأرض لا يبدأ البناء.
+        if (factoryPlacementGhost && factoryPlacementGhost.mesh) {
+            scene.remove(factoryPlacementGhost.mesh);
+        }
         const g = createArmyFactory(builder.mesh.position.x, builder.mesh.position.z, true);
-        if (!g || !g.mesh) return false;
         factoryPlacementGhost = g;
         factoryPlacementMode = true;
         factoryBuildArmed = true;
@@ -6436,21 +6429,11 @@
         if (factoryPlacementGhost.mesh.parent !== scene) scene.add(factoryPlacementGhost.mesh);
         factoryPlacementGhost.mesh.scale.setScalar(1);
         factoryPlacementGhost.mesh.rotation.y = factoryPlacementRotation;
-        factoryPlacementGhost.mesh.traverse(o => { if (o.material) { const mats=Array.isArray(o.material)?o.material:[o.material]; mats.forEach(m=>{if(m){m.transparent=true;m.opacity=.42;m.depthWrite=false;m.needsUpdate=true; if(m.emissive && m.emissive.setHex){m.emissive.setHex(0x164b22);m.emissiveIntensity=.55;}}}); } });
-        // مؤشر واضح حتى على شاشات الهاتف: قاعدة شفافة خضراء وحدود المصنع.
-        if (!factoryPlacementGhost.mesh.getObjectByName('factoryPlacementFootprint')) {
-            const footprint = new THREE.Mesh(new THREE.BoxGeometry(29,.10,24), new THREE.MeshBasicMaterial({color:0x39ff75,transparent:true,opacity:.28,depthWrite:false}));
-            footprint.name='factoryPlacementFootprint'; footprint.position.set(0,.30,0); footprint.renderOrder=20; factoryPlacementGhost.mesh.add(footprint);
-            const edgeGeometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(29,7,24));
-            const edgeLines = new THREE.LineSegments(edgeGeometry,new THREE.LineBasicMaterial({color:0x74ff9a,transparent:true,opacity:.98,depthTest:false}));
-            edgeLines.name='factoryPlacementOutline'; edgeLines.position.set(0,3.55,0); edgeLines.renderOrder=21; factoryPlacementGhost.mesh.add(edgeLines);
-        }
-        factoryPlacementCommandActive = true;
-        return true;
+        factoryPlacementGhost.mesh.traverse(o => { if (o.material) { o.material.transparent=true; o.material.opacity=.28; o.material.depthWrite=false; } });
     }
 
     function hideFactoryPlacement() {
-        factoryBuildArmed=false; factoryPlacementMode=false; factoryPlacementCommandActive=false; factoryPlacementPoint=null; factoryBuildBuilder=null;
+        factoryBuildArmed=false; factoryPlacementMode=false; factoryPlacementPoint=null; factoryBuildBuilder=null;
         barracksBuildArmed=false; barracksPlacementMode=false; barracksPlacementPoint=null; barracksBuildBuilder=null;
         if(factoryPlacementGhost){ scene.remove(factoryPlacementGhost.mesh); factoryPlacementGhost=null; }
         if(barracksPlacementGhost){ scene.remove(barracksPlacementGhost.mesh); barracksPlacementGhost=null; }
@@ -7114,11 +7097,9 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function queueFactoryUnit(type) {
-        // جميع الوحدات تُشترى الآن من المعسكر الرئيسي، بلا مصنع جيش أو ثكنة جنود.
-        if (basePurchaseMenuOpen) { queueBaseUnit(type); return; }
         if(!selectedFactory || !selectedFactory.done || selectedFactory.isDestroyed) return;
         if(selectedFactory.productionJob){showFloatingMsg('⏳ This factory is busy — you can use another factory');return;}
-        if(type==='infantry'){showFloatingMsg('🪖 Train soldiers from the main camp');return;}
+        if(type==='infantry'){showFloatingMsg('🪖 Train soldiers from the Military Barracks');return;}
         const costs={rocket:800,normal:500,ambulance:600,scout:500};const cost=costs[type]||500;
         if(playerMoney<cost){showFloatingMsg(`Insufficient funds — cost: $${cost}`);return;}
         playerMoney-=cost;totalMoneySpent+=cost;syncMoneyNow();playSound('buy');
@@ -7127,61 +7108,14 @@ function createArmyFactory(x,z,ghost=false){
         showFloatingMsg(type==='scout'?'🏭 Scout vehicle preparation started — 12 seconds':'🏭 Production started — 15 seconds');
         updateFactoryBar();
     }
-
-    function queueBaseUnit(type) {
-        if (!basePurchaseMenuOpen || !playerBaseGroup) return;
-        if (baseProductionJob) { showFloatingMsg('⏳ يجري تجهيز وحدة أخرى من المعسكر'); return; }
-        const costs = { rocket:800, normal:500, infantry:250, ambulance:600, scout:500 };
-        const cost = costs[type];
-        if (!cost) return;
-        if (playerMoney < cost) { showFloatingMsg(`الرصيد غير كافٍ — السعر $${cost}`); return; }
-        playerMoney -= cost; totalMoneySpent += cost; syncMoneyNow(); updateEconomyUI(); playSound('buy');
-        const seconds = type==='infantry' ? REAL_TRAIN_INFANTRY_SEC : (type==='scout' ? REAL_BUILD_SCOUT_SEC : REAL_BUILD_VEHICLE_SEC);
-        baseProductionJob = { type, cost, elapsed:0, duration:seconds*REAL_TICKS_PER_SECOND };
-        showFloatingMsg(`بدأ تجهيز الوحدة من المعسكر — ${seconds} ثانية`);
-        const fill=document.getElementById('factory-production-progress'), f=document.getElementById('factory-production-progress-fill');
-        if(fill) fill.style.display='block'; if(f) f.style.width='0%';
-    }
-
-    function produceBaseUnit(type) {
-        const base = playerBaseGroup;
-        if (!base || !base.position) return;
-        const r = base.rotation.y;
-        const forward = new THREE.Vector3(Math.sin(r),0,Math.cos(r));
-        const spawn = base.position.clone().add(forward.clone().multiplyScalar(38));
-        spawn.y = getTerrainHeight(spawn.x, spawn.z);
-        let unit;
-        if (type==='ambulance') unit=createModernAmbulance(spawn.x,spawn.z,'player');
-        else if (type==='infantry') unit=createInfantrySoldier(spawn.x,spawn.z,'player');
-        else if (type==='scout') unit=createReconVehicle(spawn.x,spawn.z,'player');
-        else unit=createTank(spawn.x,spawn.z,(battleConfig.playerColor || '#168cff'),'player',type);
-        unit.mesh.rotation.y=r; unit.manualControl=true; unit.owner='player';
-        if (type==='ambulance') ambulances.push(unit);
-        else if (type==='scout') {
-            const wasReconActive=reconActivated; reconVehicles.push(unit); reconActivated=true;
-            const mm=document.getElementById('minimap-container'); if(mm){mm.classList.add('recon-active');mm.style.display='block';}
-            if(!wasReconActive) playMinimapEventSound(); setTimeout(()=>deployReconDish(unit),1200);
-        } else playerTanks.push(unit);
-        showFloatingMsg(type==='infantry'?'اكتمل تجهيز جندي المشاة من المعسكر':'اكتمل تجهيز الوحدة من المعسكر');
-    }
     function updateFactoryProduction(){
-        if (baseProductionJob) {
-            baseProductionJob.elapsed += gameDeltaTicks;
-            const fill=document.getElementById('factory-production-progress'), f=document.getElementById('factory-production-progress-fill');
-            if (fill) fill.style.display='block';
-            if (f) f.style.width=Math.min(100,baseProductionJob.elapsed/baseProductionJob.duration*100)+'%';
-            if (baseProductionJob.elapsed >= baseProductionJob.duration) {
-                const completedType=baseProductionJob.type; baseProductionJob=null; produceBaseUnit(completedType);
-                if (fill) fill.style.display='none'; if (f) f.style.width='0%';
-            }
-        }
         let any=false;
         for(const factory of constructedFactories){
             const p=factory&&factory.productionJob;if(!p||!factory.done||factory.isDestroyed)continue;
             any=true;p.elapsed+=gameDeltaTicks;
             if(p.elapsed>=p.duration){produceFactoryUnit(factory,p.type);factory.productionJob=null;}
         }
-        activeFactoryProduction=selectedFactory&&selectedFactory.productionJob?selectedFactory.productionJob:(baseProductionJob||null);
+        activeFactoryProduction=selectedFactory&&selectedFactory.productionJob?selectedFactory.productionJob:null;
         if(selectedFactory)updateFactoryBar();
         const fill=document.getElementById('factory-production-progress'),f=document.getElementById('factory-production-progress-fill');
         if(fill&&f){const p=activeFactoryProduction; if(p){fill.style.display='block';f.style.width=(p.elapsed/p.duration*100)+'%';}else{fill.style.display='none';f.style.width='0%';}}
@@ -7651,7 +7585,6 @@ function createArmyFactory(x,z,ghost=false){
     function triggerCameraShake(){ /* camera shake intentionally disabled; recoil is applied to the firing tank */ }
 
     function updateFactoryGhostFromScreen(clientX, clientY) {
-        if ((factoryBuildArmed || factoryPlacementCommandActive) && (!factoryPlacementMode || !factoryPlacementGhost)) { factoryPlacementMode=true; factoryBuildArmed=true; if(!showFactoryPlacementGhost(factoryBuildBuilder || selectedTank)) return; }
         if (!factoryPlacementMode || !factoryPlacementGhost) return;
         raycastAtPlacement(clientX, clientY);
     }
@@ -7683,8 +7616,6 @@ function createArmyFactory(x,z,ghost=false){
         let pinchStartRadius = 0;
         let gestureMoved = false;
         let gestureStartX = 0, gestureStartY = 0;
-        // Latch build placement for the full pointer gesture on mobile browsers.
-        let placementArmedAtPointerDown = false;
 
         const getDistance = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 
@@ -7733,10 +7664,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
                 return;
             }
-            if ((factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive) && (factoryPlacementGhost || factoryBuildBuilder || selectedTank)) {
-                if (!factoryBuildBuilder && selectedTank && getUnitKind(selectedTank)==='builder') factoryBuildBuilder=selectedTank;
-                if (!factoryPlacementGhost && !showFactoryPlacementGhost(factoryBuildBuilder || selectedTank)) { showFloatingMsg('🚧 تعذّر إظهار خيال المصنع؛ أعد تحديد تركس البناء'); return; }
-                factoryPlacementMode = true; factoryBuildArmed = true; factoryPlacementCommandActive = true;
+            if (factoryPlacementMode && factoryPlacementGhost) {
                 const placementHits = raycaster.intersectObject(terrainMesh);
                 if (placementHits.length) {
                     const p = placementHits[0].point.clone();
@@ -7821,13 +7749,6 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
 
-            // إذا تم تسليح البناء ولم يلتقط الفرع أعلاه اللمسة، امنع تحويلها إلى أمر حركة.
-            if (factoryBuildArmed || factoryPlacementMode || factoryPlacementCommandActive) {
-                if (!factoryPlacementGhost && factoryBuildBuilder) showFactoryPlacementGhost(factoryBuildBuilder);
-                if (factoryPlacementGhost) showFloatingMsg('📍 اختر مكان المصنع على الأرض');
-                return;
-            }
-
             // Normal single tap on ground gives a move order to the current selection.
             if (!terrainHits.length) return;
 
@@ -7864,7 +7785,6 @@ function createArmyFactory(x,z,ghost=false){
 
         dom.addEventListener('pointerdown', (e) => {
             if (gameOver || isCinematicEnding) return;
-            placementArmedAtPointerDown = !!(factoryBuildArmed || factoryPlacementMode || factoryPlacementCommandActive || barracksBuildArmed || barracksPlacementMode);
 
             if (defenseCommandArmed && e.pointerType !== 'touch') {
                 updateDefenseMarkerFromScreen(e.clientX,e.clientY);
@@ -7950,7 +7870,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
 
                 if (touchMode === 'pan') {
-                    if (factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive || barracksPlacementMode || barracksBuildArmed) {
+                    if (factoryPlacementMode || barracksPlacementMode) {
                         if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                         lastX = e.clientX; lastY = e.clientY;
                         gestureMoved = true;
@@ -7975,7 +7895,7 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
 
-            if (factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive || barracksPlacementMode || barracksBuildArmed) {
+            if (factoryPlacementMode || barracksPlacementMode) {
                 if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                 return;
             }
@@ -8016,32 +7936,20 @@ function createArmyFactory(x,z,ghost=false){
                 pinchStartDistance = 0;
                 pinchStartRadius = targetCameraRadius;
 
-                if (placementArmedAtPointerDown || factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive || barracksPlacementMode || barracksBuildArmed) {
-                    if ((placementArmedAtPointerDown || factoryPlacementCommandActive) && !barracksPlacementMode && !barracksBuildArmed) {
-                        if (!factoryBuildBuilder && selectedTank && getUnitKind(selectedTank)==='builder') factoryBuildBuilder=selectedTank;
-                        factoryBuildArmed = true; factoryPlacementMode = true; factoryPlacementCommandActive = true;
-                        if (!factoryPlacementGhost) showFactoryPlacementGhost(factoryBuildBuilder || selectedTank);
-                    }
-                    if(barracksPlacementMode || barracksBuildArmed) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
+                if (factoryPlacementMode || barracksPlacementMode) {
+                    if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
                     handleTap(e.clientX, e.clientY);
                 } else if (!wasMoved) {
                     handleTap(e.clientX, e.clientY);
                 }
-                placementArmedAtPointerDown = false;
                 return;
             }
 
             isDragging = false;
-            if (placementArmedAtPointerDown || factoryPlacementMode || factoryBuildArmed || factoryPlacementCommandActive || barracksPlacementMode || barracksBuildArmed) {
-                if ((placementArmedAtPointerDown || factoryPlacementCommandActive) && !barracksPlacementMode && !barracksBuildArmed) {
-                    if (!factoryBuildBuilder && selectedTank && getUnitKind(selectedTank)==='builder') factoryBuildBuilder=selectedTank;
-                    factoryBuildArmed = true; factoryPlacementMode = true; factoryPlacementCommandActive = true;
-                    if (!factoryPlacementGhost) showFactoryPlacementGhost(factoryBuildBuilder || selectedTank);
-                }
-                if(barracksPlacementMode || barracksBuildArmed) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
+            if (factoryPlacementMode || barracksPlacementMode) {
+                if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                 handleTap(e.clientX, e.clientY);
             } else if (!hasMoved) handleTap(e.clientX, e.clientY);
-            placementArmedAtPointerDown = false;
         };
 
         dom.addEventListener('pointerup', endPointer);
@@ -11990,25 +11898,6 @@ window.updateCameraSensitivity=function(v){
   }
   setInterval(watch,200);
 })();
-</script>
-
-
-<style id="main-camp-unit-purchase-only">
-/* المعسكر الرئيسي هو مركز الشراء الوحيد: لا تظهر خيارات بناء المصنع أو ثكنة الجنود. */
-#construction-bar .factory-build-card,
-#construction-bar .barracks-build-card,
-#construction-bar .barracks-unit-card { display:none !important; }
-#construction-bar .factory-unit-card { display:none !important; }
-#construction-bar.base-mode .factory-unit-card { display:flex !important; pointer-events:auto !important; }
-#construction-bar.base-mode .build-card { display:flex !important; }
-#construction-bar.base-mode .build-title { min-width:84px; }
-#construction-bar.base-mode .factory-unit-card.disabled { pointer-events:none; }
-</style>
-
-<script id="disable-legacy-building-purchases">
-// المصنع وثكنة الجنود أزيلا من أسلوب اللعب؛ الشراء والإنتاج من المعسكر الرئيسي فقط.
-window.armFactoryBuild = function(){ showFloatingMsg('الشراء متاح من المعسكر الرئيسي فقط'); };
-window.armBarracksBuild = function(){ showFloatingMsg('تم إلغاء بناء ثكنة الجنود؛ اشترِ المشاة من المعسكر الرئيسي'); };
 </script>
 
 </body>
