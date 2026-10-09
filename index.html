@@ -435,6 +435,7 @@
 
 
 
+        /* دمج نظام البناء والإنتاج: إبقاء تنفيذ الكود الأول مع إصلاحات النسخة الأحدث للعب عبر الإنترنت. */
         /* شريط البناء العسكري — أسلوب RTS عسكري كلاسيكي مستوحى من واجهات جنرال */
         #construction-bar {
             position:fixed; left:50%; bottom:8px; transform:translateX(-50%);
@@ -7097,6 +7098,7 @@ function createArmyFactory(x,z,ghost=false){
         requestAnimationFrame(tick);
     }
 
+    // نظام إنتاج الآليات المدمج: يحافظ على مزامنة الرصيد في النسخة متعددة اللاعبين.
     function queueFactoryUnit(type) {
         if(!selectedFactory || !selectedFactory.done || selectedFactory.isDestroyed) return;
         if(selectedFactory.productionJob){showFloatingMsg('⏳ This factory is busy — you can use another factory');return;}
@@ -7308,6 +7310,7 @@ function createArmyFactory(x,z,ghost=false){
         return unit;
     }
 
+    // شراء تركس البناء المدمج مع مراعاة معسكر اللاعب في المباراة المتصلة.
     function buyConstructionTruck() {
         const cost = 300;
         if (playerMoney < cost) { showFloatingMsg('Insufficient funds — construction dozer costs $300'); return; }
