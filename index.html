@@ -2556,6 +2556,8 @@
     let playerBaseGroup = null;
     let enemyBaseGroup = null;
     let buildPanelOpen = false;
+    let basePurchaseMenuOpen = false;
+    let baseProductionJob = null;
     let factoryBuildArmed = false;
     // قفل مستقل لأمر بناء المصنع؛ يبقى فعالاً حتى تثبيت الموقع أو الإلغاء.
     let factoryPlacementCommandActive = false;
@@ -6346,6 +6348,7 @@
 
     function openConstructionBar() {
         buildPanelOpen = true;
+        basePurchaseMenuOpen = true;
         selectedFactory = null;
         selectedTank = null;
         selectedUnitKind = null;
@@ -6366,6 +6369,7 @@
 
     function closeConstructionBar() {
         buildPanelOpen = false;
+        basePurchaseMenuOpen = false;
         factoryBuildArmed = false;
         const bar = document.getElementById('construction-bar');
         if (bar) bar.classList.remove('open','factory-mode','factory-selected','barracks-selected','base-mode','unit-selected');
@@ -7110,9 +7114,11 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function queueFactoryUnit(type) {
+        // جميع الوحدات تُشترى الآن من المعسكر الرئيسي، بلا مصنع جيش أو ثكنة جنود.
+        if (basePurchaseMenuOpen) { queueBaseUnit(type); return; }
         if(!selectedFactory || !selectedFactory.done || selectedFactory.isDestroyed) return;
         if(selectedFactory.productionJob){showFloatingMsg('⏳ This factory is busy — you can use another factory');return;}
-        if(type==='infantry'){showFloatingMsg('🪖 Train soldiers from the Military Barracks');return;}
+        if(type==='infantry'){showFloatingMsg('🪖 Train soldiers from the main camp');return;}
         const costs={rocket:800,normal:500,ambulance:600,scout:500};const cost=costs[type]||500;
         if(playerMoney<cost){showFloatingMsg(`Insufficient funds — cost: $${cost}`);return;}
         playerMoney-=cost;totalMoneySpent+=cost;syncMoneyNow();playSound('buy');
@@ -7121,14 +7127,61 @@ function createArmyFactory(x,z,ghost=false){
         showFloatingMsg(type==='scout'?'🏭 Scout vehicle preparation started — 12 seconds':'🏭 Production started — 15 seconds');
         updateFactoryBar();
     }
+
+    function queueBaseUnit(type) {
+        if (!basePurchaseMenuOpen || !playerBaseGroup) return;
+        if (baseProductionJob) { showFloatingMsg('⏳ يجري تجهيز وحدة أخرى من المعسكر'); return; }
+        const costs = { rocket:800, normal:500, infantry:250, ambulance:600, scout:500 };
+        const cost = costs[type];
+        if (!cost) return;
+        if (playerMoney < cost) { showFloatingMsg(`الرصيد غير كافٍ — السعر $${cost}`); return; }
+        playerMoney -= cost; totalMoneySpent += cost; syncMoneyNow(); updateEconomyUI(); playSound('buy');
+        const seconds = type==='infantry' ? REAL_TRAIN_INFANTRY_SEC : (type==='scout' ? REAL_BUILD_SCOUT_SEC : REAL_BUILD_VEHICLE_SEC);
+        baseProductionJob = { type, cost, elapsed:0, duration:seconds*REAL_TICKS_PER_SECOND };
+        showFloatingMsg(`بدأ تجهيز الوحدة من المعسكر — ${seconds} ثانية`);
+        const fill=document.getElementById('factory-production-progress'), f=document.getElementById('factory-production-progress-fill');
+        if(fill) fill.style.display='block'; if(f) f.style.width='0%';
+    }
+
+    function produceBaseUnit(type) {
+        const base = playerBaseGroup;
+        if (!base || !base.position) return;
+        const r = base.rotation.y;
+        const forward = new THREE.Vector3(Math.sin(r),0,Math.cos(r));
+        const spawn = base.position.clone().add(forward.clone().multiplyScalar(38));
+        spawn.y = getTerrainHeight(spawn.x, spawn.z);
+        let unit;
+        if (type==='ambulance') unit=createModernAmbulance(spawn.x,spawn.z,'player');
+        else if (type==='infantry') unit=createInfantrySoldier(spawn.x,spawn.z,'player');
+        else if (type==='scout') unit=createReconVehicle(spawn.x,spawn.z,'player');
+        else unit=createTank(spawn.x,spawn.z,(battleConfig.playerColor || '#168cff'),'player',type);
+        unit.mesh.rotation.y=r; unit.manualControl=true; unit.owner='player';
+        if (type==='ambulance') ambulances.push(unit);
+        else if (type==='scout') {
+            const wasReconActive=reconActivated; reconVehicles.push(unit); reconActivated=true;
+            const mm=document.getElementById('minimap-container'); if(mm){mm.classList.add('recon-active');mm.style.display='block';}
+            if(!wasReconActive) playMinimapEventSound(); setTimeout(()=>deployReconDish(unit),1200);
+        } else playerTanks.push(unit);
+        showFloatingMsg(type==='infantry'?'اكتمل تجهيز جندي المشاة من المعسكر':'اكتمل تجهيز الوحدة من المعسكر');
+    }
     function updateFactoryProduction(){
+        if (baseProductionJob) {
+            baseProductionJob.elapsed += gameDeltaTicks;
+            const fill=document.getElementById('factory-production-progress'), f=document.getElementById('factory-production-progress-fill');
+            if (fill) fill.style.display='block';
+            if (f) f.style.width=Math.min(100,baseProductionJob.elapsed/baseProductionJob.duration*100)+'%';
+            if (baseProductionJob.elapsed >= baseProductionJob.duration) {
+                const completedType=baseProductionJob.type; baseProductionJob=null; produceBaseUnit(completedType);
+                if (fill) fill.style.display='none'; if (f) f.style.width='0%';
+            }
+        }
         let any=false;
         for(const factory of constructedFactories){
             const p=factory&&factory.productionJob;if(!p||!factory.done||factory.isDestroyed)continue;
             any=true;p.elapsed+=gameDeltaTicks;
             if(p.elapsed>=p.duration){produceFactoryUnit(factory,p.type);factory.productionJob=null;}
         }
-        activeFactoryProduction=selectedFactory&&selectedFactory.productionJob?selectedFactory.productionJob:null;
+        activeFactoryProduction=selectedFactory&&selectedFactory.productionJob?selectedFactory.productionJob:(baseProductionJob||null);
         if(selectedFactory)updateFactoryBar();
         const fill=document.getElementById('factory-production-progress'),f=document.getElementById('factory-production-progress-fill');
         if(fill&&f){const p=activeFactoryProduction; if(p){fill.style.display='block';f.style.width=(p.elapsed/p.duration*100)+'%';}else{fill.style.display='none';f.style.width='0%';}}
@@ -11937,6 +11990,25 @@ window.updateCameraSensitivity=function(v){
   }
   setInterval(watch,200);
 })();
+</script>
+
+
+<style id="main-camp-unit-purchase-only">
+/* المعسكر الرئيسي هو مركز الشراء الوحيد: لا تظهر خيارات بناء المصنع أو ثكنة الجنود. */
+#construction-bar .factory-build-card,
+#construction-bar .barracks-build-card,
+#construction-bar .barracks-unit-card { display:none !important; }
+#construction-bar .factory-unit-card { display:none !important; }
+#construction-bar.base-mode .factory-unit-card { display:flex !important; pointer-events:auto !important; }
+#construction-bar.base-mode .build-card { display:flex !important; }
+#construction-bar.base-mode .build-title { min-width:84px; }
+#construction-bar.base-mode .factory-unit-card.disabled { pointer-events:none; }
+</style>
+
+<script id="disable-legacy-building-purchases">
+// المصنع وثكنة الجنود أزيلا من أسلوب اللعب؛ الشراء والإنتاج من المعسكر الرئيسي فقط.
+window.armFactoryBuild = function(){ showFloatingMsg('الشراء متاح من المعسكر الرئيسي فقط'); };
+window.armBarracksBuild = function(){ showFloatingMsg('تم إلغاء بناء ثكنة الجنود؛ اشترِ المشاة من المعسكر الرئيسي'); };
 </script>
 
 </body>
