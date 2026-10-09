@@ -8,6 +8,12 @@
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background: #000; }
         #canvas-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; }
+        #terrain-loading-screen { position:absolute; inset:0; z-index:4; display:none; align-items:center; justify-content:center; flex-direction:column; background:radial-gradient(circle at 50% 42%,#3a3428 0%,#171511 48%,#070706 100%); color:#f3ead7; pointer-events:auto; direction:rtl; }
+        #terrain-loading-screen.show { display:flex; }
+        #terrain-loading-screen .tls-title { font-size:clamp(15px,3vw,23px); font-weight:900; letter-spacing:.8px; text-shadow:0 2px 8px #000; }
+        #terrain-loading-screen .tls-sub { margin-top:8px; font-size:11px; color:#bdb5a5; }
+        #terrain-loading-screen .tls-bar { width:min(78vw,360px); height:7px; margin-top:18px; border-radius:8px; overflow:hidden; background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.16); }
+        #terrain-loading-screen .tls-fill { width:0%; height:100%; background:#c6a96b; transition:width .18s ease; }
         
         #start-menu {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
@@ -2115,8 +2121,33 @@
 </div>
 
 <div id="canvas-container"></div>
+<div id="terrain-loading-screen" aria-hidden="true"><div class="tls-title">جاري تجهيز ساحة المعركة</div><div class="tls-sub" id="terrain-loading-text">تحميل التضاريس والخامات...</div><div class="tls-bar"><div class="tls-fill" id="terrain-loading-fill"></div></div></div>
+<style id="online-battle-waiting-ui">
+#online-battle-waiting{position:fixed;inset:0;z-index:600;display:none;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 35%,rgba(52,48,39,.98),rgba(8,9,8,.99) 72%);color:#fff;direction:rtl;font-family:"Segoe UI",Tahoma,Arial,sans-serif}
+#online-battle-waiting.show{display:flex}
+.obw-card{width:min(620px,94vw);padding:22px 20px 18px;border:1px solid #665f4d;border-radius:12px;background:linear-gradient(145deg,rgba(29,31,27,.98),rgba(9,11,9,.98));box-shadow:0 25px 80px #000,inset 0 1px 0 rgba(255,255,255,.08)}
+.obw-title{text-align:center;font-size:clamp(18px,4vw,27px);font-weight:950;letter-spacing:1px;color:#eee7d5}.obw-sub{text-align:center;margin-top:6px;color:#a9a798;font-size:11px}
+.obw-players{display:grid;grid-template-columns:1fr 54px 1fr;align-items:center;gap:10px;margin-top:22px}.obw-player{min-height:108px;padding:13px;border:1px solid #3e443b;border-radius:9px;background:linear-gradient(145deg,#171c17,#0b0e0b);text-align:center}.obw-player.enemy{border-color:#4a3d3d}.obw-avatar{width:40px;height:40px;margin:0 auto 7px;border-radius:50%;background:var(--team,#168cff);border:2px solid rgba(255,255,255,.7)}.obw-name{font-size:13px;font-weight:900}.obw-role{font-size:9px;color:#8f988e;margin-top:3px}.obw-status{display:inline-flex;align-items:center;gap:5px;margin-top:9px;padding:4px 7px;border-radius:20px;background:#0d1710;color:#8fe0a0;font-size:9px;font-weight:800}.obw-dot{width:6px;height:6px;border-radius:50%;background:currentColor}.obw-vs{font-size:15px;font-weight:950;color:#9b9b8e;text-align:center}.obw-section{margin-top:18px;padding:12px;border:1px solid #343a32;border-radius:8px;background:#0b0e0b}.obw-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:10px;color:#aeb5aa}.obw-row b{color:#f0f1ea}.obw-progress{height:8px;margin-top:9px;background:#030403;border:1px solid #33382f;border-radius:9px;overflow:hidden}.obw-fill{height:100%;width:0%;background:linear-gradient(90deg,#806b3b,#d2b46b,#eee2bd);transition:width .18s ease}.obw-note{text-align:center;margin-top:12px;font-size:10px;color:#8d958b}.obw-pulse{animation:obwPulse 1.3s ease-in-out infinite}@keyframes obwPulse{50%{opacity:.55}}
+@media(max-width:520px){.obw-card{padding:16px 12px}.obw-players{grid-template-columns:1fr 34px 1fr;gap:5px}.obw-player{min-height:100px;padding:9px}.obw-title{font-size:18px}}
+</style>
+
+<div id="online-battle-waiting" aria-hidden="true">
+  <div class="obw-card">
+    <div class="obw-title">بانتظار دخول المعركة</div>
+    <div class="obw-sub">تم تجهيز المباراة بين اللاعبين — لن تبدأ المعركة حتى تصبح ساحة المعركة جاهزة فعلياً</div>
+    <div class="obw-players">
+      <div class="obw-player" id="obw-player-card"><div class="obw-avatar" id="obw-player-avatar"></div><div class="obw-name" id="obw-player-name">اللاعب 1</div><div class="obw-role">PLAYER</div><div class="obw-status"><span class="obw-dot"></span><span id="obw-player-status">متصل</span></div></div>
+      <div class="obw-vs">VS</div>
+      <div class="obw-player enemy" id="obw-enemy-card"><div class="obw-avatar" id="obw-enemy-avatar"></div><div class="obw-name" id="obw-enemy-name">اللاعب 2</div><div class="obw-role">OPPONENT</div><div class="obw-status"><span class="obw-dot"></span><span id="obw-enemy-status">متصل</span></div></div>
+    </div>
+    <div class="obw-section"><div class="obw-row"><span>حالة ساحة المعركة</span><b id="obw-terrain-text" class="obw-pulse">جاري تجهيز الأرض والخامات...</b></div><div class="obw-progress"><div class="obw-fill" id="obw-terrain-fill"></div></div></div>
+    <div class="obw-note">الرجاء الانتظار... سيتم فتح المعركة تلقائياً فور اكتمال الأرض.</div>
+  </div>
+</div>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
     // ===== نظام صوت موحّد وإصلاح تشغيل الأصوات على الهاتف =====
@@ -2519,6 +2550,7 @@
     let raycaster = new THREE.Raycaster();
     let mouse = new THREE.Vector2();
     let terrainMesh;
+    let externalTerrainModel = null;
 
     let enemyPoleFlagMesh, playerPoleFlagMesh;
     let playerBaseGroup = null;
@@ -2805,93 +2837,11 @@
     }
 
     function getTerrainHeight(x, z) {
-        // تموّجات رملية واسعة وناعمة جداً، مثل كثبان الصحراء الحقيقية.
-        // التردد منخفض والارتفاع محدود حتى تبقى حركة الدبابات سلسة ولا تظهر الأرض كجبال.
-        const duneA = Math.sin(x * 0.0105 + Math.sin(z * 0.0032) * 0.9) * 2.7;
-        const duneB = Math.cos(z * 0.0130 - x * 0.0042) * 1.65;
-        const duneC = Math.sin((x + z) * 0.0062) * Math.cos((x - z) * 0.0048) * 1.15;
-
-        // تموّج دقيق جداً للرمل، بدون خشونة مزعجة.
-        const detail = Math.sin(x * 0.030 + z * 0.019) * 0.10 +
-                       Math.cos(z * 0.034 - x * 0.013) * 0.07;
-
-        let h = duneA + duneB + duneC + detail;
-
-        // وسط MAP يبقى مناسباً للقتال والحركة.
-        const center = Math.hypot(x, z);
-        const centerBlend = smooth01(Math.max(0, Math.min(1, (center - 95) / 95)));
-        h *= 0.22 + centerBlend * 0.78;
-
-        // تلال مستديرة منخفضة، مع انتقال تدريجي عند القاعدة.
-        h += roundedHill(x, z, -235, 205, 105, 6.0);
-        h += roundedHill(x, z, 235, -205, 110, 5.2);
-        h += roundedHill(x, z, -220, -245, 92, 4.4);
-        h += roundedHill(x, z, 220, 245, 98, 4.0);
-
-        // منصات النفط أعلى بوضوح من الأرض المحيطة، لكن الارتفاع صغير ومناسب للدبابات.
-        // يوجد سطح شبه مستوٍ حول كل بئر ثم منحدر عريض وناعم حتى مستوى الأرض.
-        const oilPadLift = [
-            [95, -95], [-95, 95], [-115, -105], [115, 105]
-        ];
-        for (const [ox, oz] of oilPadLift) {
-            const d = Math.hypot(x - ox, z - oz);
-            // 0-24: منصة شبه مستوية، 24-58: انحدار ناعم، وبعدها مستوى الأرض.
-            const inner = THREE.MathUtils.clamp((58 - d) / 34, 0, 1);
-            const plateau = smooth01(inner);
-            h += plateau * 7.0;
+        // ارتفاعات الخريطة الخارجية فقط: لا يوجد Terrain إجرائي بديل.
+        if (window.__externalTerrainHeightSampler) {
+            return window.__externalTerrainHeightSampler(x, z);
         }
-
-        // ممرات/انخفاضات عريضة جداً: انحدار خفيف وليس طريقاً محفوراً.
-        const passA = Math.exp(-Math.pow((z - (0.34 * x + 35)) / 82, 2)) * 1.35;
-        const passB = Math.exp(-Math.pow((x + 0.42 * z - 80) / 92, 2)) * 1.0;
-        h -= passA + passB;
-
-        // تسوية تدريجية حول المعسكرين: المركز مستوٍ والساحة تتصل بالأرض بمنحدر ناعم.
-        const baseZones=[[CORNER_OFFSET,CORNER_OFFSET],[-CORNER_OFFSET,-CORNER_OFFSET]];
-        for(const [bx,bz] of baseZones){
-            const d=Math.hypot(x-bx,z-bz);
-            const blend=1-smooth01(THREE.MathUtils.clamp((d-26)/38,0,1));
-            if(blend>0){
-                // مستوى الساحة قريب من مستوى مركز المعسكر.
-                h *= (1-blend);
-            }
-        }
-        // جبال حواف الخريطة من نفس سطح الأرض نفسه، وليست مجسمات منفصلة.
-        // الارتفاع يتدرج على مساحة واسعة حتى تبدو الخريطة كحوض طبيعي تحيط به
-        // سلاسل جبلية متوازنة، مع قمم مختلفة ووديان صغيرة بين القمم.
-        const ax=Math.abs(x), az=Math.abs(z);
-        const edge=Math.max(ax,az);
-        const mountainT=THREE.MathUtils.clamp((edge-335)/115,0,1);
-        const mountainBlend=smooth01(mountainT);
-        if(mountainBlend>0){
-            // سلسلة رئيسية طويلة بمحاذاة كل طرف. التردد منخفض حتى تكون التضاريس
-            // كبيرة وواضحة مثل خرائط RTS، وليست تموجات عشوائية صغيرة.
-            const ridgeA=Math.sin((ax+az)*0.018 + Math.sin((ax-az)*0.009)*1.25);
-            const ridgeB=Math.sin((ax*0.031 - az*0.014) + 1.7)*0.5;
-            const ridgeC=Math.cos((ax+az)*0.044 - 0.8)*0.22;
-            const ridge=Math.max(0, ridgeA*0.58 + ridgeB*0.30 + ridgeC);
-
-            // ارتفاع أساسي + قمم متدرجة؛ الجزء الأخير من الخريطة يصل إلى
-            // ارتفاع جبلي واضح، بينما تبقى منطقة اللعب الداخلية قابلة للحركة.
-            const baseMountain=10 + mountainT*38;
-            const peaks=mountainT*(16 + ridge*24);
-            h += mountainBlend*baseMountain + peaks;
-
-            // وديان صغيرة تفصل القمم حتى لا تتحول الحافة إلى جدار واحد مستوٍ.
-            const valley=Math.max(0, -Math.sin((ax*0.026 + az*0.021) + Math.cos((ax-az)*0.012)));
-            h -= mountainBlend*valley*8.5;
-        }
-
-        // منطقة المعسكرين: أرض مستوية واسعة صالحة للبناء والحركة، مع انتقال ناعم إلى التضاريس الطبيعية.
-        const baseFlattenRadius=78, baseBlendRadius=112;
-        for(const base of [{x:CORNER_OFFSET,z:CORNER_OFFSET},{x:-CORNER_OFFSET,z:-CORNER_OFFSET}]){
-            const d=Math.hypot(x-base.x,z-base.z);
-            if(d<baseBlendRadius){
-                const t=1-smooth01((d-baseFlattenRadius)/(baseBlendRadius-baseFlattenRadius));
-                h=THREE.MathUtils.lerp(h,0,Math.max(0,Math.min(1,t)));
-            }
-        }
-        return h;
+        return 0;
     }
 
     // ميل الأرض عند نقطة معينة. يستخدم لتدوير جسم الدبابة قليلاً مع المنحدر.
@@ -3040,9 +2990,12 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
+        const terrainLoadingScreen=document.getElementById('terrain-loading-screen');
+        if(terrainLoadingScreen){terrainLoadingScreen.classList.add('show');terrainLoadingScreen.setAttribute('aria-hidden','false');}
+        setTerrainLoadingProgress(5,'جاري تحميل التضاريس...');
 
         setupLighting();
-        createRealisticTerrainWithBlendedColors();
+        loadExternalTerrainMap();
         createBattlefieldGroundSpecks();
         createSun();
         createMovingCloudShadows();
@@ -3423,280 +3376,128 @@
         scene.add(dirLight);
     }
 
-    function createRealisticTerrainWithBlendedColors() {
-        const geometry = new THREE.PlaneGeometry(900, 900, 160, 160);
-        geometry.rotateX(-Math.PI / 2);
-        const positionAttr = geometry.attributes.position;
-        const colors = [];
-
-        for (let i = 0; i < positionAttr.count; i++) {
-            const px = positionAttr.getX(i);
-            const pz = positionAttr.getZ(i);
-            const h = getTerrainHeight(px, pz);
-            positionAttr.setY(i, h);
-
-            // لوحة ألوان أقرب لصحارى Generals / Zero Hour: بيج رملي دافئ،
-            // مناطق ترابية بنية واضحة، ولمسات صخرية رمادية-بنية بدون أصفر فاقع.
-            // تدرج رملي طبيعي ناعم مثل الصورة المرجعية، بدون دوائر أو بقع سوداء.
-            // تدرج واسع وناعم للرمل: لا توجد بقع حادة أو تمويه متقطع.
-            const broad = (Math.sin(px * 0.0048 + pz * 0.0036) +
-                           Math.cos(pz * 0.0058 - px * 0.0031)) * 0.5;
-            const soft = (Math.sin(px * 0.0105 - pz * 0.0072) +
-                          Math.cos(px * 0.0082 + pz * 0.011)) * 0.5;
-            const fine = Math.sin(px * 0.025 - pz * 0.019) * 0.5;
-            const heightTone = THREE.MathUtils.clamp(h / 30, -0.12, 0.12);
-
-            // رمل طبيعي أقل اصفراراً: بيج رملي + لمسة برتقالية ترابية + لمعات بيضاء خفيفة.
-            let r = 0.76 + broad * 0.045 + soft * 0.022 + fine * 0.008 + heightTone * 0.010;
-            let g = 0.63 + broad * 0.040 + soft * 0.020 + fine * 0.007 + heightTone * 0.009;
-            let b = 0.49 + broad * 0.032 + soft * 0.016 + fine * 0.006 + heightTone * 0.007;
-
-            // بعض مناطق الرمل المرتفعة تأخذ انعكاساً فاتحاً قريباً من الأبيض بشكل طبيعي.
-            const duneLight = Math.max(0, Math.sin(px * 0.008 + pz * 0.006)) * 0.045;
-            r += duneLight; g += duneLight * 0.92; b += duneLight * 0.78;
-
-            // تمويه لوني واسع جداً حتى يبقى الرمل ناعماً ومتدرجاً.
-            const soil = Math.sin(px * 0.0038 + pz * 0.0028) *
-                         Math.cos(pz * 0.0046 - px * 0.0024);
-            if (soil > 0.52) { r -= 0.025; g -= 0.018; b -= 0.008; }
-            if (soil < -0.55) { r += 0.018; g += 0.012; b += 0.005; }
-
-            if (h > 10) { r -= 0.008; g += 0.003; b -= 0.002; }
-
-            colors.push(
-                THREE.MathUtils.clamp(r, 0, 1),
-                THREE.MathUtils.clamp(g, 0, 1),
-                THREE.MathUtils.clamp(b, 0, 1)
-            );
-        }
-
-        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        geometry.computeVertexNormals();
-
-        // خامة أرض حقيقية مولدة محلياً: حبيبات رمل دقيقة، تدرجات ترابية، تموجات
-        // وخطوط طبيعية خفيفة بدل أن تبدو الأرض كلون مسطح واحد.
-        function createDesertGroundTexture(size=768){
-            const c=document.createElement('canvas');
-            c.width=c.height=size;
-            const ctx=c.getContext('2d');
-            const img=ctx.createImageData(size,size);
-            const data=img.data;
-            const hash=(x,y)=>{
-                let n=(x*374761393 + y*668265263)>>>0;
-                n=(n^(n>>>13))*1274126177>>>0;
-                return ((n^(n>>>16))>>>0)/4294967295;
-            };
-            for(let y=0;y<size;y++){
-                for(let x=0;x<size;x++){
-                    const i=(y*size+x)*4;
-                    const n1=hash(x,y)-.5;
-                    const n2=hash(Math.floor(x/7),Math.floor(y/7))-.5;
-                    const wave=Math.sin(x*.055 + Math.sin(y*.018)*2.2)*.5+.5;
-                    const ripple=Math.sin((x+y)*.11 + Math.sin(x*.025)*1.7)*.5+.5;
-                    const grain=n1*18+n2*10;
-                    const v=(wave*.32+ripple*.18)*8+grain;
-                    data[i]=Math.max(0,Math.min(255,188+v));
-                    data[i+1]=Math.max(0,Math.min(255,151+v*.86));
-                    data[i+2]=Math.max(0,Math.min(255,112+v*.62));
-                    data[i+3]=255;
-                }
-            }
-            ctx.putImageData(img,0,0);
-
-            // طبقات تمويه ترابي ناعمة، بدون بقع دائرية واضحة.
-            // مهم للمباراة الشبكية: لا نستخدم Math.random هنا، وإلا سيحصل كل جهاز
-            // على نسيج أرض مختلف بصرياً رغم أن ارتفاعات الخريطة متطابقة.
-            const seeded=(n)=>{
-                let v=(n*1664525+1013904223)>>>0;
-                v^=v>>>16; v=Math.imul(v,2246822519)>>>0; v^=v>>>13;
-                return (v>>>0)/4294967295;
-            };
-            for(let i=0;i<90;i++){
-                const x=seeded(i*17+3)*size,y=seeded(i*29+7)*size;
-                const rx=18+seeded(i*31+11)*95, ry=7+seeded(i*37+13)*38;
-                const g=ctx.createRadialGradient(x,y,0,x,y,Math.max(rx,ry));
-                const dark=seeded(i*41+17)<.52;
-                g.addColorStop(0,dark?'rgba(104,76,48,.10)':'rgba(236,211,169,.09)');
-                g.addColorStop(1,'rgba(0,0,0,0)');
-                ctx.save();ctx.translate(x,y);ctx.rotate(seeded(i*43+19)*Math.PI);ctx.scale(rx/Math.max(rx,ry),ry/Math.max(rx,ry));
-                ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,Math.max(rx,ry),0,Math.PI*2);ctx.fill();ctx.restore();
-            }
-            // حبيبات صغيرة واضحة عند الاقتراب بالكاميرا، أيضاً ثابتة بين اللاعبين.
-            for(let i=0;i<2600;i++){
-                const x=seeded(i*47+23)*size,y=seeded(i*53+29)*size,r=.25+seeded(i*59+31)*.8;
-                ctx.fillStyle=seeded(i*61+37)<.72?'rgba(105,78,52,.16)':'rgba(245,224,190,.18)';
-                ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
-            }
-            const tex=new THREE.CanvasTexture(c);
-            tex.wrapS=THREE.RepeatWrapping; tex.wrapT=THREE.RepeatWrapping;
-            tex.repeat.set(5.5,5.5);
-            tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-            tex.encoding=THREE.sRGBEncoding;
-            return tex;
-        }
-        const groundTexture=createDesertGroundTexture();
-        groundTexture.needsUpdate=true;
-        terrainMesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
-            vertexColors: true,
-            map: groundTexture,
-            roughness: 0.96,
-            metalness: 0.0,
-            color: 0xffffff,
-            emissive: 0x2f2419,
-            emissiveIntensity: 0.012
-        }));
-        terrainMesh.receiveShadow = true;
-        scene.add(terrainMesh);
-
-        // حواف طبيعية للخريطة: كثبان وصخور منخفضة غير منتظمة بدل حدود مربعة مصطنعة.
-        // الهدف أن تبدو المنطقة كقطعة أرض حقيقية تنتهي تدريجياً عند أطراف الخريطة.
-        function createNaturalMapBorders(){
-            const border=new THREE.Group(); border.name='naturalMapBorders'; scene.add(border);
-            const rockMat=new THREE.MeshStandardMaterial({color:0x62513d,roughness:.97,metalness:.02});
-            const sandMat=new THREE.MeshStandardMaterial({color:0xb38b5d,roughness:1.0,metalness:0});
-            const darkSand=new THREE.MeshStandardMaterial({color:0x7d6245,roughness:1.0,metalness:0});
-            const edge=438;
-            const addMound=(x,z,sx,sy,sz,rot,mat)=>{
-                const m=new THREE.Mesh(new THREE.DodecahedronGeometry(1,1),mat);
-                m.position.set(x,getTerrainHeight(x,z)+sy*.42,z);
-                m.scale.set(sx,sy,sz); m.rotation.y=rot; m.castShadow=true; m.receiveShadow=true; border.add(m);
-            };
-            // كثبان طويلة ناعمة عند الجهات الأربع، مع فجوات حتى لا تبدو كجدار.
-            for(let i=0;i<18;i++){
-                const t=-410+i*48;
-                const j=Math.sin(i*2.7)*12;
-                addMound(t,edge+j,14+((i*7)%9),5+((i*3)%4),9+((i*5)%7),i*.37,i%3===0?rockMat:sandMat);
-                addMound(t,-edge-j,12+((i*5)%10),4+((i*4)%4),8+((i*7)%8),i*.29,i%4===0?rockMat:darkSand);
-                addMound(edge+j,t,9+((i*6)%8),4+((i*2)%4),14+((i*5)%9),i*.31,i%3===1?rockMat:sandMat);
-                addMound(-edge-j,t,9+((i*4)%8),4+((i*3)%4),13+((i*6)%9),i*.25,i%4===1?rockMat:darkSand);
-            }
-            // صخور صغيرة متناثرة في الداخل قرب الحافة لتكسر الخط المستقيم.
-            for(let i=0;i<44;i++){
-                const side=i%4, q=-390+((i*83)%780);
-                let x=0,z=0;
-                if(side===0){x=q;z=edge-7-(i%4)*3;}
-                if(side===1){x=q;z=-edge+7+(i%4)*3;}
-                if(side===2){x=edge-7-(i%4)*3;z=q;}
-                if(side===3){x=-edge+7+(i%4)*3;z=q;}
-                addMound(x,z,2.5+(i%4)*1.3,1.1+(i%3)*.45,2.1+(i%5)*.7,i*.71,i%2?rockMat:darkSand);
-            }
-        }
-        // الحدود الجبلية أصبحت جزءاً من تضاريس الخريطة نفسها، لذلك لا نضيف صخوراً منفصلة عند الحافة.
-
-        // تفاصيل سطحية بأسلوب خرائط RTS: بقع تراب، مسارات مركبات، وصخور صغيرة.
-        const detailGroup = new THREE.Group();
-        detailGroup.name = 'generalsStyleTerrainDetails';
-
-        // لا توجد دوائر أو بقع سوداء على سطح الأرض. تفاصيل اللون تأتي من خامة التضاريس نفسها.
-
-        // مسارات عسكرية متفرعة؛ لا تغطي MAP بالكامل.
-        const roadMat = new THREE.MeshBasicMaterial({
-            color: 0x6a5438, transparent: true, opacity: 0.30, depthWrite: false
-        });
-        const roads = [
-            [new THREE.Vector3(360,0,360), new THREE.Vector3(150,0,150)],
-            [new THREE.Vector3(-360,0,-360), new THREE.Vector3(-145,0,-145)],
-            [new THREE.Vector3(-300,0,230), new THREE.Vector3(120,0,-70)],
-            [new THREE.Vector3(300,0,-230), new THREE.Vector3(-100,0,85)]
-        ];
-        roads.forEach(([a,b], ri) => {
-            const len = a.distanceTo(b);
-            const width = 11 + (ri % 2) * 3;
-            const segments = 24;
-            const roadGeo = new THREE.BufferGeometry();
-            const verts = [];
-            const indices = [];
-            const dx = b.x - a.x, dz = b.z - a.z;
-            const L = Math.hypot(dx, dz);
-            const nx = -dz / L, nz = dx / L;
-
-            for (let j = 0; j <= segments; j++) {
-                const t = j / segments;
-                const cx = THREE.MathUtils.lerp(a.x, b.x, t);
-                const cz = THREE.MathUtils.lerp(a.z, b.z, t);
-                const cy = getTerrainHeight(cx, cz) + 0.08;
-                // عرض ثابت مع انحناء ارتفاع طبيعي من سطح الأرض.
-                verts.push(cx + nx * width * 0.5, cy, cz + nz * width * 0.5);
-                verts.push(cx - nx * width * 0.5, cy, cz - nz * width * 0.5);
-                if (j < segments) {
-                    const k = j * 2;
-                    indices.push(k, k+1, k+2, k+1, k+3, k+2);
-                }
-            }
-            roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-            roadGeo.setIndex(indices);
-            roadGeo.computeVertexNormals();
-            const road = new THREE.Mesh(roadGeo, roadMat);
-            detailGroup.add(road);
-
-            // آثار عجلات تتبع نفس انحدار الطريق بشكل خفيف.
-            for (let lane = -2.4; lane <= 2.4; lane += 4.8) {
-                const trackVerts = [];
-                const trackIndices = [];
-                const tw = 0.95;
-                for (let j = 0; j <= segments; j++) {
-                    const t = j / segments;
-                    const cx = THREE.MathUtils.lerp(a.x, b.x, t) + nx * lane;
-                    const cz = THREE.MathUtils.lerp(a.z, b.z, t) + nz * lane;
-                    const cy = getTerrainHeight(cx, cz) + 0.11;
-                    trackVerts.push(cx + nx * tw * 0.5, cy, cz + nz * tw * 0.5);
-                    trackVerts.push(cx - nx * tw * 0.5, cy, cz - nz * tw * 0.5);
-                    if (j < segments) {
-                        const k = j * 2;
-                        trackIndices.push(k, k+1, k+2, k+1, k+3, k+2);
-                    }
-                }
-                const trackGeo = new THREE.BufferGeometry();
-                trackGeo.setAttribute('position', new THREE.Float32BufferAttribute(trackVerts, 3));
-                trackGeo.setIndex(trackIndices);
-                trackGeo.computeVertexNormals();
-                const track = new THREE.Mesh(trackGeo, new THREE.MeshBasicMaterial({
-                    color: 0x382c22, transparent: true, opacity: 0.17, depthWrite: false, side: THREE.DoubleSide
-                }));
-                detailGroup.add(track);
-            }
-        });
-
-        // خشائش صحراوية قليلة ومتفرقة، تترك مساحات واسعة من الرمل مكشوفة.
-        const grassGroup = new THREE.Group();
-        grassGroup.name = 'sparseDesertGrass';
-        const grassMats = [
-            new THREE.MeshStandardMaterial({ color: 0x667044, roughness: 1.0, side: THREE.DoubleSide }),
-            new THREE.MeshStandardMaterial({ color: 0x7b7548, roughness: 1.0, side: THREE.DoubleSide }),
-            new THREE.MeshStandardMaterial({ color: 0x4f5b3b, roughness: 1.0, side: THREE.DoubleSide })
-        ];
-        for (let i = 0; i < 95; i++) {
-            const a = i * 2.417;
-            const r = 85 + ((i * 47) % 410);
-            const gx = Math.sin(a) * r;
-            const gz = Math.cos(a * 1.37) * r;
-            if (Math.hypot(gx, gz) < 70) continue;
-            const baseY = getTerrainHeight(gx, gz);
-            const h = 0.55 + (i % 5) * 0.16;
-            const w = 0.28 + (i % 4) * 0.08;
-            const geo = new THREE.BufferGeometry();
-            const verts = [
-                -w,0,0,  w,0,0,  0,h,0,
-                 0,0,-w,  0,0,w,  0,h*0.92,0
-            ];
-            geo.setAttribute('position', new THREE.Float32BufferAttribute(verts,3));
-            geo.setIndex([0,1,2,3,4,5]);
-            geo.computeVertexNormals();
-            const tuft = new THREE.Mesh(geo, grassMats[i % grassMats.length]);
-            tuft.position.set(gx, baseY + 0.015, gz);
-            tuft.rotation.y = a;
-            tuft.scale.setScalar(0.8 + (i % 3) * 0.18);
-            tuft.castShadow = true;
-            grassGroup.add(tuft);
-        }
-        // تم إلغاء الحشيش من أرض المعركة بناءً على الطلب.
-        grassGroup.visible = false;
-        // لا نضيف grassGroup إلى detailGroup.
-
-        // تم حذف الصخور والحصى من سطح الأرض لتبقى الصحراء ناعمة ونظيفة.
-
-        scene.add(detailGroup);
+    // ===== External 3D battlefield terrain =====
+    // GitHub structure:
+    // index-terrain.html
+    // assets/terrain_map.glb
+    window.__externalTerrainReady=false;
+    window.__externalTerrainGLBReady=false;
+    window.__externalTerrainTextureCount=0;
+    window.__externalTerrainReadyWaiters=[];
+    function setTerrainLoadingProgress(percent,text){const f=document.getElementById('terrain-loading-fill'),t=document.getElementById('terrain-loading-text');if(f)f.style.width=Math.max(0,Math.min(100,percent))+'%';if(t&&text)t.textContent=text;updateOnlineBattleWaiting(percent,text);}
+    function showOnlineBattleWaiting(m){
+        const s=document.getElementById('online-battle-waiting'); if(!s)return;
+        const cfg=m&&m.config||{},me=cfg.player||{},op=cfg.opponent||{};
+        const slot=Number(m&&(m.playerSlot||m.slot||1))===2?2:1;
+        const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+        const team=(id,v)=>{const e=document.getElementById(id);if(e)e.style.setProperty('--team',v);};
+        set('obw-player-name',me.name||('اللاعب '+slot)); set('obw-enemy-name',op.name||('اللاعب '+(slot===1?2:1)));
+        set('obw-player-status','متصل — جاهز'); set('obw-enemy-status','متصل — جاهز');
+        team('obw-player-avatar',me.color||'#168cff'); team('obw-enemy-avatar',op.color||'#ef4444');
+        set('obw-terrain-text',window.__externalTerrainReady?'الأرض جاهزة':'جاري تجهيز الأرض والخامات...');
+        const fill=document.getElementById('obw-terrain-fill'); if(fill)fill.style.width=window.__externalTerrainReady?'100%':'8%';
+        s.classList.add('show'); s.setAttribute('aria-hidden','false');
     }
+    function updateOnlineBattleWaiting(percent,text){
+        const s=document.getElementById('online-battle-waiting'); if(!s||!s.classList.contains('show'))return;
+        const fill=document.getElementById('obw-terrain-fill'),label=document.getElementById('obw-terrain-text');
+        if(fill)fill.style.width=Math.max(0,Math.min(100,Number(percent)||0))+'%';
+        if(label&&text)label.textContent=text;
+    }
+    function hideOnlineBattleWaiting(){
+        const s=document.getElementById('online-battle-waiting'); if(!s)return;
+        s.classList.remove('show'); s.setAttribute('aria-hidden','true');
+    }
+
+    function finishExternalTerrainLoading(){
+        if(window.__externalTerrainReady||!window.__externalTerrainGLBReady||window.__externalTerrainTextureCount<3)return;
+        window.__externalTerrainReady=true; setTerrainLoadingProgress(100,'ساحة المعركة جاهزة'); updateOnlineBattleWaiting(100,'ساحة المعركة جاهزة — فتح المعركة...');
+        if(typeof repositionOilRigsToTerrain==='function')repositionOilRigsToTerrain();
+        const screen=document.getElementById('terrain-loading-screen'); if(screen){screen.classList.remove('show');screen.setAttribute('aria-hidden','true');}
+        const waiters=window.__externalTerrainReadyWaiters.splice(0); waiters.forEach(fn=>{try{fn();}catch(e){console.error(e);}});
+    }
+    window.__whenExternalTerrainReady=function(fn){if(window.__externalTerrainReady){fn();return;}window.__externalTerrainReadyWaiters.push(fn);};
+
+    function loadExternalTerrainMap() {
+        if (typeof THREE.GLTFLoader !== 'function') {
+            console.error('GLTFLoader is required. External terrain was not loaded.');
+            return;
+        }
+        const loader = new THREE.GLTFLoader();
+        loader.load('assets/terrain_map.glb', function(gltf) {
+            const root = gltf.scene || gltf.scenes[0];
+            let firstMesh = null;
+            root.traverse(function(obj) { if (obj.isMesh && !firstMesh) firstMesh = obj; });
+            if (!firstMesh) { console.error('terrain_map.glb contains no mesh.'); return; }
+
+            // Build an exact 161x161 height grid from the external GLB vertices.
+            const pos = firstMesh.geometry.attributes.position;
+            const count = pos.count;
+            const side = Math.round(Math.sqrt(count));
+            const heights = new Float32Array(count);
+            for (let i=0;i<count;i++) heights[i]=pos.getY(i);
+            const minX=-450, maxX=450, minZ=-450, maxZ=450;
+            window.__externalTerrainHeightSampler = function(x,z){
+                const fx = THREE.MathUtils.clamp((x-minX)/(maxX-minX)*(side-1),0,side-1);
+                const fz = THREE.MathUtils.clamp((z-minZ)/(maxZ-minZ)*(side-1),0,side-1);
+                const x0=Math.floor(fx), z0=Math.floor(fz);
+                const x1=Math.min(side-1,x0+1), z1=Math.min(side-1,z0+1);
+                const tx=fx-x0, tz=fz-z0;
+                const h00=heights[z0*side+x0], h10=heights[z0*side+x1];
+                const h01=heights[z1*side+x0], h11=heights[z1*side+x1];
+                return (h00+(h10-h00)*tx)*(1-tz)+(h01+(h11-h01)*tx)*tz;
+            };
+
+            // This GLB has geometry only; its material is deliberately external.
+            const geo=firstMesh.geometry;
+            const uv=[];
+            for(let i=0;i<pos.count;i++){
+                const u=(pos.getX(i)+450)/900*5;
+                const v=(pos.getZ(i)+450)/900*5;
+                uv.push(u,v);
+            }
+            geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2));
+            if(!geo.attributes.normal) geo.computeVertexNormals();
+
+            const texLoader=new THREE.TextureLoader();
+            const markTerrainTextureLoaded=function(){window.__externalTerrainTextureCount++;setTerrainLoadingProgress(40+(window.__externalTerrainTextureCount/3)*60,'تحميل خامات الأرض '+window.__externalTerrainTextureCount+'/3 ...');finishExternalTerrainLoading();};
+            const markTerrainTextureError=function(){markTerrainTextureLoaded();};
+            const albedo=texLoader.load('assets/terrain_albedo.jpg',markTerrainTextureLoaded,undefined,markTerrainTextureError);
+            const roughness=texLoader.load('assets/terrain_roughness.jpg',markTerrainTextureLoaded,undefined,markTerrainTextureError);
+            const normal=texLoader.load('assets/terrain_normal.jpg',markTerrainTextureLoaded,undefined,markTerrainTextureError);
+            albedo.encoding=THREE.sRGBEncoding;
+            albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;
+            roughness.wrapS=roughness.wrapT=THREE.RepeatWrapping;
+            normal.wrapS=normal.wrapT=THREE.RepeatWrapping;
+            const mat=new THREE.MeshStandardMaterial({
+                map:albedo, roughnessMap:roughness, normalMap:normal,
+                roughness:0.96, metalness:0.0, normalScale:new THREE.Vector2(0.55,0.55)
+            });
+            firstMesh.material=mat;
+            firstMesh.castShadow=false; firstMesh.receiveShadow=true;
+            externalTerrainModel=root;
+            root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
+            scene.add(root);
+            terrainMesh=firstMesh;
+            window.__externalTerrainGLBReady=true;
+            setTerrainLoadingProgress(40,'تم تحميل شكل الأرض — جاري تجهيز الخامات...');
+
+            // IMPORTANT: the external terrain loads asynchronously. Oil fields are
+            // created during initial setup, so they may have been placed at Y=0
+            // before the terrain height sampler existed. Re-anchor every oil field
+            // to the real external terrain now that the sampler is ready.
+            if (typeof repositionOilRigsToTerrain === 'function') {
+                repositionOilRigsToTerrain();
+            }
+
+            console.log('External terrain geometry loaded; waiting for all terrain textures.');
+            finishExternalTerrainLoading();
+        }, undefined, function(error) {
+            console.error('Could not load external terrain:', error);
+            // No fallback terrain is created.
+        });
+    }
+    
 
     // ===== Cloud-map shadow layer (draped over the terrain) =====
     // The shadow is a single large animated cloud map, not floating circles.
@@ -5718,6 +5519,27 @@
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
+    // Keep oil installations attached to the independent external terrain.
+    // This is also called after the GLB finishes loading because createOilRigs()
+    // runs before the asynchronous terrain loader normally has its height sampler.
+    function repositionOilRigsToTerrain() {
+        if (!Array.isArray(oilRigs) || typeof getTerrainHeight !== 'function') return;
+
+        oilRigs.forEach(rig => {
+            if (!rig || !rig.group || rig.isDestroyed) return;
+            const y = getTerrainHeight(rig.x, rig.z);
+
+            // The entire oil installation is a local group: barrels, pump house,
+            // pole and flag all move together, preserving their local heights.
+            rig.group.position.y = y;
+
+            // Keep the selection/capture logic synchronized with the same ground.
+            if (rig.flagData && rig.flagData.mesh) {
+                rig.flagData.mesh.updateMatrixWorld(true);
+            }
+        });
+    }
+
     function createOilRigs() {
         const positions=[{x:95,z:-95},{x:-95,z:95},{x:-115,z:-105},{x:115,z:105}];
         positions.forEach((pos,index)=>{
@@ -5776,6 +5598,11 @@
             const oilHpLabel=document.createElement('div'); oilHpLabel.className='tank-hp-label hp-player'; const oilHpFill=document.createElement('div'); oilHpFill.className='tank-hp-fill'; oilHpLabel.appendChild(oilHpFill); document.getElementById('hp-labels-container').appendChild(oilHpLabel); oilHpLabel.style.display='none';
             oilRigs.push({x:pos.x,z:pos.z,group:rigGroup,beam:null,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:barrelGroup});
         });
+
+        // If the external GLB has already finished loading, correct the initial
+        // Y immediately. If not, loadExternalTerrainMap() will call the same
+        // function when its async load completes.
+        repositionOilRigsToTerrain();
     }
 
     function createTank(x, z, colorHex, team, type = 'normal') {
@@ -11649,6 +11476,21 @@ window.updateCameraSensitivity=function(v){
       return false;
     }
 
+    // لا نبدأ المعركة قبل اكتمال ملف الأرض الخارجي وخاماته، حتى لا تظهر شاشة سوداء.
+    if(!window.__externalTerrainReady){
+      showOnlineBattleWaiting({config:battleConfig,playerSlot:window.onlineMatch.playerSlot});
+      const loadingScreen=document.getElementById('terrain-loading-screen');
+      if(loadingScreen){loadingScreen.classList.remove('show');loadingScreen.setAttribute('aria-hidden','true');}
+      setTerrainLoadingProgress(20,'جاري تجهيز ساحة المعركة...');
+      if(!window.__battleStartQueued){
+        window.__battleStartQueued=true;
+        window.__whenExternalTerrainReady(()=>{window.__battleStartQueued=false;if(window.onlineMatch)window.beginConfiguredGame();});
+      }
+      return false;
+    }
+
+    // الأرض والخامات أصبحت جاهزة فعلياً؛ أغلق قائمة الانتظار وافتح المعركة الآن.
+    hideOnlineBattleWaiting();
     // Online only: لا يوجد خصم محلي. كل ما يخص الخصم يأتي من السيرفر.
     if(typeof enemyTanks!=='undefined') enemyTanks.forEach(u=>{if(u&&u.__serverRemote&&u.mesh)scene.remove(u.mesh);});
     if(typeof enemyTanks!=='undefined') enemyTanks.length=0;
@@ -11887,10 +11729,11 @@ window.updateCameraSensitivity=function(v){
     window.onlineMatch={roomId:m.roomId,clientId,playerSlot:slot,playerServerId:m.playerServerId||my.id||clientId,opponentServerId:m.opponentServerId||opp.id||m.opponentId||null,playerId:slot,opponentId:m.opponentId,seed:m.seed,serverTime:m.serverTime,hiddenPlayerId:m.hiddenPlayerId||null,protocolVersion:m.protocolVersion||3};
     saveResume({roomId:m.roomId,resumeToken:m.resumeToken||loadResume()?.resumeToken||null,playerId:window.onlineMatch.playerServerId});
     pendingJoin=null;hide('online-room-modal');hide('online-room-list-modal');
+    showOnlineBattleWaiting(m);
     if(typeof beginConfiguredGame==='function')beginConfiguredGame();
     setTimeout(()=>{
       if(typeof applySelectedTeamColor==='function'){applySelectedTeamColor('player',battleConfig.playerColor);applySelectedTeamColor('enemy',battleConfig.enemyColor);}
-      if(typeof showFloatingMsg==='function')showFloatingMsg('⚔ ONLINE MATCH — PLAYER '+slot);
+      if(window.__externalTerrainReady&&typeof showFloatingMsg==='function')showFloatingMsg('⚔ ONLINE MATCH — PLAYER '+slot);
     },80);
   }
   window.openOnlineCreate=function(){creating=true;pendingJoin=null;room=null;selectedMoney=1000;selectedColor='#168cff';const modal=$('online-room-modal');if(modal)modal.classList.remove('online-join-only');
