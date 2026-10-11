@@ -2097,7 +2097,7 @@
 .online-main-btn{min-height:43px;padding:0 12px;border:1px solid #596756;border-radius:4px;background:linear-gradient(#263328,#101610);color:#e7eee4;font-weight:900;font-size:10px;box-shadow:0 4px 15px #0008;cursor:pointer;display:flex;align-items:center;gap:7px}
 .online-main-btn.primary{border-color:#78955f;background:linear-gradient(#526e40,#26391f)}
 .online-main-icon{font-size:17px}.online-main-btn b{color:#78e998;font-size:9px}
-.online-panel-overlay{position:fixed;inset:0;z-index:10000;background:#000b;backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:15px;direction:rtl}
+.online-panel-overlay{position:fixed;inset:0;z-index:10030;background:#000b;backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:15px;direction:rtl}
 .online-panel-overlay[hidden],.online-room-screen[hidden]{display:none!important}
 .online-panel{position:relative;width:min(620px,96vw);max-height:88vh;overflow:auto;background:linear-gradient(145deg,#202a21,#080d09);border:2px solid #667562;border-radius:7px;padding:20px;color:#eaf0e8;box-shadow:0 25px 70px #000}
 .online-close{position:absolute;top:8px;left:8px;background:#111;color:#fff;border:1px solid #59635a;border-radius:3px;width:29px;height:29px;font-size:20px;cursor:pointer}
@@ -2113,7 +2113,7 @@
 .online-form-row input,.online-form-row select{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:10px;background:#0b100c;border:1px solid #485548;color:#fff;border-radius:3px}
 .online-label{font-size:8px;margin:13px 0 5px;color:#8e9d8e}.online-colors{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.online-colors button{padding:9px 3px;background:#101610;border:2px solid #303a30;color:#ddd;border-radius:3px;font-size:8px;cursor:pointer}.online-colors button.active{border-color:#fff;box-shadow:0 0 8px #fff5}
 .online-create-big{width:100%;margin-top:13px;padding:12px}.online-status-text{text-align:center;color:#8fa18f;font-size:9px;margin-top:9px;min-height:14px}
-.online-room-screen{position:fixed;inset:0;z-index:10010;background:#000d;display:flex;align-items:center;justify-content:center;padding:15px;direction:rtl}
+.online-room-screen{position:fixed;inset:0;z-index:10040;background:#000d;display:flex;align-items:center;justify-content:center;padding:15px;direction:rtl}
 .online-room-card{width:min(620px,94vw);background:linear-gradient(145deg,#202a21,#080d09);border:2px solid #6a7965;border-radius:7px;padding:22px;text-align:center;color:#fff;box-shadow:0 25px 70px #000}
 .online-room-card h2{margin:5px 0 12px}.online-room-code{border:1px solid #3e4e3e;background:#0b100c;padding:10px}.online-room-code span{display:block;color:#718071;font-size:7px}.online-room-code b{font-size:25px;letter-spacing:6px;color:#b8d6a7}
 .online-vs{display:grid;grid-template-columns:1fr 55px 1fr;align-items:center;gap:7px;margin:14px 0}.online-slot{background:#0d140e;border:1px solid #3a473a;border-radius:4px;padding:13px 7px;min-height:91px;transition:border-color .18s,box-shadow .18s}.online-slot i{display:block;width:18px;height:18px;border-radius:50%;background:#303830;margin:0 auto 7px;border:2px solid rgba(255,255,255,.7);box-shadow:0 0 8px rgba(255,255,255,.15)}.online-slot strong{display:block;font-size:11px;word-break:break-word}.online-slot small{display:block;color:#819081;font-size:7px;margin-top:4px}.online-slot small[id$="-state"]{font-weight:900;letter-spacing:.7px}.online-vs-mark{font-size:11px;color:#899a87;font-weight:900}
@@ -2374,6 +2374,10 @@
 .start-gate-button:hover{border-color:#82d8fa;box-shadow:0 0 18px #168cff33}.start-gate-button>span{grid-row:1/3;display:grid;place-items:center;font-size:26px;color:#8fdcff}.start-gate-button b{font-size:15px}.start-gate-button small{margin-top:4px;font-size:10px;color:#7897a7}.start-gate-button.primary{border-color:#a98938;background:linear-gradient(135deg,#423619,#151205)}.start-gate-button.primary>span{color:#f3d77e}.start-gate-footer{display:flex;align-items:center;justify-content:center;gap:8px;padding-top:13px;border-top:1px solid #203c4a;color:#8aa3b0;font-size:9px}.start-gate-footer i{width:7px;height:7px;border-radius:50%;background:#4ce58d;box-shadow:0 0 10px #4ce58d}.start-gate-footer b{color:#5e8ea6;letter-spacing:1px;font-size:8px}
 .online-four-colors{grid-template-columns:repeat(4,1fr)!important}#online-start-btn{display:none!important}.online-four-colors button{min-height:42px}.online-room-color-picker.online-four-colors button{height:42px;width:100%}
 @media(max-width:500px){.start-gate-card{padding:24px 17px 16px}.start-gate-card h1{font-size:24px}}
+/* FIX: menu dialogs must appear above the initial start gate. */
+#online-panel-overlay{z-index:10030!important}
+#online-room-screen{z-index:10040!important}
+#game-start-gate{z-index:10020!important}
 </style>
 
 <div id="online-main-menu" class="online-command-bar">
