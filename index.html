@@ -10274,35 +10274,68 @@ function createArmyFactory(x,z,ghost=false){
         c.cage=createFactoryConstructionCage(build);c.lift=createConstructionLift(build);
         // يبدأ البناء فور تثبيت الموقع. التركس يتجه إلى نقطة العمل بينما
         // العداد والقفص والرافعة يعملون فعلياً، فلا يبقى اللاعب منتظراً حالة مخفية.
-        c.started=true; c.elapsed=0;
+        c.started=true; c.elapsed=0; c.startedAt=Date.now();
         activeFactoryConstructions.push(c);activeFactoryConstruction=c;
         factoryPlacementPoint=null;builder.buildTarget=c.workPoint.clone();builder.target=c.workPoint.clone();builder.isBuilding=true;
         updateConstructionBarForSelection();showFloatingMsg('🏗️ Construction dozer and crane moving to the factory');
     }
     function updateFactoryConstruction(){
-        if(!activeFactoryConstructions.length)return;
+        if(!Array.isArray(activeFactoryConstructions) || !activeFactoryConstructions.length) return;
         const remaining=[];
         for(const c of activeFactoryConstructions){
-            const b=c.builder;
-            if(!b||b.isDestroyed){removeConstructionLift(c);removeFactoryConstructionCage(c);continue;}
-            if(!c.started){
-                c.started=true; c.elapsed=0; b.isBuilding=true;
+            try {
+                if(!c || !c.build || !c.build.mesh) continue;
+                const b=c.builder;
+                if(!b || b.isDestroyed){
+                    try{removeConstructionLift(c);}catch(e){}
+                    try{removeFactoryConstructionCage(c);}catch(e){}
+                    if(c.build.mesh.parent) c.build.mesh.parent.remove(c.build.mesh);
+                    continue;
+                }
+                // استخدم الساعة الحقيقية للبناء حتى لا يتوقف العداد إذا تعطلت نبضات المحاكاة.
+                if(!c.startedAt) c.startedAt=Date.now();
+                c.started=true;
+                b.isBuilding=true;
+                const durationMs=Math.max(1000,(Number(c.build.duration)||1200)*1000/60);
+                const elapsedMs=Math.max(0,Date.now()-c.startedAt);
+                const p=Math.min(1,elapsedMs/durationMs);
+                c.elapsed=p*(Number(c.build.duration)||1200);
+                c.build.progress=p;
+                if(c.build.mesh.parent!==scene) scene.add(c.build.mesh);
+                c.build.mesh.visible=true;
+                const groundY=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0);
+                c.build.mesh.position.y=groundY-8+8*p+.03;
+                c.build.mesh.scale.setScalar(.08+.92*p);
+                // لا تسمح بخطأ مادة أو مؤثر بصري أن يوقف تقدم الإنشاء.
+                try{updateConstructionLift(c.lift);}catch(e){}
+                try{updateFactoryConstructionCage(c,p);}catch(e){}
+                if(c.build.mesh.userData.constructionFoundation){
+                    try{c.build.mesh.userData.constructionFoundation.scale.set(1,.25+.75*p,1);}catch(e){}
+                }
+                try{c.build.mesh.traverse(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m){m.transparent=true;m.opacity=Math.min(1,.12+p*1.05);m.needsUpdate=true;}});}});}catch(e){}
+                if(p>=1){
+                    c.build.done=true;c.build.ghost=false;c.build.progress=1;
+                    c.build.mesh.visible=true;c.build.mesh.scale.setScalar(1);
+                    c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;
+                    try{c.build.mesh.traverse(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m){m.transparent=false;m.opacity=1;m.needsUpdate=true;}});}});}catch(e){}
+                    try{removeConstructionLift(c);}catch(e){}
+                    try{removeFactoryConstructionCage(c);}catch(e){}
+                    if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}
+                    if(!constructedFactories.includes(c.build)) constructedFactories.push(c.build);
+                    try{finishBuilderConstructionRetreat(c);}catch(e){b.isBuilding=false;b.buildTarget=null;}
+                    try{showFloatingMsg('✅ اكتمل بناء المصنع! يمكنك تحديده لإنتاج الآليات');}catch(e){}
+                }else{
+                    remaining.push(c);
+                }
+            } catch(err){
+                console.error('Factory construction step recovered from error:',err);
+                // احتفظ بالمهمة لتتمكن من المحاولة في النبضة التالية بدلاً من حذف المصنع.
+                if(c && c.build && !c.build.done) remaining.push(c);
             }
-            c.elapsed+=gameDeltaTicks;updateConstructionLift(c.lift);
-            if(b.buildBlade){const a=Math.sin(c.elapsed*.12)*.24;b.buildBlade.rotation.x=a;b.buildBlade.position.y=.15+Math.max(0,Math.sin(c.elapsed*.12))*.22;}
-            const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*.92);
-            c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)-8+8*p+.03;
-            if(c.build.mesh.userData.constructionFoundation){ c.build.mesh.userData.constructionFoundation.scale.set(1,.25+p*.75,1); }
-            c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.12+p*1.05);});
-            if(c.elapsed%60===0&&c.elapsed<c.build.duration)showFloatingMsg(`🏭 Factory construction: ${Math.floor(p*100)}%`);
-            if(p>=1){
-                c.build.done=true;c.build.ghost=false;c.build.mesh.scale.setScalar(1);c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
-                removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);
-                showFloatingMsg('✅ Factory complete — construction dozer retreating');
-            }else remaining.push(c);
         }
-        activeFactoryConstructions=remaining;activeFactoryConstruction=remaining[remaining.length-1]||null;
-        updateConstructionBarForSelection();
+        activeFactoryConstructions=remaining;
+        activeFactoryConstruction=remaining[remaining.length-1]||null;
+        try{updateConstructionBarForSelection();}catch(e){}
     }
 
     // منع القصف التلقائي للاعب قبل أن يحدد ويحرك الوحدة، مع تدوير منصة الدبابة نحو الهدف.
