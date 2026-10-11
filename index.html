@@ -6597,30 +6597,24 @@
         const cost=250;
         if(playerMoney<cost){showFloatingMsg('Insufficient funds — soldier costs $250');return;}
         playerMoney-=cost;totalMoneySpent+=cost;updateEconomyUI();playSound('buy');
-        selectedBarracks.productionJob={barracks:selectedBarracks,type:'infantry',cost,elapsed:0,duration:REAL_TRAIN_INFANTRY_SEC*REAL_TICKS_PER_SECOND};
+        selectedBarracks.productionJob={barracks:selectedBarracks,type:'infantry',cost,elapsed:0,duration:REAL_TRAIN_INFANTRY_SEC*REAL_TICKS_PER_SECOND,startedAt:Date.now(),durationMs:REAL_TRAIN_INFANTRY_SEC*1000};
         activeBarracksProduction=selectedBarracks.productionJob;
         showFloatingMsg('🪖 Soldier training started — 8 seconds');
         updateBarracksBar();
     }
     function updateBarracksProduction(){
-        let any=false;
+        const now=Date.now();
         for(const barracks of constructedBarracks){
             const p=barracks&&barracks.productionJob;
             if(!p||!barracks.done||barracks.isDestroyed)continue;
-            any=true;p.elapsed+=gameDeltaTicks;
-            if(p.elapsed>=p.duration){
-                produceBarracksUnit(barracks);
-                barracks.productionJob=null;
-            }
+            if(!p.startedAt)p.startedAt=now-Math.max(0,Number(p.elapsed)||0)/REAL_TICKS_PER_SECOND*1000;
+            p.elapsed=Math.min(Number(p.duration)||1,Math.max(Number(p.elapsed)||0,((now-p.startedAt)/1000)*REAL_TICKS_PER_SECOND));
+            if(p.elapsed>=p.duration&&!p.__spawned){p.__spawned=true;try{produceBarracksUnit(barracks);barracks.productionJob=null;}catch(err){console.error('Barracks training failed; job retained for retry:',err);p.__spawned=false;}}
         }
         activeBarracksProduction=selectedBarracks&&selectedBarracks.productionJob?selectedBarracks.productionJob:null;
         if(selectedBarracks) updateBarracksBar();
         const fill=document.getElementById('factory-production-progress'),f=document.getElementById('factory-production-progress-fill');
-        if(fill&&f){
-            const p=activeBarracksProduction;
-            if(p){fill.style.display='block';f.style.width=(p.elapsed/p.duration*100)+'%';}
-            else {fill.style.display='none';f.style.width='0%';}
-        }
+        if(fill&&f){const p=activeBarracksProduction;if(p){fill.style.display='block';f.style.width=Math.min(100,(p.elapsed/p.duration)*100)+'%';}else{fill.style.display='none';f.style.width='0%';}}
     }
     function produceBarracksUnit(barracks){
         const r=barracks.mesh.rotation.y;
@@ -7140,22 +7134,26 @@ function createArmyFactory(x,z,ghost=false){
         const costs={rocket:800,normal:500,ambulance:600,scout:500};const cost=costs[type]||500;
         if(playerMoney<cost){showFloatingMsg(`Insufficient funds — cost: $${cost}`);return;}
         playerMoney-=cost;totalMoneySpent+=cost;syncMoneyNow();playSound('buy');
-        selectedFactory.productionJob={factory:selectedFactory,type,cost,elapsed:0,duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND};
+        selectedFactory.productionJob={factory:selectedFactory,type,cost,elapsed:0,duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND,startedAt:Date.now(),durationMs:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*1000};
         activeFactoryProduction=selectedFactory.productionJob;
         showFloatingMsg(type==='scout'?'🏭 Scout vehicle preparation started — 12 seconds':'🏭 Production started — 15 seconds');
         updateFactoryBar();
     }
     function updateFactoryProduction(){
-        let any=false;
+        const now=Date.now();
         for(const factory of constructedFactories){
             const p=factory&&factory.productionJob;if(!p||!factory.done||factory.isDestroyed)continue;
-            any=true;p.elapsed+=gameDeltaTicks;
-            if(p.elapsed>=p.duration){produceFactoryUnit(factory,p.type);factory.productionJob=null;}
+            // استخدم الساعة الفعلية بدلاً من عدد إطارات الرسم؛ التبويبات البطيئة لا تجمّد التصنيع.
+            const durationMs=Math.max(1000,Number(p.durationMs)||((Number(p.duration)||1)/REAL_TICKS_PER_SECOND*1000));
+            if(!p.startedAt)p.startedAt=now-Math.max(0,Number(p.elapsed)||0)/REAL_TICKS_PER_SECOND*1000;
+            p.elapsed=Math.min(Number(p.duration)||1,Math.max(Number(p.elapsed)||0,((now-p.startedAt)/1000)*REAL_TICKS_PER_SECOND));
+            p.durationMs=durationMs;
+            if(p.elapsed>=p.duration&&!p.__spawned){p.__spawned=true;try{produceFactoryUnit(factory,p.type);}catch(err){console.error('Factory production failed; job retained for retry:',err);p.__spawned=false;continue;}factory.productionJob=null;}
         }
         activeFactoryProduction=selectedFactory&&selectedFactory.productionJob?selectedFactory.productionJob:null;
         if(selectedFactory)updateFactoryBar();
         const fill=document.getElementById('factory-production-progress'),f=document.getElementById('factory-production-progress-fill');
-        if(fill&&f){const p=activeFactoryProduction; if(p){fill.style.display='block';f.style.width=(p.elapsed/p.duration*100)+'%';}else{fill.style.display='none';f.style.width='0%';}}
+        if(fill&&f){const p=activeFactoryProduction; if(p){fill.style.display='block';f.style.width=Math.min(100,(p.elapsed/p.duration)*100)+'%';}else{fill.style.display='none';f.style.width='0%';}}
     }
 
     function animateFactoryDoors(factory, duration=3200){
@@ -9123,9 +9121,10 @@ function createArmyFactory(x,z,ghost=false){
 
         const worldProgress = document.getElementById('factory-world-progress');
         if (worldProgress) {
-            const p = selectedFactory && selectedFactory.productionJob ? selectedFactory.productionJob : null;
-            if (p && p.factory && p.factory.done && !p.factory.isDestroyed) {
-                p.factory.mesh.getWorldPosition(tempV);
+            const timerFactory=(selectedFactory&&selectedFactory.productionJob?selectedFactory:[...(constructedFactories||[]),...(enemyFactories||[])].find(f=>f&&f.productionJob&&f.done&&!f.isDestroyed))||null;
+            const p = timerFactory && timerFactory.productionJob ? timerFactory.productionJob : null;
+            if (p && timerFactory && timerFactory.done && !timerFactory.isDestroyed) {
+                timerFactory.mesh.getWorldPosition(tempV);
                 tempV.y += 20;
                 tempV.project(camera);
                 if (tempV.z <= 1) {
@@ -11927,7 +11926,7 @@ window.updateCameraSensitivity=function(v){
   'use strict';
   const SEND_MS=80, REMOTE_UNIT_GRACE=4500, REMOTE_BUILDING_GRACE=5000;
   let lastUpload=0,lastServerTick=-1,syncTimer=null,onlineStarted=false;
-  const remote=new Map(),remoteBuildings=new Map();
+  const remote=new Map(),remoteBuildings=new Map(),remoteConstruction=new Map();
   const online=()=>!!window.onlineMatch;
   const safeNum=(v,f=0)=>Number.isFinite(Number(v))?Number(v):f;
   const lerpAngle=(a,b,t)=>{let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return a+d*t;};
@@ -11950,7 +11949,7 @@ window.updateCameraSensitivity=function(v){
   function buildingSnapshot(b,prefix,extra={}){
     if(!b||!b.mesh||b.isDestroyed)return null;
     const p=b.mesh.position,job=b.productionJob;
-    return {id:idFor(b,prefix),type:b.type||prefix,ownerSlot:Number(window.onlineMatch?.playerSlot||1),x:safeNum(p.x),z:safeNum(p.z),y:safeNum(p.y),rot:safeNum(b.mesh.rotation.y),hp:Math.max(0,safeNum(b.hp,1000)),maxHp:Math.max(1,safeNum(b.maxHp,1000)),done:b.done!==false,destroyed:false,owner:'player',progress:safeNum(b.progress,b.done===false?0:1),production:job?{type:String(job.type||'unknown'),elapsed:safeNum(job.elapsed),duration:Math.max(1,safeNum(job.duration,1))}:null,...extra};
+    return {id:idFor(b,prefix),type:b.type||prefix,ownerSlot:Number(window.onlineMatch?.playerSlot||1),x:safeNum(p.x),z:safeNum(p.z),y:safeNum(p.y),rot:safeNum(b.mesh.rotation.y),hp:Math.max(0,safeNum(b.hp,1000)),maxHp:Math.max(1,safeNum(b.maxHp,1000)),done:b.done!==false,destroyed:false,owner:'player',progress:safeNum(b.progress,b.done===false?0:1),duration:Math.max(1,safeNum(b.duration,b.type==='barracks'?REAL_BUILD_BARRACKS_SEC*REAL_TICKS_PER_SECOND:REAL_BUILD_FACTORY_SEC*REAL_TICKS_PER_SECOND)),production:job?{type:String(job.type||'unknown'),elapsed:safeNum(job.elapsed),duration:Math.max(1,safeNum(job.duration,1)),startedAt:safeNum(job.startedAt,0),durationMs:safeNum(job.durationMs,0)}:null,...extra};
   }
   function collectBuildings(){
     const out=[],seen=new Set();
@@ -12007,10 +12006,10 @@ window.updateCameraSensitivity=function(v){
     if(!s?.id)return null;const key=remoteKey(playerId,s.id);let b=remoteBuildings.get(key);if(b)return b;
     try{
       let created=null;
-      if(s.type==='factory'&&typeof createArmyFactory==='function'){const old=window.__remoteFactoryOwner;window.__remoteFactoryOwner='enemy';created=createArmyFactory(s.x,s.z,!s.done);window.__remoteFactoryOwner=old;if(created){created.owner='enemy';created.mesh.userData.factoryOwner='enemy';if(typeof updateFactoryFlagOwner==='function')updateFactoryFlagOwner(created,'enemy');if(!enemyFactories.includes(created))enemyFactories.push(created);}}
+      if(s.type==='factory'&&typeof createArmyFactory==='function'){const old=window.__remoteFactoryOwner;window.__remoteFactoryOwner='enemy';created=createArmyFactory(s.x,s.z,false);window.__remoteFactoryOwner=old;if(created){created.owner='enemy';created.mesh.userData.factoryOwner='enemy';if(typeof setConstructionBuildingOpaque==='function')setConstructionBuildingOpaque(created);if(typeof updateFactoryFlagOwner==='function')updateFactoryFlagOwner(created,'enemy');if(!enemyFactories.includes(created))enemyFactories.push(created);}}
       else if(s.type==='barracks'&&typeof createMilitaryBarracks==='function'){created=createMilitaryBarracks(s.x,s.z,!s.done,'enemy');if(created){created.owner='enemy';if(!constructedBarracks.includes(created))constructedBarracks.push(created);}}
       if(!created)return null;
-      created.__netId=key;created.__serverRemote=true;created.__remoteOwner=playerId;created.owner='enemy';created.__lastNetSeen=performance.now();remoteBuildings.set(key,created);if(created.mesh){created.mesh.rotation.y=s.rot||0;created.mesh.visible=true;}if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color);return created;
+      created.__netId=key;created.__serverRemote=true;created.__remoteOwner=playerId;created.owner='enemy';created.__lastNetSeen=performance.now();remoteBuildings.set(key,created);if(created.mesh){created.mesh.rotation.y=s.rot||0;created.mesh.visible=true;if(typeof setConstructionBuildingOpaque==='function')setConstructionBuildingOpaque(created);}if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color);return created;
     }catch(_){return null;}
   }
   function applyBuilding(s,playerId,color){
@@ -12025,7 +12024,15 @@ window.updateCameraSensitivity=function(v){
       b.mesh.position.y=Number.isFinite(s.y)?s.y:ground+.03;
     }
     if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color||battleConfig.enemyColor||'#ef4444');
-    if(s.production)b.productionJob={type:s.production.type,elapsed:s.production.elapsed,duration:s.production.duration};else b.productionJob=null;
+    if(typeof setConstructionBuildingOpaque==='function')setConstructionBuildingOpaque(b);
+    if(!b.done){
+      let c=remoteConstruction.get(key);
+      if(!c){c={build:b,cage:null,lift:null};try{if(s.type==='factory'){c.cage=createFactoryConstructionCage(b);c.lift=createConstructionLift(b);}else if(s.type==='barracks'){c.cage=createBarracksConstructionCage(b);c.lift=createBarracksConstructionLift(b);}}catch(err){console.warn('Remote construction visuals could not be created:',err);}remoteConstruction.set(key,c);}
+      if(c){c.build=b;if(c.cage){c.cage.mesh.visible=true;if(s.type==='factory')updateFactoryConstructionCage(c,b.progress);else if(c.cage&&c.cage.mesh)c.cage.mesh.children.forEach(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{m.transparent=true;m.opacity=Math.max(.22,.9-b.progress*.65);m.needsUpdate=true;});}});}if(c.lift){c.lift.mesh.visible=true;if(s.type==='factory')updateConstructionLift(c.lift);else updateBarracksConstructionLift(c.lift);}}
+    }else{
+      const c=remoteConstruction.get(key);if(c){if(s.type==='factory'){removeConstructionLift(c);removeFactoryConstructionCage(c);}else{removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);}remoteConstruction.delete(key);}
+    }
+    if(s.production){b.productionJob={type:s.production.type,elapsed:s.production.elapsed,duration:s.production.duration,startedAt:s.production.startedAt||Date.now(),durationMs:s.production.durationMs||0};}else b.productionJob=null;
   }
   function applyRemoteState(packet){
     if(!packet?.players)return;if(Number.isFinite(packet.tick)&&packet.tick<lastServerTick)return;lastServerTick=Number(packet.tick)||lastServerTick;
@@ -12054,7 +12061,7 @@ window.updateCameraSensitivity=function(v){
   window.addEventListener('onlineServerState',e=>applyRemoteState(e.detail));
   function watch(){
     if(online()&&!onlineStarted){onlineStarted=true;lastUpload=0;lastServerTick=-1;if(syncTimer)clearInterval(syncTimer);syncTimer=setInterval(serverSendSnapshot,SEND_MS);serverSendSnapshot();}
-    if(!online()&&onlineStarted){onlineStarted=false;if(syncTimer)clearInterval(syncTimer);syncTimer=null;for(const u of remote.values())if(u?.mesh)scene.remove(u.mesh);for(const b of remoteBuildings.values())if(b?.mesh)scene.remove(b.mesh);remote.clear();remoteBuildings.clear();}
+    if(!online()&&onlineStarted){onlineStarted=false;if(syncTimer)clearInterval(syncTimer);syncTimer=null;for(const u of remote.values())if(u?.mesh)scene.remove(u.mesh);for(const b of remoteBuildings.values())if(b?.mesh)scene.remove(b.mesh);for(const c of remoteConstruction.values()){try{removeConstructionLift(c);removeFactoryConstructionCage(c);removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);}catch(_){}}remote.clear();remoteBuildings.clear();remoteConstruction.clear();}
   }
   setInterval(watch,200);
 })();
