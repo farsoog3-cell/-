@@ -10293,22 +10293,36 @@ function createArmyFactory(x,z,ghost=false){
                     if(c.build.mesh.parent) c.build.mesh.parent.remove(c.build.mesh);
                     continue;
                 }
-                // المرحلة 1: وجّه التركس إلى موقع العمل وانتظر وصوله فعلياً.
-                // هذا يمنع احتساب وقت البناء بينما التركس ما زال بعيداً عن المصنع.
-                const workDist=Math.hypot(b.mesh.position.x-c.workPoint.x,b.mesh.position.z-c.workPoint.z);
+                // المرحلة 1: حرّك تركس البناء مباشرة إلى نقطة العمل من داخل
+                // مدير البناء نفسه. لا نعتمد على نظام حركة الدبابات العام، لأنه
+                // قد يلغي الهدف أو يمنع الحركة بسبب أوامر سابقة/تصادمات.
+                let workDist=Math.hypot(b.mesh.position.x-c.workPoint.x,b.mesh.position.z-c.workPoint.z);
                 if(c.phase!=='building' && workDist>4.8){
                     c.phase='approach'; c.started=false; c.startedAt=null; b.isBuilding=false;
                     b.buildTarget=c.workPoint.clone();
-                    if(!b.target || Math.hypot(b.target.x-c.workPoint.x,b.target.z-c.workPoint.z)>1.5) b.target=c.workPoint.clone();
+                    // نزيل الهدف العام كي لا تتنافس معه أوامر الحركة المعتادة.
+                    b.target=null;
+                    const dx=c.workPoint.x-b.mesh.position.x, dz=c.workPoint.z-b.mesh.position.z;
+                    const desiredAngle=Math.atan2(dx,dz);
+                    let angleDiff=Math.atan2(Math.sin(desiredAngle-b.mesh.rotation.y),Math.cos(desiredAngle-b.mesh.rotation.y));
+                    b.mesh.rotation.y += THREE.MathUtils.clamp(angleDiff,-0.10,0.10);
+                    const step=Math.min(workDist-4.2,Math.max(0.10,(Number(b.speed)||0.105)*(Number(GAME_MOVE_SPEED_SCALE)||1)));
+                    if(Number.isFinite(step)&&step>0){
+                        b.mesh.position.x += (dx/workDist)*step;
+                        b.mesh.position.z += (dz/workDist)*step;
+                        b.mesh.position.y=getTerrainHeight(b.mesh.position.x,b.mesh.position.z);
+                        if(b.Pos&&b.Pos.copy)b.Pos.copy(b.mesh.position);
+                        if(b.updateVisual){try{b.updateVisual(true);}catch(e){}}
+                    }
+                    workDist=Math.hypot(b.mesh.position.x-c.workPoint.x,b.mesh.position.z-c.workPoint.z);
                     c.build.mesh.visible=false; c.build.mesh.scale.setScalar(0.001);
                     try{updateConstructionLift(c.lift);}catch(e){}
                     try{updateFactoryConstructionCage(c,0);}catch(e){}
-                    remaining.push(c);
-                    continue;
+                    if(workDist>4.8){remaining.push(c);continue;}
                 }
                 // المرحلة 2: وصل التركس؛ ابدأ الآن بإظهار المجسم وإكمال البناء.
                 if(c.phase!=='building'){
-                    c.phase='building'; c.started=true; c.startedAt=Date.now(); c.elapsed=0;
+                    c.phase='building'; c.started=true; c.startedAt=Date.now(); c.elapsed=0; c.build.progress=0;
                     b.isBuilding=true; b.target=null;
                     c.build.mesh.visible=true; c.build.mesh.scale.setScalar(.08);
                     try{showFloatingMsg('🏗️ وصل تركس البناء؛ بدأ تشييد المصنع');}catch(e){}
