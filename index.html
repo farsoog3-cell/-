@@ -10267,17 +10267,18 @@ function createArmyFactory(x,z,ghost=false){
         if(away.lengthSq()>0.01)rotation=Math.atan2(away.x,away.z);
         const build=createArmyFactory(point.x,point.z,true);build.owner='player';
         build.mesh.position.y=point.y+.03;build.mesh.userData.factoryOwner='player';updateFactoryFlagOwner(build,'player');build.mesh.visible=true;build.mesh.scale.setScalar(.08);build.mesh.rotation.y=rotation;build.rotation=rotation;
-        const c={builder,point:point.clone(),build,started:false,elapsed:0,workPoint:point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-18)),lift:null,cage:null};
+        const c={builder,point:point.clone(),build,phase:'approach',started:false,elapsed:0,startedAt:null,workPoint:point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-18)),lift:null,cage:null};
         c.workPoint.y=getTerrainHeight(c.workPoint.x,c.workPoint.z);
         const foundationMat=new THREE.MeshStandardMaterial({color:0x747a70,roughness:.82,metalness:.12});
         const foundation=new THREE.Mesh(new THREE.BoxGeometry(25,.45,20),foundationMat); foundation.position.set(point.x,point.y+.22,point.z); foundation.rotation.y=rotation; foundation.castShadow=true; foundation.receiveShadow=true; scene.add(foundation); build.mesh.userData.constructionFoundation=foundation;
         c.cage=createFactoryConstructionCage(build);c.lift=createConstructionLift(build);
-        // يبدأ البناء فور تثبيت الموقع. التركس يتجه إلى نقطة العمل بينما
-        // العداد والقفص والرافعة يعملون فعلياً، فلا يبقى اللاعب منتظراً حالة مخفية.
-        c.started=true; c.elapsed=0; c.startedAt=Date.now();
+        // المرحلة الأولى: لا يبدأ بناء المبنى حتى يصل تركس البناء إلى نقطة العمل.
+        // أثناء الاقتراب يبقى المصنع غير ظاهر، ويظهر الأساس والقفص والرافعة فقط.
+        c.phase='approach'; c.started=false; c.elapsed=0; c.startedAt=null;
+        build.mesh.visible=false; build.mesh.scale.setScalar(0.001);
         activeFactoryConstructions.push(c);activeFactoryConstruction=c;
-        factoryPlacementPoint=null;builder.buildTarget=c.workPoint.clone();builder.target=c.workPoint.clone();builder.isBuilding=true;
-        updateConstructionBarForSelection();showFloatingMsg('🏗️ Construction dozer and crane moving to the factory');
+        factoryPlacementPoint=null;builder.buildTarget=c.workPoint.clone();builder.target=c.workPoint.clone();builder.isBuilding=false;
+        updateConstructionBarForSelection();showFloatingMsg('🚜 تركس البناء يتجه إلى موقع المصنع');
     }
     function updateFactoryConstruction(){
         if(!Array.isArray(activeFactoryConstructions) || !activeFactoryConstructions.length) return;
@@ -10292,10 +10293,29 @@ function createArmyFactory(x,z,ghost=false){
                     if(c.build.mesh.parent) c.build.mesh.parent.remove(c.build.mesh);
                     continue;
                 }
-                // استخدم الساعة الحقيقية للبناء حتى لا يتوقف العداد إذا تعطلت نبضات المحاكاة.
+                // المرحلة 1: وجّه التركس إلى موقع العمل وانتظر وصوله فعلياً.
+                // هذا يمنع احتساب وقت البناء بينما التركس ما زال بعيداً عن المصنع.
+                const workDist=Math.hypot(b.mesh.position.x-c.workPoint.x,b.mesh.position.z-c.workPoint.z);
+                if(c.phase!=='building' && workDist>4.8){
+                    c.phase='approach'; c.started=false; c.startedAt=null; b.isBuilding=false;
+                    b.buildTarget=c.workPoint.clone();
+                    if(!b.target || Math.hypot(b.target.x-c.workPoint.x,b.target.z-c.workPoint.z)>1.5) b.target=c.workPoint.clone();
+                    c.build.mesh.visible=false; c.build.mesh.scale.setScalar(0.001);
+                    try{updateConstructionLift(c.lift);}catch(e){}
+                    try{updateFactoryConstructionCage(c,0);}catch(e){}
+                    remaining.push(c);
+                    continue;
+                }
+                // المرحلة 2: وصل التركس؛ ابدأ الآن بإظهار المجسم وإكمال البناء.
+                if(c.phase!=='building'){
+                    c.phase='building'; c.started=true; c.startedAt=Date.now(); c.elapsed=0;
+                    b.isBuilding=true; b.target=null;
+                    c.build.mesh.visible=true; c.build.mesh.scale.setScalar(.08);
+                    try{showFloatingMsg('🏗️ وصل تركس البناء؛ بدأ تشييد المصنع');}catch(e){}
+                }
+                // ساعة مستقلة عن FPS حتى يكتمل البناء بثبات.
                 if(!c.startedAt) c.startedAt=Date.now();
-                c.started=true;
-                b.isBuilding=true;
+                c.started=true; b.isBuilding=true;
                 const durationMs=Math.max(1000,(Number(c.build.duration)||1200)*1000/60);
                 const elapsedMs=Math.max(0,Date.now()-c.startedAt);
                 const p=Math.min(1,elapsedMs/durationMs);
