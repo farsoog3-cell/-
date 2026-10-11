@@ -6926,9 +6926,23 @@ function createArmyFactory(x,z,ghost=false){
         });
     }
 
-    // ارتفاع قاعدة المبنى الحقيقي: نأخذ أعلى نقطة تحت كامل footprint حتى لا يدخل
-    // أي جزء من الأرض داخل جسم المبنى. ومع شرط الاستواء الصارم في التحقق، يبقى
-    // الفرق بين أعلى وأسفل نقطة صغيراً جداً، لذلك لا يظهر المبنى طائراً.
+    // أبعاد مساحة البناء. كانت الدالة المشار إليها في التحقق من الموقع
+    // وحساب ارتفاع المبنى غير موجودة؛ وهذا كان يوقف البناء بخطأ JavaScript
+    // من نوع ReferenceError عند أول محاولة لوضع المصنع.
+    function getBuildingFootprint(type, rotation=0){
+        const key = String(type || 'factory').toLowerCase();
+        let halfX, halfZ, radius;
+        if (key === 'barracks' || key === 'barrack' || key === 'ثكنة') {
+            halfX = 10.5; halfZ = 7.5; radius = 13;
+        } else {
+            // المصنع حجمه المرئي قرابة 29 × 24 وحدة.
+            halfX = 15.5; halfZ = 13; radius = 18;
+        }
+        const quarterTurn = Math.abs(Math.sin(rotation || 0)) > 0.7;
+        return { halfX: quarterTurn ? halfZ : halfX, halfZ: quarterTurn ? halfX : halfZ, radius };
+    }
+
+    // ارتفاع قاعدة المبنى الحقيقي: نأخذ أعلى نقطة تحت كامل footprint.
     function getBuildingGroundLevel(x, z, type, rotation=0){
         const fp=getBuildingFootprint(type,rotation);
         const samples=[];
