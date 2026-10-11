@@ -6530,46 +6530,65 @@
     function removeBarracksConstructionCage(c){if(c&&c.cage&&c.cage.mesh){scene.remove(c.cage.mesh);c.cage.mesh.traverse(o=>{if(o.geometry)o.geometry.dispose();});c.cage=null;}}
     function removeBarracksConstructionLift(c){if(c&&c.lift&&c.lift.mesh){scene.remove(c.lift.mesh);c.lift.mesh.traverse(o=>{if(o.geometry)o.geometry.dispose();});c.lift=null;}}
     function startBarracksConstruction(builder,point,rotation=0){
-        if(activeBarracksConstruction)return;
+        if(activeBarracksConstruction){showFloatingMsg('يوجد مشروع بناء نشط بالفعل');return;}
+        if(!builder||!builder.mesh||builder.isDestroyed||!builder.isBuilder){showFloatingMsg('اختر تركس البناء أولاً');return;}
         const hasArmyFactory=constructedFactories.some(f=>f&&f.done&&!f.isDestroyed&&f.owner!=='enemy');
-        if(!hasArmyFactory){showFloatingMsg('🪖 Build the Army Factory first');return;}
-        if(playerMoney<150){showFloatingMsg('Insufficient funds — barracks costs $150');return;}
+        if(!hasArmyFactory){showFloatingMsg('🪖 ابنِ مصنع الجيش أولاً');return;}
+        if(playerMoney<150){showFloatingMsg('لا توجد أموال كافية لبناء المعسكر ($150)');return;}
+        point=point&&point.clone?point.clone():null;if(!point){showFloatingMsg('اختر موقع المعسكر');return;}
         point.y=getBuildingGroundLevel(point.x,point.z,'barracks',rotation);
-        if(!isBuildingPlacementValid(point,'barracks',rotation,'player').valid){showFloatingMsg('🚫 موقع الثكنة غير صالح للبناء');return;}
-        hideFactoryPlacement();playerMoney-=150;totalMoneySpent+=150;syncMoneyNow();
-        const build=createMilitaryBarracks(point.x,point.z,true);build.owner='player';
-        build.mesh.position.y=point.y+.03;build.mesh.userData.barracksOwner='player';build.mesh.visible=true;build.mesh.scale.setScalar(.06);build.mesh.rotation.y=rotation;build.rotation=rotation;build.mesh.position.y=getTerrainHeight(point.x,point.z)-8;
-        // تأكيد أن مبنى البناء موجود في المشهد، وليس مجرد بيانات منطقية.
-        if(build.mesh.parent!==scene) scene.add(build.mesh);
-        activeBarracksConstruction={builder,point:point.clone(),build,started:true,elapsed:0,workPoint:point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-11)),cage:null,lift:null};
-        activeBarracksConstruction.workPoint.y=getTerrainHeight(activeBarracksConstruction.workPoint.x,activeBarracksConstruction.workPoint.z);
-        const foundationMat=new THREE.MeshStandardMaterial({color:0x747a70,roughness:.82,metalness:.12}); const foundation=new THREE.Mesh(new THREE.BoxGeometry(18.2,.42,12.8),foundationMat); foundation.position.set(point.x,getTerrainHeight(point.x,point.z)+.21,point.z); foundation.rotation.y=rotation; foundation.castShadow=true; foundation.receiveShadow=true; scene.add(foundation); build.mesh.userData.constructionFoundation=foundation;
-        activeBarracksConstruction.cage=createBarracksConstructionCage(build);
-        activeBarracksConstruction.lift=createBarracksConstructionLift(build);
-        barracksPlacementPoint=null;builder.buildTarget=activeBarracksConstruction.workPoint.clone();builder.target=builder.buildTarget.clone();builder.isBuilding=true;
-        updateConstructionBarForSelection();showFloatingMsg('🏗️ Construction dozer and crane moving to the barracks');
+        if(!isBuildingPlacementValid(point,'barracks',rotation,'player').valid){showFloatingMsg('🚫 موقع المعسكر غير صالح؛ اختر أرضاً مفتوحة');return;}
+        let build=null;
+        try{build=createMilitaryBarracks(point.x,point.z,true,'player');}catch(err){console.error('createMilitaryBarracks failed:',err);}
+        if(!build||!build.mesh){showFloatingMsg('تعذر إنشاء مجسم المعسكر؛ لم يتم الخصم');return;}
+        build.owner='player';build.done=false;build.ghost=false;build.progress=0;build.mesh.userData.barracksOwner='player';
+        setConstructionBuildingOpaque(build);build.mesh.rotation.y=rotation;build.rotation=rotation;
+        build.mesh.position.set(point.x,getBuildingGroundLevel(point.x,point.z,'barracks',rotation)-5.5,point.z);build.mesh.scale.setScalar(.18);build.mesh.visible=true;
+        if(build.mesh.parent!==scene)scene.add(build.mesh);
+        const workPoint=point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-11));workPoint.y=getTerrainHeight(workPoint.x,workPoint.z);
+        const c={builder,point:point.clone(),build,phase:'approach',started:false,elapsed:0,workPoint,cage:null,lift:null,foundation:null};
+        try{const mat=new THREE.MeshStandardMaterial({color:0x777b74,roughness:.9});const foundation=new THREE.Mesh(new THREE.BoxGeometry(18.2,.42,12.8),mat);foundation.position.set(point.x,getBuildingGroundLevel(point.x,point.z,'barracks',rotation)+.21,point.z);foundation.rotation.y=rotation;foundation.receiveShadow=true;foundation.castShadow=true;scene.add(foundation);c.foundation=foundation;build.mesh.userData.constructionFoundation=foundation;}catch(err){console.warn('Barracks foundation visual failed',err);}
+        try{c.cage=createBarracksConstructionCage(build);}catch(err){console.warn('Barracks scaffold failed',err);}
+        try{c.lift=createBarracksConstructionLift(build);}catch(err){console.warn('Barracks crane failed',err);}
+        activeBarracksConstruction=c;
+        hideFactoryPlacement();barracksPlacementMode=false;barracksBuildArmed=false;barracksPlacementPoint=null;
+        playerMoney-=150;totalMoneySpent+=150;syncMoneyNow();
+        builder.buildTarget=workPoint.clone();builder.target=null;builder.isBuilding=false;builder.holdPosition=false;
+        updateConstructionBarForSelection();showFloatingMsg('🚜 يتجه تركس البناء إلى موقع المعسكر؛ ستظهر الرافعة والسياج ثم يبدأ التشييد');
     }
     function updateBarracksConstruction(){
         const c=activeBarracksConstruction;if(!c)return;const b=c.builder;
-        if(!b||b.isDestroyed){removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);activeBarracksConstruction=null;updateConstructionBarForSelection();return;}
-        if(!c.started){ c.started=true; c.elapsed=0; b.isBuilding=true; }
-        c.elapsed++;updateBarracksConstructionLift(c.lift);
-        if(b.buildBlade){const a=Math.sin(c.elapsed*.10)*.30;b.buildBlade.rotation.x=a;b.buildBlade.position.y=(b.buildBlade.userData.baseY||.10)+Math.max(0,Math.sin(c.elapsed*.10))*.55;}
-        const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;
-        const groundY=getBuildingGroundLevel(c.point.x,c.point.z,'barracks',c.build.rotation||0);
-        c.build.mesh.position.y=groundY-8+8*p+.03;
-        c.build.mesh.scale.setScalar(.06+p*.94);
-        if(c.build.mesh.userData.constructionFoundation)c.build.mesh.userData.constructionFoundation.scale.set(1,.25+p*.75,1);
-        c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.10+p*1.10);});
-        if(c.elapsed%60===0&&c.elapsed<c.build.duration)showFloatingMsg(`🪖 Barracks construction: ${Math.floor(p*100)}%`);
-        if(p>=1){
-            c.build.done=true;c.build.ghost=false;c.build.mesh.visible=true;c.build.mesh.position.y=getTerrainHeight(c.point.x,c.point.z);c.build.mesh.scale.setScalar(1);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
-            removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);
-            if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}
-            const r=c.build.rotation||0,forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));const retreat=c.build.mesh.position.clone().sub(forward.multiplyScalar(9));retreat.y=getTerrainHeight(retreat.x,retreat.z);
-            b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.factoryRetreating=true;
-            constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});activeBarracksConstruction=null;updateConstructionBarForSelection();showFloatingMsg('✅ Military barracks complete — select it to train soldiers');
-        }
+        if(!c.build||!c.build.mesh){activeBarracksConstruction=null;return;}
+        if(!b||!b.mesh||b.isDestroyed){removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);if(c.build.mesh.parent)scene.remove(c.build.mesh);if(c.foundation)scene.remove(c.foundation);activeBarracksConstruction=null;updateConstructionBarForSelection();return;}
+        try{
+            const dist=Math.hypot(b.mesh.position.x-c.workPoint.x,b.mesh.position.z-c.workPoint.z);
+            if(c.phase!=='building'&&dist>4.8){
+                c.phase='approach';b.isBuilding=false;b.buildTarget=c.workPoint.clone();b.target=null;
+                const dx=c.workPoint.x-b.mesh.position.x,dz=c.workPoint.z-b.mesh.position.z;
+                const angle=Math.atan2(dx,dz);let diff=Math.atan2(Math.sin(angle-b.mesh.rotation.y),Math.cos(angle-b.mesh.rotation.y));b.mesh.rotation.y+=THREE.MathUtils.clamp(diff,-.1,.1);
+                const step=Math.min(dist-4.2,Math.max(.1,(Number(b.speed)||.105)*(Number(GAME_MOVE_SPEED_SCALE)||1)));
+                b.mesh.position.x+=(dx/dist)*step;b.mesh.position.z+=(dz/dist)*step;b.mesh.position.y=getTerrainHeight(b.mesh.position.x,b.mesh.position.z);
+                if(b.Pos&&b.Pos.copy)b.Pos.copy(b.mesh.position);if(b.updateVisual){try{b.updateVisual(true);}catch(e){}}
+                try{updateBarracksConstructionLift(c.lift);}catch(e){}
+                if(c.cage&&c.cage.mesh)c.cage.mesh.visible=true;
+                return;
+            }
+            if(c.phase!=='building'){c.phase='building';c.started=true;c.elapsed=0;b.isBuilding=true;b.target=null;showFloatingMsg('🏗️ وصل التركس؛ بدأ بناء المعسكر');}
+            c.elapsed+=1;try{updateBarracksConstructionLift(c.lift);}catch(e){}
+            const duration=Math.max(180,Number(c.build.duration)||900);const p=Math.min(1,c.elapsed/duration);c.build.progress=p;
+            const groundY=getBuildingGroundLevel(c.point.x,c.point.z,'barracks',c.build.rotation||0);
+            c.build.mesh.visible=true;c.build.mesh.position.y=groundY-5.5+5.5*p+.03;c.build.mesh.scale.setScalar(.18+.82*p);
+            setConstructionBuildingOpaque(c.build);
+            if(c.foundation)c.foundation.scale.set(1,.25+.75*p,1);
+            if(c.cage&&c.cage.mesh){c.cage.mesh.visible=p<1;c.cage.mesh.traverse(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{m.transparent=true;m.opacity=Math.max(.35,.9-p*.45);m.needsUpdate=true;});}});}
+            if(p>=1){
+                c.build.done=true;c.build.ghost=false;c.build.progress=1;c.build.mesh.position.y=groundY+.03;c.build.mesh.scale.setScalar(1);setConstructionBuildingOpaque(c.build);
+                removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);if(c.foundation){scene.remove(c.foundation);c.foundation=null;}c.build.mesh.userData.constructionFoundation=null;
+                if(!constructedBarracks.includes(c.build))constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});
+                const r=c.build.rotation||0,forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r)),retreat=c.build.mesh.position.clone().sub(forward.multiplyScalar(9));retreat.y=getTerrainHeight(retreat.x,retreat.z);
+                b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.factoryRetreating=true;activeBarracksConstruction=null;updateConstructionBarForSelection();showFloatingMsg('✅ اكتمل بناء المعسكر؛ يمكنك اختياره لتدريب الجنود');
+            }
+        }catch(err){console.error('Barracks construction update failed:',err);}
     }
     function queueBarracksUnit(type){
         if(type!=='infantry')return;
@@ -10254,6 +10273,17 @@ function createArmyFactory(x,z,ghost=false){
         retreat.y=getTerrainHeight(retreat.x,retreat.z);
         b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.holdPosition=false;b.factoryRetreating=true;
     }
+    // إعادة مواد المبنى من هيئة خيال شفاف إلى مواد بناء عادية معتمة.
+    function setConstructionBuildingOpaque(building){
+        if(!building||!building.mesh)return;
+        building.mesh.traverse(o=>{
+            if(!o.material)return;
+            const mats=Array.isArray(o.material)?o.material:[o.material];
+            mats.forEach(m=>{if(!m)return;m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;
+                if(m.emissive && m.userData && m.userData.placementGhostEmissive){m.emissive.setHex(0x000000);m.emissiveIntensity=0;}
+            });
+        });
+    }
     function startFactoryConstruction(builder,point,rotation=0){
         // بدء البناء بشكل آمن: لا تخصم المال ولا تخفِ خيال الموقع قبل إنشاء
         // كائن المصنع وتسجيل مهمة البناء فعلياً.
@@ -10282,6 +10312,7 @@ function createArmyFactory(x,z,ghost=false){
         const away=new THREE.Vector3(point.x-base.x,0,point.z-base.z);
         if(away.lengthSq()>.01) rotation=Math.atan2(away.x,away.z);
         build.owner='player'; build.done=false; build.ghost=false; build.progress=0;
+        setConstructionBuildingOpaque(build);
         build.mesh.userData.factoryOwner='player'; build.mesh.rotation.y=rotation; build.rotation=rotation;
         build.mesh.position.set(point.x,getBuildingGroundLevel(point.x,point.z,'factory',rotation)+.03,point.z);
         build.mesh.visible=false; build.mesh.scale.setScalar(.001);
@@ -10370,20 +10401,20 @@ function createArmyFactory(x,z,ghost=false){
                 if(c.build.mesh.parent!==scene) scene.add(c.build.mesh);
                 c.build.mesh.visible=true;
                 const groundY=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0);
-                c.build.mesh.position.y=groundY-8+8*p+.03;
-                c.build.mesh.scale.setScalar(.08+.92*p);
-                // لا تسمح بخطأ مادة أو مؤثر بصري أن يوقف تقدم الإنشاء.
+                c.build.mesh.position.y=groundY-5.5+5.5*p+.03;
+                // لا نجعل المصنع شفافاً: تظهر كتلته بألوانه العسكرية الحقيقية وتكبر تدريجياً.
+                c.build.mesh.scale.setScalar(.18+.82*p);
+                try{setConstructionBuildingOpaque(c.build);}catch(e){}
                 try{updateConstructionLift(c.lift);}catch(e){}
                 try{updateFactoryConstructionCage(c,p);}catch(e){}
                 if(c.build.mesh.userData.constructionFoundation){
                     try{c.build.mesh.userData.constructionFoundation.scale.set(1,.25+.75*p,1);}catch(e){}
                 }
-                try{c.build.mesh.traverse(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m){m.transparent=true;m.opacity=Math.min(1,.12+p*1.05);m.needsUpdate=true;}});}});}catch(e){}
                 if(p>=1){
                     c.build.done=true;c.build.ghost=false;c.build.progress=1;
                     c.build.mesh.visible=true;c.build.mesh.scale.setScalar(1);
                     c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;
-                    try{c.build.mesh.traverse(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m){m.transparent=false;m.opacity=1;m.needsUpdate=true;}});}});}catch(e){}
+                    try{setConstructionBuildingOpaque(c.build);}catch(e){}
                     try{removeConstructionLift(c);}catch(e){}
                     try{removeFactoryConstructionCage(c);}catch(e){}
                     if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}
