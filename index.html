@@ -10255,31 +10255,63 @@ function createArmyFactory(x,z,ghost=false){
         b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.holdPosition=false;b.factoryRetreating=true;
     }
     function startFactoryConstruction(builder,point,rotation=0){
-        if(!builder || isBuilderFactoryBusy(builder)) return;
-        if(playerMoney<400){showFloatingMsg('Insufficient funds to build the factory');return;}
+        // بدء البناء بشكل آمن: لا تخصم المال ولا تخفِ خيال الموقع قبل إنشاء
+        // كائن المصنع وتسجيل مهمة البناء فعلياً.
+        if(!builder || !builder.mesh || builder.isDestroyed || builder.__serverRemote){
+            showFloatingMsg('تعذّر بدء البناء: تركس البناء غير متاح'); return;
+        }
+        if(isBuilderFactoryBusy(builder)){showFloatingMsg('تركس البناء يعمل في مشروع آخر');return;}
+        if(playerMoney<400){showFloatingMsg('لا توجد أموال كافية لبناء المصنع ($400)');return;}
+        point=point && point.clone ? point.clone() : null;
+        if(!point){showFloatingMsg('اختر مكان المصنع أولاً');return;}
         point.y=getTerrainHeight(point.x,point.z);
-        if(!isBuildingPlacementValid(point,'factory',rotation,'player').valid){showFloatingMsg('🚫 موقع المصنع غير صالح للبناء');return;}
-        hideFactoryPlacement();playerMoney-=400;totalMoneySpent+=400;syncMoneyNow();
-        // اتجاه المصنع يُحسب من معسكر اللاعب الحالي، وليس من معسكر Slot 1 دائماً.
-        const mySlot = Math.max(1, Math.min(2, Number(window.onlineMatch?.playerSlot || 1)));
+        const placementCheck=isBuildingPlacementValid(point,'factory',rotation,'player');
+        if(!placementCheck.valid){showFloatingMsg('موقع المصنع غير صالح؛ اختر أرضاً مفتوحة');return;}
+
+        let build=null;
+        try { build=createArmyFactory(point.x,point.z,true); }
+        catch(err){ console.error('createArmyFactory failed:',err); }
+        if(!build || !build.mesh){
+            showFloatingMsg('تعذّر إنشاء مجسم المصنع؛ لم يتم خصم المال. افتح وحدة التحكم لمعرفة الخطأ.');
+            return;
+        }
+
+        // اتجاه المصنع إلى الخارج من قاعدة اللاعب.
+        const mySlot=Math.max(1,Math.min(2,Number(window.onlineMatch?.playerSlot||1)));
         const base=new THREE.Vector3(mySlot===1?CORNER_OFFSET:-CORNER_OFFSET,0,mySlot===1?CORNER_OFFSET:-CORNER_OFFSET);
         const away=new THREE.Vector3(point.x-base.x,0,point.z-base.z);
-        if(away.lengthSq()>0.01)rotation=Math.atan2(away.x,away.z);
-        const build=createArmyFactory(point.x,point.z,true);build.owner='player';
-        build.mesh.position.y=point.y+.03;build.mesh.userData.factoryOwner='player';updateFactoryFlagOwner(build,'player');build.mesh.visible=true;build.mesh.scale.setScalar(.08);build.mesh.rotation.y=rotation;build.rotation=rotation;
-        const c={builder,point:point.clone(),build,phase:'approach',started:false,elapsed:0,startedAt:null,workPoint:point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-18)),lift:null,cage:null};
-        c.workPoint.y=getTerrainHeight(c.workPoint.x,c.workPoint.z);
-        const foundationMat=new THREE.MeshStandardMaterial({color:0x747a70,roughness:.82,metalness:.12});
-        const foundation=new THREE.Mesh(new THREE.BoxGeometry(25,.45,20),foundationMat); foundation.position.set(point.x,point.y+.22,point.z); foundation.rotation.y=rotation; foundation.castShadow=true; foundation.receiveShadow=true; scene.add(foundation); build.mesh.userData.constructionFoundation=foundation;
-        c.cage=createFactoryConstructionCage(build);c.lift=createConstructionLift(build);
-        // المرحلة الأولى: لا يبدأ بناء المبنى حتى يصل تركس البناء إلى نقطة العمل.
-        // أثناء الاقتراب يبقى المصنع غير ظاهر، ويظهر الأساس والقفص والرافعة فقط.
-        c.phase='approach'; c.started=false; c.elapsed=0; c.startedAt=null;
-        build.mesh.visible=false; build.mesh.scale.setScalar(0.001);
-        activeFactoryConstructions.push(c);activeFactoryConstruction=c;
-        factoryPlacementPoint=null;builder.buildTarget=c.workPoint.clone();builder.target=c.workPoint.clone();builder.isBuilding=false;
-        updateConstructionBarForSelection();showFloatingMsg('🚜 تركس البناء يتجه إلى موقع المصنع');
+        if(away.lengthSq()>.01) rotation=Math.atan2(away.x,away.z);
+        build.owner='player'; build.done=false; build.ghost=false; build.progress=0;
+        build.mesh.userData.factoryOwner='player'; build.mesh.rotation.y=rotation; build.rotation=rotation;
+        build.mesh.position.set(point.x,getBuildingGroundLevel(point.x,point.z,'factory',rotation)+.03,point.z);
+        build.mesh.visible=false; build.mesh.scale.setScalar(.001);
+        try{updateFactoryFlagOwner(build,'player');}catch(err){console.warn('Factory flag setup skipped:',err);}
+
+        const workPoint=point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-18));
+        workPoint.y=getTerrainHeight(workPoint.x,workPoint.z);
+        const c={builder,point:point.clone(),build,phase:'approach',started:false,elapsed:0,startedAt:null,workPoint,lift:null,cage:null};
+
+        // الأساس والمعدات البصرية اختيارية؛ فشل أي مؤثر لا يُلغي أمر البناء.
+        try{
+            const foundationMat=new THREE.MeshStandardMaterial({color:0x747a70,roughness:.82,metalness:.12});
+            const foundation=new THREE.Mesh(new THREE.BoxGeometry(25,.45,20),foundationMat);
+            foundation.position.set(point.x,getBuildingGroundLevel(point.x,point.z,'factory',rotation)+.22,point.z);
+            foundation.rotation.y=rotation; foundation.castShadow=true; foundation.receiveShadow=true;
+            scene.add(foundation); build.mesh.userData.constructionFoundation=foundation;
+        }catch(err){console.error('Factory foundation visual failed:',err);}
+        try{c.cage=createFactoryConstructionCage(build);}catch(err){console.error('Factory fence visual failed:',err);c.cage=null;}
+        try{c.lift=createConstructionLift(build);}catch(err){console.error('Factory crane visual failed:',err);c.lift=null;}
+
+        // تسجيل المهمة أولاً حتى تستمر حتى لو فشل تحديث بصري لاحق.
+        activeFactoryConstructions.push(c); activeFactoryConstruction=c;
+        try{hideFactoryPlacement();}catch(err){console.warn('Placement cleanup failed:',err);factoryBuildArmed=false;factoryPlacementMode=false;factoryPlacementPoint=null;}
+        playerMoney-=400; totalMoneySpent+=400; syncMoneyNow();
+        factoryPlacementPoint=null;
+        builder.buildTarget=workPoint.clone(); builder.target=null; builder.isBuilding=false; builder.holdPosition=false;
+        updateConstructionBarForSelection();
+        showFloatingMsg('🚜 بدأ أمر البناء: يتحرك تركس البناء إلى الموقع');
     }
+
     function updateFactoryConstruction(){
         if(!Array.isArray(activeFactoryConstructions) || !activeFactoryConstructions.length) return;
         const remaining=[];
