@@ -9861,9 +9861,7 @@ function createArmyFactory(x,z,ghost=false){
         updateSpatialListener();
         updateWindAudio();
         updateTankHpLabels();
-        updateFactoryConstruction();
         updateFactoryProduction();
-        updateBarracksConstruction();
         updateBarracksProduction();
         updateBarracksVisuals();
         updateFactoryVisuals();
@@ -10106,6 +10104,10 @@ function createArmyFactory(x,z,ghost=false){
 
             // نفس النبضة الزمنية للاعب والعدو: شراء، بناء، استخراج، حركة، قتال وذكاء.
             updateFactoryExits();
+            // Keep construction progress on the main fixed simulation clock.
+            // It must not depend on updateTanksMovement reaching its final lines.
+            try { updateFactoryConstruction(); } catch (constructionError) { console.error('Factory construction update failed:', constructionError); }
+            try { updateBarracksConstruction(); } catch (constructionError) { console.error('Barracks construction update failed:', constructionError); }
             updateTanksMovement();
             updateAmbulances();
             [...reconVehicles,...ambulances].forEach(u =>
