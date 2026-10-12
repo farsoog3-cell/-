@@ -6593,11 +6593,16 @@
     function queueBarracksUnit(type){
         if(type!=='infantry')return;
         if(!selectedBarracks||!selectedBarracks.done||selectedBarracks.isDestroyed||selectedBarracks.owner==='enemy'){showFloatingMsg('Select a completed player barracks first');return;}
+        // منع اللمس/النقر المكرر على الهاتف أو وصول أمر الشراء أكثر من مرة.
+        const now=Date.now();
+        if(selectedBarracks.__lastInfantryOrderAt && now-selectedBarracks.__lastInfantryOrderAt<700)return;
         if(selectedBarracks.productionJob){showFloatingMsg('⏳ This barracks is already training — use another barracks');return;}
         const cost=250;
         if(playerMoney<cost){showFloatingMsg('Insufficient funds — soldier costs $250');return;}
+        selectedBarracks.__lastInfantryOrderAt=now;
+        const orderId='infantry_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
         playerMoney-=cost;totalMoneySpent+=cost;updateEconomyUI();playSound('buy');
-        selectedBarracks.productionJob={barracks:selectedBarracks,type:'infantry',cost,elapsed:0,duration:REAL_TRAIN_INFANTRY_SEC*REAL_TICKS_PER_SECOND,startedAt:Date.now(),durationMs:REAL_TRAIN_INFANTRY_SEC*1000};
+        selectedBarracks.productionJob={barracks:selectedBarracks,type:'infantry',cost,orderId,elapsed:0,duration:REAL_TRAIN_INFANTRY_SEC*REAL_TICKS_PER_SECOND,startedAt:now,durationMs:REAL_TRAIN_INFANTRY_SEC*1000,__spawned:false};
         activeBarracksProduction=selectedBarracks.productionJob;
         showFloatingMsg('🪖 Soldier training started — 8 seconds');
         updateBarracksBar();
@@ -6621,7 +6626,10 @@
         const forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));
         const spawn=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(5.5));spawn.y=getTerrainHeight(spawn.x,spawn.z);
         const team=barracks.owner==='enemy'?'enemy':'player';
-        const unit=createInfantrySoldier(spawn.x,spawn.z,team);unit.mesh.rotation.y=r;unit.manualControl=(team==='player');
+        // إنشاء جندي واحد فقط لكل أمر إنتاج؛ معرف الشبكة يمنع أي إعادة إنشاء مكررة.
+        if(barracks.__lastProducedInfantryOrderId===barracks.productionJob?.orderId)return null;
+        const unit=createInfantrySoldier(spawn.x,spawn.z,team);unit.__netId='infantry:'+String(barracks.productionJob?.orderId||Date.now());unit.__serverProduced=true;unit.type='infantry';unit.mesh.rotation.y=r;unit.manualControl=(team==='player');
+        barracks.__lastProducedInfantryOrderId=barracks.productionJob?.orderId||null;
         unit.barracksExiting=true;unit.barracksExitLock=true;unit.barracksExitTarget=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(14));unit.barracksExitTarget.y=getTerrainHeight(unit.barracksExitTarget.x,unit.barracksExitTarget.z);unit.target=null;unit.factoryFinalTarget=null;
         unit.barracksExitSpeed=Math.max(0.10, Math.min(0.18, (unit.speed||0.10)*1.15));
         if(team==='enemy'){
@@ -11778,7 +11786,7 @@ window.updateCameraSensitivity=function(v){
     <p>أنشئ الغرفة، حدد المال واللون، ثم اضغط «مستعد». ينتظر السيرفر لاعباً آخر.</p>
     <div class="online-field" id="online-room-name-wrap"><label>اسم الغرفة</label><input id="online-room-name" maxlength="28" placeholder="مثال: معركة الصحراء"></div>
     <div class="online-field" id="online-money-wrap"><label>المال الابتدائي</label><div class="online-money-grid" id="online-money-grid">
-      <button class="online-choice active" data-money="1000">$1,000</button><button class="online-choice" data-money="2000">$2,000</button><button class="online-choice" data-money="3000">$3,000</button><button class="online-choice" data-money="5000">$5,000</button>
+      <button class="online-choice active" data-money="1000">$1,000</button><button class="online-choice" data-money="2000">$2,000</button><button class="online-choice" data-money="3000">$3,000</button><button class="online-choice" data-money="4000">$4,000</button>
     </div></div>
     <div class="online-join-info" id="online-join-info">أنت تنضم إلى: <b id="online-join-room-title">الغرفة</b><br>المال وإعدادات المعركة يحددها منشئ الغرفة. اختر لونك فقط.</div>
     <div class="online-field"><label>لون اللاعب</label><div class="online-color-grid" id="online-color-grid">
@@ -11897,6 +11905,7 @@ window.updateCameraSensitivity=function(v){
     }
     if(m.type==='peer_message'){window.dispatchEvent(new CustomEvent('onlinePeerMessage',{detail:m.payload}));return;}
     if(m.type==='server_state'){window.dispatchEvent(new CustomEvent('onlineServerState',{detail:m.state}));return;}
+    if(m.type==='player_connection'){window.dispatchEvent(new CustomEvent('onlinePlayerConnection',{detail:m}));return;}
   }
   function joinRoom(id){
     pendingJoin=id;creating=false;hide('online-room-list-modal');show('online-room-modal');
@@ -11944,7 +11953,8 @@ window.updateCameraSensitivity=function(v){
   $('online-create-leave-btn').onclick=()=>{send('leave_room');room=null;pendingJoin=null;$('online-create-ready-actions').style.display='none';$('online-create-room-btn').style.display='block';status('online-create-status','<strong>السيرفر:</strong> خرجت من الغرفة');};
   $('online-refresh-rooms-btn').onclick=()=>{connect();setTimeout(()=>send('list_rooms'),100);};
   window.sendOnlineEvent=function(payload){if(window.onlineMatch)send('game_event',{payload});};
-  window.addEventListener('beforeunload',()=>{try{if(room&&!room.started&&socketReady())send('leave_room')}catch(_){} });
+  window.requestOnlineState=function(){if(window.onlineMatch&&socketReady())send('request_state');};
+  window.addEventListener('beforeunload',()=>{try{if(room&&!room.started&&socketReady())send('leave_room');/* أثناء المباراة لا نرسل leave_room: السيرفر يحفظ الجلسة */}catch(_){} });
 })();
 </script>
 
@@ -11955,7 +11965,7 @@ window.updateCameraSensitivity=function(v){
 <script id="authoritative-online-sync">
 (function(){
   'use strict';
-  const SEND_MS=80, REMOTE_UNIT_GRACE=4500, REMOTE_BUILDING_GRACE=5000;
+  const SEND_MS=33, REMOTE_UNIT_GRACE=4500, REMOTE_BUILDING_GRACE=5000;
   let lastUpload=0,lastServerTick=-1,syncTimer=null,onlineStarted=false;
   const remote=new Map(),remoteBuildings=new Map(),remoteConstruction=new Map();
   const online=()=>!!window.onlineMatch;
@@ -11979,6 +11989,7 @@ window.updateCameraSensitivity=function(v){
     const out=[],seen=new Set();
     const add=(arr,prefix)=>{if(!Array.isArray(arr))return;for(const u of arr){if(!u||seen.has(u)||u.__serverRemote)continue;const s=unitSnapshot(u,prefix);if(s){out.push(s);seen.add(u);}}};
     add(playerTanks,'tank');add(reconVehicles,'scout');add(ambulances,'ambulance');
+    if(typeof infantryUnits!=='undefined' && Array.isArray(infantryUnits)) add(infantryUnits,'infantry');
     return out;
   }
   function buildingSnapshot(b,prefix,extra={}){
@@ -12034,7 +12045,7 @@ window.updateCameraSensitivity=function(v){
     const u=makeRemoteUnit(s,playerId,color);
     if(!u?.mesh)return;
     u.__serverRemote=true;u.__remoteOwner=playerId;u.__lastNetSeen=performance.now();
-    const t=.42;u.mesh.position.x+=(s.x-u.mesh.position.x)*t;u.mesh.position.z+=(s.z-u.mesh.position.z)*t;if(Number.isFinite(s.y))u.mesh.position.y+=(s.y-u.mesh.position.y)*t;if(Number.isFinite(s.rot))u.mesh.rotation.y=lerpAngle(u.mesh.rotation.y,s.rot,t);
+    const t=s.moving?.75:.62;u.mesh.position.x+=(s.x-u.mesh.position.x)*t;u.mesh.position.z+=(s.z-u.mesh.position.z)*t;if(Number.isFinite(s.y))u.mesh.position.y+=(s.y-u.mesh.position.y)*t;if(Number.isFinite(s.rot))u.mesh.rotation.y=lerpAngle(u.mesh.rotation.y,s.rot,t);
     u.__remoteMoving=!!s.moving;u.hp=Math.max(0,Number(s.hp)||0);u.maxHp=Math.max(1,Number(s.maxHp)||100);u.isDestroyed=!!s.destroyed;if(s.target)u.serverTarget=s.target;if(s.guard)u.serverGuard=s.guard;if(u.mesh)u.mesh.visible=!u.isDestroyed;
   }
   function makeRemoteBuilding(s,playerId,color){
