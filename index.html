@@ -2664,7 +2664,13 @@
 
     function unlockGameAudio() {
         audioUnlocked = true;
-        if (document.getElementById('intro-screen') || document.querySelector('.intro-screen')) startPreGameMusic();
+        // The globe intro is no longer used; keep the quiet menu soundtrack active
+        // during initial loading and while the main menu is visible.
+        const bootLoading = document.getElementById('boot-loading-overlay');
+        const settingsMenu = document.getElementById('settings-modal');
+        if (!battleAudioActive && (bootLoading || (settingsMenu && getComputedStyle(settingsMenu).display !== 'none'))) {
+            startPreGameMusic();
+        }
         try {
             const AC = window.AudioContext || window.webkitAudioContext;
             if (AC) {
@@ -2806,11 +2812,12 @@
     battleBgmAudio.volume = 0.10;
 
     function startPreGameMusic(){
-        if (!preGameBgmAudio) return;
+        if (!preGameBgmAudio || battleAudioActive) return;
         try {
             if (menuBgmAudio) menuBgmAudio.pause();
-            preGameBgmAudio.currentTime = 0;
-            playAudioElement(preGameBgmAudio, preGameBgmAudio.volume, true).catch(() => {});
+            // Do not restart the track on every tap; resume it if autoplay was blocked.
+            if (!preGameBgmAudio.paused && !preGameBgmAudio.ended) return;
+            playAudioElement(preGameBgmAudio, preGameBgmAudio.volume, false).catch(() => {});
         } catch(e) {}
     }
 
@@ -13287,7 +13294,18 @@ window.updateCameraSensitivity=function(v){
  const intro=$('start-menu');if(intro)intro.style.display='none';
  const load=document.createElement('div');load.id='boot-loading-overlay';load.style.cssText='position:fixed;inset:0;z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#10150f;padding:24px;gap:12px;color:#f4f4e9;font-weight:900';
  load.innerHTML='<div style="letter-spacing:2px">تجهيز القيادة العسكرية</div><div style="width:min(75vw,300px);height:7px;border:1px solid #080a07;background:#050605"><div id="boot-loading-fill" style="width:0;height:100%;background:#aab58c"></div></div>';
- document.body.appendChild(load);let p=0;const boot=setInterval(()=>{p=Math.min(100,p+4);const f=$('boot-loading-fill');if(f)f.style.width=p+'%';if(p>=100){clearInterval(boot);load.remove();$('settings-modal').style.display='flex';document.body.classList.remove('waiting-menu-active');}},45);
+ document.body.appendChild(load);
+ // Try to begin the loading music immediately. Mobile browsers may block autoplay;
+ // the first user touch/click retries playback inside the browser's allowed gesture.
+ try { if (typeof startPreGameMusic === 'function') startPreGameMusic(); } catch(e) {}
+ const startLoadingMusicFromGesture = () => {
+   try { if (typeof unlockGameAudio === 'function') unlockGameAudio(); if (typeof startPreGameMusic === 'function') startPreGameMusic(); } catch(e) {}
+ };
+ load.addEventListener('pointerdown', startLoadingMusicFromGesture, {passive:true});
+ document.addEventListener('pointerdown', startLoadingMusicFromGesture, {once:true, passive:true});
+ document.addEventListener('touchstart', startLoadingMusicFromGesture, {once:true, passive:true});
+ document.addEventListener('click', startLoadingMusicFromGesture, {once:true});
+ let p=0;const boot=setInterval(()=>{p=Math.min(100,p+4);const f=$('boot-loading-fill');if(f)f.style.width=p+'%';if(p>=100){clearInterval(boot);load.remove();$('settings-modal').style.display='flex';document.body.classList.remove('waiting-menu-active');try{if(typeof startPreGameMusic==='function')startPreGameMusic();}catch(e){} }},45);
 })();
 </script>
 
@@ -13456,3 +13474,25 @@ body.battle-active #start-menu {
   syncBattleMenu();
 })();
 </script>
+
+
+<style id="three-backgrounds-role-fix">
+/* Background 1: first screen shown while the game is loading. */
+#boot-loading-overlay {
+  background-color:#080b07 !important;
+  background-image:linear-gradient(180deg,rgba(0,0,0,.38),rgba(0,0,0,.62)),url("images/loading1.jpg") !important;
+  background-position:center center,center center !important;
+  background-size:cover,cover !important;
+  background-repeat:no-repeat,no-repeat !important;
+  text-shadow:0 2px 5px #000 !important;
+}
+/* Background 2: main menu behind Create Room and Sound settings. */
+#settings-modal:not(.battle-active) {
+  background-color:#080b07 !important;
+  background-image:linear-gradient(180deg,rgba(0,0,0,.36),rgba(0,0,0,.60)),url("images/loading2.jpg") !important;
+  background-position:center center,center center !important;
+  background-size:cover,cover !important;
+  background-repeat:no-repeat,no-repeat !important;
+}
+/* Keep the existing in-game/background 3 untouched. */
+</style>
