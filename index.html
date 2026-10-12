@@ -2962,7 +2962,7 @@
         window.battlefieldSun = sunGroup;
 
         // ضوء شمسي إضافي خفيف؛ الإضاءة الأساسية الموجودة تبقى كما هي.
-        const sunLight = new THREE.DirectionalLight(0xffe6c8, 0.0);
+        const sunLight = new THREE.DirectionalLight(0xffe6c8, 0.10);
         sunLight.position.set(-380, 520, -460);
         sunLight.target.position.set(0, 0, 0);
         sunLight.castShadow = false;
@@ -2973,9 +2973,10 @@
     function init() {
         const container = document.getElementById('canvas-container');
         scene = new THREE.Scene();
-        // سماء نهارية بدلاً من الخلفية السوداء، وضباب رملي خفيف يحافظ على وضوح البعيد.
-        scene.background = new THREE.Color(0x9aafc0);
-        scene.fog = new THREE.FogExp2(0x9a9a85, 0.00062);
+        // سماء سوداء بالكامل، والنقاط الفاتحة أصبحت موزعة على سطح الأرض مع الرمل.
+        scene.background = new THREE.Color(0x000000);
+        // ضباب دافئ قريب من لون الرمل ليعطي عمقاً سينمائياً بدون تحويل الأرض إلى لون رمادي.
+        scene.fog = new THREE.FogExp2(0x75614d, 0.00128);
 
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
         updateCameraPosition();
@@ -3002,7 +3003,6 @@
         createOilRigs();
         createTargetMarker();
         createDefenseMarker();
-        applyBattlefieldShadows(scene);
         setupInteraction();
         setupMinimapInteraction();
 
@@ -3357,42 +3357,23 @@
     let battleConfig = { map:'main', money:3000, playerColor:'#168cff', playerColorName:'BLUE', enemyColor:'#f43f5e', enemyColorName:'RED' };
 
     function setupLighting() {
-        // إضاءة نهارية واضحة مع تعبئة من السماء حتى تبقى جوانب المباني المظللة مقروءة.
-        const skyFill = new THREE.HemisphereLight(0xdceaff, 0x6b583e, 0.78);
-        skyFill.name = 'battlefieldSkyFill';
-        scene.add(skyFill);
-        scene.add(new THREE.AmbientLight(0xfff0d9, 0.18));
-
-        // الشمس مصدر الإضاءة الرئيسي وتلقي ظلالاً واضحة على الأرض والمباني والوحدات.
-        dirLight = new THREE.DirectionalLight(0xffedcf, 1.25);
-        dirLight.name = 'battlefieldSunLight';
-        dirLight.position.set(-320, 360, 120);
-        dirLight.target.position.set(0, 0, 0);
+        scene.add(new THREE.AmbientLight(0xf0e7d8, 0.64));
+        
+        // ضوء شمسي خفيف من اتجاه واحد لإظهار تموّج الرمال والظلال الناعمة.
+        dirLight = new THREE.DirectionalLight(0xffe1bd, 0.70);
+        dirLight.position.set(-380, 520, -460);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
-        dirLight.shadow.camera.near = 1;
-        dirLight.shadow.camera.far = 1100;
-        const d = 360;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 1200;
+        let d = 450;
         dirLight.shadow.camera.left = -d;
         dirLight.shadow.camera.right = d;
         dirLight.shadow.camera.top = d;
         dirLight.shadow.camera.bottom = -d;
-        dirLight.shadow.bias = -0.00018;
-        dirLight.shadow.normalBias = 0.025;
-        dirLight.shadow.radius = 5;
+        dirLight.shadow.bias = -0.0005;
         scene.add(dirLight);
-        scene.add(dirLight.target);
-    }
-
-    // تفعيل إلقاء الظلال واستقبالها على مجسمات ساحة المعركة.
-    function applyBattlefieldShadows(root) {
-        if (!root) return;
-        root.traverse(function (obj) {
-            if (!obj.isMesh || obj.userData.noBattlefieldShadow) return;
-            obj.castShadow = true;
-            obj.receiveShadow = true;
-        });
     }
 
     // ===== External 3D battlefield terrain =====
@@ -3497,7 +3478,6 @@
             externalTerrainModel=root;
             root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
             scene.add(root);
-            applyBattlefieldShadows(root);
             terrainMesh=firstMesh;
             window.__externalTerrainGLBReady=true;
             setTerrainLoadingProgress(40,'تم تحميل شكل الأرض — جاري تجهيز الخامات...');
