@@ -7210,8 +7210,9 @@ function createArmyFactory(x,z,ghost=false){
     function produceFactoryUnit(factory,type){
         const r=factory.mesh.rotation.y;
         const forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));
-        // ابدأ داخل الهنغار ثم أخرج الوحدة عبر الباب مباشرة.
-        const spawn=factory.mesh.position.clone().add(forward.clone().multiplyScalar(1.0));
+        // ضع المركبة عند بداية ممر الباب، لا في مركز المصنع؛ هذا يمنع ظهورها
+        // داخل الجدران أو تعليقها قبل بدء حركة الخروج.
+        const spawn=factory.mesh.position.clone().add(forward.clone().multiplyScalar(8.5));
         spawn.y=getTerrainHeight(spawn.x,spawn.z);
         let unit;
         if(type==='ambulance') unit=createModernAmbulance(spawn.x,spawn.z,'player');
@@ -7222,7 +7223,7 @@ function createArmyFactory(x,z,ghost=false){
         unit.manualControl=true;
         unit.factoryExiting=true;
         unit.factoryExitLock=true;
-        unit.factoryExitDelayUntil=performance.now()+5000;
+        unit.factoryExitDelayUntil=0;
         unit.factoryExitTarget=factory.mesh.position.clone().add(forward.clone().multiplyScalar(25));
         unit.factoryExitTarget.y=getTerrainHeight(unit.factoryExitTarget.x,unit.factoryExitTarget.z);
         unit.target=null;
@@ -7239,7 +7240,7 @@ function createArmyFactory(x,z,ghost=false){
             setTimeout(()=>deployReconDish(unit),1200);
         } else playerTanks.push(unit);
         // فتح تلقائي واقعي للباب عند خروج أي نوع من الوحدات.
-        animateFactoryDoors(factory,3200);
+        animateFactoryDoors(factory,4800);
         showFloatingMsg(type==='infantry'?'🪖 Soldier exiting factory':type==='scout'?'📡 Scout vehicle exiting factory':type==='ambulance'?'🚑 Ambulance exiting factory':'🚨 Unit exiting factory');
     }
 
@@ -7251,10 +7252,8 @@ function createArmyFactory(x,z,ghost=false){
         all.forEach(u=>{
             if(!u||seen.has(u)||u.isDestroyed||!u.factoryExiting||!u.factoryExitTarget)return;
             seen.add(u);
-            if(u.factoryExitDelayUntil && performance.now()<u.factoryExitDelayUntil){
-                u.mesh.position.y=getTerrainHeight(u.mesh.position.x,u.mesh.position.z);
-                return;
-            }
+            // لا ننتظر خمس ثوانٍ داخل المصنع: ابدأ الخروج فور اكتمال الإنتاج.
+            // التحديث هنا هو المسؤول الوحيد عن الحركة حتى لا تتحرك المركبة مرتين في الإطار.
             const target=u.factoryExitTarget;
             const dx=target.x-u.mesh.position.x, dz=target.z-u.mesh.position.z;
             const dist=Math.hypot(dx,dz);
@@ -7270,7 +7269,9 @@ function createArmyFactory(x,z,ghost=false){
             }else{
                 u.mesh.position.y=getTerrainHeight(u.mesh.position.x,u.mesh.position.z);
                 u.factoryExiting=false; u.factoryExitLock=false;
-                u.factoryExitTarget=null; u.target=null; u.factoryFinalTarget=null;
+                u.factoryExitTarget=null; u.factoryExitDelayUntil=0;
+                u.target=null; u.factoryFinalTarget=null; u.factoryExitFactory=null;
+                u.mesh.position.y=getTerrainHeight(u.mesh.position.x,u.mesh.position.z);
                 showFloatingMsg('✅ Unit exited the factory and is ready for orders');
             }
         });
