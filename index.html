@@ -7208,86 +7208,99 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function produceFactoryUnit(factory,type){
-        const r=factory.mesh.rotation.y;
+        if(!factory || !factory.mesh || factory.isDestroyed || !factory.done) throw new Error('المصنع غير جاهز للإنتاج');
+        const r=Number(factory.mesh.rotation.y)||0;
         const forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));
-        // ضع المركبة عند بداية ممر الباب، لا في مركز المصنع؛ هذا يمنع ظهورها
-        // داخل الجدران أو تعليقها قبل بدء حركة الخروج.
-        const spawn=factory.mesh.position.clone().add(forward.clone().multiplyScalar(8.5));
+        // ابدأ خارج جدار المصنع مباشرة ثم تحرك عبر ممر واضح إلى نقطة آمنة.
+        const spawn=factory.mesh.position.clone().add(forward.clone().multiplyScalar(12));
         spawn.y=getTerrainHeight(spawn.x,spawn.z);
         let unit;
         if(type==='ambulance') unit=createModernAmbulance(spawn.x,spawn.z,'player');
-        else if(type==='infantry') unit=createInfantrySoldier(spawn.x,spawn.z,'player');
         else if(type==='scout') unit=createReconVehicle(spawn.x,spawn.z,'player');
         else unit=createTank(spawn.x,spawn.z,(battleConfig.playerColor || '#168cff'),'player',type);
+        if(!unit || !unit.mesh) throw new Error('فشل إنشاء الوحدة');
         unit.mesh.rotation.y=r;
         unit.manualControl=true;
+        unit.team='player';
         unit.factoryExiting=true;
         unit.factoryExitLock=true;
         unit.factoryExitDelayUntil=0;
-        unit.factoryExitTarget=factory.mesh.position.clone().add(forward.clone().multiplyScalar(25));
+        unit.factoryExitTarget=factory.mesh.position.clone().add(forward.clone().multiplyScalar(32));
         unit.factoryExitTarget.y=getTerrainHeight(unit.factoryExitTarget.x,unit.factoryExitTarget.z);
         unit.target=null;
         unit.factoryFinalTarget=null;
-        unit.factoryExitSpeed=Math.max(0.065,Math.min(0.105,(unit.speed||0.10)*.72));
         unit.factoryExitFactory=factory;
+        unit.factoryExitStartedAt=Date.now();
+        // سرعة خروج واضحة، مع حد أعلى يمنع القفز أو اختراق الأرض.
+        unit.factoryExitSpeed=Math.max(.18,Math.min(.34,(Number(unit.speed)||.25)*1.8));
         if(type==='ambulance') ambulances.push(unit);
         else if(type==='scout'){
-            const wasReconActive=reconActivated;
-            reconVehicles.push(unit); reconActivated=true;
+            reconVehicles.push(unit);
+            reconActivated=true;
             const mm=document.getElementById('minimap-container');
             if(mm){mm.classList.add('recon-active');mm.style.display='block';}
-            if(!wasReconActive) playMinimapEventSound();
             setTimeout(()=>deployReconDish(unit),1200);
         } else playerTanks.push(unit);
-        // فتح تلقائي واقعي للباب عند خروج أي نوع من الوحدات.
         animateFactoryDoors(factory,4800);
-        showFloatingMsg(type==='infantry'?'🪖 Soldier exiting factory':type==='scout'?'📡 Scout vehicle exiting factory':type==='ambulance'?'🚑 Ambulance exiting factory':'🚨 Unit exiting factory');
+        showFloatingMsg(type==='scout'?'📡 خرجت عربة الاستطلاع من المصنع':type==='ambulance'?'🚑 خرجت سيارة الإسعاف من المصنع':'🏭 اكتمل الإنتاج — الوحدة تغادر المصنع الآن');
+        return unit;
     }
 
     // نظام خروج واحد لكل الوحدات، ويعمل قبل أي نظام حركة آخر.
     function updateFactoryExits(){
         if(gameOver)return;
-        const all=[...playerTanks,...reconVehicles,...ambulances,...enemyTanks];
+        const all=[...(playerTanks||[]),...(reconVehicles||[]),...(ambulances||[]),...(enemyTanks||[])];
         const seen=new Set();
-        all.forEach(u=>{
-            if(!u||seen.has(u)||u.isDestroyed||!u.factoryExiting||!u.factoryExitTarget)return;
+        for(const u of all){
+            if(!u||seen.has(u)||u.isDestroyed||!u.factoryExiting||!u.factoryExitTarget||!u.mesh)continue;
             seen.add(u);
-            // لا ننتظر خمس ثوانٍ داخل المصنع: ابدأ الخروج فور اكتمال الإنتاج.
-            // التحديث هنا هو المسؤول الوحيد عن الحركة حتى لا تتحرك المركبة مرتين في الإطار.
             const target=u.factoryExitTarget;
             const dx=target.x-u.mesh.position.x, dz=target.z-u.mesh.position.z;
             const dist=Math.hypot(dx,dz);
-            if(dist>1.25){
+            if(!Number.isFinite(dist)){u.factoryExiting=false;u.factoryExitLock=false;u.factoryExitTarget=null;continue;}
+            if(dist>1.1){
                 const dir=new THREE.Vector3(dx,0,dz).normalize();
-                let desired=Math.atan2(dir.x,dir.z), da=desired-u.mesh.rotation.y;
-                while(da>Math.PI)da-=Math.PI*2; while(da<-Math.PI)da+=Math.PI*2;
-                u.mesh.rotation.y+=da*.30;
-                const next=u.mesh.position.clone().add(dir.multiplyScalar(Math.min(dist,u.factoryExitSpeed||.5)));
+                const desired=Math.atan2(dir.x,dir.z);
+                let da=desired-u.mesh.rotation.y;
+                while(da>Math.PI)da-=Math.PI*2;
+                while(da<-Math.PI)da+=Math.PI*2;
+                u.mesh.rotation.y+=Math.max(-.22,Math.min(.22,da));
+                const speed=Math.max(.16,Math.min(.36,Number(u.factoryExitSpeed)||.24));
+                const next=u.mesh.position.clone().add(dir.multiplyScalar(Math.min(dist,speed)));
                 next.y=getTerrainHeight(next.x,next.z);
                 u.mesh.position.copy(next);
+                if(u.Pos&&u.Pos.copy)u.Pos.copy(next);
                 u.factoryExitLock=true;
+                // يمنع نظام الحركة/القتال من سحب الوحدة إلى داخل المصنع أثناء خروجها.
             }else{
                 u.mesh.position.y=getTerrainHeight(u.mesh.position.x,u.mesh.position.z);
-                u.factoryExiting=false; u.factoryExitLock=false;
-                u.factoryExitTarget=null; u.factoryExitDelayUntil=0;
-                u.target=null; u.factoryFinalTarget=null; u.factoryExitFactory=null;
-                u.mesh.position.y=getTerrainHeight(u.mesh.position.x,u.mesh.position.z);
-                showFloatingMsg('✅ Unit exited the factory and is ready for orders');
+                if(u.Pos&&u.Pos.copy)u.Pos.copy(u.mesh.position);
+                u.factoryExiting=false;
+                u.factoryExitLock=false;
+                u.factoryExitTarget=null;
+                u.factoryExitDelayUntil=0;
+                u.target=null;
+                u.factoryFinalTarget=null;
+                u.factoryExitFactory=null;
+                u.factoryExitStartedAt=0;
+                showFloatingMsg('✅ خرجت الوحدة من المصنع وأصبحت جاهزة للأوامر');
             }
-        });
-        playerTanks.forEach(unit=>{
-            if(!unit||!unit.barracksExiting||unit.isDestroyed||!unit.barracksExitTarget)return;
+        }
+        for(const unit of (playerTanks||[])){
+            if(!unit||!unit.barracksExiting||unit.isDestroyed||!unit.barracksExitTarget||!unit.mesh)continue;
             const target=unit.barracksExitTarget;
             const dx=target.x-unit.mesh.position.x,dz=target.z-unit.mesh.position.z;
             const d=Math.hypot(dx,dz);
-            if(d<=1.2){unit.barracksExiting=false;unit.barracksExitLock=false;unit.target=null;return;}
-            const a=Math.atan2(dx,dz);unit.mesh.rotation.y=a;
-            const step=Math.min(d,unit.barracksExitSpeed||.42);
-            unit.mesh.position.x+=Math.sin(a)*step;unit.mesh.position.z+=Math.cos(a)*step;
+            if(d<=1.2){unit.barracksExiting=false;unit.barracksExitLock=false;unit.target=null;continue;}
+            const a=Math.atan2(dx,dz);
+            unit.mesh.rotation.y=a;
+            const step=Math.min(d,Math.max(.10,Number(unit.barracksExitSpeed)||.16));
+            unit.mesh.position.x+=Math.sin(a)*step;
+            unit.mesh.position.z+=Math.cos(a)*step;
             unit.mesh.position.y=getTerrainHeight(unit.mesh.position.x,unit.mesh.position.z);
+            if(unit.Pos&&unit.Pos.copy)unit.Pos.copy(unit.mesh.position);
             if(unit.updateVisual)unit.updateVisual(true);
-        });
-
+        }
     }
 
     function createConstructionTruck(x,z,team='player') {
