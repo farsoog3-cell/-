@@ -2601,6 +2601,9 @@
     const activeOneShots = new Set();
     let redAlarmAudio = null;
     let redAlarmTimer = null;
+    let lastAttackAlarmAt = 0;
+    let lastEnemyInfantrySoundAt = 0;
+    let enemyBaseAlarmActive = false;
     let audioUnlocked = false;
     let windAudio = null;
     let windAudioStarted = false;
@@ -3015,11 +3018,11 @@
     const GAME_MOVE_SPEED_SCALE = 1.0; // لا نبطئ المحاكاة؛ السرعة مستقلة لكل آلية
     // سرعة مستقلة لكل آلية: لا تعتمد أي وحدة على سرعة آلية أخرى.
     const UNIT_SPEEDS = Object.freeze({
-        tank: 0.14,       // دبابة القتال
-        scud: 0.055,      // قاذفة الصاروخ بطيئة وثقيلة بوضوح
-        ambulance: 0.20,  // الإسعاف الأسرع
-        scout: 0.18,      // الاستطلاع سريع
-        dozer: 0.10       // تركس البناء بطيء وثقيل
+        tank: 0.105,      // دبابة القتال: حركة أهدأ وأكثر ثقلاً
+        scud: 0.048,      // قاذفة الصاروخ بطيئة وثقيلة
+        ambulance: 0.16,  // الإسعاف أسرع نسبياً من الدبابة
+        scout: 0.145,     // الاستطلاع
+        dozer: 0.085      // تركس البناء بطيء وثقيل
     });
     // أزمنة الإنتاج والبناء بالثواني الحقيقية، وتحويلها إلى خطوات المحاكاة الثابتة.
     const REAL_TICKS_PER_SECOND = 60;
@@ -4045,11 +4048,14 @@ function beginConfiguredGame(){
     playerMoney=battleConfig.money;
     totalMoneySpent=0;
     battleAudioActive=true;
+    // Stop both loading/menu tracks before starting the in-match soundtrack.
+    stopPreGameMusic();
+    if(menuBgmAudio){menuBgmAudio.pause();try{menuBgmAudio.currentTime=0;}catch(e){}}
     updateEconomyUI();
     applyBattleBotConfig();
     refreshAllTeamFlags();
     closeBattleSetup();
-    menuBgmAudio.pause(); menuBgmAudio.currentTime=0;
+    if(menuBgmAudio){menuBgmAudio.pause();try{menuBgmAudio.currentTime=0;}catch(e){}}
     unlockGameAudio();
     try { startWindAudio(); } catch(e) {}
     playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});
@@ -5207,10 +5213,10 @@ function startGame(){openBattleSetup();}
         const terrainY=getTerrainHeight(x,z); g.position.set(x,terrainY,z); g.rotation.y=team==='player'?-Math.PI/4:Math.PI*3/4; scene.add(g);
         const hpLabel=document.createElement('div'); hpLabel.className=`tank-hp-label ${team==='player'?'hp-player':'hp-enemy'}`; const hpFill=document.createElement('div'); hpFill.className='tank-hp-fill'; hpLabel.appendChild(hpFill); document.getElementById('hp-labels-container').appendChild(hpLabel);
     
-        const soldier={mesh:g,team,target:null,hpLabel,hpFill,hp:100,maxHp:100,hpRevealUntil:0,lastShot:0,reloadTime:0,speed:.14,isDestroyed:false,destructionTimer:0,type:'infantry',manualControl:team==='player',hasPlayerMoveOrder:false,ceaseFire:false,guardPoint:null,guardRadius:14,holdPosition:false,
+        const soldier={mesh:g,team,target:null,hpLabel,hpFill,hp:100,maxHp:100,hpRevealUntil:0,lastShot:0,reloadTime:0,speed:.105,isDestroyed:false,destructionTimer:0,type:'infantry',manualControl:team==='player',hasPlayerMoveOrder:false,ceaseFire:false,guardPoint:null,guardRadius:14,holdPosition:false,
             infantryLegL:L.root,infantryLegR:R.root,infantryArmL:armL,infantryArmR:armR,infantryThighL:L.thigh,infantryThighR:R.thigh,infantryShinL:L.shin,infantryShinR:R.shin,
             infantryRifle:rifle,infantryMuzzle:muzzle,infantryVisualRoot:visualRoot,infantryHead:head,walkCycle:Math.random()*6.28,infantryAttackCycle:0,lastDustPos:new THREE.Vector3(x,terrainY,z),noInfantryTrail:true,isInfantry:true,isAiming:false,aimTarget:null,aimUntil:0,lastStepIndex:-1,infantryBurstLeft:0,infantryBurstTimer:0,deathStyle:null,deathStart:0,lastHitWasExplosion:false,
-            breathPhase:Math.random()*Math.PI*2,breathAmount:.012,infantryIdleTime:0,injuryCount:0,combatState:'moving',combatSpeed:.155,weaponShake:0,smokeTimer:0,prone:false,runAudioCooldown:0,lastRunAudioAt:0};
+            breathPhase:Math.random()*Math.PI*2,breathAmount:.012,infantryIdleTime:0,injuryCount:0,combatState:'moving',combatSpeed:.108,weaponShake:0,smokeTimer:0,prone:false,runAudioCooldown:0,lastRunAudioAt:0};
         // Explicitly opt this infantry out of vehicle silver recoloring.
         applySilverArmyStyle(soldier); addUnitTeamFlag(soldier,team); return soldier;
     }
@@ -5259,7 +5265,16 @@ function startGame(){openBattleSetup();}
         // Ejected shell casing with small ballistic arc.
         createInfantryShell(start,soldier.mesh.rotation.y);
 
-        if(soldier.team==='player')playSound('machineGun',.34);else playSound('danger',.28);
+        if(soldier.team==='player'){
+            playSound('machineGun',.30);
+        }else{
+            // Enemy infantry must not replay the base alarm for every bullet.
+            const soundNow=performance.now();
+            if(soundNow-lastEnemyInfantrySoundAt>650){
+                lastEnemyInfantrySoundAt=soundNow;
+                playSound('machineGun',.16);
+            }
+        }
     }
 
 
@@ -5799,6 +5814,15 @@ function startGame(){openBattleSetup();}
 
     function updateInfantryUnits(){
         const list=[...playerTanks,...enemyTanks].filter(u=>u&&u.isInfantry);
+        const soldierBuckets=new Map();
+        const bucketKey=(team,bx,bz)=>team+':'+bx+':'+bz;
+        for(const soldier of list){
+            if(soldier.isDestroyed||!soldier.mesh)continue;
+            const bx=Math.floor(soldier.mesh.position.x/4),bz=Math.floor(soldier.mesh.position.z/4);
+            const key=bucketKey(soldier.team,bx,bz);
+            if(!soldierBuckets.has(key))soldierBuckets.set(key,[]);
+            soldierBuckets.get(key).push(soldier);
+        }
         for(const u of list){
             if(u.oilCaptureAnim){ updateOilCaptureAnimation(u); continue; }
             // الجندي الميت يجب أن يستمر بتحديث حركة السقوط والاختفاء
@@ -5853,7 +5877,7 @@ function startGame(){openBattleSetup();}
             let target=null,best=120*120;
             const enemyCommandBase=u.team==='player'?enemyBaseGroup:playerBaseGroup;
             for(const e of enemies){
-                if(!e||e.isDestroyed||e.isBuilder||(e.type==='ambulance'&&e.team===u.team))continue;
+                if(!e||e.isDestroyed||(e.type==='ambulance'&&e.team===u.team))continue;
                 const d=u.mesh.position.distanceTo(e.mesh.position);
                 if(d*d<best){best=d*d;target=e;}
             }
@@ -5866,11 +5890,33 @@ function startGame(){openBattleSetup();}
                 const d=Math.sqrt(best);
                 u.target=target;
                 u.isAiming=true;u.aimTarget=target;u.aimUntil=performance.now()+260;
-                if(d>14){
+                // Player infantry holds its ground when an enemy enters engagement range;
+                // turn toward the threat and fire instead of wandering through the battle.
+                if(u.team==='player' && d<=48){
+                    u.combatState='aiming';
+                    const dx=target.mesh.position.x-u.mesh.position.x;
+                    const dz=target.mesh.position.z-u.mesh.position.z;
+                    u.mesh.rotation.y += (Math.atan2(dx,dz)-u.mesh.rotation.y)*.30;
+                    moving=false;
+                }else if(d>14){
                     u.combatState='combat';
                     const dir=new THREE.Vector3().subVectors(target.mesh.position,u.mesh.position).setY(0).normalize();
+                    // Small separation force keeps friendly soldiers from piling into one point.
+                    const sep=new THREE.Vector3();
+                    const bx=Math.floor(u.mesh.position.x/4),bz=Math.floor(u.mesh.position.z/4);
+                    for(let ox=-1;ox<=1;ox++)for(let oz=-1;oz<=1;oz++){
+                        const mates=soldierBuckets.get(bucketKey(u.team,bx+ox,bz+oz));
+                        if(!mates)continue;
+                        for(const mate of mates){
+                            if(mate===u||mate.isDestroyed||!mate.mesh)continue;
+                            const sx=u.mesh.position.x-mate.mesh.position.x, sz=u.mesh.position.z-mate.mesh.position.z;
+                            const sd2=sx*sx+sz*sz;
+                            if(sd2>0.01&&sd2<12.25){const inv=1/Math.sqrt(sd2);sep.x+=sx*inv*(3.5-Math.sqrt(sd2));sep.z+=sz*inv*(3.5-Math.sqrt(sd2));}
+                        }
+                    }
+                    dir.add(sep.multiplyScalar(.18)).normalize();
                     const safe=getSmartMovementVector(u.mesh.position,dir,u)||dir;
-                    u.mesh.rotation.y+=(Math.atan2(safe.x,safe.z)-u.mesh.rotation.y)*.34;
+                    u.mesh.rotation.y+=(Math.atan2(safe.x,safe.z)-u.mesh.rotation.y)*.28;
                     const next=u.mesh.position.clone().add(safe.multiplyScalar(u.combatSpeed));
                     next.y=getTerrainHeight(next.x,next.z);u.mesh.position.copy(next);moving=true;
                 }else{
@@ -8034,6 +8080,9 @@ function createArmyFactory(x,z,ghost=false){
         enemyAIThink++; if(enemyAIThink%8!==0)return;
         const liveEnemy=enemyTanks.filter(t=>!t.isDestroyed), livePlayer=playerTanks.filter(t=>!t.isDestroyed);
         const info=updateEnemyIntel(liveEnemy,livePlayer);
+        // Trigger exactly once when hostile forces first enter the base perimeter.
+        if(info.enemyNearBase && !enemyBaseAlarmActive) triggerAttackAlert();
+        enemyBaseAlarmActive=!!info.enemyNearBase;
         const builder=liveEnemy.find(t=>t.isBuilder), factory=enemyFactories.find(f=>f.done&&!f.isDestroyed);
 
         // العدو القوي: يفضل الهجوم المستمر، ويحوّل الدفاع إلى هجوم مضاد سريع.
@@ -9790,7 +9839,7 @@ function createArmyFactory(x,z,ghost=false){
             playSound('attack', 0.8);
             triggerTankRecoil(fromTank, 0.62);
         } else {
-            playSound('danger', 0.8);
+            playSound('attack', 0.36);
             triggerTankRecoil(fromTank, 0.62);
         }
 
@@ -9822,7 +9871,7 @@ function createArmyFactory(x,z,ghost=false){
             playSound('attack', 0.9);
             triggerTankRecoil(fromTank, 0.65);
         } else {
-            playSound('danger', 0.9);
+            playSound('attack', 0.42);
         }
 
         let scudBed = fromTank.mesh.getObjectByName("scudBed");
@@ -9869,10 +9918,9 @@ function createArmyFactory(x,z,ghost=false){
             targetPos: targetPos,
             progress: 0,
             launchFrames: 0,
-            verticalLaunchHeight: 46,
-            // SCUD launch/flight is deliberately slow and smooth: a clear vertical rise first,
-            // then a natural ballistic bend toward the target.
-            totalDuration: 210,
+            verticalLaunchHeight: 50,
+            // Slower flight with a clear vertical rise, then a smooth gravity-like ballistic bend.
+            totalDuration: 240,
             turnBlend: 1.0,
             lastPos: startPos.clone()
         });
@@ -9919,6 +9967,18 @@ function createArmyFactory(x,z,ghost=false){
             const pos=barracks.mesh.position.clone();createModernImpactFlash(pos,fromTeam);createBlackImpactCrater(pos,3.2,16000);playSound('explosion',.8,pos);
             for(let i=0;i<8;i++)addSmokeParticle(pos.clone().add(new THREE.Vector3((Math.random()-.5)*3,2+Math.random()*3,(Math.random()-.5)*3)),0x2b2b2b,.65+Math.random()*.5);
             barracks.mesh.traverse(o=>{if(o.isMesh&&o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m.color)m.color.setHex(0x252525);m.roughness=.92;m.metalness=.08;});}});
+            // Collapse and remove the destroyed structure from the battlefield.
+            const destroyedMesh=barracks.mesh;
+            const collapseStart=performance.now();
+            const collapseBarracks=()=>{
+                if(!destroyedMesh||!destroyedMesh.parent)return;
+                const t=Math.min(1,(performance.now()-collapseStart)/700);
+                destroyedMesh.scale.y=Math.max(.08,1-t*.92);
+                destroyedMesh.rotation.z=Math.sin(t*Math.PI)*.08;
+                if(t<1)requestAnimationFrame(collapseBarracks);
+                else{destroyedMesh.visible=false;}
+            };
+            requestAnimationFrame(collapseBarracks);
             if(activeBarracksProduction&&activeBarracksProduction.barracks===barracks)activeBarracksProduction=null;
         }
     }
@@ -10062,6 +10122,10 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function triggerAttackAlert(){
+        // One warning per attack wave; repeated hits do not restart the alarm.
+        const now=Date.now();
+        if(now-lastAttackAlarmAt<20000) return;
+        lastAttackAlarmAt=now;
         const alertEl = document.getElementById('attack-alert');
         if(alertEl){
             alertEl.classList.add('active');
@@ -10074,11 +10138,11 @@ function createArmyFactory(x,z,ghost=false){
             if(!redAlarmAudio){
                 redAlarmAudio = new Audio(soundFiles.redAlarm || 'sounds/red_alarm.mp3');
                 redAlarmAudio.preload = 'auto';
-                redAlarmAudio.loop = true;
+                redAlarmAudio.loop = false;
             }
             unlockGameAudio();
             redAlarmAudio.currentTime = 0;
-            redAlarmAudio.volume = Math.min(1, 0.95 * sfxVolumeSetting);
+            redAlarmAudio.volume = Math.min(1, 0.78 * sfxVolumeSetting);
             if (sfxVolumeSetting <= 0) return;
             const playPromise = redAlarmAudio.play();
             if(playPromise && playPromise.catch) playPromise.catch(()=>{});
@@ -10095,7 +10159,7 @@ function createArmyFactory(x,z,ghost=false){
     function revealUnitHp(unit, duration=5000, incomingTeam=null) {
         if (!unit || unit.isDestroyed) return;
         unit.hpRevealUntil = Math.max(unit.hpRevealUntil || 0, Date.now() + duration);
-        if (incomingTeam === 'enemy' && unit.team === 'player') triggerAttackAlert();
+        // The base alarm is driven by enemy proximity, not by every damage event.
     }
 
     function isUnitSelectedForHp(unit) {
@@ -10412,7 +10476,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
                 revealUnitHp(impactTarget, 5000, b.fromTeam);
                 updateUnitDamageEffects(impactTarget);
-                if(b.infantryBullet){ playSound('danger',.10); } else { playSound('explosion',.42); }
+                if(!b.infantryBullet){ playSound('explosion',.42); }
                 if (impactTarget.isCommandBase) {
                     damageCommandBase(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isFactory) {
@@ -10585,6 +10649,14 @@ function createArmyFactory(x,z,ghost=false){
                 }
             }
 
+            // Defensive hold: close enemy threats override old movement/roaming orders.
+            // Factory exit remains exempt so produced units can leave the factory correctly.
+            if(tankData.team==='player' && enemyTarget && !tankData.isBuilder && !tankData.factoryExiting){
+                const threatDistance=tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
+                if(threatDistance<=76){ tankData.target=null; tankData.aiTarget=null; tankData.combatHoldTarget=enemyTarget; }
+                else tankData.combatHoldTarget=null;
+            }
+
             // تركس البناء وحدة غير قتالية: تتحرك فقط بأوامر اللاعب ولا تطلق النار.
             if (tankData.isBuilder) {
                 if (tankData.target) {
@@ -10706,7 +10778,14 @@ function createArmyFactory(x,z,ghost=false){
                     // السكود لا يدخل في اشتباك قريب: إذا اقترب العدو أكثر من 105، يتراجع للخلف حتى يستعيد مسافة أمان.
                     const scudSafeDistance=112;
                     const scudFireMaxDistance=170;
-                    if (distToTarget < scudSafeDistance) {
+                    if (distToTarget < scudSafeDistance && tankData.team==='player') {
+                        // Player SCUD stays put under close pressure; rotate toward the threat.
+                        const dx=enemyTarget.mesh.position.x-tankData.mesh.position.x;
+                        const dz=enemyTarget.mesh.position.z-tankData.mesh.position.z;
+                        tankData.mesh.rotation.y += (Math.atan2(dx,dz)-tankData.mesh.rotation.y)*.20;
+                        tankData.scudState='sleeping'; tankData.scudAnimProgress=0;
+                        isMoving=false;
+                    } else if (distToTarget < scudSafeDistance) {
                         const away=new THREE.Vector3().subVectors(tankData.mesh.position,enemyTarget.mesh.position).setY(0);
                         if(away.lengthSq()<0.001) away.set(0,0,1);
                         away.normalize();
@@ -10859,7 +10938,7 @@ function createArmyFactory(x,z,ghost=false){
                     if(tankData.combatRetreatTime>0){
                         tankData.combatRetreatTime=0;
                     }
-                    if(d>combatRange){
+                    if(d>combatRange && !(tankData.team==='player' && d<=combatRange+10)){
                         const toward=new THREE.Vector3().subVectors(enemyTarget.mesh.position,tankData.mesh.position).setY(0).normalize();
                         const safe=getSmartMovementVector(tankData.mesh.position,toward,tankData);
                         if(safe){
@@ -10872,9 +10951,12 @@ function createArmyFactory(x,z,ghost=false){
                     }else{
                         const canSee=hasClearLineOfFire(tankData,enemyTarget);
                         if(canSee){
-                            // الدبابة تتوقف تماماً قبل كل قصف؛ لا إطلاق أثناء الحركة.
+                            // Stop and turn the hull toward the enemy; the turret then tracks precisely.
                             isMoving=false;
                             tankData.combatState='firing';
+                            const faceX=enemyTarget.mesh.position.x-tankData.mesh.position.x;
+                            const faceZ=enemyTarget.mesh.position.z-tankData.mesh.position.z;
+                            tankData.mesh.rotation.y += (Math.atan2(faceX,faceZ)-tankData.mesh.rotation.y)*.12;
                             aimTankTurretAt(tankData,enemyTarget);
                             const before=tankData.lastShot||0;
                             fireBullet(tankData,enemyTarget);
@@ -11153,6 +11235,7 @@ function createArmyFactory(x,z,ghost=false){
 
     function animate(now) {
         requestAnimationFrame(animate);
+        performanceFrame++;
         now = now || performance.now();
         const realDt = Math.min(100, Math.max(0, now - simLastTime));
         simLastTime = now;
@@ -11163,16 +11246,19 @@ function createArmyFactory(x,z,ghost=false){
         updateCameraPosition();
 
         let steps = 0;
-        while (simAccumulator >= SIM_STEP_MS && steps < 6) {
+        // Avoid a long catch-up spiral on mobile; simulation slows slightly instead of freezing.
+        while (simAccumulator >= SIM_STEP_MS && steps < 3) {
             simAccumulator -= SIM_STEP_MS;
 
             // نفس النبضة الزمنية للاعب والعدو: شراء، بناء، استخراج، حركة، قتال وذكاء.
             updateFactoryExits();
             updateTanksMovement();
             updateAmbulances();
-            [...reconVehicles,...ambulances].forEach(u =>
-                spawnAllVehicleGroundMarks(u, u.type === 'ambulance' ? 3.2 : 3.8)
-            );
+            if((performanceFrame%4)===0){
+                [...reconVehicles,...ambulances].forEach(u =>
+                    spawnAllVehicleGroundMarks(u, u.type === 'ambulance' ? 3.2 : 3.8)
+                );
+            }
             updateReconEnemyDetectionSound();
             checkLogicAndEconomy();
             animateFlags();
@@ -11180,10 +11266,11 @@ function createArmyFactory(x,z,ghost=false){
             animateDefenseMarker();
             steps++;
         }
+        if(simAccumulator>SIM_STEP_MS) simAccumulator=SIM_STEP_MS;
 
         animateAmbulanceEmergencyLights();
-        animateCloudShadows();
-        renderMinimap();
+        if((performanceFrame%2)===0) animateCloudShadows();
+        if((performanceFrame%3)===0) renderMinimap();
 
         reconVehicles.forEach(v => {
             if (v.reconDish && !v.isDestroyed)
@@ -13052,14 +13139,14 @@ document.addEventListener('DOMContentLoaded',function(){
 </style>
 
 <script id="camera-sensitivity-runtime">
-window.cameraSensitivity=0.0037;window.cameraPanSensitivity=0.58;window.cameraZoomSensitivity=0.46;window.cameraWheelSensitivity=0.18;
+window.cameraSensitivity=0.0031;window.cameraPanSensitivity=0.50;window.cameraZoomSensitivity=0.40;window.cameraWheelSensitivity=0.14;
 window.updateCameraSensitivity=function(v){
   const n=Math.max(20,Math.min(80,Number(v)||50));
   const t=(n-20)/60;
-  window.cameraSensitivity=0.0026+t*0.0028;
-  window.cameraPanSensitivity=0.46+t*0.24;
-  window.cameraZoomSensitivity=0.36+t*0.20;
-  window.cameraWheelSensitivity=0.13+t*0.11;
+  window.cameraSensitivity=0.0022+t*0.0022;
+  window.cameraPanSensitivity=0.42+t*0.18;
+  window.cameraZoomSensitivity=0.32+t*0.16;
+  window.cameraWheelSensitivity=0.10+t*0.08;
   const out=document.getElementById('camera-sens-val');if(out)out.textContent=n+'%';
 };
 </script>
