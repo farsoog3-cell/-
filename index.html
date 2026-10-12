@@ -6854,7 +6854,7 @@ function createArmyFactory(x,z,ghost=false){
 
         const groundY=getBuildingGroundLevel(x,z,'factory',factoryPlacementRotation); group.position.set(x,groundY+.03,z);
         group.scale.setScalar(ghost?.95:.08); group.rotation.y=factoryPlacementRotation;
-        if(ghost) group.traverse(o=>{if(o.material){o.material.transparent=true;o.material.opacity=.30;o.material.depthWrite=false;o.material.emissive?.setHex(0x173b20);o.material.emissiveIntensity=.5;}});
+        if(ghost) group.traverse(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(!m)return;if(!m.userData.__preGhostStyle)m.userData.__preGhostStyle={transparent:m.transparent,opacity:m.opacity,depthWrite:m.depthWrite,emissive:m.emissive?m.emissive.getHex():null,emissiveIntensity:m.emissiveIntensity};m.transparent=true;m.opacity=.30;m.depthWrite=false;if(m.emissive){m.emissive.setHex(0x173b20);m.emissiveIntensity=.5;}m.needsUpdate=true;});}});
         scene.add(group);
 
         if(!ghost){
@@ -7139,6 +7139,31 @@ function createArmyFactory(x,z,ghost=false){
         showFloatingMsg(type==='scout'?'🏭 Scout vehicle preparation started — 12 seconds':'🏭 Production started — 15 seconds');
         updateFactoryBar();
     }
+    function ensureFactoryProductionBillboard(factory){
+        if(!factory||!factory.mesh||!window.THREE)return null;
+        if(factory.__productionBillboard&&factory.__productionBillboard.sprite)return factory.__productionBillboard;
+        try{
+            const canvas=document.createElement('canvas');canvas.width=320;canvas.height=80;
+            const ctx=canvas.getContext('2d');const texture=new THREE.CanvasTexture(canvas);texture.minFilter=THREE.LinearFilter;
+            const material=new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false});
+            const sprite=new THREE.Sprite(material);sprite.name='factoryProductionBillboard';sprite.scale.set(25,6.25,1);sprite.renderOrder=999;
+            scene.add(sprite);factory.__productionBillboard={canvas,ctx,texture,material,sprite,lastText:''};return factory.__productionBillboard;
+        }catch(e){return null;}
+    }
+    function updateFactoryProductionBillboards(){
+        const all=[...(constructedFactories||[]),...(enemyFactories||[])];const seen=new Set();
+        for(const factory of all){if(!factory||!factory.mesh||factory.isDestroyed||seen.has(factory))continue;seen.add(factory);const job=factory.productionJob;
+          let bb=factory.__productionBillboard;
+          if(!job){if(bb&&bb.sprite){bb.sprite.visible=false;}continue;}
+          bb=ensureFactoryProductionBillboard(factory);if(!bb)continue;bb.sprite.visible=true;
+          const duration=Math.max(1,Number(job.duration)||1),elapsed=Math.max(0,Number(job.elapsed)||0),left=Math.max(0,(duration-elapsed)/(typeof REAL_TICKS_PER_SECOND!=='undefined'?REAL_TICKS_PER_SECOND:60));
+          const seconds=Math.ceil(left),mm=String(Math.floor(seconds/60)).padStart(2,'0'),ss=String(seconds%60).padStart(2,'0');
+          const typeName=({normal:'TANK',rocket:'SCUD',ambulance:'AMBULANCE',scout:'RECON',infantry:'INFANTRY'})[job.type]||String(job.type||'UNIT').toUpperCase();
+          const text=typeName+'  '+mm+':'+ss;bb.sprite.position.set(factory.mesh.position.x,factory.mesh.position.y+15,factory.mesh.position.z);
+          if(bb.lastText!==text){bb.lastText=text;const c=bb.ctx;c.clearRect(0,0,bb.canvas.width,bb.canvas.height);c.fillStyle='rgba(8,15,20,0.88)';c.beginPath();c.roundRect(3,3,314,74,14);c.fill();c.strokeStyle=factory.owner==='enemy'?(battleConfig.enemyColor||'#ef4444'):(battleConfig.playerColor||'#168cff');c.lineWidth=4;c.stroke();c.fillStyle='#ffffff';c.font='bold 27px Arial';c.textAlign='center';c.textBaseline='middle';c.fillText(text,160,40);bb.texture.needsUpdate=true;}
+        }
+    }
+
     function updateFactoryProduction(){
         const now=Date.now();
         for(const factory of constructedFactories){
@@ -7154,6 +7179,7 @@ function createArmyFactory(x,z,ghost=false){
         if(selectedFactory)updateFactoryBar();
         const fill=document.getElementById('factory-production-progress'),f=document.getElementById('factory-production-progress-fill');
         if(fill&&f){const p=activeFactoryProduction; if(p){fill.style.display='block';f.style.width=Math.min(100,(p.elapsed/p.duration)*100)+'%';}else{fill.style.display='none';f.style.width='0%';}}
+        try{updateFactoryProductionBillboards();}catch(e){}
     }
 
     function animateFactoryDoors(factory, duration=3200){
@@ -9442,6 +9468,7 @@ function createArmyFactory(x,z,ghost=false){
         }
 
         updateInfantryUnits();
+        if(window.__animateRemoteInfantry) window.__animateRemoteInfantry();
 
         let allTanksCombined = [...new Set([...playerTanks, ...reconVehicles, ...enemyTanks])].filter(u=>!u.__serverRemote);
         if ((performanceFrame % 3) === 0) rebuildCollisionCache([...allTanksCombined, ...ambulances]);
@@ -10278,8 +10305,11 @@ function createArmyFactory(x,z,ghost=false){
         building.mesh.traverse(o=>{
             if(!o.material)return;
             const mats=Array.isArray(o.material)?o.material:[o.material];
-            mats.forEach(m=>{if(!m)return;m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;
-                if(m.emissive && m.userData && m.userData.placementGhostEmissive){m.emissive.setHex(0x000000);m.emissiveIntensity=0;}
+            mats.forEach(m=>{if(!m)return;const original=m.userData&&m.userData.__preGhostStyle;
+                if(original){m.transparent=!!original.transparent;if(original.opacity!==undefined)m.opacity=original.opacity;if(original.depthWrite!==undefined)m.depthWrite=original.depthWrite;if(m.emissive&&original.emissive!==null){m.emissive.setHex(original.emissive);m.emissiveIntensity=original.emissiveIntensity??0;}delete m.userData.__preGhostStyle;}
+                else if(m.userData&&m.userData.placementGhostEmissive){m.emissive?.setHex(0x000000);if(m.emissive)m.emissiveIntensity=0;}
+                // Non-ghost buildings keep their authored glass/transparency materials; never flatten them to a different look.
+                m.needsUpdate=true;
             });
         });
     }
@@ -10414,6 +10444,7 @@ function createArmyFactory(x,z,ghost=false){
                     c.build.mesh.visible=true;c.build.mesh.scale.setScalar(1);
                     c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;
                     try{setConstructionBuildingOpaque(c.build);}catch(e){}
+                    try{c.build.mesh.traverse(o=>{if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m){m.needsUpdate=true;}});}});}catch(e){}
                     try{removeConstructionLift(c);}catch(e){}
                     try{removeFactoryConstructionCage(c);}catch(e){}
                     if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}
@@ -11938,7 +11969,11 @@ window.updateCameraSensitivity=function(v){
   function unitSnapshot(u,prefix){
     if(!u||!u.mesh||u.isDestroyed)return null;
     const p=u.mesh.position;
-    return {id:idFor(u,prefix),type:u.type||(u.isInfantry?'infantry':prefix),infantry:!!u.isInfantry,builder:!!u.isBuilder,x:safeNum(p.x),z:safeNum(p.z),y:safeNum(p.y),rot:safeNum(u.mesh.rotation.y),hp:Math.max(0,safeNum(u.hp,100)),maxHp:Math.max(1,safeNum(u.maxHp,100)),destroyed:false,target:u.target&&u.target.x!==undefined?{x:safeNum(u.target.x),z:safeNum(u.target.z)}:null,guard:u.guardPoint?{x:safeNum(u.guardPoint.x),z:safeNum(u.guardPoint.z)}:null};
+    const prev=u.__netSnapshotPos;const moving=!!(prev&&Math.hypot(p.x-prev.x,p.z-prev.z)>.025)||!!u.factoryExiting||!!u.barracksExiting||!!u.factoryRetreating;
+    u.__netSnapshotPos={x:p.x,z:p.z};
+    const rawType=String(u.type||(u.isInfantry?'infantry':prefix)||'normal').toLowerCase();
+    const type=rawType.includes('scud')||rawType.includes('missile')||rawType==='rocketlauncher'?'rocket':rawType.includes('recon')?'scout':rawType.includes('ambul')?'ambulance':rawType.includes('infantry')?'infantry':rawType;
+    return {id:idFor(u,prefix),type,infantry:!!u.isInfantry||type==='infantry',builder:!!u.isBuilder||type==='builder',moving,x:safeNum(p.x),z:safeNum(p.z),y:safeNum(p.y),rot:safeNum(u.mesh.rotation.y),hp:Math.max(0,safeNum(u.hp,100)),maxHp:Math.max(1,safeNum(u.maxHp,100)),destroyed:false,target:u.target&&u.target.x!==undefined?{x:safeNum(u.target.x),z:safeNum(u.target.z)}:null,guard:u.guardPoint?{x:safeNum(u.guardPoint.x),z:safeNum(u.guardPoint.z)}:null};
   }
   function collectUnits(){
     const out=[],seen=new Set();
@@ -11977,16 +12012,16 @@ window.updateCameraSensitivity=function(v){
     const key=remoteKey(playerId,s.id);
     let u=remote.get(key);if(u?.mesh)return u;
     try{
-      const x=s.x||0,z=s.z||0,type=s.type||'normal',team='enemy';let created=null;
+      const x=s.x||0,z=s.z||0,rawType=String(s.type||'normal').toLowerCase(),type=(rawType.includes('scud')||rawType.includes('missile')||rawType==='rocketlauncher')?'rocket':rawType.includes('recon')?'scout':rawType.includes('ambul')?'ambulance':rawType.includes('infantry')?'infantry':rawType,team='enemy';let created=null;
       if((type==='builder'||s.builder)&&typeof createConstructionTruck==='function')created=createConstructionTruck(x,z,team);
       else if(type==='scout'&&typeof createReconVehicle==='function')created=createReconVehicle(x,z,team);
       else if(type==='ambulance'&&typeof createModernAmbulance==='function')created=createModernAmbulance(x,z,team);
-      else if(s.infantry&&typeof createInfantrySoldier==='function')created=createInfantrySoldier(x,z,team);
+      else if((s.infantry||type==='infantry')&&typeof createInfantrySoldier==='function')created=createInfantrySoldier(x,z,team);
       else if(typeof createTank==='function')created=createTank(x,z,color||battleConfig.enemyColor||'#ef4444',team,type==='rocket'?'rocket':'normal');
       if(!created)return null;
       // مهم: هذه نسخة للخصم فقط. لا نضع عليها __netId المحلي، ولا نسمح لها
       // بالدخول في مسار ملكية اللاعب المحلي أو في لقطة الإرسال.
-      created.__netId=key;created.team='enemy';created.owner='enemy';created.manualControl=false;created.__serverRemote=true;created.__remoteOwner=playerId;created.hp=s.hp;created.maxHp=s.maxHp||created.maxHp||100;created.__lastNetSeen=performance.now();remote.set(key,created);
+      created.__netId=key;created.type=type;created.team='enemy';created.owner='enemy';created.manualControl=false;created.__serverRemote=true;created.__remoteOwner=playerId;created.hp=s.hp;created.maxHp=s.maxHp||created.maxHp||100;created.__lastNetSeen=performance.now();remote.set(key,created);
       if(created.isInfantry){if(!enemyTanks.includes(created))enemyTanks.push(created);}else if(type==='scout'){if(!reconVehicles.includes(created))reconVehicles.push(created);}else if(type==='ambulance'){if(!ambulances.includes(created))ambulances.push(created);}else if(!enemyTanks.includes(created))enemyTanks.push(created);
       if(typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',color||battleConfig.enemyColor||'#ef4444');
       return created;
@@ -12000,7 +12035,7 @@ window.updateCameraSensitivity=function(v){
     if(!u?.mesh)return;
     u.__serverRemote=true;u.__remoteOwner=playerId;u.__lastNetSeen=performance.now();
     const t=.42;u.mesh.position.x+=(s.x-u.mesh.position.x)*t;u.mesh.position.z+=(s.z-u.mesh.position.z)*t;if(Number.isFinite(s.y))u.mesh.position.y+=(s.y-u.mesh.position.y)*t;if(Number.isFinite(s.rot))u.mesh.rotation.y=lerpAngle(u.mesh.rotation.y,s.rot,t);
-    u.hp=Math.max(0,Number(s.hp)||0);u.maxHp=Math.max(1,Number(s.maxHp)||100);u.isDestroyed=!!s.destroyed;if(s.target)u.serverTarget=s.target;if(s.guard)u.serverGuard=s.guard;if(u.mesh)u.mesh.visible=!u.isDestroyed;
+    u.__remoteMoving=!!s.moving;u.hp=Math.max(0,Number(s.hp)||0);u.maxHp=Math.max(1,Number(s.maxHp)||100);u.isDestroyed=!!s.destroyed;if(s.target)u.serverTarget=s.target;if(s.guard)u.serverGuard=s.guard;if(u.mesh)u.mesh.visible=!u.isDestroyed;
   }
   function makeRemoteBuilding(s,playerId,color){
     if(!s?.id)return null;const key=remoteKey(playerId,s.id);let b=remoteBuildings.get(key);if(b)return b;
@@ -12032,7 +12067,17 @@ window.updateCameraSensitivity=function(v){
     }else{
       const c=remoteConstruction.get(key);if(c){if(s.type==='factory'){removeConstructionLift(c);removeFactoryConstructionCage(c);}else{removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);}remoteConstruction.delete(key);}
     }
-    if(s.production){b.productionJob={type:s.production.type,elapsed:s.production.elapsed,duration:s.production.duration,startedAt:s.production.startedAt||Date.now(),durationMs:s.production.durationMs||0};}else b.productionJob=null;
+    if(s.production){const elapsed=Math.max(0,safeNum(s.production.elapsed));b.productionJob={type:s.production.type,elapsed,duration:s.production.duration,startedAt:s.production.startedAt||Date.now(),durationMs:s.production.durationMs||0,__remoteProduction:true};}else b.productionJob=null;
+  }
+  function ensureLocalServerProducedUnit(s){
+    if(!s||!s.id||!s.serverProduced)return;
+    const arrays=[playerTanks,reconVehicles,ambulances];
+    for(const arr of arrays){if(Array.isArray(arr)&&arr.some(u=>u&&u.__netId===s.id))return;}
+    const raw=String(s.type||'normal').toLowerCase();const type=(raw.includes('scud')||raw.includes('missile')||raw==='rocketlauncher')?'rocket':raw.includes('recon')?'scout':raw.includes('ambul')?'ambulance':raw.includes('infantry')?'infantry':raw;
+    let u=null;const x=safeNum(s.x),z=safeNum(s.z),color=battleConfig.playerColor||'#168cff';
+    try{if(type==='ambulance')u=createModernAmbulance(x,z,'player');else if(type==='scout')u=createReconVehicle(x,z,'player');else if(type==='infantry')u=createInfantrySoldier(x,z,'player');else u=createTank(x,z,color,'player',type==='rocket'?'rocket':'normal');}catch(e){console.warn('Could not restore server-produced unit:',e);return;}
+    if(!u)return;u.__netId=s.id;u.__serverProduced=true;u.team='player';u.owner='player';u.type=type;u.hp=Math.max(1,safeNum(s.hp,500));u.maxHp=Math.max(1,safeNum(s.maxHp,500));u.mesh.position.set(x,Number.isFinite(Number(s.y))?Number(s.y):getTerrainHeight(x,z),z);u.mesh.rotation.y=safeNum(s.rot);u.target=null;u.manualControl=true;
+    if(type==='ambulance')ambulances.push(u);else if(type==='scout')reconVehicles.push(u);else playerTanks.push(u);
   }
   function applyRemoteState(packet){
     if(!packet?.players)return;if(Number.isFinite(packet.tick)&&packet.tick<lastServerTick)return;lastServerTick=Number(packet.tick)||lastServerTick;
@@ -12045,20 +12090,35 @@ window.updateCameraSensitivity=function(v){
       for(const [id,b] of remoteBuildings){if(b?.__remoteOwner!==p.id||seenBuildings.has(id))continue;if(performance.now()-safeNum(b.__lastNetSeen,0)>REMOTE_BUILDING_GRACE){b.isDestroyed=true;if(b.mesh)b.mesh.visible=false;}}
       if(p.state.base&&typeof enemyBaseGroup!=='undefined'&&enemyBaseGroup){enemyBaseGroup.hp=safeNum(p.state.base.hp,enemyBaseGroup.hp||1600);enemyBaseGroup.maxHp=safeNum(p.state.base.maxHp,enemyBaseGroup.maxHp||1600);}
       window.remoteOpponentMoney=Math.max(0,Math.floor(safeNum(p.state.money,0)));window.remoteOpponentColor=color;battleConfig.enemyColor=color;
-      if(Array.isArray(p.state.oil))for(const ro of p.state.oil){const local=oilRigs.find(r=>r&&r.__netId===ro.id||r&&r.x===ro.x&&r.z===ro.z);if(local){local.remoteOwner=ro.owner;local.remoteCaptureProgress=ro.captureProgress;}}
+      if(Array.isArray(p.state.oil))for(const ro of p.state.oil){const local=oilRigs.find(r=>r&&(r.__netId===ro.id||(Math.abs(safeNum(r.x)-safeNum(ro.x))<.5&&Math.abs(safeNum(r.z)-safeNum(ro.z))<.5)));if(local){
+        const translated=ro.owner==='player'?'enemy':ro.owner==='enemy'?'player':'none';
+        local.remoteOwner=translated;local.remoteCaptureProgress=-safeNum(ro.captureProgress);
+        // Oil control is gameplay state, not just a hidden network property: update the visible flag on both clients.
+        if(translated!=='none'||local.owner==='none')local.owner=translated;
+        if(local.flagData){local.flagData.owner=translated;local.flagData.type=translated==='enemy'?enemyFlagType:translated==='player'?playerFlagType:'white';const flag=local.flagData.mesh;if(flag&&flag.material){flag.visible=true;flag.material.map=createFlagTexture(local.flagData.type);flag.material.needsUpdate=true;flag.position.y=local.flagData.baseHeight||9.15;}}
+      }}
     }
     // لا نعيد كتابة رصيد اللاعب المحلي من snapshot راجع من السيرفر.
     // السيرفر الحالي Relay/Sync وليس محرك اقتصاد authoritative، لذلك قد تصل لقطة أقدم
     // بعد عملية شراء محلية وتعيد العداد إلى قيمته السابقة. رصيدنا المحلي هو المرجع،
     // بينما نحتفظ برصيد الخصم من الحالة البعيدة أعلاه.
     const mine=packet.players.find(p=>p?.id===me);
-    if(mine?.state&&Number.isFinite(Number(mine.state.money))){
-      window.__lastSeenMineMoney= Math.max(0, Math.floor(Number(mine.state.money)));
-      window.__lastAppliedMineMoneySeq=Number(mine.state.__seq||0);
+    if(mine?.state){
+      if(Array.isArray(mine.state.units))for(const u of mine.state.units)if(u&&u.serverProduced)ensureLocalServerProducedUnit(u);
+      if(Number.isFinite(Number(mine.state.money))){window.__lastSeenMineMoney= Math.max(0, Math.floor(Number(mine.state.money)));window.__lastAppliedMineMoneySeq=Number(mine.state.__seq||0);}
     }
     if(found&&window.remoteOpponentColor&&typeof applySelectedTeamColor==='function')applySelectedTeamColor('enemy',window.remoteOpponentColor);
   }
+  function animateRemoteInfantry(){
+    if(typeof updateInfantryVisual!=='function')return;
+    for(const u of remote.values()){
+      if(!u||!u.isInfantry||!u.mesh||u.isDestroyed)continue;
+      try{updateInfantryVisual(u,!!u.__remoteMoving);}catch(err){console.warn('Remote infantry animation update failed:',err);}
+    }
+  }
   window.addEventListener('onlineServerState',e=>applyRemoteState(e.detail));
+  // Called by the main render loop; it animates only the remote soldier model and never moves it locally.
+  window.__animateRemoteInfantry=animateRemoteInfantry;
   function watch(){
     if(online()&&!onlineStarted){onlineStarted=true;lastUpload=0;lastServerTick=-1;if(syncTimer)clearInterval(syncTimer);syncTimer=setInterval(serverSendSnapshot,SEND_MS);serverSendSnapshot();}
     if(!online()&&onlineStarted){onlineStarted=false;if(syncTimer)clearInterval(syncTimer);syncTimer=null;for(const u of remote.values())if(u?.mesh)scene.remove(u.mesh);for(const b of remoteBuildings.values())if(b?.mesh)scene.remove(b.mesh);for(const c of remoteConstruction.values()){try{removeConstructionLift(c);removeFactoryConstructionCage(c);removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);}catch(_){}}remote.clear();remoteBuildings.clear();remoteConstruction.clear();}
