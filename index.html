@@ -3549,7 +3549,7 @@
 
         updateEconomyUI();
         window.addEventListener('resize', onWindowResize);
-        runIntroLoading();
+        window.__skipOldIntroLoading = true;
         animate();
     }
 
@@ -13164,5 +13164,162 @@ window.updateCameraSensitivity=function(v){
   };
 })();
 </script>
+
+<style id="classic-green-room-ui">
+/* New classic raw military menu: no Earth, globe, or old spinner. */
+#intro-webgl-canvas,#intro-flag-fullscreen-canvas,#intro-terminal,.syrian-hawk-logo,
+#modern-loading-container .loading-spinner,#modern-loading-text,.loading-dots {display:none!important}
+#start-menu{display:none!important;background:#10150f!important}
+#settings-modal{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;
+ background:linear-gradient(135deg,#242b20,#0a0d09 68%,#1b2118)!important;align-items:center!important;justify-content:center!important;padding:14px!important}
+#settings-modal:before{display:none!important}
+#settings-modal .menu-card{width:min(90vw,360px)!important;min-width:0!important;position:relative!important;top:auto!important;left:auto!important;transform:none!important;
+ padding:14px!important;background:#59614b!important;border:3px solid #080a07!important;border-radius:3px!important;
+ box-shadow:inset 0 0 0 2px #858b73,0 10px 30px #000!important}
+#settings-modal .menu-card h1{display:block!important;color:#f3f4e8!important;font-size:16px!important;letter-spacing:2px!important;margin-bottom:12px!important}
+#settings-modal .main-menu-actions{gap:8px!important;padding:0!important}
+#settings-modal .menu-btn{width:100%!important;height:48px!important;min-height:48px!important;border:2px solid #050605!important;border-radius:2px!important;
+ background:linear-gradient(#6e795d,#394331)!important;color:#fff!important;font-size:15px!important;text-shadow:1px 2px #000!important;box-shadow:inset 0 0 0 1px #8a9276,0 3px 0 #050605!important}
+#settings-modal #sound-settings-panel{margin-top:8px!important;background:#1a2017!important;border:2px solid #050605!important}
+#sound-settings-panel .settings-slider{accent-color:#aab58d!important}
+#room-setup-overlay,#room-loading-overlay{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,.82)}
+#room-setup-overlay.show,#room-loading-overlay.show{display:flex}
+.room-panel{width:min(96vw,460px);max-height:94dvh;overflow:auto;background:linear-gradient(145deg,#68715a,#343c2e 35%,#151a12);
+ border:3px solid #050605;box-shadow:inset 0 0 0 2px #8a9274,0 12px 38px #000;padding:12px;color:#f4f4e9;direction:rtl}
+.room-title{font-size:17px;font-weight:900;text-align:center;padding:8px;margin-bottom:10px;background:#171c14;border:2px solid #080a07}
+.room-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.room-field{background:#20271c;border:2px solid #090b08;padding:8px;min-width:0}
+.room-field label,.room-field .field-label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}
+.room-field select,.room-field input{width:100%;min-height:36px;background:#0d110b;color:#fff;border:2px solid #050605;border-radius:0;padding:5px;font-size:14px}
+.room-button{width:100%;min-height:42px;background:linear-gradient(#6e795d,#394331);color:white;border:2px solid #050605;box-shadow:inset 0 0 0 1px #899174,0 3px 0 #050605;border-radius:1px;font-weight:900;font-size:14px;margin-top:8px}
+.room-button:disabled{opacity:.45}
+.room-swatches{display:flex;gap:7px;flex-wrap:wrap}
+.room-swatch{width:29px;height:29px;border:2px solid #080a07;box-shadow:inset 0 0 0 1px #ffffff70}
+.room-swatch.active{outline:2px solid white;outline-offset:1px}
+.room-status{text-align:center;font-size:13px;font-weight:900;padding:8px;color:#e4e9d4}
+.room-player-card{background:#11160f;border:2px solid #080a07;padding:9px;margin:7px 0}
+.room-progress{height:10px;background:#050605;border:1px solid #a0a88d;margin-top:7px}
+.room-progress span{display:block;width:0;height:100%;background:#a9b58d;transition:width .3s}
+#room-loading-overlay{z-index:510;background:#080b07;flex-direction:column;gap:12px}
+.room-slideshow{width:min(88vw,520px);height:min(52vh,310px);border:3px solid #070907;background:#20271c;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.room-slideshow img{width:100%;height:100%;object-fit:cover;display:none}
+.room-slideshow img.active{display:block}
+.room-loading-track{width:min(88vw,520px);height:10px;background:#30372a;border:2px solid #050605}
+.room-loading-fill{width:0;height:100%;background:#aab58c;transition:width .18s}
+.room-load-label{color:white;font-weight:900;font-size:13px}
+.room-image-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.room-image-tools label{font-size:10px;text-align:center;padding:7px 3px;background:#20271c;border:1px solid #080a07}
+.room-image-tools input{display:none}
+@media(max-height:650px){.room-panel{max-height:96dvh;padding:8px}.room-title{margin-bottom:5px;padding:5px}.room-row{margin:5px 0}.room-field{padding:6px}.room-button{min-height:36px;margin-top:5px}}
+</style>
+<div id="room-setup-overlay" aria-hidden="true">
+ <div class="room-panel">
+  <div class="room-title">إعداد الغرفة العسكرية</div>
+  <div class="room-row">
+   <div class="room-field"><label for="room-bot-enabled">خيار البوت</label><select id="room-bot-enabled"><option value="yes">اختيار بوت</option><option value="no">بدون بوت</option></select></div>
+   <div class="room-field" id="bot-number-field"><label for="room-bot-number">رقم البوت</label><select id="room-bot-number"><option value="">اختر الرقم</option><option value="1">بوت 1</option><option value="2">بوت 2</option></select></div>
+  </div>
+  <div class="room-field"><span class="field-label">لون علم البوت</span><div class="room-swatches" id="bot-swatches"></div><div class="room-status" id="bot-ready-status">اختر لون العلم</div></div>
+  <div class="room-row">
+   <div class="room-field"><label for="room-player-number">رقم اللاعب</label><select id="room-player-number"><option value="">اختر الرقم</option><option value="1">لاعب 1</option><option value="2">لاعب 2</option></select></div>
+   <div class="room-field"><label for="room-money">المال الابتدائي</label><select id="room-money"><option value="">اختر المال</option><option value="100">100</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
+  </div>
+  <div class="room-field"><span class="field-label">لون علم اللاعب</span><div class="room-swatches" id="player-swatches"></div><div class="room-status" id="player-ready-status">اختر لون العلم</div></div>
+  <button class="room-button" id="room-ready-btn">جاهز</button>
+  <div class="room-status" id="room-main-status">أكمل الخيارات ثم اضغط جاهز</div>
+  <button class="room-button" id="room-start-btn" disabled>بدء اللعب</button>
+  <button class="room-button" id="room-cancel-btn">رجوع للقائمة</button>
+  <div class="room-field" style="margin-top:10px"><span class="field-label">صور التحميل التلقائية من مجلد images (يمكن استبدالها من هنا)</span><div class="room-image-tools">
+   <label>الصورة 1<input type="file" accept="image/*" id="room-image-1"></label>
+   <label>الصورة 2<input type="file" accept="image/*" id="room-image-2"></label>
+   <label>الصورة 3<input type="file" accept="image/*" id="room-image-3"></label>
+  </div></div>
+ </div>
+</div>
+<div id="room-loading-overlay" aria-hidden="true">
+ <div class="room-slideshow" id="room-slideshow"><div id="room-slide-placeholder" style="font-weight:900;color:#e5e8d8">جاري تجهيز ساحة المعركة</div>
+  <img id="room-slide-1" alt="صورة التحميل الأولى"><img id="room-slide-2" alt="صورة التحميل الثانية"><img id="room-slide-3" alt="صورة التحميل الثالثة"></div>
+ <div class="room-load-label" id="room-load-label">جاري دخول القوات... 0%</div><div class="room-loading-track"><div class="room-loading-fill" id="room-loading-fill"></div></div>
+ <div style="color:#d8deca;font-size:11px">يرجى الانتظار حتى اكتمال الدخول</div>
+</div>
+<script id="classic-green-room-runtime">
+(function(){
+ const $=id=>document.getElementById(id);
+ const colors=[['أزرق','#168cff'],['أحمر','#e53935'],['أصفر','#f2c230'],['أبيض','#f2f2e8'],['بنفسجي','#a855f7'],['برتقالي','#f97316']];
+ const chosen={botColor:'',playerColor:'',ready:false};
+ function buildSwatches(id,key){const root=$(id);colors.forEach(([name,color])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch';b.style.background=color;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{chosen[key]=color;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const st=$(key==='botColor'?'bot-ready-status':'player-ready-status');st.textContent=key==='botColor'?'البوت جاهز':'اللاعب جاهز';};root.appendChild(b);});}
+ buildSwatches('bot-swatches','botColor');buildSwatches('player-swatches','playerColor');$('bot-swatches').style.opacity='.45';
+ const botEnabled=$('room-bot-enabled'),botNum=$('room-bot-number');
+ botNum.disabled=true;$('bot-number-field').style.opacity='.5';
+ botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';$('bot-swatches').style.opacity=on?'1':'.4';if(!on){botNum.value='';chosen.botColor='';$('bot-ready-status').textContent='بدون بوت';}else $('bot-ready-status').textContent='اختر لون العلم';validate();});
+ function validate(){const bot=botEnabled.value==='no'||(botNum.value&&chosen.botColor);const player=$('room-player-number').value&&$('room-money').value&&chosen.playerColor; $('room-ready-btn').disabled=!(bot&&player);$('room-start-btn').disabled=!(chosen.ready&&bot&&player);}
+ botNum.onchange=()=>{if(botNum.value){$('bot-swatches').style.opacity='1';}else{$('bot-ready-status').textContent='اختر رقم البوت';}validate();};$('room-player-number').onchange=validate;$('room-money').onchange=validate;
+ window.openRoomSetup=function(){chosen.ready=false;$('room-setup-overlay').classList.add('show');$('room-setup-overlay').setAttribute('aria-hidden','false');$('room-main-status').textContent='أكمل الخيارات ثم اضغط جاهز';$('room-ready-btn').textContent='جاهز';$('room-start-btn').disabled=true;validate();};
+ $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;chosen.ready=true;$('room-main-status').textContent='اللاعب جاهز — اضغط بدء اللعب للدخول';$('room-ready-btn').textContent='تم الاستعداد ✓';$('room-start-btn').disabled=false;};
+ $('room-cancel-btn').onclick=()=>{$('room-setup-overlay').classList.remove('show');};
+ // Load the three default slideshow images automatically from ./images/.
+ const imageUrls=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let slideIndex=0;
+ [1,2,3].forEach(n=>{
+  const img=$('room-slide-'+n), idx=n-1;
+  img.style.display='';
+  img.onload=()=>{$('room-slide-placeholder').style.display='none';showSlide();};
+  img.onerror=()=>{imageUrls[idx]=null;img.classList.remove('active');img.style.display='none';showSlide();};
+  img.src=imageUrls[idx];
+  $('room-image-'+n).addEventListener('change',e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);imageUrls[idx]=url;img.onerror=null;img.onload=()=>{$('room-slide-placeholder').style.display='none';showSlide();};img.src=url;img.style.display='';});
+ });
+ function showSlide(){const imgs=[1,2,3].map(n=>$('room-slide-'+n));if(!imageUrls.some(Boolean)){imgs.forEach(im=>im.classList.remove('active'));$('room-slide-placeholder').style.display='';return;}$('room-slide-placeholder').style.display='none';imgs.forEach((im,i)=>im.classList.toggle('active',Boolean(imageUrls[i])&&i===slideIndex));let tries=0;do{slideIndex=(slideIndex+1)%3;tries++;}while(tries<3&&!imageUrls[slideIndex]);}
+ $('room-start-btn').onclick=()=>{
+  if($('room-start-btn').disabled)return;
+  const botOn=botEnabled.value==='yes';
+  if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerColorName=colors.find(c=>c[1]===chosen.playerColor)?.[0]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyColorName=colors.find(c=>c[1]===chosen.botColor)?.[0]||'BOT';battleConfig.bot='medium';}else{battleConfig.bot='weak';}}
+  $('room-setup-overlay').classList.remove('show');$('room-loading-overlay').classList.add('show');$('room-loading-overlay').setAttribute('aria-hidden','false');
+  let progress=0;showSlide();const timer=setInterval(()=>{progress=Math.min(100,progress+2);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},45);
+ };
+ // Replace the two legacy buttons and remove the old globe intro permanently.
+ const start=$('start-btn'),sound=$('sound-settings-btn');
+ if(start){start.textContent='إنشاء غرفة';start.onclick=()=>{if(typeof playClickSound==='function')playClickSound();openRoomSetup();};}
+ if(sound){sound.textContent='إعدادات الصوت';}
+ const title=document.querySelector('#settings-modal .menu-card h1');if(title)title.textContent='مركز القيادة';
+ document.addEventListener('DOMContentLoaded',()=>{});
+ // The game initialization no longer calls the old intro. Show menu after a real compact loading bar.
+ const intro=$('start-menu');if(intro)intro.style.display='none';
+ const load=document.createElement('div');load.id='boot-loading-overlay';load.style.cssText='position:fixed;inset:0;z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#10150f;padding:24px;gap:12px;color:#f4f4e9;font-weight:900';
+ load.innerHTML='<div style="letter-spacing:2px">تجهيز القيادة العسكرية</div><div style="width:min(75vw,300px);height:7px;border:1px solid #080a07;background:#050605"><div id="boot-loading-fill" style="width:0;height:100%;background:#aab58c"></div></div>';
+ document.body.appendChild(load);let p=0;const boot=setInterval(()=>{p=Math.min(100,p+4);const f=$('boot-loading-fill');if(f)f.style.width=p+'%';if(p>=100){clearInterval(boot);load.remove();$('settings-modal').style.display='flex';document.body.classList.remove('waiting-menu-active');}},45);
+})();
+</script>
+
+
+<style id="responsive-image-menu-buttons">
+/* Textured military image-style background for the two main buttons. */
+#settings-modal .menu-card{width:min(88vw,390px)!important;max-width:390px!important;box-sizing:border-box!important;padding:clamp(12px,3.5vw,20px)!important}
+#settings-modal .main-menu-actions{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:clamp(10px,2.5vh,16px)!important;width:100%!important}
+#settings-modal .main-menu-actions > .menu-btn,
+#settings-modal #start-btn,
+#settings-modal #sound-settings-btn{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ box-sizing:border-box!important;width:100%!important;max-width:100%!important;min-width:0!important;
+ min-height:clamp(48px,7vh,62px)!important;height:auto!important;padding:12px 14px!important;
+ position:relative!important;overflow:hidden!important;
+ color:#fffdf2!important;font-size:clamp(14px,3.8vw,17px)!important;font-weight:900!important;line-height:1.25!important;
+ text-align:center!important;white-space:normal!important;overflow-wrap:anywhere!important;
+ border:2px solid #080a07!important;border-radius:3px!important;
+ background-color:#4b5540!important;
+ background-image:linear-gradient(180deg,rgba(133,145,107,.72),rgba(42,51,35,.9)),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='80' viewBox='0 0 160 80'%3E%3Crect width='160' height='80' fill='%234b5540'/%3E%3Cg fill='none' stroke='%23d1d6bc' stroke-opacity='.13' stroke-width='1'%3E%3Cpath d='M-20 20L20 -20M0 80L80 0M40 100L140 0M100 100L180 20M-10 50L50 -10M90 90L170 10'/%3E%3C/g%3E%3Cg fill='%23060905' fill-opacity='.18'%3E%3Crect x='8' y='8' width='144' height='2'/%3E%3Crect x='8' y='70' width='144' height='2'/%3E%3C/g%3E%3C/svg%3E")!important;
+ background-size:cover,160px 80px!important;background-position:center!important;
+ box-shadow:inset 0 0 0 1px #9da88a, inset 0 1px 8px #dce3c522,0 4px 0 #050605,0 7px 12px #0008!important;
+ text-shadow:1px 2px 2px #000!important;transform:none!important;cursor:pointer!important;
+}
+#settings-modal #start-btn{filter:hue-rotate(8deg) saturate(.9)!important}
+#settings-modal #sound-settings-btn{background-color:#39464a!important;background-image:linear-gradient(180deg,rgba(117,139,139,.72),rgba(35,47,50,.92)),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='80' viewBox='0 0 160 80'%3E%3Crect width='160' height='80' fill='%2339464a'/%3E%3Cg fill='none' stroke='%23d8e0df' stroke-opacity='.14' stroke-width='1'%3E%3Cpath d='M-20 20L20 -20M0 80L80 0M40 100L140 0M100 100L180 20M-10 50L50 -10M90 90L170 10'/%3E%3C/g%3E%3C/svg%3E")!important}
+/* Remove decorative arrows, chevrons and pseudo-icons from the main menu buttons. */
+#settings-modal #start-btn::before,#settings-modal #start-btn::after,
+#settings-modal #sound-settings-btn::before,#settings-modal #sound-settings-btn::after{content:none!important;display:none!important;background:none!important}
+#settings-modal #start-btn:hover,#settings-modal #sound-settings-btn:hover{filter:brightness(1.12)!important}
+#settings-modal #start-btn:active,#settings-modal #sound-settings-btn:active{transform:translateY(2px)!important;box-shadow:inset 0 0 0 1px #9da88a,0 2px 0 #050605!important}
+@media(max-width:360px){#settings-modal{padding:10px!important}#settings-modal .menu-card{width:92vw!important;padding:11px!important}#settings-modal .main-menu-actions{gap:10px!important}}
+@media(orientation:landscape) and (max-height:520px){#settings-modal{padding:8px!important;overflow-y:auto!important}#settings-modal .menu-card{width:min(64vw,390px)!important;padding:8px 12px!important}#settings-modal .menu-card h1{margin:0 0 8px!important;font-size:14px!important}#settings-modal .main-menu-actions{gap:7px!important}#settings-modal .main-menu-actions > .menu-btn{min-height:40px!important;padding:8px 12px!important}}
+</style>
+
 </body>
 </html>
