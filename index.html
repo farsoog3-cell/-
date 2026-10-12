@@ -3358,15 +3358,15 @@
 
     function setupLighting() {
         // إضاءة نهارية واضحة مع تعبئة من السماء حتى تبقى جوانب المباني المظللة مقروءة.
-        const skyFill = new THREE.HemisphereLight(0xdceaff, 0x6b583e, 1.05);
+        const skyFill = new THREE.HemisphereLight(0xdceaff, 0x6b583e, 0.78);
         skyFill.name = 'battlefieldSkyFill';
         scene.add(skyFill);
-        scene.add(new THREE.AmbientLight(0xfff0d9, 0.30));
+        scene.add(new THREE.AmbientLight(0xfff0d9, 0.18));
 
         // الشمس مصدر الإضاءة الرئيسي وتلقي ظلالاً واضحة على الأرض والمباني والوحدات.
-        dirLight = new THREE.DirectionalLight(0xffedcf, 2.0);
+        dirLight = new THREE.DirectionalLight(0xffedcf, 1.25);
         dirLight.name = 'battlefieldSunLight';
-        dirLight.position.set(-260, 420, -220);
+        dirLight.position.set(-320, 360, 120);
         dirLight.target.position.set(0, 0, 0);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 2048;
@@ -3380,7 +3380,7 @@
         dirLight.shadow.camera.bottom = -d;
         dirLight.shadow.bias = -0.00018;
         dirLight.shadow.normalBias = 0.025;
-        dirLight.shadow.radius = 4;
+        dirLight.shadow.radius = 5;
         scene.add(dirLight);
         scene.add(dirLight.target);
     }
