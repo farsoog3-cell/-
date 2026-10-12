@@ -4047,6 +4047,7 @@ function beginConfiguredGame(){
     try { startWindAudio(); } catch(e) {}
     playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});
     cleanupIntroBackground();
+    document.body.classList.add('battle-active');
     document.getElementById('settings-modal').style.display='none';
     document.getElementById('start-menu').style.display='none';
     document.getElementById('ui-overlay').style.display='block';
@@ -11722,6 +11723,7 @@ function createArmyFactory(x,z,ghost=false){
     menuBgmAudio.pause();menuBgmAudio.currentTime=0;
     unlockGameAudio();playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});
     cleanupIntroBackground();
+    document.body.classList.add('battle-active');
     document.getElementById('settings-modal').style.display='none';
     document.getElementById('start-menu').style.display='none';
     document.getElementById('ui-overlay').style.display='block';
@@ -13323,3 +13325,134 @@ window.updateCameraSensitivity=function(v){
 
 </body>
 </html>
+
+
+<style id="fix-command-menu-stays-visible-in-battle">
+/* اخفاء قائمة البداية فعلياً بعد بدء المعركة، حتى مع قواعد CSS القديمة ذات !important */
+body.battle-active #settings-modal,
+body.battle-active .settings-card-overlay {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+body.battle-active #start-menu {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+</style>
+<script id="fix-command-menu-start-state">
+(function(){
+  function hideStartMenuForBattle(){
+    if(!document.body.classList.contains('battle-active')) return;
+    const menu=document.getElementById('settings-modal');
+    const intro=document.getElementById('start-menu');
+    if(menu){menu.style.setProperty('display','none','important');menu.style.setProperty('visibility','hidden','important');}
+    if(intro){intro.style.setProperty('display','none','important');intro.style.setProperty('visibility','hidden','important');}
+  }
+  const originalBegin=window.beginConfiguredGame;
+  if(typeof originalBegin==='function'){
+    window.beginConfiguredGame=function(){
+      document.body.classList.add('battle-active');
+      const result=originalBegin.apply(this,arguments);
+      hideStartMenuForBattle();
+      return result;
+    };
+  }
+  document.addEventListener('DOMContentLoaded',hideStartMenuForBattle);
+})();
+</script>
+
+<style id="final-mobile-menu-complete-fix">
+/* Keep the entire command menu inside the visible screen on phones. */
+#settings-modal.settings-card-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100dvh !important;
+  padding: max(16px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)) !important;
+  display: none;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+}
+#settings-modal.settings-card-overlay .menu-card {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  width: min(100%, 360px) !important;
+  min-width: 0 !important;
+  max-width: 360px !important;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  margin: auto !important;
+}
+#settings-modal .main-menu-actions { width: 100% !important; min-width: 0 !important; }
+#settings-modal .main-menu-actions > .menu-btn,
+#settings-modal #start-btn,
+#settings-modal #sound-settings-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+#settings-modal .settings-group { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; }
+#settings-modal .syrian-hawk-logo { max-width: 22vw !important; }
+@media (max-width: 600px) {
+  #settings-modal.settings-card-overlay { padding: 14px !important; }
+  #settings-modal.settings-card-overlay .menu-card { width: min(100%, 340px) !important; max-width: 340px !important; padding: clamp(12px, 4vw, 20px) !important; }
+  #settings-modal .main-menu-actions { gap: 12px !important; }
+}
+@media (max-height: 500px) {
+  #settings-modal.settings-card-overlay { align-items: flex-start !important; }
+  #settings-modal.settings-card-overlay .menu-card { margin: 8px auto !important; max-height: calc(100dvh - 28px) !important; }
+}
+body.battle-active #settings-modal.settings-card-overlay,
+body.battle-active #start-menu {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+</style>
+<script id="final-battle-menu-guard">
+(function(){
+  function syncBattleMenu(){
+    if(!document.body.classList.contains('battle-active')) return;
+    ['settings-modal','start-menu'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el){el.style.setProperty('display','none','important');el.style.setProperty('visibility','hidden','important');el.style.setProperty('pointer-events','none','important');}
+    });
+  }
+  var prior=window.beginConfiguredGame;
+  if(typeof prior==='function' && !prior.__menuGuarded){
+    var wrapped=function(){
+      document.body.classList.add('battle-active');
+      var result=prior.apply(this,arguments);
+      syncBattleMenu();
+      return result;
+    };
+    wrapped.__menuGuarded=true;
+    window.beginConfiguredGame=wrapped;
+  }
+  document.addEventListener('click',function(e){
+    if(e.target && e.target.closest && e.target.closest('#room-start-btn')){
+      document.body.classList.add('battle-active');
+    }
+    setTimeout(syncBattleMenu,0);
+  },true);
+  syncBattleMenu();
+})();
+</script>
