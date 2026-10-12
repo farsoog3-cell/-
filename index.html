@@ -7166,8 +7166,13 @@ function createArmyFactory(x,z,ghost=false){
           bb=ensureFactoryProductionBillboard(factory);if(!bb)continue;bb.sprite.visible=true;
           const duration=Math.max(1,Number(job.duration)||1),elapsed=Math.max(0,Number(job.elapsed)||0),left=Math.max(0,(duration-elapsed)/(typeof REAL_TICKS_PER_SECOND!=='undefined'?REAL_TICKS_PER_SECOND:60));
           const seconds=Math.ceil(left),mm=String(Math.floor(seconds/60)).padStart(2,'0'),ss=String(seconds%60).padStart(2,'0');
-          const typeName=({normal:'TANK',rocket:'SCUD',ambulance:'AMBULANCE',scout:'RECON',infantry:'INFANTRY'})[job.type]||String(job.type||'UNIT').toUpperCase();
-          const text=typeName+'  '+mm+':'+ss;bb.sprite.position.set(factory.mesh.position.x,factory.mesh.position.y+15,factory.mesh.position.z);
+          const typeName=({normal:'دبابة',rocket:'سكود',ambulance:'إسعاف',scout:'استطلاع',infantry:'جندي'})[job.type]||String(job.type||'آلية').toUpperCase();
+          const text=typeName+'  '+mm+':'+ss;
+          // شريط الإنتاج يبقى فوق المصنع وبحجم شبه ثابت على الشاشة، ولا ينبض أو يتضخم أثناء الإنتاج.
+          const camDist=(typeof camera!=='undefined'&&camera)?camera.position.distanceTo(factory.mesh.position):100;
+          const fixedScale=Math.max(12,Math.min(38,camDist*.25));
+          bb.sprite.scale.set(fixedScale,fixedScale*.25,1);
+          bb.sprite.position.set(factory.mesh.position.x,factory.mesh.position.y+15,factory.mesh.position.z);
           if(bb.lastText!==text){bb.lastText=text;const c=bb.ctx;c.clearRect(0,0,bb.canvas.width,bb.canvas.height);c.fillStyle='rgba(8,15,20,0.88)';c.beginPath();c.roundRect(3,3,314,74,14);c.fill();c.strokeStyle=factory.owner==='enemy'?(battleConfig.enemyColor||'#ef4444'):(battleConfig.playerColor||'#168cff');c.lineWidth=4;c.stroke();c.fillStyle='#ffffff';c.font='bold 27px Arial';c.textAlign='center';c.textBaseline='middle';c.fillText(text,160,40);bb.texture.needsUpdate=true;}
         }
     }
@@ -12046,8 +12051,13 @@ window.updateCameraSensitivity=function(v){
     const u=makeRemoteUnit(s,playerId,color);
     if(!u?.mesh)return;
     u.__serverRemote=true;u.__remoteOwner=playerId;u.__lastNetSeen=performance.now();
+    const oldX=u.mesh.position.x,oldZ=u.mesh.position.z;
+    const targetDelta=Math.hypot(safeNum(s.x)-oldX,safeNum(s.z)-oldZ);
     const t=s.moving?.75:.62;u.mesh.position.x+=(s.x-u.mesh.position.x)*t;u.mesh.position.z+=(s.z-u.mesh.position.z)*t;if(Number.isFinite(s.y))u.mesh.position.y+=(s.y-u.mesh.position.y)*t;if(Number.isFinite(s.rot))u.mesh.rotation.y=lerpAngle(u.mesh.rotation.y,s.rot,t);
-    u.__remoteMoving=!!s.moving;u.hp=Math.max(0,Number(s.hp)||0);u.maxHp=Math.max(1,Number(s.maxHp)||100);u.isDestroyed=!!s.destroyed;if(s.target)u.serverTarget=s.target;if(s.guard)u.serverGuard=s.guard;if(u.mesh)u.mesh.visible=!u.isDestroyed;
+    // لا نعتمد على بتّ الحركة وحده؛ بعض اللقطات تصل بين خطوات صغيرة فتبدو حركة الجندي متوقفة.
+    u.__remoteMoving=!!s.moving || targetDelta>.012 || !!u.barracksExiting || !!u.factoryExiting;
+    if(u.isInfantry||s.infantry||s.type==='infantry')u.isInfantry=true;
+    u.hp=Math.max(0,Number(s.hp)||0);u.maxHp=Math.max(1,Number(s.maxHp)||100);u.isDestroyed=!!s.destroyed;if(s.target)u.serverTarget=s.target;if(s.guard)u.serverGuard=s.guard;if(u.mesh)u.mesh.visible=!u.isDestroyed;
   }
   function makeRemoteBuilding(s,playerId,color){
     if(!s?.id)return null;const key=remoteKey(playerId,s.id);let b=remoteBuildings.get(key);if(b)return b;
@@ -12124,7 +12134,9 @@ window.updateCameraSensitivity=function(v){
   function animateRemoteInfantry(){
     if(typeof updateInfantryVisual!=='function')return;
     for(const u of remote.values()){
-      if(!u||!u.isInfantry||!u.mesh||u.isDestroyed)continue;
+      if(!u||!(u.isInfantry||u.type==='infantry')||!u.mesh||u.isDestroyed)continue;
+      // استدعاء حركة الجندي على جهاز الخصم في كل إطار، كما يحدث للجندي المحلي.
+      u.isInfantry=true;
       try{updateInfantryVisual(u,!!u.__remoteMoving);}catch(err){console.warn('Remote infantry animation update failed:',err);}
     }
   }
