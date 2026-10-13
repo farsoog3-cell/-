@@ -13917,6 +13917,62 @@ window.updateCameraSensitivity=function(v){
 
 <!-- صوت الترحيب الخارجي: ضع الملف في sounds/intro-voice.mp3 -->
 <audio id="intro-voice-audio" src="sounds/intro-voice.mp3" preload="auto" playsinline></audio>
+
+<style id="external-images-large-price-only">
+/* صور واضحة وكاملة داخل بطاقات شريط الإنتاج، مع السعر فقط */
+#construction-bar .build-title,
+#construction-bar .build-info,
+#construction-bar .factory-unit-info .factory-unit-name,
+#construction-bar .factory-unit-info .factory-unit-time,
+#construction-bar .build-name,
+#construction-bar .build-desc,
+#construction-bar .build-hint { display:none !important; }
+#construction-bar .build-card,
+#construction-bar .factory-build-card,
+#construction-bar .barracks-build-card,
+#construction-bar .factory-unit-card,
+#construction-bar .barracks-unit-card {
+  box-sizing:border-box !important; position:relative !important;
+  display:flex !important; flex-direction:column !important;
+  justify-content:flex-start !important; align-items:stretch !important;
+  width:76px !important; min-width:76px !important; max-width:76px !important;
+  height:104px !important; min-height:104px !important; max-height:104px !important;
+  padding:4px 4px 0 !important; gap:2px !important; overflow:hidden !important;
+}
+#construction-bar .build-preview,
+#construction-bar .factory-preview,
+#construction-bar .barracks-preview,
+#construction-bar .factory-unit-preview,
+#construction-bar .barracks-unit-preview {
+  position:relative !important; display:block !important; flex:1 1 auto !important;
+  width:100% !important; min-width:0 !important; max-width:100% !important;
+  height:auto !important; min-height:0 !important; max-height:none !important;
+  margin:0 auto !important; overflow:hidden !important;
+}
+#construction-bar .external-bar-image {
+  position:absolute !important; inset:0 !important; display:block !important;
+  width:100% !important; height:100% !important; object-fit:contain !important;
+  object-position:center center !important; padding:1px !important; background:transparent !important;
+}
+#construction-bar .build-price,
+#construction-bar .factory-unit-price {
+  display:flex !important; flex:0 0 22px !important; align-items:center !important;
+  justify-content:center !important; width:100% !important; height:22px !important;
+  min-height:22px !important; margin:0 !important; padding:0 1px !important;
+  box-sizing:border-box !important; font-size:13px !important; line-height:1 !important;
+  font-weight:900 !important; white-space:nowrap !important; text-align:center !important;
+}
+#construction-bar .has-external-image > :not(.external-bar-image) { display:none !important; }
+@media (max-width:520px) {
+ #construction-bar .build-card,#construction-bar .factory-build-card,
+ #construction-bar .barracks-build-card,#construction-bar .factory-unit-card,
+ #construction-bar .barracks-unit-card {
+  width:76px !important; min-width:76px !important; max-width:76px !important;
+  height:104px !important; min-height:104px !important; max-height:104px !important;
+ }
+}
+</style>
+
 </body>
 </html>
 
