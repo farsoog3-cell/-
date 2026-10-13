@@ -2962,6 +2962,28 @@
     let treadTextureCache = null;
     let animatedRigs = [];
 
+    // ===== Combat performance governor =====
+    // يحافظ على الحرب والمؤثرات، لكنه يمنع انفجار عدد المجسمات/الـGC أثناء المعارك الكبيرة.
+    const COMBAT_PERF = {
+        maxBullets: 90,
+        maxInfantryFX: 120,
+        maxCombatEffects: 26,
+        maxSmokeParticles: 75,
+        maxShockwaves: 18
+    };
+    function combatFXLoad(){
+        return bullets.length + infantryCombatFX.length + combatEffects.length + smokeParticles.length + shockwaves.length;
+    }
+    function canSpawnCombatFX(kind='normal'){
+        if(kind==='bullet') return bullets.length < COMBAT_PERF.maxBullets;
+        if(kind==='infantry') return infantryCombatFX.length < COMBAT_PERF.maxInfantryFX;
+        if(kind==='explosion') return combatEffects.length < COMBAT_PERF.maxCombatEffects;
+        if(kind==='smoke') return smokeParticles.length < COMBAT_PERF.maxSmokeParticles;
+        if(kind==='shockwave') return shockwaves.length < COMBAT_PERF.maxShockwaves;
+        return combatFXLoad() < 260;
+    }
+;
+
     let selectionMode = 'all';
     let selectedTank = null;
     let playerTargetPos = null;
@@ -3539,7 +3561,7 @@
 
         renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.15));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.05));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
@@ -5241,16 +5263,21 @@ function startGame(){openBattleSetup();}
         const start=new THREE.Vector3();
         soldier.infantryMuzzle.getWorldPosition(start);
 
-        // Flash + sparks at muzzle.
-        createInfantryMuzzleFX(start,soldier.mesh.rotation.y);
-        createInfantryGunSmoke(start,soldier.mesh.rotation.y);
-        // Ejected brass casing gives each shot a readable firearm action.
-        const casing=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.075,6),new THREE.MeshStandardMaterial({color:0xc18b32,metalness:.72,roughness:.28}));
-        casing.position.copy(start); casing.userData.v=new THREE.Vector3((Math.random()-.5)*.22,.10+Math.random()*.08,(Math.random()-.5)*.12); scene.add(casing);
-        infantryCombatFX.push({kind:'casing',mesh:casing,life:28,maxLife:28});
+        // المؤثرات المرئية خفيفة أثناء الزحام؛ الرصاصة نفسها لا تُحذف من المحاكاة.
+        const crowded = infantryCombatFX.length > 70 || combatEffects.length > 16;
+        if(!crowded){
+            createInfantryMuzzleFX(start,soldier.mesh.rotation.y);
+            createInfantryGunSmoke(start,soldier.mesh.rotation.y);
+            // الظرف مجرد تفصيل تجميلي؛ لا ننشئه في المعارك المزدحمة.
+            if(infantryCombatFX.length < COMBAT_PERF.maxInfantryFX-4) createInfantryShell(start,soldier.mesh.rotation.y);
+        }
         soldier.weaponShake=1;
 
         // رصاصة المشاة: خط أصفر رفيع وناعم بدلاً من كرة كبيرة، مع تتبع بصري واضح للهدف.
+        if(!canSpawnCombatFX('bullet')){
+            // لا نُسقط الضرر/المزامنة؛ فقط نتجنب إنشاء tracer إضافي عندما تمتلئ قائمة المقذوفات.
+            return;
+        }
         const bulletMat=new THREE.MeshBasicMaterial({color:0xffd34e,transparent:true,opacity:.96,depthWrite:false});
         const bulletMesh=new THREE.Mesh(new THREE.CylinderGeometry(.025,.045,1.35,7),bulletMat);
         bulletMesh.position.copy(start);
@@ -5284,7 +5311,7 @@ function startGame(){openBattleSetup();}
         flash.position.copy(pos);flash.rotation.set(0,yaw,0);scene.add(flash);
         infantryCombatFX.push({kind:'muzzle',mesh:flash,life:5,maxLife:5});
 
-        for(let i=0;i<5;i++){
+        for(let i=0;i<2;i++){
             const spark=new THREE.Mesh(new THREE.SphereGeometry(.035+Math.random()*.035,5,5),
                 new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:1,depthWrite:false}));
             spark.position.copy(pos);
@@ -5322,7 +5349,7 @@ function startGame(){openBattleSetup();}
         p.y += target.isInfantry ? 1.75 : (target.type==='rocket' ? 1.9 : 1.25);
 
         // Bright impact sparks exactly where the projectile reaches the target.
-        for(let i=0;i<7;i++){
+        for(let i=0;i<2;i++){
             const spark=new THREE.Mesh(
                 new THREE.SphereGeometry(.035+Math.random()*.035,5,5),
                 new THREE.MeshBasicMaterial({color:0xffc44d,transparent:true,opacity:1,depthWrite:false})
@@ -7119,7 +7146,7 @@ function startGame(){openBattleSetup();}
     }
 
     function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
-        if (smokeParticles.length > 140) return;
+        if (smokeParticles.length >= COMBAT_PERF.maxSmokeParticles) return;
         // Modern layered smoke: soft core + outer plume, with randomized drift.
         const group = new THREE.Group();
         const puffMat = new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.28, depthWrite: false });
@@ -9427,6 +9454,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function createModernImpactFlash(centerPos, fromTeam) {
+        if(!canSpawnCombatFX('explosion')) return;
         // Realistic layered battlefield explosion: hot core, rolling fire, dark smoke,
         // ground dust and smoke only; no ballistic debris.
         const group = new THREE.Group();
@@ -9615,7 +9643,7 @@ function createArmyFactory(x,z,ghost=false){
         }else{
             addSmokeParticle(base,0x111111,1.8);
         }
-        for(let i=0;i<18;i++){
+        for(let i=0;i<5 && smokeParticles.length<COMBAT_PERF.maxSmokeParticles;i++){
             const pos=base.clone();
             pos.x+=(Math.random()-.5)*3.5;
             pos.z+=(Math.random()-.5)*3.5;
@@ -10445,13 +10473,12 @@ function createArmyFactory(x,z,ghost=false){
             }
             if(!heavy){
                 const sparkMat=new THREE.MeshBasicMaterial({color:0xffa31a,transparent:true,opacity:.9,depthWrite:false,blending:THREE.AdditiveBlending});
-                for(let k=0;k<3;k++){
-                    const sp=new THREE.Mesh(new THREE.SphereGeometry(.07,6,5),sparkMat.clone());
+                for(let k=0;k<2 && infantryCombatFX.length<COMBAT_PERF.maxInfantryFX;k++){
+                    const sp=new THREE.Mesh(new THREE.SphereGeometry(.07,5,4),sparkMat.clone());
                     sp.position.copy(base); sp.position.x+=dir.x*.72+(Math.random()-.5)*.35; sp.position.z+=dir.z*.72+(Math.random()-.5)*.35; sp.position.y+=.7+Math.random()*1.1;
+                    sp.userData.v=new THREE.Vector3((Math.random()-.5)*.08+dir.x*.035,.06+Math.random()*.06,(Math.random()-.5)*.08+dir.z*.035);
                     scene.add(sp);
-                    const vx=(Math.random()-.5)*.08+dir.x*.035, vz=(Math.random()-.5)*.08+dir.z*.035, vy=.06+Math.random()*.06;
-                    let life=14; const tick=()=>{if(!sp.parent)return; sp.position.x+=vx;sp.position.y+=vy;sp.position.z+=vz;sp.material.opacity*=.90;if(--life<=0){scene.remove(sp);sp.geometry.dispose();sp.material.dispose();return;}requestAnimationFrame(tick)};
-                    requestAnimationFrame(tick);
+                    infantryCombatFX.push({kind:'hitSpark',mesh:sp,life:14,maxLife:14});
                 }
             }
         }
