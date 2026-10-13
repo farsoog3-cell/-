@@ -1069,6 +1069,12 @@
 
         /* إزالة نصوص الإرشادات أسفل/حول الخريطة المصغرة مع إبقاء أزرار التحكم. */
         #minimap-instructions, #minimap-hint, .minimap-instructions, .minimap-hint, [data-minimap-instructions] { display:none !important; }
+
+/* External replacement images for the fixed build/production bar */
+#construction-bar .build-preview, #construction-bar .factory-preview, #construction-bar .barracks-preview,
+#construction-bar .factory-unit-preview, #construction-bar .barracks-unit-preview { position:relative; overflow:hidden; }
+#construction-bar .external-bar-image { display:block; position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; z-index:5; padding:2px; box-sizing:border-box; background:transparent; }
+#construction-bar .has-external-image > :not(.external-bar-image) { display:none !important; }
 </style>
 
 <style>
@@ -2426,7 +2432,7 @@
         <button id="sell-building-btn" type="button" onclick="playClickSound(); sellSelectedBuilding()" style="display:none" title="بيع المبنى واسترداد نصف قيمته">💰 بيع المبنى · 50٪</button>
         <div class="build-title"><span class="build-title-icon">⚙</span><b>COMMAND</b><small>PRODUCTION</small></div>
         <div class="build-card" id="construction-truck-card" onclick="playClickSound(); buyConstructionTruck()">
-            <div class="build-preview modern-builder-preview" aria-label="تركس بناء حديث">
+            <div class="build-preview modern-builder-preview" aria-label="تركس بناء حديث"><img class="external-bar-image" src="images/units/construction-truck.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="mb-shadow"></div><div class="mb-chassis"></div><div class="mb-cab"></div><div class="mb-glass"></div><div class="mb-bed"></div><div class="mb-crane"></div><div class="mb-hook"></div>
                 <i class="mb-wheel a"></i><i class="mb-wheel b"></i><i class="mb-wheel c"></i>
             </div>
@@ -2438,7 +2444,7 @@
             <div class="build-price">300$</div>
         </div>
         <div class="factory-build-card" id="factory-build-card" onclick="playClickSound(); armFactoryBuild()">
-            <div class="factory-preview" aria-label="مصنع جيش">
+            <div class="factory-preview" aria-label="مصنع جيش"><img class="external-bar-image" src="images/units/factory.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="f-tower"></div><div class="f-roof"></div><div class="f-base"></div><div class="f-door"></div><div class="f-light"></div>
             </div>
             <div class="build-info">
@@ -2450,7 +2456,7 @@
         </div>
 
         <div class="barracks-build-card" id="barracks-build-card" onclick="playClickSound(); armBarracksBuild()">
-            <div class="barracks-preview" aria-label="سكنة عسكرية">
+            <div class="barracks-preview" aria-label="سكنة عسكرية"><img class="external-bar-image" src="images/units/barracks.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="b-base"></div><div class="b-roof"></div><div class="b-door"></div><div class="b-window"></div><div class="b-flagpole"></div><div class="b-flag"></div>
             </div>
             <div class="build-info">
@@ -2461,19 +2467,19 @@
             <div class="build-price">150$</div>
         </div>
         <div class="factory-unit-card" id="factory-scud-card" onclick="playClickSound(); queueFactoryUnit('rocket')">
-            <div class="factory-unit-preview"><div class="mini-scud"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scud.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scud"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🚀 SCUD</div><div class="factory-unit-price">800$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
         </div>
         <div class="factory-unit-card" id="factory-tank-card" onclick="playClickSound(); queueFactoryUnit('normal')">
-            <div class="factory-unit-preview"><div class="mini-tank"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/tank.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-tank"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🪖 TANK</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
         </div>
         <div class="factory-unit-card infantry-card" id="factory-infantry-card" onclick="playClickSound(); queueFactoryUnit('infantry')">
-            <div class="factory-unit-preview"><div class="mini-infantry"></div><div class="infantry-preview-rifle"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-infantry"></div><div class="infantry-preview-rifle"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🪖 RIFLEMAN</div><div class="factory-unit-price">250$</div><div class="factory-unit-time">Ready in 6 sec</div></div>
         </div>
         <div class="barracks-unit-card" id="barracks-infantry-card" onclick="playClickSound(); queueBarracksUnit('infantry')" title="تدريب جندي مشاة">
-            <div class="barracks-unit-preview pro-soldier-icon" aria-label="جندي مشاة">
+            <div class="barracks-unit-preview pro-soldier-icon" aria-label="جندي مشاة"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <span class="soldier-shadow"></span><span class="soldier-helmet"></span><span class="soldier-head"></span>
                 <span class="soldier-vest"></span><span class="soldier-arm a"></span><span class="soldier-arm b"></span>
                 <span class="soldier-rifle"></span><span class="soldier-leg a"></span><span class="soldier-leg b"></span>
@@ -2481,11 +2487,11 @@
             <div class="factory-unit-info"><div class="factory-unit-name">INFANTRY</div><div class="factory-unit-price">250$</div><div class="factory-unit-time">TRAIN • 6 SEC</div></div>
         </div>
         <div class="factory-unit-card" id="factory-ambulance-card" onclick="playClickSound(); queueFactoryUnit('ambulance')">
-            <div class="factory-unit-preview"><div class="mini-ambulance"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/ambulance.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-ambulance"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🚑 AMBULANCE</div><div class="factory-unit-price">600$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
         </div>
         <div class="factory-unit-card scout-factory-card" id="factory-scout-card" onclick="playClickSound(); queueFactoryUnit('scout')">
-            <div class="factory-unit-preview"><div class="mini-scout"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scout.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scout"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">📡 SCOUT</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Reveals the area and activates minimap</div></div>
         </div>
         <div class="bar-unit-controls" id="bar-unit-controls" aria-label="أوامر الوحدة">
