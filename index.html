@@ -14415,3 +14415,63 @@ body.battle-active #start-menu {
 })();
 </script>
 
+
+
+<style id="compact-command-console-v2">
+/* بطاقات أصغر ومنظمة: صورة واضحة تملأ الإطار والسعر أسفلها */
+#construction-bar{
+  height:clamp(106px,15vh,128px)!important;min-height:106px!important;max-height:128px!important;
+  padding:5px!important;gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;
+  align-items:stretch!important;scroll-snap-type:x proximity;
+}
+#construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .barracks-build-card,
+#construction-bar .factory-unit-card,#construction-bar .barracks-unit-card{
+  flex:0 0 clamp(62px,12.5vw,82px)!important;
+  width:clamp(62px,12.5vw,82px)!important;min-width:clamp(62px,12.5vw,82px)!important;max-width:clamp(62px,12.5vw,82px)!important;
+  height:100%!important;min-height:0!important;max-height:100%!important;
+  padding:3px!important;gap:3px!important;display:flex!important;flex-direction:column!important;
+  justify-content:space-between!important;align-items:stretch!important;overflow:hidden!important;
+  border-radius:5px!important;scroll-snap-align:start;
+}
+#construction-bar .build-preview,#construction-bar .factory-preview,#construction-bar .barracks-preview,
+#construction-bar .factory-unit-preview,#construction-bar .barracks-unit-preview{
+  flex:1 1 auto!important;min-height:0!important;height:auto!important;width:100%!important;max-width:100%!important;
+  overflow:hidden!important;position:relative!important;display:block!important;border-radius:3px!important;
+}
+#construction-bar .external-bar-image{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+  display:block!important;object-fit:cover!important;object-position:center!important;padding:0!important;margin:0!important;
+}
+#construction-bar .build-price,#construction-bar .factory-unit-price,
+#construction-bar .barracks-build-card .build-price,#construction-bar .barracks-unit-card .factory-unit-price{
+  flex:0 0 22px!important;height:22px!important;min-height:22px!important;max-height:22px!important;
+  width:100%!important;min-width:0!important;margin:0!important;padding:1px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  font-size:clamp(10px,2.6vw,13px)!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;
+}
+#construction-bar .build-name,#construction-bar .build-desc,#construction-bar .build-hint,
+#construction-bar .factory-unit-name,#construction-bar .factory-unit-time{display:none!important}
+#construction-bar .has-external-image > :not(.external-bar-image){display:none!important}
+#construction-bar .build-title{display:none!important;width:0!important;min-width:0!important;flex-basis:0!important}
+#mini-money{bottom:calc(clamp(106px,15vh,128px) + 10px)!important}
+#attack-alert{bottom:calc(clamp(106px,15vh,128px) + 12px)!important}
+#factory-production-progress{bottom:calc(clamp(106px,15vh,128px) + 3px)!important}
+@media(max-width:380px){
+ #construction-bar{height:102px!important;min-height:102px!important;padding:4px!important;gap:3px!important}
+ #construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .barracks-build-card,
+ #construction-bar .factory-unit-card,#construction-bar .barracks-unit-card{
+  flex-basis:60px!important;width:60px!important;min-width:60px!important;max-width:60px!important;padding:2px!important
+ }
+ #construction-bar .build-price,#construction-bar .factory-unit-price{flex-basis:20px!important;height:20px!important;min-height:20px!important;font-size:10px!important}
+ #mini-money{bottom:112px!important;min-height:36px!important}
+ #attack-alert{bottom:114px!important}
+}
+@media(min-width:700px){
+ #construction-bar{height:clamp(116px,15vh,140px)!important}
+ #construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .barracks-build-card,
+ #construction-bar .factory-unit-card,#construction-bar .barracks-unit-card{
+  flex-basis:clamp(76px,8vw,96px)!important;width:clamp(76px,8vw,96px)!important;min-width:clamp(76px,8vw,96px)!important;max-width:clamp(76px,8vw,96px)!important
+ }
+}
+</style>
+
