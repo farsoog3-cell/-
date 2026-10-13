@@ -180,9 +180,9 @@
         /* واجهة الهاتف: الرصيد وSTORE مرتبطان بMAP المصغرة */
 
         /* وضع بناء المصنع واتجاهه */
-        #factory-world-progress { display:none; position:fixed; z-index:65; width:96px; transform:translate(-50%,-50%); pointer-events:none; text-align:center; }
-        #factory-world-progress .factory-world-label { display:block; margin-bottom:4px; padding:3px 6px; border-radius:7px; background:rgba(5,12,8,.92); border:1px solid rgba(74,222,128,.55); color:#dcfce7; font-size:8px; font-weight:900; white-space:nowrap; }
-        #factory-world-progress .factory-world-bg { width:100%; height:7px; border-radius:6px; overflow:hidden; background:rgba(0,0,0,.72); border:1px solid rgba(255,255,255,.16); box-shadow:0 2px 8px rgba(0,0,0,.4); }
+        #factory-world-progress { display:none; position:fixed; z-index:65; box-sizing:border-box; width:124px; min-width:124px; max-width:124px; height:12px; transform:translate(-50%,-50%); pointer-events:none; text-align:center; }
+        #factory-world-progress .factory-world-label { display:none; margin-bottom:4px; padding:3px 6px; border-radius:7px; background:rgba(5,12,8,.92); border:1px solid rgba(74,222,128,.55); color:#dcfce7; font-size:8px; font-weight:900; white-space:nowrap; }
+        #factory-world-progress .factory-world-bg { box-sizing:border-box; width:124px; min-width:124px; max-width:124px; height:9px; border-radius:6px; overflow:hidden; background:rgba(0,0,0,.72); border:1px solid rgba(255,255,255,.16); box-shadow:0 2px 8px rgba(0,0,0,.4); }
         #factory-world-progress .factory-world-fill { width:0%; height:100%; background:linear-gradient(90deg,#16a34a,#4ade80); box-shadow:0 0 9px rgba(34,197,94,.8); }
 
         #construction-bar.factory-selected .build-card, #construction-bar.factory-selected .factory-build-card { display:none; }
@@ -212,12 +212,18 @@
         .factory-unit-name { color:#f0fdf4; font-size:10px; font-weight:900; white-space:nowrap; }
         .factory-unit-price { color:#facc15; font-size:11px; font-weight:900; margin-top:3px; }
         .factory-unit-time { color:#86efac; font-size:8px; margin-top:2px; }
+        #sell-building-btn{flex:0 0 auto;align-self:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:108px;max-width:132px;min-height:43px;padding:6px 10px;border-radius:12px;border:1px solid rgba(245,200,91,.72);background:linear-gradient(150deg,rgba(42,52,43,.98),rgba(17,25,20,.98));color:#fff4d0;font-size:11px;font-weight:900;line-height:1.15;cursor:pointer;letter-spacing:.1px;box-shadow:inset 0 1px rgba(255,255,255,.14),inset 0 -2px rgba(0,0,0,.24),0 4px 12px rgba(0,0,0,.32);transition:transform .15s,border-color .15s,filter .15s}
+        #sell-building-btn::first-line{font-weight:900}
+        #sell-building-btn:hover{border-color:#ffe29a;filter:brightness(1.12)}
+        #sell-building-btn:active{transform:translateY(1px) scale(.98)}
+        #sell-building-btn:disabled{opacity:.45;filter:grayscale(.5);cursor:default}
+        @media(max-width:600px){#sell-building-btn{min-width:78px;max-width:88px;min-height:38px;padding:5px 4px;font-size:9px;border-radius:10px}}
         #construction-bar.factory-selected { gap:6px; }
         #construction-bar.factory-selected .build-title { width:58px; flex-basis:58px; font-size:8px; }
         #factory-production-progress { display:none; position:absolute; left:8px; right:8px; bottom:3px; height:4px; border-radius:5px; overflow:hidden; background:rgba(0,0,0,.55); }
         #factory-production-progress-fill { width:0%; height:100%; background:#22c55e; box-shadow:0 0 8px rgba(34,197,94,.9); }
         @media (max-width:600px){
-            #factory-world-progress { width:82px; }
+            #factory-world-progress { width:124px; min-width:124px; max-width:124px; }
             #construction-bar.factory-selected .build-title { width:42px; flex-basis:42px; }
             #construction-bar .factory-unit-card { height:54px; padding:3px 4px; gap:4px; }
             .factory-unit-preview { width:50px; flex-basis:50px; height:42px; }
@@ -879,10 +885,15 @@
 #construction-bar.unit-selected .bar-unit-controls{display:flex!important}
 #construction-bar.unit-selected .build-title{display:none!important}
 #construction-bar.unit-selected{justify-content:flex-start!important}
-/* مؤشر RTS بأربع أسهم بدل دائرة التحديد */
+/* مؤشر تحديد تكتيكي حديث: علامة تصويب دقيقة مع زوايا خضراء */
 #game-container, #game-container canvas, canvas{
-    cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='38' height='38' viewBox='0 0 38 38'%3E%3Ccircle cx='19' cy='19' r='11' fill='none' stroke='%23eafff2' stroke-width='1.5' opacity='.95'/%3E%3Ccircle cx='19' cy='19' r='4' fill='none' stroke='%235eead4' stroke-width='1.8'/%3E%3Cpath d='M19 1v9M19 28v9M1 19h9M28 19h9' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M19 6v5M27 19h-5M19 32v-5M11 19h5' stroke='%2334d399' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 19 19, crosshair!important;
+    cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='42' height='42' viewBox='0 0 42 42'%3E%3Ccircle cx='21' cy='21' r='13' fill='%23040b08' fill-opacity='.16' stroke='%23d9ffe8' stroke-width='1.2'/%3E%3Ccircle cx='21' cy='21' r='3' fill='none' stroke='%235eead4' stroke-width='1.5'/%3E%3Cpath d='M21 1v8M21 33v8M1 21h8M33 21h8' stroke='%23ffffff' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M10 7h5M10 7v5M32 7h-5M32 7v5M10 35h5M10 35v-5M32 35h-5M32 35v-5' fill='none' stroke='%2334d399' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 21 21, crosshair!important;
 }
+/* نبضة لمس واضحة للهاتف دون التأثير على أوامر اللعب */
+.rts-touch-pulse{position:fixed;z-index:99999;width:18px;height:18px;border:2px solid rgba(167,243,208,.98);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%) scale(.35);box-shadow:0 0 0 3px rgba(16,185,129,.18),0 0 16px rgba(52,211,153,.8);animation:rtsTouchPulse .48s ease-out forwards}
+.rts-touch-pulse:before,.rts-touch-pulse:after{content:"";position:absolute;background:#ecfdf5;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:2px}
+.rts-touch-pulse:before{width:30px;height:1px}.rts-touch-pulse:after{width:1px;height:30px}
+@keyframes rtsTouchPulse{0%{opacity:1;transform:translate(-50%,-50%) scale(.35)}65%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(1.8)}}
 
 
         /* شاشة الرسائل الافتتاحية بأسلوب لوحة هاكر عسكرية */
@@ -1055,6 +1066,9 @@
   .syrian-hawk-logo{right:14px; top:calc(50% - 118px); width:68px;height:68px}
   .syrian-hawk-logo img{width:66px;height:66px}
 }
+
+        /* إزالة نصوص الإرشادات أسفل/حول الخريطة المصغرة مع إبقاء أزرار التحكم. */
+        #minimap-instructions, #minimap-hint, .minimap-instructions, .minimap-hint, [data-minimap-instructions] { display:none !important; }
 </style>
 
 <style>
@@ -2409,6 +2423,7 @@
 
 
     <div id="construction-bar" aria-label="Base construction workshop">
+        <button id="sell-building-btn" type="button" onclick="playClickSound(); sellSelectedBuilding()" style="display:none" title="بيع المبنى واسترداد نصف قيمته">💰 بيع المبنى · 50٪</button>
         <div class="build-title"><span class="build-title-icon">⚙</span><b>COMMAND</b><small>PRODUCTION</small></div>
         <div class="build-card" id="construction-truck-card" onclick="playClickSound(); buyConstructionTruck()">
             <div class="build-preview modern-builder-preview" aria-label="تركس بناء حديث">
@@ -2474,8 +2489,8 @@
             <div class="factory-unit-info"><div class="factory-unit-name">📡 SCOUT</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Reveals the area and activates minimap</div></div>
         </div>
         <div class="bar-unit-controls" id="bar-unit-controls" aria-label="أوامر الوحدة">
-            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="DEFEND">
-                <span class="bar-icon shield-icon">🛡</span><small>DEFEND</small>
+            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="حدد منطقة دائرية؛ ستهاجم وحداتك الأعداء الذين يقتربون منها">
+                <span class="bar-icon shield-icon">◎</span><small>قصف المنطقة</small>
             </button>
             <button class="bar-control-btn" id="bar-cancel-btn" onclick="playClickSound(); cancelUnitSelection()" title="CANCEL تحديد الوحدة">
                 <span class="bar-icon">✕</span><small>CANCEL</small>
@@ -2498,12 +2513,12 @@
 
     <div id="minimap-tools">
         <div id="mini-money" class="mini-money"><span id="money-display">2000</span>$</div>
-        <button class="defend-btn" id="defend-btn" onclick="playClickSound(); armDefenseCommand()" disabled>🛡️ DEFEND</button>
+        <button class="defend-btn" id="defend-btn" onclick="playClickSound(); armDefenseCommand()" disabled>◎ قصف المنطقة</button>
         <button class="cancel-select-btn" id="cancel-select-btn" onclick="playClickSound(); selectWholeArmy()" disabled>🪖 الجيش بالكامل</button>
         <button class="sel-btn active" id="sel-all-btn" onclick="playClickSound(); setSelectionMode('all')">ALL</button>
         <button class="sel-btn" id="sel-single-btn" onclick="playClickSound(); setSelectionMode('single')">SINGLE</button>
     </div>
-    <div id="minimap-container" title="MAP التكتيكية — اشترِ سيارة الاستطلاع لكشف المنطقة" style="display:none;">
+    <div id="minimap-container"  style="display:none;">
         <canvas id="minimap-canvas" width="180" height="180"></canvas>
     </div>
 
@@ -3645,7 +3660,7 @@
         if (btn) {
             btn.disabled = !hasSelection;
             btn.classList.toggle('armed', defenseCommandArmed);
-            btn.innerText = defenseCommandArmed ? '📍 المس مكان الDEFEND' : '🛡️ DEFEND';
+            btn.innerText = defenseCommandArmed ? '◎ اختر منطقة القصف' : '◎ قصف المنطقة';
         }
         if (cancelBtn) {
             cancelBtn.disabled = !hasSelection;
@@ -3732,15 +3747,18 @@
 
 
     function createFourArrowSelectionGlow(unit) {
+        // مؤشر تحديد هادئ بأسلوب ألعاب RTS الكلاسيكية: حلقة زيتونية رفيعة وعلامات قصيرة مستقيمة، بلا أسهم أو توهج نيون.
         const group = new THREE.Group();
         group.name = 'selectionGlow';
-        const mat = new THREE.MeshBasicMaterial({color:0x38bdf8,side:THREE.DoubleSide,transparent:true,opacity:.9,depthWrite:false});
-        const make = (x,z,rot) => {
-            const sh=new THREE.Shape();
-            sh.moveTo(0,-.9);sh.lineTo(-.48,-.18);sh.lineTo(-.16,-.18);sh.lineTo(-.16,.9);sh.lineTo(.16,.9);sh.lineTo(.16,-.18);sh.lineTo(.48,-.18);sh.closePath();
-            const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),mat.clone());m.rotation.x=-Math.PI/2;m.rotation.z=rot;m.position.set(x,.22,z);return m;
+        const ringMat = new THREE.MeshBasicMaterial({color:0xc6c99b, side:THREE.DoubleSide, transparent:true, opacity:.88, depthWrite:false});
+        const ring = new THREE.Mesh(new THREE.RingGeometry(2.35,2.43,72), ringMat);
+        ring.rotation.x = -Math.PI/2; ring.position.y = .12; ring.name = 'selectionRing'; group.add(ring);
+        const tickMat = new THREE.MeshBasicMaterial({color:0xe2e4c6, side:THREE.DoubleSide, transparent:true, opacity:.82, depthWrite:false});
+        const addTick=(x,z,rot)=>{
+            const tick=new THREE.Mesh(new THREE.PlaneGeometry(.10,.42),tickMat.clone());
+            tick.rotation.x=-Math.PI/2; tick.rotation.z=rot; tick.position.set(x,.13,z); group.add(tick);
         };
-        group.add(make(0,-3.4,0),make(0,3.4,Math.PI),make(-3.4,0,-Math.PI/2),make(3.4,0,Math.PI/2));
+        addTick(0,-2.52,0); addTick(0,2.52,0); addTick(-2.52,0,Math.PI/2); addTick(2.52,0,Math.PI/2);
         group.visible=false; unit.mesh.add(group); return group;
     }
 
@@ -3842,6 +3860,7 @@
         units.forEach(u => {
             u.holdPosition = false;
             u.guardPoint = null;
+            u.bombardPoint = null;
             u.factoryExiting = false;
             u.target = null;
             u.hasPlayerMoveOrder = false;
@@ -3862,9 +3881,9 @@
         defenseCommandArmed = !defenseCommandArmed;
         updateDefenseButton();
         if (defenseCommandArmed) {
-            showFloatingMsg('🛡️ Tap the ground to set a defense point');
+            showFloatingMsg('◎ اختر نقطة على الأرض لتحديد منطقة القصف');
         } else {
-            showFloatingMsg('Defense command cancelled');
+            showFloatingMsg('تم إلغاء أمر قصف المنطقة');
         }
     }
 
@@ -3876,22 +3895,31 @@
         guardPoint.y = getTerrainHeight(guardPoint.x, guardPoint.z);
 
         units.forEach((u, index) => {
-            // الDEFEND أمر قتالي: لا تلغي التحكم اليدوي، حتى تتمكن الدبابات من
-            // تدوير البرج وإطلاق النار على العدو أثناء التمركز.
+            // احتفظ بنقطة القصف/الدفاع فعلياً؛ لا نمسحها بعد تعيينها.
             u.guardPoint = guardPoint.clone();
-            u.guardRadius = 18;
+            u.guardRadius = 22;
             u.holdPosition = true;
+            u.bombardPoint = (u.type === 'rocket') ? guardPoint.clone() : null;
             if (u.team === 'player') {
                 u.manualControl = true;
                 u.hasPlayerMoveOrder = true;
             }
             u.isAiming = false;
             u.aimTarget = null;
+            u.combatHoldTarget = null;
 
             const row = Math.floor(index / 3);
             const col = index % 3;
             const offset = new THREE.Vector3((col - 1) * 8, 0, row * 8);
-            u.target = guardPoint.clone().add(offset);
+            if (u.type === 'rocket') {
+                // السكود يتقدم إلى مسافة آمنة من المنطقة ثم يقصفها، لا يقف فوق الهدف.
+                const away = new THREE.Vector3(u.mesh.position.x - guardPoint.x, 0, u.mesh.position.z - guardPoint.z);
+                if (away.lengthSq() < 0.01) away.set(1, 0, 0);
+                away.normalize();
+                u.target = guardPoint.clone().add(away.multiplyScalar(145));
+            } else {
+                u.target = guardPoint.clone().add(offset);
+            }
             u.target.y = getTerrainHeight(u.target.x, u.target.z);
         });
 
@@ -3904,7 +3932,7 @@
         if(defenseMarkerMesh) defenseMarkerMesh.visible=false;
         updateDefenseButton();
 
-        const label = units.length > 1 ? '🛡️ تمركزت الوحدات لDEFEND' : '🛡️ تمركزت الوحدة لDEFEND';
+        const label = units.length > 1 ? '◎ تم تحديد منطقة القصف للوحدات' : '◎ تم تحديد منطقة القصف للوحدة';
         showFloatingMsg(label);
         return true;
     }
@@ -4899,7 +4927,14 @@ function startGame(){openBattleSetup();}
         if(!base||base.isDestroyed)return;
         base.hp=Math.max(0,(base.hp||base.maxHp)-Math.max(1,amount));
         base.hpRevealUntil=Date.now()+5000;
-        createCommandBaseDamageFX(base);
+        // Several soldiers and tanks can hit the same base in one second.
+        // Rate-limit decorative damage FX so combat remains responsive instead
+        // of creating dozens of smoke particles and flashes per frame.
+        const now=performance.now();
+        if(!base._lastDamageFxAt || now-base._lastDamageFxAt>=850){
+            base._lastDamageFxAt=now;
+            createCommandBaseDamageFX(base);
+        }
         if(base.hp<=0) destroyCommandBase(base,fromTeam);
     }
 
@@ -5931,6 +5966,24 @@ function startGame(){openBattleSetup();}
                 const bd=u.mesh.position.distanceTo(enemyCommandBase.mesh.position);
                 if(bd<120){target=enemyCommandBase;best=bd*bd;}
             }
+            // المشاة يواصلون الهجوم على المباني والمعسكر عندما يصلون إلى نطاق الاشتباك.
+            const hostileStructures=[
+                ...(constructedFactories||[]).filter(f=>f&&f.done&&!f.isDestroyed&&f.owner!==u.team),
+                ...(enemyFactories||[]).filter(f=>f&&!f.isDestroyed&&f.done&&u.team==='player'),
+                ...(constructedBarracks||[]).filter(b=>b&&b.done&&!b.isDestroyed&&b.owner!==u.team),
+                (u.team==='player'?enemyBaseGroup:playerBaseGroup)
+            ].filter(st=>st&&st.mesh&&!st.isDestroyed);
+            let siegeTarget=null,siegeDist=Infinity;
+            for(const st of hostileStructures){
+                const d=u.mesh.position.distanceTo(st.mesh.position);
+                if(d<70&&d<siegeDist){siegeDist=d;siegeTarget=st;}
+            }
+            const infantryCurrentDist=target&&target.mesh&&!target.isDestroyed
+                ? u.mesh.position.distanceTo(target.mesh.position) : Infinity;
+            if(siegeTarget&&(!target||infantryCurrentDist>siegeDist+8)){
+                target=siegeTarget;best=siegeDist*siegeDist;
+            }
+
             const guardPointDistance = u.guardPoint ? u.mesh.position.distanceTo(u.guardPoint) : 0;
             const travellingToGuardPoint = !!(u.guardPoint && u.holdPosition && guardPointDistance > (u.guardRadius || 18));
             if(travellingToGuardPoint){ target=null; best=120*120; }
@@ -6521,7 +6574,7 @@ function startGame(){openBattleSetup();}
             rigGroup.scale.setScalar(1.18);
             scene.add(rigGroup); obstacles.push({x:pos.x,z:pos.z,radius:10});
             const oilHpLabel=document.createElement('div'); oilHpLabel.className='tank-hp-label hp-player'; const oilHpFill=document.createElement('div'); oilHpFill.className='tank-hp-fill'; oilHpLabel.appendChild(oilHpFill); document.getElementById('hp-labels-container').appendChild(oilHpLabel); oilHpLabel.style.display='none';
-            oilRigs.push({x:pos.x,z:pos.z,group:rigGroup,beam:null,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:barrelGroup});
+            oilRigs.push({x:pos.x,z:pos.z,group:rigGroup,beam:null,isOilRig:true,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:barrelGroup});
         });
     }
 
@@ -6923,9 +6976,9 @@ function startGame(){openBattleSetup();}
         let terrainY = getTerrainHeight(x, z);
         tankGroup.position.set(x, terrainY, z);
         
-        const glowGeo = new THREE.RingGeometry(4, 4.8, 24);
+        const glowGeo = new THREE.RingGeometry(3.85, 3.98, 64);
         glowGeo.rotateX(-Math.PI / 2);
-        const glowMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+        const glowMat = new THREE.MeshBasicMaterial({ color: 0xc6c99b, side: THREE.DoubleSide, transparent: true, opacity: 0.86, depthWrite:false });
         const glowMesh = new THREE.Mesh(glowGeo, glowMat);
         glowMesh.position.y = 0.2;
         glowMesh.visible = false;
@@ -7447,10 +7500,10 @@ function startGame(){openBattleSetup();}
         const c=activeBarracksConstruction;if(!c)return;const b=c.builder;
         if(!b||b.isDestroyed){removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);activeBarracksConstruction=null;updateConstructionBarForSelection();return;}
         if(!c.started){
-            if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;showFloatingMsg('🪖 Barracks construction started — crane operating');}
+            if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();showFloatingMsg('🪖 Barracks construction started — crane operating');}
             return;
         }
-        c.elapsed++;updateBarracksConstructionLift(c.lift);
+        c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateBarracksConstructionLift(c.lift);
         if(b.buildBlade){const a=Math.sin(c.elapsed*.10)*.30;b.buildBlade.rotation.x=a;b.buildBlade.position.y=(b.buildBlade.userData.baseY||.10)+Math.max(0,Math.sin(c.elapsed*.10))*.55;}
         const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;
         const groundY=getBuildingGroundLevel(c.point.x,c.point.z,'barracks',c.build.rotation||0);
@@ -7475,7 +7528,7 @@ function startGame(){openBattleSetup();}
         const cost=250;
         if(playerMoney<cost){showFloatingMsg('Insufficient funds — soldier costs $250');return;}
         playerMoney-=cost;totalMoneySpent+=cost;updateEconomyUI();playSound('buy');
-        selectedBarracks.productionJob={barracks:selectedBarracks,type:'infantry',cost,elapsed:0,duration:REAL_TRAIN_INFANTRY_SEC*REAL_TICKS_PER_SECOND};
+        selectedBarracks.productionJob={barracks:selectedBarracks,type:'infantry',cost,elapsed:0,startedAt:performance.now(),duration:REAL_TRAIN_INFANTRY_SEC*REAL_TICKS_PER_SECOND};
         activeBarracksProduction=selectedBarracks.productionJob;
         showFloatingMsg('🪖 Soldier training started — 8 seconds');
         updateBarracksBar();
@@ -7485,7 +7538,8 @@ function startGame(){openBattleSetup();}
         for(const barracks of constructedBarracks){
             const p=barracks&&barracks.productionJob;
             if(!p||!barracks.done||barracks.isDestroyed)continue;
-            any=true;p.elapsed++;
+            any=true;
+            if(p.startedAt){p.elapsed=Math.floor((performance.now()-p.startedAt)/SIM_STEP_MS);}else{p.elapsed++;}
             if(p.elapsed>=p.duration){
                 produceBarracksUnit(barracks);
                 barracks.productionJob=null;
@@ -7506,7 +7560,7 @@ function startGame(){openBattleSetup();}
         const spawn=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(5.5));spawn.y=getTerrainHeight(spawn.x,spawn.z);
         const team=barracks.owner==='enemy'?'enemy':'player';
         const unit=createInfantrySoldier(spawn.x,spawn.z,team);unit.mesh.rotation.y=r;unit.manualControl=(team==='player');
-        unit.barracksExiting=true;unit.barracksExitLock=true;unit.barracksExitTarget=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(14));unit.barracksExitTarget.y=getTerrainHeight(unit.barracksExitTarget.x,unit.barracksExitTarget.z);unit.target=null;unit.factoryFinalTarget=null;
+        unit.barracksExiting=true;unit.barracksExitLock=true;unit.barracksExitBarracks=barracks;unit.barracksExitTarget=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(14));unit.barracksExitTarget.y=getTerrainHeight(unit.barracksExitTarget.x,unit.barracksExitTarget.z);unit.target=null;unit.factoryFinalTarget=null;
         unit.barracksExitSpeed=Math.max(0.10, Math.min(0.18, (unit.speed||0.10)*1.15));
         if(team==='enemy'){
             unit.target=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);unit.target.y=getTerrainHeight(unit.target.x,unit.target.z);unit.aiTarget=unit.target.clone();unit.aiOrder='attack';
@@ -7821,8 +7875,8 @@ function createArmyFactory(x,z,ghost=false){
     function updateEnemyFactoryConstruction(){
         const c=enemyFactoryConstruction;if(!c)return;const b=c.builder;
         if(!b||b.isDestroyed){removeConstructionLift(c);enemyFactoryConstruction=null;return;}
-        if(!c.started){if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;}return;}
-        c.elapsed++;updateConstructionLift(c.lift);updateFactoryConstructionCage(c,Math.min(1,c.elapsed/c.build.duration));const p=Math.min(1,c.elapsed/Math.max(1,c.build.duration||REAL_BUILD_FACTORY_SEC*REAL_TICKS_PER_SECOND));c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*.92);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.12+p*1.05);});
+        if(!c.started){if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();}return;}
+        c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateConstructionLift(c.lift);updateFactoryConstructionCage(c,Math.min(1,c.elapsed/c.build.duration));const p=Math.min(1,c.elapsed/Math.max(1,c.build.duration||REAL_BUILD_FACTORY_SEC*REAL_TICKS_PER_SECOND));c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*.92);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.12+p*1.05);});
         if(p>=1){c.build.done=true;c.build.mesh.scale.setScalar(1);removeFactoryConstructionCage(c);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});removeConstructionLift(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}b.isBuilding=false;b.buildTarget=null;const r=c.build.rotation||0;const retreat=c.build.mesh.position.clone().sub(new THREE.Vector3(Math.sin(r),0,Math.cos(r)).multiplyScalar(13));retreat.y=getTerrainHeight(retreat.x,retreat.z);b.target=retreat;b.factoryRetreating=true;enemyFactories.push(c.build);constructedFactories.push(c.build);enemyFactoryConstruction=null;}
     }
 
@@ -7859,11 +7913,11 @@ function createArmyFactory(x,z,ghost=false){
         }
         if(!c.started){
             if(b.mesh.position.distanceTo(c.workPoint)<=2.8){
-                c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;
+                c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();
             }
             return;
         }
-        c.elapsed++;
+        c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);
         updateBarracksConstructionLift(c.lift);
         if(b.buildBlade){b.buildBlade.rotation.x=Math.sin(c.elapsed*.10)*.30;b.buildBlade.position.y=(b.buildBlade.userData.baseY||.10)+Math.max(0,Math.sin(c.elapsed*.10))*.55;}
         const p=Math.min(1,c.elapsed/c.build.duration);
@@ -7932,7 +7986,7 @@ function createArmyFactory(x,z,ghost=false){
         });
     }
 
-    function updateEnemyFactoryProduction(){const p=enemyFactoryProduction;if(!p)return;p.elapsed++;if(p.elapsed>=(p.duration||600)){produceEnemyFactoryUnit(p.factory,p.type);enemyFactoryProduction=null;}}
+    function updateEnemyFactoryProduction(){const p=enemyFactoryProduction;if(!p)return;p.elapsed=Math.floor((performance.now()-(p.startedAt||performance.now()))/SIM_STEP_MS);if(p.elapsed>=(p.duration||600)){produceEnemyFactoryUnit(p.factory,p.type);enemyFactoryProduction=null;}}
 
     function getBuildingFootprint(type, rotation=0){
         const isFactory = type==='factory';
@@ -8023,7 +8077,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function chooseEnemyOilTarget(fromUnit=null){
-        const candidates=oilRigs.filter(r=>!r.isDestroyed&&r.owner!=='enemy');
+        const candidates=oilRigs.filter(r=>!r.isDestroyed&&r.owner==='player');
         if(!candidates.length)return null;
         return candidates.slice().sort((a,b)=>{
             const score=rig=>{
@@ -8180,17 +8234,23 @@ function createArmyFactory(x,z,ghost=false){
         // لا ننتظر امتلاك النفط لإنتاج المشاة: المشاة هم من سيذهبون لاحتلال النفط.
         // إذا كان هناك نفط غير تابع للعدو، يخصص العدو مشاة تلقائياً للاستيلاء عليه.
         const needOilInfantry=neutralOrPlayerOilCount>0 && enemyInfantryCount<Math.max(4,neutralOrPlayerOilCount*2);
-        if(activeEnemyBarracks&&!activeEnemyBarracks.productionJob&&enemyMoney>=250&&needOilInfantry){
+        // لا يبدأ العدو تدريب جندي جديد حتى ينتهي السابق من الخروج من الثكنة،
+        // مع الالتزام بزمن تدريب اللاعب نفسه (8 ثوانٍ).
+        const enemyInfantryStillExiting=enemyTanks.some(u=>u&&!u.isDestroyed&&u.team==='enemy'&&u.isInfantry&&u.barracksExitBarracks===activeEnemyBarracks&&(u.barracksExiting||u.barracksExitLock));
+        if(activeEnemyBarracks&&!activeEnemyBarracks.productionJob&&enemyMoney>=250&&needOilInfantry&&!enemyInfantryStillExiting){
             enemyMoney-=250;
             activeEnemyBarracks.productionJob={
-                barracks:activeEnemyBarracks,type:'infantry',cost:250,elapsed:0,
+                barracks:activeEnemyBarracks,type:'infantry',cost:250,elapsed:0,startedAt:performance.now(),
                 duration:REAL_TRAIN_INFANTRY_SEC*REAL_TICKS_PER_SECOND
             };
         }
 
         // إنتاج الآليات لا يتوقف فقط لأن العدو لم يسيطر على النفط بعد؛
         // المصنع يجب أن يبقى نشطاً ويكوّن قوة تستطيع التقدم والدفاع والهجوم.
-        if(factory&&!enemyFactoryProduction){
+        // المصنع المعادي يلتزم بزمن الإنتاج نفسه للاعب، ولا يكدّس وحدات
+        // عند البوابة: يجب أن تخرج الآلية السابقة بالكامل قبل بدء طلب جديد.
+        const enemyFactoryUnitStillExiting=factory&&[...enemyTanks,...ambulances,...reconVehicles].some(u=>u&&!u.isDestroyed&&u.factoryExitFactory===factory&&(u.factoryExiting||u.factoryExitLock));
+        if(factory&&!enemyFactoryProduction&&!enemyFactoryUnitStillExiting){
             const costs={rocket:800,normal:500,ambulance:600,scout:500};
             const affordable=Object.keys(costs).filter(k=>enemyMoney>=costs[k]);
             if(!affordable.length) return;
@@ -8204,7 +8264,7 @@ function createArmyFactory(x,z,ghost=false){
             for(const k of affordable){ roll-=weights[k]; if(roll<=0){type=k;break;} }
             if(enemyMoney>=costs[type]){
                 enemyMoney-=costs[type];
-                enemyFactoryProduction={factory,type,cost:costs[type],elapsed:0,duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND};
+                enemyFactoryProduction={factory,type,cost:costs[type],elapsed:0,startedAt:performance.now(),duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND};
             }
         }
 
@@ -8247,9 +8307,10 @@ function createArmyFactory(x,z,ghost=false){
         showFloatingMsg('🛢️ Oil rig selected');
     }
     function selectBarracks(barracks){
+        if(barracks&&!barracks.buildCost)barracks.buildCost=150;
         selectedBarracks=barracks; selectedOilRig=null; selectedFactory=null; selectedTank=null; selectedUnitKind='barracks'; selectionMode='single'; defenseCommandArmed=false;
         clearSelectionVisuals();
-        const ring=barracks.mesh.getObjectByName('barracksSelectionGlow')||new THREE.Mesh(new THREE.RingGeometry(5.8,6.05,48),new THREE.MeshBasicMaterial({color:0x60a5fa,side:THREE.DoubleSide,transparent:true,opacity:.82,depthWrite:false}));
+        const ring=barracks.mesh.getObjectByName('barracksSelectionGlow')||new THREE.Mesh(new THREE.RingGeometry(6.6,6.84,72),new THREE.MeshBasicMaterial({color:0x32e36f,side:THREE.DoubleSide,transparent:true,opacity:.92,depthWrite:false}));
         ring.name='barracksSelectionGlow'; ring.rotation.x=-Math.PI/2; ring.position.y=.2; barracks.mesh.add(ring); ring.visible=true;
         updateDefenseButton();
         updateConstructionBarForSelection();
@@ -8276,10 +8337,117 @@ function createArmyFactory(x,z,ghost=false){
         if(factoryInf) factoryInf.style.display='none';
     }
 
+    function sellSelectedBuilding(){
+        let building=null, kind='', refund=0;
+        if(selectedFactory && !selectedFactory.isDestroyed && selectedFactory.owner!=='enemy'){
+            building=selectedFactory; kind='factory'; refund=Math.floor((Number(building.buildCost)||400)/2);
+        }else if(selectedBarracks && !selectedBarracks.isDestroyed && selectedBarracks.owner!=='enemy'){
+            building=selectedBarracks; kind='barracks'; refund=Math.floor((Number(building.buildCost)||150)/2);
+        }
+        if(!building){showFloatingMsg('حدد مصنعاً أو سكنة عسكرية تابعة لك لبيعها');return;}
+        const mesh=building.mesh;
+        if(!mesh){showFloatingMsg('تعذر بيع المبنى المحدد');return;}
+        if(building._saleInProgress){showFloatingMsg('بدأ تفكيك المبنى بالفعل');return;}
+        building._saleInProgress=true;
+
+        // Stop production and detach any older construction animation, but keep the building visible for its sell animation.
+        if(building.productionJob) building.productionJob=null;
+        if(activeFactoryProduction&&activeFactoryProduction.factory===building) activeFactoryProduction=null;
+        if(activeBarracksProduction&&activeBarracksProduction.barracks===building) activeBarracksProduction=null;
+        if(typeof activeFactoryConstructions!=='undefined'){
+            const keep=[];
+            for(const c of activeFactoryConstructions){
+                if(c&&c.build===building){removeFactoryConstructionCage(c);removeConstructionLift(c);if(c.build.mesh.userData&&c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}}
+                else keep.push(c);
+            }
+            activeFactoryConstructions=keep; activeFactoryConstruction=keep[keep.length-1]||null;
+        }
+        if(typeof activeBarracksConstruction!=='undefined'&&activeBarracksConstruction&&activeBarracksConstruction.build===building){
+            removeBarracksConstructionCage(activeBarracksConstruction);removeBarracksConstructionLift(activeBarracksConstruction);activeBarracksConstruction=null;
+        }
+        if(building.cage&&building.cage.mesh){scene.remove(building.cage.mesh);}
+        if(building.lift&&building.lift.mesh){scene.remove(building.lift.mesh);}
+
+        // Show a temporary steel construction fence around the building, then sink the building underground.
+        let saleFence=null;
+        try{ saleFence = kind==='factory' ? createFactoryConstructionCage(building) : createBarracksConstructionCage(building); }
+        catch(e){ saleFence=null; }
+        if(building.hpLabel){building.hpLabel.style.display='none';}
+        building.isDestroyed=true; // immediately prevents targeting, selection, and further production
+        if(kind==='factory'){
+            constructedFactories=constructedFactories.filter(f=>f!==building);
+            enemyFactories=enemyFactories.filter(f=>f!==building);
+            if(selectedFactory===building) selectedFactory=null;
+        }else{
+            constructedBarracks=constructedBarracks.filter(b=>b!==building);
+            if(selectedBarracks===building) selectedBarracks=null;
+        }
+
+        playerMoney+=refund; updateEconomyUI();
+        selectedUnitKind=null; defenseCommandArmed=false;
+        const sellBtn=document.getElementById('sell-building-btn');if(sellBtn)sellBtn.style.display='none';
+        clearSelectionVisuals(); updateConstructionBarForSelection(); updateDefenseButton();
+        showFloatingMsg(`بدأ تفكيك المبنى؛ ستسترد ${refund}$ (نصف القيمة)`);
+
+        const startY=mesh.position.y;
+        const groundY=getTerrainHeight(mesh.position.x,mesh.position.z);
+        const startTime=performance.now();
+        const duration=7000; // يبقى سياج الموقع ظاهراً طوال مدة البيع الكاملة
+        const fadeFence=(f)=>{
+            if(!saleFence||!saleFence.mesh)return;
+            saleFence.mesh.visible=true;
+            saleFence.mesh.traverse(o=>{
+                if(!o.material)return;
+                const mats=Array.isArray(o.material)?o.material:[o.material];
+                mats.forEach(m=>{m.transparent=true;m.depthWrite=false;m.opacity=Math.max(.01,1-f);m.needsUpdate=true;});
+            });
+        };
+        const disposeFence=()=>{
+            if(!saleFence||!saleFence.mesh)return;
+            if(saleFence.mesh.parent)saleFence.mesh.parent.remove(saleFence.mesh);else scene.remove(saleFence.mesh);
+            saleFence.mesh.traverse(o=>{if(o.geometry&&o.geometry.dispose)o.geometry.dispose();if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m&&m.dispose)m.dispose();});}});
+        };
+        const finishSale=()=>{
+            // First remove the building after the full seven-second dismantling order.
+            if(mesh.parent)mesh.parent.remove(mesh);else scene.remove(mesh);
+            if(building.hpLabel&&building.hpLabel.remove)building.hpLabel.remove();
+            // Keep the construction fence visible until the building has disappeared,
+            // then fade and remove the fence separately.
+            mesh.traverse(o=>{if(o.geometry&&o.geometry.dispose)o.geometry.dispose();if(o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m&&m.dispose)m.dispose();});}});
+            if(saleFence&&saleFence.mesh){
+                const fenceFadeStart=performance.now();
+                const fadeFenceAfterBuilding=(now)=>{
+                    const f=Math.min(1,(now-fenceFadeStart)/650);
+                    fadeFence(saleFence,f);
+                    if(f<1)requestAnimationFrame(fadeFenceAfterBuilding);else disposeFence();
+                };
+                requestAnimationFrame(fadeFenceAfterBuilding);
+            }
+        };
+        const animateSale=(now)=>{
+            const t=Math.min(1,(now-startTime)/duration);
+            const eased=t*t*(3-2*t);
+            mesh.position.y=groundY - eased*18;
+            mesh.rotation.z=Math.sin(t*Math.PI)*.025;
+            mesh.scale.y=Math.max(.03,1-eased*.92);
+            if(saleFence&&saleFence.mesh){
+                // سياج مستقل عن المبنى: يبقى فوق الأرض ظاهراً طوال الثواني السبع ولا يتأثر بنزول المبنى.
+                if(saleFence.mesh.parent!==scene)scene.add(saleFence.mesh);
+                saleFence.mesh.visible=true;
+                saleFence.mesh.position.set(mesh.position.x,groundY+.2,mesh.position.z);
+                saleFence.mesh.rotation.y=mesh.rotation.y;
+                fadeFence(0);
+            }
+            if(t<1)requestAnimationFrame(animateSale);else finishSale();
+        };
+        requestAnimationFrame(animateSale);
+    }
+
     function selectFactory(factory) {
+        if(factory&&!factory.buildCost)factory.buildCost=400;
         selectedFactory=factory; selectedBarracks=null; selectedOilRig=null; selectedTank=null; selectedUnitKind='factory'; selectionMode='single'; defenseCommandArmed=false;
         clearSelectionVisuals();
-        const ring=factory.mesh.getObjectByName('factorySelectionGlow') || new THREE.Mesh(new THREE.RingGeometry(9,10,32),new THREE.MeshBasicMaterial({color:0x22c55e,side:THREE.DoubleSide,transparent:true,opacity:.9}));
+        const ring=factory.mesh.getObjectByName('factorySelectionGlow') || new THREE.Mesh(new THREE.RingGeometry(10.0,10.26,80),new THREE.MeshBasicMaterial({color:0x32e36f,side:THREE.DoubleSide,transparent:true,opacity:.92,depthWrite:false}));
         ring.name='factorySelectionGlow'; ring.rotation.x=-Math.PI/2; ring.position.y=.2; factory.mesh.add(ring); ring.visible=true;
         updateDefenseButton(); updateConstructionBarForSelection();
         showFloatingMsg('🏭 Army factory selected');
@@ -8320,7 +8488,7 @@ function createArmyFactory(x,z,ghost=false){
         const costs={rocket:800,normal:500,ambulance:600,scout:500};const cost=costs[type]||500;
         if(playerMoney<cost){showFloatingMsg(`Insufficient funds — cost: $${cost}`);return;}
         playerMoney-=cost;totalMoneySpent+=cost;updateEconomyUI();playSound('buy');
-        selectedFactory.productionJob={factory:selectedFactory,type,cost,elapsed:0,duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND};
+        selectedFactory.productionJob={factory:selectedFactory,type,cost,elapsed:0,startedAt:performance.now(),duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND};
         activeFactoryProduction=selectedFactory.productionJob;
         showFloatingMsg(type==='scout'?'🏭 Scout vehicle preparation started — 12 seconds':'🏭 Production started — 15 seconds');
         updateFactoryBar();
@@ -8329,7 +8497,7 @@ function createArmyFactory(x,z,ghost=false){
         let any=false;
         for(const factory of constructedFactories){
             const p=factory&&factory.productionJob;if(!p||!factory.done||factory.isDestroyed)continue;
-            any=true;p.elapsed++;
+            any=true;if(p.startedAt){p.elapsed=Math.floor((performance.now()-p.startedAt)/SIM_STEP_MS);}else{p.elapsed++;}
             if(p.elapsed>=p.duration){produceFactoryUnit(factory,p.type);factory.productionJob=null;}
         }
         activeFactoryProduction=selectedFactory&&selectedFactory.productionJob?selectedFactory.productionJob:null;
@@ -8519,7 +8687,8 @@ function createArmyFactory(x,z,ghost=false){
         const hook=new THREE.Mesh(new THREE.TorusGeometry(.16,.045,8,12,Math.PI*1.7),bladeMat); hook.rotation.x=Math.PI/2; hook.position.set(0,-.78,0); hook.name='builderHook'; boomBase.add(hook);
 
         const terrainY=getTerrainHeight(x,z); group.position.set(x,terrainY,z); scene.add(group);
-        const unit={mesh:group,team,type:'builder',isBuilder:true,isConstructionTruck:true,isDestroyed:false,hp:700,maxHp:700,speed:UNIT_SPEEDS.dozer||.105,combatSpeed:UNIT_SPEEDS.dozer||.105,target:null,buildTarget:null,isBuilding:false,buildBlade:bladeGroup,bulldozerBlade:bladeMain,bladeGroup, builderBoom:boomBase,builderCable:cable,builderHook:hook,trackBeltL,trackBeltR,factoryRetreating:false,hasPlayerMoveOrder:false,isReversing:false,collisionRadius:5.0,buildRadius:7.0,Pos:new THREE.Vector3(x,terrainY,z),lastDustPos:new THREE.Vector3(x,terrainY,z)};
+        const hpLabel=document.createElement('div'); hpLabel.className=`tank-hp-label ${team==='player'?'hp-player':'hp-enemy'}`; const hpFill=document.createElement('div'); hpFill.className='tank-hp-fill'; hpLabel.appendChild(hpFill); document.getElementById('hp-labels-container').appendChild(hpLabel);
+        const unit={mesh:group,team,type:'builder',isBuilder:true,isConstructionTruck:true,hpLabel,hpFill,hpRevealUntil:0,isDestroyed:false,hp:700,maxHp:700,speed:UNIT_SPEEDS.dozer||.105,combatSpeed:UNIT_SPEEDS.dozer||.105,target:null,buildTarget:null,isBuilding:false,buildBlade:bladeGroup,bulldozerBlade:bladeMain,bladeGroup, builderBoom:boomBase,builderCable:cable,builderHook:hook,trackBeltL,trackBeltR,factoryRetreating:false,hasPlayerMoveOrder:false,isReversing:false,collisionRadius:5.0,buildRadius:7.0,Pos:new THREE.Vector3(x,terrainY,z),lastDustPos:new THREE.Vector3(x,terrainY,z)};
         applySilverArmyStyle(unit); addUnitTeamMarkings(unit,team);
         return unit;
     }
@@ -8693,17 +8862,17 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function createTargetMarker() {
+        // مؤشر حركة أكبر وواضح باللون الأخضر العسكري، دون أسهم أو زخرفة مزدحمة.
         const group = new THREE.Group();
-        group.name = 'fourArrowMoveMarker';
-        const mat = new THREE.MeshBasicMaterial({ color: 0x5eead4, side: THREE.DoubleSide, transparent:true, opacity:.95, depthWrite:false });
-        const makeArrow = (x,z,rx) => {
-            const shape = new THREE.Shape();
-            shape.moveTo(0, -1.0); shape.lineTo(-0.55, -0.2); shape.lineTo(-0.18, -0.2); shape.lineTo(-0.18, 1.0);
-            shape.lineTo(0.18, 1.0); shape.lineTo(0.18, -0.2); shape.lineTo(0.55, -0.2); shape.closePath();
-            const m = new THREE.Mesh(new THREE.ShapeGeometry(shape), mat.clone());
-            m.rotation.x = -Math.PI/2; m.rotation.z = rx; m.position.set(x,0.08,z); return m;
-        };
-        group.add(makeArrow(0,-3.0,0), makeArrow(0,3.0,Math.PI), makeArrow(-3.0,0,-Math.PI/2), makeArrow(3.0,0,Math.PI/2));
+        group.name = 'moveOrderMarker';
+        const ringMat = new THREE.MeshBasicMaterial({color:0x32e36f, side:THREE.DoubleSide, transparent:true, opacity:.96, depthWrite:false});
+        const ring = new THREE.Mesh(new THREE.RingGeometry(3.05,3.38,96), ringMat);
+        ring.rotation.x=-Math.PI/2; ring.position.y=.09; group.add(ring);
+        const innerMat = new THREE.MeshBasicMaterial({color:0x9bffb6, side:THREE.DoubleSide, transparent:true, opacity:.86, depthWrite:false});
+        const inner = new THREE.Mesh(new THREE.RingGeometry(2.28,2.38,80), innerMat);
+        inner.rotation.x=-Math.PI/2; inner.position.y=.095; group.add(inner);
+        const dot = new THREE.Mesh(new THREE.CircleGeometry(.32,40), new THREE.MeshBasicMaterial({color:0x48ff83,transparent:true,opacity:.98,depthWrite:false}));
+        dot.rotation.x=-Math.PI/2; dot.position.y=.105; group.add(dot);
         group.visible = false;
         targetMarkerMesh = group;
         scene.add(group);
@@ -8712,37 +8881,22 @@ function createArmyFactory(x,z,ghost=false){
     // مؤشر DEFEND تكتيكي مستقل: دائرة كبيرة مثل مؤشرات ألعاب الـRTS،
     // تتبع مكان المؤشر قبل تثبيت أمر الDEFEND.
     function createDefenseMarker(){
+        // نطاق الحماية: دائرة أرضية زيتونية رفيعة ونقطة مركزية، واضحة دون زحمة علامات.
         const g=new THREE.Group();
         g.name='defenseCommandMarker';
-
-        const ringMat=new THREE.MeshBasicMaterial({color:0x39e75f,transparent:true,opacity:.88,side:THREE.DoubleSide,depthWrite:false});
-        const ring=new THREE.Mesh(new THREE.RingGeometry(16.2,17.0,64),ringMat);
+        const fillMat=new THREE.MeshBasicMaterial({color:0xf04438,transparent:true,opacity:.09,side:THREE.DoubleSide,depthWrite:false});
+        const fill=new THREE.Mesh(new THREE.CircleGeometry(22,96),fillMat);
+        fill.rotation.x=-Math.PI/2; fill.position.y=.075; g.add(fill);
+        const ringMat=new THREE.MeshBasicMaterial({color:0xff5948,transparent:true,opacity:.92,side:THREE.DoubleSide,depthWrite:false});
+        const ring=new THREE.Mesh(new THREE.RingGeometry(21.65,22.0,112),ringMat);
         ring.rotation.x=-Math.PI/2; ring.position.y=.10; g.add(ring);
-
-        const innerMat=new THREE.MeshBasicMaterial({color:0x8dff9d,transparent:true,opacity:.42,side:THREE.DoubleSide,depthWrite:false});
-        const inner=new THREE.Mesh(new THREE.RingGeometry(14.7,15.05,64),innerMat);
-        inner.rotation.x=-Math.PI/2; inner.position.y=.105; g.add(inner);
-
-        const pulse=new THREE.Mesh(new THREE.RingGeometry(17.8,18.15,64),new THREE.MeshBasicMaterial({color:0x39e75f,transparent:true,opacity:.22,side:THREE.DoubleSide,depthWrite:false}));
-        pulse.rotation.x=-Math.PI/2; pulse.position.y=.095; g.add(pulse);
-
-        // علامة + وسط الدائرة توضح أن الأمر هو DEFEND/تمركز.
-        const crossMat=new THREE.MeshBasicMaterial({color:0xd9ffe0,transparent:true,opacity:.95,depthWrite:false});
-        const h=new THREE.Mesh(new THREE.PlaneGeometry(5.5,.55),crossMat); h.rotation.x=-Math.PI/2; h.position.y=.12; g.add(h);
-        const v=new THREE.Mesh(new THREE.PlaneGeometry(.55,5.5),crossMat); v.rotation.x=-Math.PI/2; v.position.y=.121; g.add(v);
-
-        // علامات اتجاهية صغيرة حول الحلقة تعطي شكل مؤشر أوامر RTS واضح.
-        const tickMat=new THREE.MeshBasicMaterial({color:0xbaffc2,transparent:true,opacity:.9,depthWrite:false});
-        for(let i=0;i<8;i++){
-            const a=i*Math.PI/4;
-            const tick=new THREE.Mesh(new THREE.PlaneGeometry(.55,2.8),tickMat.clone());
-            tick.rotation.x=-Math.PI/2;
-            tick.rotation.z=a;
-            tick.position.set(Math.sin(a)*15.5,.125,Math.cos(a)*15.5);
-            g.add(tick);
-        }
-
-        g.userData.pulse=pulse;
+        const innerMat=new THREE.MeshBasicMaterial({color:0xffa08f,transparent:true,opacity:.72,side:THREE.DoubleSide,depthWrite:false});
+        const innerRing=new THREE.Mesh(new THREE.RingGeometry(18.2,18.32,96),innerMat);
+        innerRing.rotation.x=-Math.PI/2; innerRing.position.y=.105; g.add(innerRing);
+        const centerMat=new THREE.MeshBasicMaterial({color:0xffd0c8,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:false});
+        const center=new THREE.Mesh(new THREE.RingGeometry(.55,.72,40),centerMat);
+        center.rotation.x=-Math.PI/2; center.position.y=.13; g.add(center);
+        g.userData.pulse=null;
         g.visible=false;
         defenseMarkerMesh=g;
         scene.add(g);
@@ -8814,6 +8968,15 @@ function createArmyFactory(x,z,ghost=false){
 
     function setupInteraction() {
         const dom = renderer.domElement;
+        // مؤشر لمس بصري قصير؛ لا يغيّر إحداثيات اللمس أو أوامر الحركة.
+        function showRtsTouchPulse(clientX, clientY) {
+            const pulse=document.createElement('div');
+            pulse.className='rts-touch-pulse';
+            pulse.style.left=clientX+'px'; pulse.style.top=clientY+'px';
+            document.body.appendChild(pulse);
+            pulse.addEventListener('animationend',()=>pulse.remove(),{once:true});
+            setTimeout(()=>{if(pulse.isConnected)pulse.remove();},650);
+        }
         dom.style.touchAction = 'none';
 
         const activePointers = new Map();
@@ -8969,6 +9132,10 @@ function createArmyFactory(x,z,ghost=false){
                 if (u.team === 'player') { u.manualControl = true; u.hasPlayerMoveOrder = true; }
                 u.holdPosition = false;
                 u.guardPoint = null;
+                u.bombardPoint = null;
+                u.scudAnimProgress = 0;
+                if (u.type === 'rocket' && u.scudState !== 'firing') u.scudState = 'sleeping';
+                u.combatHoldTarget = null;
                 const offset = selectionMode === 'all'
                     ? new THREE.Vector3((index % 3) * 8 - 8, 0, Math.floor(index / 3) * 8)
                     : new THREE.Vector3(0, 0, 0);
@@ -8983,6 +9150,7 @@ function createArmyFactory(x,z,ghost=false){
 
         dom.addEventListener('pointerdown', (e) => {
             if (gameOver || isCinematicEnding) return;
+            if (e.pointerType === 'touch') showRtsTouchPulse(e.clientX,e.clientY);
 
             if (defenseCommandArmed && e.pointerType !== 'touch') {
                 updateDefenseMarkerFromScreen(e.clientX,e.clientY);
@@ -9746,6 +9914,7 @@ function createArmyFactory(x,z,ghost=false){
         unit.hp = 0;
         unit.target = null;
         unit.guardPoint = null;
+        unit.bombardPoint = null;
         unit.holdPosition = false;
         unit.healTarget = null;
         unit.isHealing = false;
@@ -9772,6 +9941,25 @@ function createArmyFactory(x,z,ghost=false){
         }
 
         addSmokeParticle(unit.mesh.position, 0x111111, 1.5);
+    }
+
+    // تدمير آمن لوحدات البناء: لا نمرر التركس إلى مؤثرات الدبابات التي قد تعتمد على أجزاء غير موجودة في نموذج البناء.
+    function destroyCombatUnitSafely(unit, fromTeam) {
+        if (!unit || unit.isDestroyed) return;
+        if (!unit.isBuilder) {
+            destroyCombatUnit(unit, fromTeam);
+            return;
+        }
+        unit.isDestroyed = true;
+        unit.hp = 0;
+        unit.target = null;
+        unit.buildTarget = null;
+        unit.isBuilding = false;
+        unit.guardPoint = null;
+        if (unit.hpLabel) unit.hpLabel.style.display = 'none';
+        try { if (typeof createUnitWreck === 'function') createUnitWreck(unit); }
+        catch (e) { if (unit.mesh) unit.mesh.visible = false; }
+        try { if (unit.mesh) addSmokeParticle(unit.mesh.position.clone(), 0x171717, 1.4); } catch (e) {}
     }
 
     function triggerTankRecoil(unit, amount = 0.62) {
@@ -9827,11 +10015,14 @@ function createArmyFactory(x,z,ghost=false){
         const dir=delta.normalize();
         const ray=new THREE.Raycaster(start,dir,0,distance-.7);
         const blockers=[];
-        const addRoot=(root)=>{ if(root && root.visible) blockers.push(root); };
-        addRoot(playerBaseGroup); addRoot(enemyBaseGroup);
-        (constructedFactories||[]).forEach(f=>{if(f&&f.done&&!f.isDestroyed)addRoot(f.mesh);});
-        (constructedBarracks||[]).forEach(b=>{if(b&&b.done&&!b.isDestroyed)addRoot(b.mesh);});
-        (oilRigs||[]).forEach(r=>{if(r&&!r.isDestroyed&&r.group)addRoot(r.group);});
+        // The intended target must not block its own line of fire. This is essential
+        // for bases, factories and barracks: the ray ends inside their mesh.
+        const addRoot=(root)=>{ if(root && root!==targetUnit && root.visible) blockers.push(root); };
+        if(playerBaseGroup!==targetUnit) addRoot(playerBaseGroup);
+        if(enemyBaseGroup!==targetUnit) addRoot(enemyBaseGroup);
+        (constructedFactories||[]).forEach(f=>{if(f&&f!==targetUnit&&f.done&&!f.isDestroyed)addRoot(f.mesh);});
+        (constructedBarracks||[]).forEach(b=>{if(b&&b!==targetUnit&&b.done&&!b.isDestroyed)addRoot(b.mesh);});
+        (oilRigs||[]).forEach(r=>{if(r&&r!==targetUnit&&!r.isDestroyed&&r.group)addRoot(r.group);});
         [...(playerTanks||[]),...(enemyTanks||[]),...(reconVehicles||[]),...(ambulances||[])].forEach(u=>{
             if(u && u!==fromUnit && u!==targetUnit && !u.isDestroyed && u.mesh) addRoot(u.mesh);
         });
@@ -9887,11 +10078,11 @@ function createArmyFactory(x,z,ghost=false){
         bullets.push({ mesh: bulletMesh, fromTank: fromTank, fromTeam: fromTank.team, targetTank: targetTank, targetPos: shellTargetPos, speed: 30.0, damage: fromTank.team === 'enemy' ? 62 : 55, tankShell:true });
     }
 
-    function fireTacticalMissile(fromTank, targetTank) {
+    function fireTacticalMissile(fromTank, targetTank, fixedTargetPoint=null) {
         if (fromTank && fromTank.team === 'player' && !playerCanFire(fromTank)) return;
         if (fromTank && (fromTank.nextMissileFireAt||0) > Date.now()) return;
         if (!fromTank.hasMissileLoaded || fromTank.scudState !== 'readyToFire' || (fromTank.scudReloadTime||0) > 0) return;
-        if(targetTank && !hasClearLineOfFire(fromTank,targetTank)) return;
+        if(targetTank && !fromTank.bombardPoint && !hasClearLineOfFire(fromTank,targetTank)) return;
         
         fromTank.hasMissileLoaded = false;
         fromTank.scudState = 'firing';
@@ -9939,7 +10130,10 @@ function createArmyFactory(x,z,ghost=false){
         scene.add(flyingMissileGroup);
 
         // الهدف يثبت لحظة الإطلاق: صاروخ السكود لا يطارد هدفاً متحركاً.
-        let targetPos = targetTank.mesh.position.clone();
+        let targetPos = (targetTank && targetTank.mesh)
+            ? targetTank.mesh.position.clone()
+            : (fixedTargetPoint && fixedTargetPoint.isVector3 ? fixedTargetPoint.clone() : startPos.clone());
+        targetPos.y = getTerrainHeight(targetPos.x, targetPos.z);
 
         tacticalMissiles.push({
             mesh: flyingMissileGroup, 
@@ -10036,6 +10230,9 @@ function createArmyFactory(x,z,ghost=false){
         if(rig.towerAssembly){ const wreck=rig.towerAssembly,startRot=wreck.rotation.z,startY=wreck.position.y,t0=performance.now(); const collapse=()=>{ if(!wreck.parent)return; const t=Math.min(1,(performance.now()-t0)/900),e=t*t*(3-2*t); wreck.rotation.z=startRot+.22*e; wreck.rotation.x=-.16*e; wreck.position.y=startY-.9*e; if(t<1)requestAnimationFrame(collapse); else wreck.visible=false; }; requestAnimationFrame(collapse); }
         createModernImpactFlash(pos,fromTeam); createBlackImpactCrater(pos,5.2,22000); playSound('explosion',1.0,pos); for(let i=0;i<9;i++){const p=pos.clone();p.x+=(Math.random()-.5)*3;p.z+=(Math.random()-.5)*3;p.y+=.4+Math.random()*1.4;addSmokeParticle(p,i<5?0x171717:0x555555,.8+Math.random()*.9);}
         const obstacle=obstacles.find(o=>Math.abs(o.x-rig.x)<.1&&Math.abs(o.z-rig.z)<.1); if(obstacle)obstacle.radius=0;
+        // بعد الانفجار تختفي منشأة النفط كاملة بما فيها القاعدة والمضخة والأنابيب والعلم.
+        if(rig.mesh){rig.mesh.visible=false;setTimeout(()=>{if(rig.mesh&&rig.mesh.parent)rig.mesh.parent.remove(rig.mesh);},1200);}
+        if(rig.hpLabel){rig.hpLabel.style.display='none';if(rig.hpLabel.remove)rig.hpLabel.remove();}
     }
 
     function createScudMixedHitEffect(centerPos, targetCount, target, fromTank){
@@ -10087,14 +10284,18 @@ function createArmyFactory(x,z,ghost=false){
         shockwaves.push({ ring: ringMesh, innerRing: innerRing, beam: beamMesh, life: 30, scaleSpeed: 1.15 });
         for (let i = 0; i < 14; i++) addSmokeParticle(centerPos, i < 5 ? 0x222222 : 0x666666, 1.4 + Math.random()*1.3);
 
-        let allCombatUnits = [...new Set([...playerTanks, ...enemyTanks, ...reconVehicles, ...ambulances])];
+        let allCombatUnits = [...new Set([
+            ...(playerTanks || []), ...(enemyTanks || []), ...(reconVehicles || []), ...(ambulances || []),
+            ...(typeof playerBuilder !== 'undefined' && playerBuilder ? [playerBuilder] : []),
+            ...(typeof enemyBuilder !== 'undefined' && enemyBuilder ? [enemyBuilder] : [])
+        ])];
         allCombatUnits.forEach(unit => {
-            if (unit.isDestroyed) return;
+            if (unit.isDestroyed || (unit.team && unit.team === fromTeam)) return;
             let dist = unit.mesh.position.distanceTo(centerPos);
             if (dist < (isScud ? 38 : 34)) {
                 const blastRadius = isScud ? 38 : 34;
                 let damageAmount = Math.floor((isScud ? 255 : 160) * (1 - dist / blastRadius));
-                unit.hp -= Math.max(40, damageAmount);
+                unit.hp = Math.max(0, (Number.isFinite(unit.hp) ? unit.hp : (unit.maxHp || 100)) - Math.max(40, damageAmount));
                 if(unit.isInfantry){
                     unit.lastHitWasExplosion = true;
                     addInfantryWound(unit, damageAmount >= 100 ? 2 : 1);
@@ -10105,32 +10306,35 @@ function createArmyFactory(x,z,ghost=false){
                         unit.deathImpulse={x:(dx/len)*(1.15+power*2.5),y:1.25+power*2.8,z:(dz/len)*(1.15+power*2.5),spinX:(Math.random()-.5)*.55,spinY:(Math.random()-.5)*.42,spinZ:(Math.random()-.5)*.55,scud:true};
                         unit.deathInstant=Math.random()<(.18+power*.20);
                     }
-                } else if(isScud){
+                } else if(isScud && !unit.isBuilder){
                     applyScudVehicleImpact(unit,centerPos);
                 }
-                revealUnitHp(unit, 5000, fromTeam);
-                if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(unit);
-                updateUnitDamageEffects(unit);
+                try { revealUnitHp(unit, 5000, fromTeam); } catch (e) {}
+                if (!unit.isBuilder) {
+                    try { if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(unit); } catch (e) {}
+                    try { updateUnitDamageEffects(unit); } catch (e) {}
+                }
 
                 if (unit.hp <= 0 && !unit.isDestroyed) {
-                    destroyCombatUnit(unit, fromTeam);
+                    destroyCombatUnitSafely(unit, fromTeam);
                 }
             }
         });
         // المعسكرات أيضاً تتلقى ضرر القصف والانفجارات القريبة.
         [playerBaseGroup, enemyBaseGroup].forEach(base=>{
             if(!base || base.isDestroyed) return;
+            if ((base === playerBaseGroup && fromTeam === 'player') || (base === enemyBaseGroup && fromTeam === 'enemy')) return;
             const dist=base.mesh.position.distanceTo(centerPos);
             if(dist<(isScud?48:42)){
                 const radius=isScud?48:42;
-                const damage=Math.max(120,Math.floor((isScud?1450:1200)*(1-dist/radius)));
+                const damage=Math.max(120,Math.floor((isScud?1850:1200)*(1-dist/radius)));
                 damageCommandBase(base,damage,fromTeam);
             }
         });
 
         // آبار النفط أهداف قابلة للتدمير: القصف القريب يسبب تلفاً ثم تدميراً كاملاً.
         oilRigs.forEach(rig=>{
-            if(!rig || rig.isDestroyed)return;
+            if(!rig || rig.isDestroyed || !fromTeam || rig.owner!==(fromTeam==='player'?'enemy':'player'))return;
             const dist=Math.hypot(rig.x-centerPos.x,rig.z-centerPos.z);
             if(dist<(isScud?34:30)){
                 const radius=isScud?34:30;
@@ -10140,7 +10344,7 @@ function createArmyFactory(x,z,ghost=false){
         });
 
         [...(constructedBarracks||[])].forEach(b=>{
-            if(!b||b.isDestroyed||!b.done)return;
+            if(!b||b.isDestroyed||!b.done || (b.owner && b.owner === fromTeam))return;
             const dist=b.mesh.position.distanceTo(centerPos);
             if(dist<(isScud?30:26)){const radius=isScud?30:26;const damage=Math.max(80,Math.floor((isScud?880:700)*(1-dist/radius)));damageBarracks(b,damage,fromTeam);}
         });
@@ -10148,10 +10352,12 @@ function createArmyFactory(x,z,ghost=false){
         // المصانع أيضاً أهداف قابلة للتدمير، وكذلك أي مصنع تابع لأي طرف.
         [...new Set([...(constructedFactories||[]), ...(enemyFactories||[])])].forEach(factory=>{
             if(!factory || factory.isDestroyed || !factory.done) return;
+            const inferredOwner = factory.owner || ((enemyFactories || []).includes(factory) ? 'enemy' : 'player');
+            if (inferredOwner === fromTeam) return;
             const dist=factory.mesh.position.distanceTo(centerPos);
             if(dist<(isScud?38:34)){
                 const radius=isScud?38:34;
-                const damage=Math.max(100,Math.floor((isScud?1150:950)*(1-dist/radius)));
+                const damage=Math.max(100,Math.floor((isScud?1350:950)*(1-dist/radius)));
                 damageFactory(factory,damage,fromTeam);
             }
         });
@@ -10290,7 +10496,7 @@ function createArmyFactory(x,z,ghost=false){
                     const fill=worldProgress.querySelector('.factory-world-fill');
                     if(fill) fill.style.width=Math.min(100,(p.elapsed/p.duration)*100)+'%';
                     const label=worldProgress.querySelector('.factory-world-label');
-                    if(label) label.textContent=`🏭 ${p.type==='infantry'?'تدريب':'تصنيع'} ${Math.ceil((p.duration-p.elapsed)/60)}ث`;
+                    if(label) label.textContent='';
                 } else worldProgress.style.display='none';
             } else worldProgress.style.display='none';
         }
@@ -10345,6 +10551,36 @@ function createArmyFactory(x,z,ghost=false){
         });
         if(unit.trackBeltL) unit.trackBeltL.userData.phase=(unit.trackBeltL.userData.phase||0)+speed*dir*.8;
         if(unit.trackBeltR) unit.trackBeltR.userData.phase=(unit.trackBeltR.userData.phase||0)+speed*dir*.8;
+    }
+
+    // يعيد أقرب هدف معادٍ داخل دائرة القصف، بما فيها الإسعاف والمركبات والمباني.
+    function findHostileTargetNearPoint(team, point, radius = 72) {
+        if (!point) return null;
+        const candidates = [];
+        const add = (item, hostile) => {
+            if (hostile && item && item.mesh && !item.isDestroyed) candidates.push(item);
+        };
+        const enemyTeam = team === 'player' ? 'enemy' : 'player';
+        [...(playerTanks || []), ...(enemyTanks || []), ...(reconVehicles || []), ...(ambulances || [])]
+            .forEach(u => add(u, u.team === enemyTeam));
+        if (typeof playerBuilder !== 'undefined') add(playerBuilder, team === 'enemy');
+        if (typeof enemyBuilder !== 'undefined') add(enemyBuilder, team === 'player');
+        [...new Set([...(constructedFactories || []), ...(enemyFactories || [])])].forEach(f => {
+            if (!f) return;
+            const inferredOwner = f.owner || ((enemyFactories || []).includes(f) ? 'enemy' : 'player');
+            add(f, inferredOwner === enemyTeam && f.done);
+        });
+        [...(constructedBarracks || [])].forEach(b => add(b, b.owner === enemyTeam && b.done));
+        add(team === 'player' ? enemyBaseGroup : playerBaseGroup, true);
+        [...(oilRigs || [])].forEach(r => add(r, r.owner === enemyTeam));
+        let best = null, bestD = radius * radius;
+        for (const target of candidates) {
+            const dx = target.mesh.position.x - point.x;
+            const dz = target.mesh.position.z - point.z;
+            const d2 = dx * dx + dz * dz;
+            if (d2 < bestD) { bestD = d2; best = target; }
+        }
+        return best;
     }
 
     function updateTanksMovement() {
@@ -10491,9 +10727,15 @@ function createArmyFactory(x,z,ghost=false){
             if (dir.length() < 2.5) {
                 const impactTarget = (b.targetTank && !b.targetTank.isDestroyed && b.targetTank.mesh && b.targetTank.mesh.position.distanceTo(b.targetPos) <= 3.2) ? b.targetTank : null;
                 if(!impactTarget){
-                    if(!b.infantryBullet) createModernImpactFlash(b.targetPos.clone(), b.fromTeam);
+                        if(!b.infantryBullet) createModernImpactFlash(b.targetPos.clone(), b.fromTeam);
                     if(!b.infantryBullet) playSound('explosion', b.tankShell ? .62 : .42, b.targetPos.clone());
-                    createBlackImpactCrater(b.targetPos.clone(), b.tankShell ? 1.05 : .45, b.tankShell ? 6500 : 2200);
+                    // Missed shots still leave a crater, but avoid unbounded decoration
+                    // when a large group fires at one static structure.
+                    const targetIsStructure=!!(b.targetTank && (b.targetTank.isCommandBase||b.targetTank.isBarracks||b.targetTank.isFactory));
+                    if(!targetIsStructure || !b.targetTank._lastMissCraterAt || performance.now()-b.targetTank._lastMissCraterAt>900){
+                        createBlackImpactCrater(b.targetPos.clone(), b.tankShell ? 1.05 : .45, b.tankShell ? 6500 : 2200);
+                        if(targetIsStructure) b.targetTank._lastMissCraterAt=performance.now();
+                    }
                     scene.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); bullets.splice(i, 1);
                     continue;
                 }
@@ -10502,10 +10744,16 @@ function createArmyFactory(x,z,ghost=false){
                 // الرصاص والقذائف لا تدفع الهدف إلى الخلف. تأثير الإصابة بصري فقط؛
                 // هذا يمنع الجندي/الدبابة من الانزلاق للخلف عشرات الوحدات أثناء الاشتباك.
                 if(!b.infantryBullet && b.tankShell) {
-                    // القذيفة العادية لا تتحول إلى قصف ضخم؛ أثرها مركز عند نقطة الإصابة.
-                    createBlackImpactCrater(impactTarget.mesh.position.clone(),1.05,6500);
+                    // Tank shells against structures are visually throttled; damage is never throttled.
+                    const isStructure=!!(impactTarget.isCommandBase||impactTarget.isBarracks||impactTarget.isFactory);
+                    if(!isStructure || !impactTarget._lastHitCraterAt || performance.now()-impactTarget._lastHitCraterAt>900){
+                        createBlackImpactCrater(impactTarget.mesh.position.clone(),1.05,6500);
+                        if(isStructure) impactTarget._lastHitCraterAt=performance.now();
+                    }
                 } else if(!b.infantryBullet) createModernImpactFlash(impactTarget.mesh.position.clone(), b.fromTeam);
-                impactTarget.hp -= b.damage;
+                const impactIsStructure=!!(impactTarget.isCommandBase||impactTarget.isBarracks||impactTarget.isFactory||impactTarget.isOilRig);
+                // Dedicated structure damage handlers own structure HP; do not subtract twice.
+                if(!impactIsStructure) impactTarget.hp -= b.damage;
                 if(impactTarget.isInfantry){
                     impactTarget.lastHitWasExplosion = false;
                     addInfantryWound(impactTarget, 1);
@@ -10519,9 +10767,13 @@ function createArmyFactory(x,z,ghost=false){
                     damageBarracks(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isFactory) {
                     damageFactory(impactTarget, b.damage, b.fromTeam);
+                } else if (impactTarget.isOilRig) {
+                    damageOilRig(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isDestroyed !== undefined) {
-                    if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(impactTarget);
-                    if (impactTarget.hp <= 0 && !impactTarget.isDestroyed) destroyCombatUnit(impactTarget, b.fromTeam);
+                    if (!impactTarget.isBuilder) {
+                        try { if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(impactTarget); } catch (e) {}
+                    }
+                    if (impactTarget.hp <= 0 && !impactTarget.isDestroyed) destroyCombatUnitSafely(impactTarget, b.fromTeam);
                 }
                 scene.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); bullets.splice(i, 1);
             } else {
@@ -10547,15 +10799,22 @@ function createArmyFactory(x,z,ghost=false){
                 const hitPos=fixedImpact;
                 let nearbyTargets=0;
                 [...playerTanks,...enemyTanks,...reconVehicles,...ambulances].forEach(u=>{ if(u&&!u.isDestroyed&&u!==scudTarget&&u.mesh.position.distanceTo(hitPos)<32) nearbyTargets++; });
-                createShockwaveAndExplosion(hitPos, m.fromTeam, true);
-                createScudMixedHitEffect(hitPos, nearbyTargets+1, scudTarget, m.tankOwner);
+                // عزل مؤثرات الاصطدام: إذا تعذر رسم مؤثر واحد فلا يتكرر الاصطدام كل إطار ولا تتوقف اللعبة.
+                try { createShockwaveAndExplosion(hitPos, m.fromTeam, true); }
+                catch (impactError) { console.warn('تعذر إكمال مؤثر انفجار السكود:', impactError); }
+                try { createScudMixedHitEffect(hitPos, nearbyTargets+1, scudTarget, m.tankOwner); }
+                catch (smokeError) { console.warn('تعذر إكمال دخان اصطدام السكود:', smokeError); }
                 // لا نهز الكاميرا؛ الارتداد يكون على الدبابة فقط.
-                
-                m.mesh.traverse(child => {
-                    if (child.geometry) child.geometry.dispose();
-                    if (child.material) child.material.dispose();
-                });
-                scene.remove(m.mesh);
+                try {
+                    m.mesh.traverse(child => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) {
+                            if (Array.isArray(child.material)) child.material.forEach(mat => mat && mat.dispose && mat.dispose());
+                            else child.material.dispose();
+                        }
+                    });
+                } catch (cleanupError) {}
+                if (m.mesh.parent) scene.remove(m.mesh);
                 tacticalMissiles.splice(i, 1);
 
                 if (m.tankOwner && !m.tankOwner.isDestroyed) {
@@ -10647,7 +10906,7 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
             const targetRange = tankData.type === 'rocket' ? 260 : 110;
-            const enemyList = tankData.team === 'player' ? [...enemyTanks, ...reconVehicles.filter(v=>v.team==='enemy')] : [...playerTanks, ...reconVehicles.filter(v=>v.team==='player')];
+            const enemyList = tankData.team === 'player' ? [...enemyTanks, ...reconVehicles.filter(v=>v.team==='enemy'), ...(typeof enemyBuilder!=='undefined'&&enemyBuilder?[enemyBuilder]:[])] : [...playerTanks, ...reconVehicles.filter(v=>v.team==='player'), ...(typeof playerBuilder!=='undefined'&&playerBuilder?[playerBuilder]:[])];
             let enemyTarget = null, bestTargetDistSq = targetRange * targetRange;
             for (let ei = 0; ei < enemyList.length; ei++) {
                 const e = enemyList[ei];
@@ -10657,7 +10916,7 @@ function createArmyFactory(x,z,ghost=false){
                 const dsq = dx*dx + dz*dz;
                 if (dsq < bestTargetDistSq) { bestTargetDistSq = dsq; enemyTarget = e; }
             }
-            if (!enemyTarget) {
+            {
                 const ambList = tankData.team === 'player' ? ambulances : ambulances;
                 for (let ai = 0; ai < ambList.length; ai++) {
                     const e = ambList[ai];
@@ -10669,7 +10928,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
             }
 
-            if (!enemyTarget) {
+            {
                 const factories = tankData.team === 'player' ? enemyFactories : constructedFactories.filter(f=>f.owner==='player');
                 for (const f of factories) {
                     if(!f || f.isDestroyed || !f.done) continue;
@@ -10678,7 +10937,7 @@ function createArmyFactory(x,z,ghost=false){
                     if(dsq<bestTargetDistSq){ bestTargetDistSq=dsq; enemyTarget=f; }
                 }
             }
-            if (!enemyTarget) {
+            {
                 const targetBarracks = constructedBarracks.filter(b=>b && b.done && !b.isDestroyed && b.owner === (tankData.team === 'player' ? 'enemy' : 'player'));
                 for (const b of targetBarracks) {
                     const dx=b.mesh.position.x-tankData.mesh.position.x, dz=b.mesh.position.z-tankData.mesh.position.z;
@@ -10686,7 +10945,15 @@ function createArmyFactory(x,z,ghost=false){
                     if(dsq<bestTargetDistSq){bestTargetDistSq=dsq;enemyTarget=b;}
                 }
             }
-            if (!enemyTarget) {
+            {
+                for (const rig of (oilRigs||[])) {
+                    if(!rig || rig.isDestroyed || rig.owner!==(tankData.team==='player'?'enemy':'player') || !rig.mesh) continue;
+                    const dx=rig.mesh.position.x-tankData.mesh.position.x, dz=rig.mesh.position.z-tankData.mesh.position.z;
+                    const dsq=dx*dx+dz*dz;
+                    if(dsq<bestTargetDistSq){bestTargetDistSq=dsq;enemyTarget=rig;}
+                }
+            }
+            {
                 const baseTarget = tankData.team === 'player' ? enemyBaseGroup : playerBaseGroup;
                 if(baseTarget && !baseTarget.isDestroyed){
                     const dx=baseTarget.mesh.position.x-tankData.mesh.position.x, dz=baseTarget.mesh.position.z-tankData.mesh.position.z;
@@ -10695,10 +10962,37 @@ function createArmyFactory(x,z,ghost=false){
                 }
             }
 
+            // Siege behaviour: once an enemy structure is close, units may deliberately switch
+            // from a distant unit skirmish to the hostile base/building instead of circling forever.
+            if(!tankData.isBuilder && tankData.type!=='ambulance'){
+                const hostileStructures=[
+                    ...(constructedFactories||[]).filter(f=>f&&!f.isDestroyed&&f.done&&f.owner!==tankData.team),
+                    ...(enemyFactories||[]).filter(f=>f&&!f.isDestroyed&&f.done&&tankData.team==='player'),
+                    ...(constructedBarracks||[]).filter(b=>b&&!b.isDestroyed&&b.done&&b.owner!==tankData.team),
+                    ...(tankData.team==='player'?[enemyBaseGroup]:[playerBaseGroup])
+                ].filter(st=>st&&st.mesh&&!st.isDestroyed);
+                let siegeTarget=null, siegeDist=Infinity;
+                for(const st of hostileStructures){
+                    const d=tankData.mesh.position.distanceTo(st.mesh.position);
+                    if(d<76 && d<siegeDist){siegeDist=d;siegeTarget=st;}
+                }
+                const currentDist=enemyTarget&&enemyTarget.mesh&&!enemyTarget.isDestroyed
+                    ? tankData.mesh.position.distanceTo(enemyTarget.mesh.position) : Infinity;
+                if(siegeTarget && (!enemyTarget || currentDist>siegeDist+8)){
+                    enemyTarget=siegeTarget;
+                    bestTargetDistSq=siegeDist*siegeDist;
+                }
+            }
+
             // During a DEFEND order, travel to the requested point first; nearby combat AI must not divert the unit.
             const guardTravelDistance = tankData.guardPoint ? tankData.mesh.position.distanceTo(tankData.guardPoint) : 0;
             const travellingToGuardPoint = !!(tankData.team==='player' && tankData.guardPoint && tankData.holdPosition && guardTravelDistance > (tankData.guardRadius || 18));
             if(travellingToGuardPoint) enemyTarget = null;
+
+            // أمر قصف المنطقة المحددة له أولوية على الأهداف العشوائية للسكود.
+            if (tankData.type === 'rocket' && tankData.team === 'player' && tankData.bombardPoint) {
+                enemyTarget = null;
+            }
 
             // Defensive hold: close enemy threats override old movement/roaming orders.
             // Factory exit remains exempt so produced units can leave the factory correctly.
@@ -10823,7 +11117,50 @@ function createArmyFactory(x,z,ghost=false){
                     }
                 }
 
-                if (enemyTarget) {
+                if (tankData.team === 'player' && tankData.bombardPoint) {
+                    const bp = tankData.bombardPoint;
+                    const dx = tankData.mesh.position.x - bp.x;
+                    const dz = tankData.mesh.position.z - bp.z;
+                    const distToPoint = Math.hypot(dx, dz);
+                    const safeDist = 92;
+                    if (distToPoint > safeDist + 3) {
+                        const away = new THREE.Vector3(dx, 0, dz);
+                        if (away.lengthSq() < 0.01) away.set(1, 0, 0);
+                        away.normalize();
+                        const staging = bp.clone().add(away.multiplyScalar(safeDist));
+                        staging.y = getTerrainHeight(staging.x, staging.z);
+                        tankData.target = staging;
+                        isMoving = driveGroundUnitToTarget(tankData, staging, tankData.speed || UNIT_SPEEDS.scud, .15);
+                        tankData.scudState = 'sleeping';
+                        tankData.scudAnimProgress = 0;
+                    } else {
+                        tankData.target = null;
+                        isMoving = false;
+                        const faceX = bp.x - tankData.mesh.position.x;
+                        const faceZ = bp.z - tankData.mesh.position.z;
+                        tankData.mesh.rotation.y += (Math.atan2(faceX, faceZ) - tankData.mesh.rotation.y) * .12;
+                        if (tankData.hasMissileLoaded && tankData.scudReloadTime <= 0) {
+                            let bed = tankData.mesh.getObjectByName('scudBed');
+                            let missile = bed ? bed.getObjectByName('scudMissile') : null;
+                            if (tankData.scudState === 'sleeping' || tankData.scudState === 'reloading') tankData.scudState = 'deploying';
+                            if (tankData.scudState === 'deploying') {
+                                tankData.scudAnimProgress = Math.min(1, (tankData.scudAnimProgress || 0) + .03);
+                                if (missile) {
+                                    missile.rotation.x = THREE.MathUtils.lerp(Math.PI / 2, 0, tankData.scudAnimProgress);
+                                    missile.position.y = THREE.MathUtils.lerp(.5, 3.5, tankData.scudAnimProgress);
+                                    missile.position.z = THREE.MathUtils.lerp(0, -3.5, tankData.scudAnimProgress);
+                                }
+                                if (tankData.scudAnimProgress >= 1) tankData.scudState = 'readyToFire';
+                            }
+                            if (tankData.scudState === 'readyToFire') {
+                                // إذا كان داخل دائرة القصف عدو أو مبنى أو إسعاف، استهدفه مباشرة؛
+                                // وإلا اقصف نقطة الأرض المحددة. لا تطارد الهدف بعد الإطلاق.
+                                const bombardTarget = findHostileTargetNearPoint('player', bp, 72);
+                                fireTacticalMissile(tankData, bombardTarget, bombardTarget ? null : bp);
+                            }
+                        }
+                    }
+                } else if (enemyTarget) {
                     let distToTarget = tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
                     
                     // السكود لا يدخل في اشتباك قريب: إذا اقترب العدو أكثر من 105، يتراجع للخلف حتى يستعيد مسافة أمان.
@@ -11358,6 +11695,8 @@ function createArmyFactory(x,z,ghost=false){
         const factoryCard=document.getElementById('factory-build-card');
         const title=bar?bar.querySelector('.build-title'):null;
         if(!bar||!factoryCard)return;
+        const sellBtn=document.getElementById('sell-building-btn');
+        if(sellBtn){const canSell=!!((selectedFactory&&!selectedFactory.isDestroyed&&selectedFactory.owner!=='enemy')||(selectedBarracks&&!selectedBarracks.isDestroyed&&selectedBarracks.owner!=='enemy'));sellBtn.style.display=canSell?'block':'none';sellBtn.disabled=!canSell;}
         const hasUnit=!!(selectedTank&&!selectedTank.isDestroyed);
         const builderSelected=hasUnit&&getUnitKind(selectedTank)==='builder';
         const ambulanceSelected=hasUnit&&getUnitKind(selectedTank)==='ambulance';
@@ -11480,10 +11819,10 @@ function createArmyFactory(x,z,ghost=false){
             const b=c.builder;
             if(!b||b.isDestroyed){removeConstructionLift(c);removeFactoryConstructionCage(c);continue;}
             if(!c.started){
-                if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
+                if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
                 remaining.push(c);continue;
             }
-            c.elapsed++;updateConstructionLift(c.lift);
+            c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateConstructionLift(c.lift);
             if(b.buildBlade){const a=Math.sin(c.elapsed*.12)*.24;b.buildBlade.rotation.x=a;b.buildBlade.position.y=.15+Math.max(0,Math.sin(c.elapsed*.12))*.22;}
             const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*.92);
             c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)-8+8*p+.03;
@@ -11518,6 +11857,68 @@ function createArmyFactory(x,z,ghost=false){
         turret.rotation.y += THREE.MathUtils.clamp(d, -maxStep, maxStep);
         unit.turretAimAngle = turret.rotation.y;
     }
+
+// Automatic defensive fire against nearby hostile units.
+
+(function(){
+  if(window.__automaticBaseDefenseInstalled) return;
+  window.__automaticBaseDefenseInstalled=true;
+  const lastShot=new WeakMap();
+  function liveUnits(){
+    const list=[];
+    // Builders are already stored in playerTanks/enemyTanks by createBases(); do not
+    // reference createBases()'s local variables from this outer scope.
+    for(const arr of [playerTanks,enemyTanks,reconVehicles,ambulances]) {
+      if(Array.isArray(arr)) list.push(...arr);
+    }
+    return [...new Set(list)].filter(u=>u&&!u.isDestroyed&&u.mesh&&u.mesh.visible!==false&&u.team);
+  }
+  function structures(){
+    const out=[];
+    // Command bases are themselves THREE.Group objects and expose mesh=themselves.
+    for(const f of [playerBaseGroup,enemyBaseGroup]) {
+      if(f&&f.mesh&&!f.isDestroyed) out.push({s:f,team:f.team||(f===playerBaseGroup?'player':'enemy'),range:48,damage:34});
+    }
+    for(const f of [...(constructedFactories||[]),...(enemyFactories||[])]) {
+      if(f&&f.mesh&&f.done&&!f.isDestroyed) out.push({s:f,team:(f.owner||f.team||f.mesh.userData?.factoryOwner||((enemyFactories||[]).includes(f)?'enemy':'player')),range:42,damage:28});
+    }
+    for(const b of (constructedBarracks||[])) {
+      if(b&&b.mesh&&b.done&&!b.isDestroyed) out.push({s:b,team:b.owner||b.team||'player',range:36,damage:22});
+    }
+    return out;
+  }
+  let lastTick=0;
+  function tick(){
+    requestAnimationFrame(tick);
+    const now=Date.now(); if(now-lastTick<250)return; lastTick=now;
+    const units=liveUnits(), buildings=structures();
+    for(const item of buildings){
+      const s=item.s, pos=s.mesh.position;
+      let target=null, best=item.range;
+      for(const u of units){
+        if(!u||u.team===item.team||u.isDestroyed||!u.mesh)continue;
+        const d=Math.hypot(u.mesh.position.x-pos.x,u.mesh.position.z-pos.z);
+        if(d<best){best=d;target=u;}
+      }
+      if(!target)continue;
+      const prev=lastShot.get(s)||0; if(now-prev<1100)continue; lastShot.set(s,now);
+      // Defensive fire is resolved consistently in simulation time and damages builder trucks too.
+      if(typeof target.hp==='number') target.hp=Math.max(0,target.hp-item.damage);
+      if(typeof revealUnitHp==='function') revealUnitHp(target,1800,item.team);
+      if(typeof createModernImpactFlash==='function') createModernImpactFlash(target.mesh.position.clone(),item.team);
+      if(target.hp<=0&&!target.isDestroyed){
+        if(target.isBuilder){
+          target.isDestroyed=true; target.target=null;
+          if(target.hpLabel)target.hpLabel.style.display='none';
+          if(typeof createUnitWreck==='function')createUnitWreck(target);
+          if(typeof addSmokeParticle==='function')addSmokeParticle(target.mesh.position,0x171717,1.5);
+        } else if(typeof destroyCombatUnitSafely==='function') destroyCombatUnitSafely(target,item.team); else if(typeof destroyCombatUnit==='function') destroyCombatUnit(target,item.team);
+      }
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(tick),{once:true}); else requestAnimationFrame(tick);
+})();
+
 </script>
 
 <script id="real-loading-driver">
@@ -13480,6 +13881,8 @@ window.updateCameraSensitivity=function(v){
 @media(max-width:360px){#settings-modal{padding:10px!important}#settings-modal .menu-card{width:92vw!important;padding:11px!important}#settings-modal .main-menu-actions{gap:10px!important}}
 @media(orientation:landscape) and (max-height:520px){#settings-modal{padding:8px!important;overflow-y:auto!important}#settings-modal .menu-card{width:min(64vw,390px)!important;padding:8px 12px!important}#settings-modal .menu-card h1{margin:0 0 8px!important;font-size:14px!important}#settings-modal .main-menu-actions{gap:7px!important}#settings-modal .main-menu-actions > .menu-btn{min-height:40px!important;padding:8px 12px!important}}
 </style>
+
+
 
 </body>
 </html>
