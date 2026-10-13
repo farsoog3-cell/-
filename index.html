@@ -13882,6 +13882,60 @@ window.updateCameraSensitivity=function(v){
 
 
 
+
+<!-- صوت الترحيب الخارجي: ضع الملف في sounds/intro-voice.mp3 -->
+<audio id="intro-voice-audio" src="sounds/intro-voice.mp3" preload="auto" playsinline></audio>
+<script id="intro-voice-autoplay">
+(function () {
+  'use strict';
+  var audio = document.getElementById('intro-voice-audio');
+  if (!audio) return;
+  audio.loop = false;
+  var started = false;
+  var finished = false;
+  function removeFallbackListeners() {
+    document.removeEventListener('pointerdown', startOnFirstGesture, true);
+    document.removeEventListener('touchstart', startOnFirstGesture, true);
+    document.removeEventListener('keydown', startOnFirstGesture, true);
+  }
+  function startOnFirstGesture() {
+    if (started || finished) return;
+    started = true;
+    removeFallbackListeners();
+    try {
+      var p = audio.play();
+      if (p && typeof p.catch === 'function') p.catch(function () { started = false; });
+    } catch (e) { started = false; }
+  }
+  audio.addEventListener('ended', function () {
+    finished = true;
+    started = true;
+    removeFallbackListeners();
+    audio.pause();
+  }, { once: true });
+  function tryAutoplayImmediately() {
+    if (started || finished) return;
+    try {
+      var p = audio.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function () { started = true; removeFallbackListeners(); }).catch(function () {
+          document.addEventListener('pointerdown', startOnFirstGesture, true);
+          document.addEventListener('touchstart', startOnFirstGesture, true);
+          document.addEventListener('keydown', startOnFirstGesture, true);
+        });
+      } else { started = true; }
+    } catch (e) {
+      document.addEventListener('pointerdown', startOnFirstGesture, true);
+      document.addEventListener('touchstart', startOnFirstGesture, true);
+      document.addEventListener('keydown', startOnFirstGesture, true);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryAutoplayImmediately, { once: true });
+  } else { tryAutoplayImmediately(); }
+})();
+</script>
+
 </body>
 </html>
 
