@@ -13885,57 +13885,6 @@ window.updateCameraSensitivity=function(v){
 
 <!-- صوت الترحيب الخارجي: ضع الملف في sounds/intro-voice.mp3 -->
 <audio id="intro-voice-audio" src="sounds/intro-voice.mp3" preload="auto" playsinline></audio>
-<script id="intro-voice-autoplay">
-(function () {
-  'use strict';
-  var audio = document.getElementById('intro-voice-audio');
-  if (!audio) return;
-  audio.loop = false;
-  var started = false;
-  var finished = false;
-  function removeFallbackListeners() {
-    document.removeEventListener('pointerdown', startOnFirstGesture, true);
-    document.removeEventListener('touchstart', startOnFirstGesture, true);
-    document.removeEventListener('keydown', startOnFirstGesture, true);
-  }
-  function startOnFirstGesture() {
-    if (started || finished) return;
-    started = true;
-    removeFallbackListeners();
-    try {
-      var p = audio.play();
-      if (p && typeof p.catch === 'function') p.catch(function () { started = false; });
-    } catch (e) { started = false; }
-  }
-  audio.addEventListener('ended', function () {
-    finished = true;
-    started = true;
-    removeFallbackListeners();
-    audio.pause();
-  }, { once: true });
-  function tryAutoplayImmediately() {
-    if (started || finished) return;
-    try {
-      var p = audio.play();
-      if (p && typeof p.then === 'function') {
-        p.then(function () { started = true; removeFallbackListeners(); }).catch(function () {
-          document.addEventListener('pointerdown', startOnFirstGesture, true);
-          document.addEventListener('touchstart', startOnFirstGesture, true);
-          document.addEventListener('keydown', startOnFirstGesture, true);
-        });
-      } else { started = true; }
-    } catch (e) {
-      document.addEventListener('pointerdown', startOnFirstGesture, true);
-      document.addEventListener('touchstart', startOnFirstGesture, true);
-      document.addEventListener('keydown', startOnFirstGesture, true);
-    }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', tryAutoplayImmediately, { once: true });
-  } else { tryAutoplayImmediately(); }
-})();
-</script>
-
 </body>
 </html>
 
@@ -14116,3 +14065,81 @@ body.battle-active #start-menu {
   box-shadow:none !important;
 }
 </style>
+
+<script id="intro-voice-on-match-start">
+(function () {
+  'use strict';
+  var audio = document.getElementById('intro-voice-audio');
+  if (!audio) return;
+
+  var matchStarted = false;
+  var played = false;
+  audio.loop = false;
+  audio.preload = 'auto';
+
+  function removeRetryListeners() {
+    document.removeEventListener('pointerdown', retryAfterMatchStart, true);
+    document.removeEventListener('touchstart', retryAfterMatchStart, true);
+    document.removeEventListener('keydown', retryAfterMatchStart, true);
+  }
+
+  function retryAfterMatchStart() {
+    if (!matchStarted || played) return;
+    playIntroOnce();
+  }
+
+  function playIntroOnce() {
+    if (!matchStarted || played) return;
+    try {
+      var result = audio.play();
+      if (result && typeof result.then === 'function') {
+        result.then(function () {
+          played = true;
+          removeRetryListeners();
+        }).catch(function () {
+          // Browser autoplay policy: retry only after a user gesture, and only once the match has started.
+          document.addEventListener('pointerdown', retryAfterMatchStart, true);
+          document.addEventListener('touchstart', retryAfterMatchStart, true);
+          document.addEventListener('keydown', retryAfterMatchStart, true);
+        });
+      } else {
+        played = true;
+        removeRetryListeners();
+      }
+    } catch (e) {
+      document.addEventListener('pointerdown', retryAfterMatchStart, true);
+      document.addEventListener('touchstart', retryAfterMatchStart, true);
+      document.addEventListener('keydown', retryAfterMatchStart, true);
+    }
+  }
+
+  audio.addEventListener('ended', function () {
+    audio.pause();
+    try { audio.currentTime = 0; } catch (e) {}
+    removeRetryListeners();
+  });
+
+  // Hook the final game-start entry point. The voice cannot start in the main menu or setup screens.
+  var originalBegin = window.beginConfiguredGame;
+  if (typeof originalBegin === 'function') {
+    window.beginConfiguredGame = function () {
+      var result = originalBegin.apply(this, arguments);
+      matchStarted = true;
+      playIntroOnce();
+      return result;
+    };
+  }
+
+  // Also support game builds that signal match entry by activating the battle UI directly.
+  // This observer is deliberately inert until the actual battle-active state appears.
+  var bodyObserver = new MutationObserver(function () {
+    if (!matchStarted && document.body && document.body.classList.contains('battle-active')) {
+      matchStarted = true;
+      playIntroOnce();
+      bodyObserver.disconnect();
+    }
+  });
+  if (document.body) bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+})();
+</script>
+
