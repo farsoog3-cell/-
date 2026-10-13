@@ -5289,9 +5289,6 @@ function startGame(){openBattleSetup();}
         bullets.push({mesh:bulletMesh,fromTank:soldier,fromTeam:soldier.team,targetTank:target,targetPos:infantryTargetPos,
             speed:6.2,damage:7,infantryBullet:true,bulletTracerLength:1.35});
 
-        // Ejected shell casing with small ballistic arc.
-        createInfantryShell(start,soldier.mesh.rotation.y);
-
         if(soldier.team==='player'){
             playSound('machineGun',.30);
         }else{
@@ -5508,6 +5505,23 @@ function startGame(){openBattleSetup();}
             }else if(fx.kind==='hitSmoke'){
                 m.position.add(m.userData.v);m.scale.multiplyScalar(1.055);
                 m.material.opacity=.38*(fx.life/fx.maxLife);
+            }else if(fx.kind==='wreckWheel'){
+                fx.mesh.position.add(fx.v||new THREE.Vector3());
+                if(fx.v) fx.v.y-=.012;
+                fx.mesh.rotation.x+=.14;
+                fx.mesh.rotation.z+=.09;
+                const t=fx.life/fx.maxLife;
+                fx.mesh.scale.setScalar(Math.max(.01,t));
+                if(fx.mesh.material){
+                    if(Array.isArray(fx.mesh.material)) fx.mesh.material.forEach(m=>m.opacity=t);
+                    else fx.mesh.material.transparent=true, fx.mesh.material.opacity=t;
+                }
+            }else if(fx.kind==='softDamageSpark'){
+                fx.mesh.position.add(fx.mesh.userData.v||new THREE.Vector3());
+                if(fx.mesh.userData.v) fx.mesh.userData.v.y -= .006;
+                const t=fx.life/fx.maxLife;
+                if(fx.mesh.material) fx.mesh.material.opacity=.9*t;
+                fx.mesh.scale.setScalar(.55+.45*t);
             }else if(fx.kind==='shell'){
                 m.position.add(m.userData.v);m.userData.v.y+=m.userData.g;
                 m.rotation.x+=.22;m.rotation.z+=.17;
@@ -9454,69 +9468,46 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function createModernImpactFlash(centerPos, fromTeam) {
-        if(!canSpawnCombatFX('explosion')) return;
-        // Realistic layered battlefield explosion: hot core, rolling fire, dark smoke,
-        // ground dust and smoke only; no ballistic debris.
-        const group = new THREE.Group();
-        group.name = 'realisticBattlefieldExplosion';
-
-        const coreMat = new THREE.MeshBasicMaterial({color:0xfff2c2,transparent:true,opacity:1,depthWrite:false,blending:THREE.AdditiveBlending});
-        const yellowMat = new THREE.MeshBasicMaterial({color:0xffc34a,transparent:true,opacity:.94,depthWrite:false,blending:THREE.AdditiveBlending});
-        const orangeMat = new THREE.MeshBasicMaterial({color:0xff6b18,transparent:true,opacity:.88,depthWrite:false,blending:THREE.AdditiveBlending});
-        const redMat = new THREE.MeshBasicMaterial({color:0xb82d0b,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending});
-        const smokeMat = new THREE.MeshBasicMaterial({color:0x252321,transparent:true,opacity:.72,depthWrite:false});
-        const dustMat = new THREE.MeshBasicMaterial({color:0x8a6747,transparent:true,opacity:.42,depthWrite:false});
-
-        const core = new THREE.Mesh(new THREE.SphereGeometry(1.05,14,10),coreMat);
-        const fireA = new THREE.Mesh(new THREE.SphereGeometry(1.9,14,10),yellowMat);
-        const fireB = new THREE.Mesh(new THREE.SphereGeometry(2.7,14,10),orangeMat);
-        const fireC = new THREE.Mesh(new THREE.SphereGeometry(3.35,14,10),redMat);
-        core.name='explosionCore'; fireA.name='explosionFireA'; fireB.name='explosionFireB'; fireC.name='explosionFireC';
-        core.scale.set(1.05,1.35,1.05);
-        fireA.scale.set(1.0,1.25,1.0);
-        fireB.scale.set(1.12,.95,1.12);
-        fireC.scale.set(1.25,.72,1.25);
-        group.add(fireC,fireB,fireA,core);
-
-        // Irregular smoke balls rise from the fire instead of a single smooth sphere.
+        if(!centerPos || !canSpawnCombatFX('explosion')) return;
+        // انفجار خفيف: نار قصيرة + دخان قليل + شرار ناعم. لا دوائر ضرر كبيرة.
+        const group=new THREE.Group();
+        const coreMat=new THREE.MeshBasicMaterial({color:0xffe7a0,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending});
+        const fireMat=new THREE.MeshBasicMaterial({color:0xff751c,transparent:true,opacity:.78,depthWrite:false,blending:THREE.AdditiveBlending});
+        const core=new THREE.Mesh(new THREE.SphereGeometry(.72,8,6),coreMat);
+        const fire=new THREE.Mesh(new THREE.SphereGeometry(1.35,8,6),fireMat);
+        core.name='explosionCore'; fire.name='explosionFireA';
+        core.scale.set(.9,1.25,.9); fire.scale.set(1.15,.85,1.15);
+        group.add(fire,core);
         const smokeParts=[];
-        for(let i=0;i<8;i++){
-            const sm=new THREE.Mesh(new THREE.SphereGeometry(.75+Math.random()*.65,10,8),smokeMat.clone());
-            sm.position.set((Math.random()-.5)*2.6,1.3+Math.random()*2.5,(Math.random()-.5)*2.6);
-            sm.scale.set(1.0,.75+Math.random()*.7,1.0);
-            sm.userData.v=new THREE.Vector3((Math.random()-.5)*.018,.035+Math.random()*.035,(Math.random()-.5)*.018);
-            sm.userData.life=1;
+        for(let i=0;i<3;i++){
+            const sm=new THREE.Mesh(new THREE.SphereGeometry(.42+Math.random()*.22,7,6),
+                new THREE.MeshBasicMaterial({color:i===0?0x393734:0x5c5a55,transparent:true,opacity:.48,depthWrite:false}));
+            sm.position.set((Math.random()-.5)*1.2,.65+Math.random()*.8,(Math.random()-.5)*1.2);
+            sm.userData.v=new THREE.Vector3((Math.random()-.5)*.012,.025+Math.random()*.02,(Math.random()-.5)*.012);
             group.add(sm); smokeParts.push(sm);
         }
-
-        // Ground dust curtain.
-        for(let i=0;i<5;i++){
-            const d=new THREE.Mesh(new THREE.SphereGeometry(1.0+Math.random()*1.2,10,7),dustMat.clone());
-            const a=Math.random()*Math.PI*2, r=.5+Math.random()*2.0;
-            d.position.set(Math.cos(a)*r,.12+Math.random()*.18,Math.sin(a)*r);
-            d.scale.set(1.4,.35,1.4);
-            d.userData.v=new THREE.Vector3(Math.cos(a)*.025,.012,Math.sin(a)*.025);
-            group.add(d);
-        }
-
         const groundH=getTerrainHeight(centerPos.x,centerPos.z);
         group.position.set(centerPos.x,groundH+.12,centerPos.z);
         scene.add(group);
-        combatEffects.push({mesh:group,life:52,maxLife:52,kind:'impactReal',smokeParts});
+        combatEffects.push({mesh:group,life:24,maxLife:24,kind:'impactReal',smokeParts});
 
-        // Dark impact mark remains on the ground briefly.
-        const mark=new THREE.Mesh(new THREE.CircleGeometry(1.9,28),new THREE.MeshBasicMaterial({color:0x29231d,transparent:true,opacity:.48,depthWrite:false}));
-        mark.rotation.x=-Math.PI/2;
-        mark.scale.set(1,.65,1);
-        mark.position.set(centerPos.x,groundH+.018,centerPos.z);
-        scene.add(mark);
-        combatEffects.push({mesh:mark,life:180,maxLife:180,kind:'impactMark'});
+        // شرار ناعم يطير ثم يختفي.
+        for(let i=0;i<3 && infantryCombatFX.length<COMBAT_PERF.maxInfantryFX;i++){
+            const sp=new THREE.Mesh(new THREE.SphereGeometry(.035,5,4),
+                new THREE.MeshBasicMaterial({color:0xffc15a,transparent:true,opacity:.9,depthWrite:false,blending:THREE.AdditiveBlending}));
+            sp.position.set(centerPos.x+(Math.random()-.5)*.8,groundH+.35+Math.random()*.7,centerPos.z+(Math.random()-.5)*.8);
+            sp.userData.v=new THREE.Vector3((Math.random()-.5)*.16,.06+Math.random()*.10,(Math.random()-.5)*.16);
+            scene.add(sp); infantryCombatFX.push({kind:'softDamageSpark',mesh:sp,life:20,maxLife:20});
+        }
 
-        // Physical-looking shockwave: thin expanding dust ring, not a bright neon ring.
-        const ringGeo=new THREE.RingGeometry(.28,.42,40); ringGeo.rotateX(-Math.PI/2);
-        const ring=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color:0xb58a5a,transparent:true,opacity:.42,depthWrite:false,side:THREE.DoubleSide}));
-        ring.position.set(centerPos.x,groundH+.025,centerPos.z); scene.add(ring);
-        combatEffects.push({mesh:ring,life:30,maxLife:30,kind:'dustRing'});
+        // أثر احتراق غير منتظم بدلاً من دائرة مثالية.
+        const scorch=new THREE.Mesh(new THREE.CircleGeometry(1.35,12),new THREE.MeshBasicMaterial({color:0x29231d,transparent:true,opacity:.42,depthWrite:false}));
+        scorch.rotation.x=-Math.PI/2;
+        scorch.scale.set(1.25,.55,.9);
+        scorch.rotation.z=Math.random()*Math.PI;
+        scorch.position.set(centerPos.x,groundH+.018,centerPos.z);
+        scene.add(scorch);
+        combatEffects.push({mesh:scorch,life:95,maxLife:95,kind:'impactMark'});
     }
 
     function createFactoryRubble(pos, rotation=0){
@@ -9588,28 +9579,19 @@ function createArmyFactory(x,z,ghost=false){
 
     function createDamageSparks(unit){
         if(!unit || !unit.mesh || !unit.mesh.parent) return;
+        // شرار ناعم مركزي بدل requestAnimationFrame مستقل لكل شرارة.
         const pos=unit.mesh.position.clone();
-        pos.y += .8 + Math.random()*1.5;
-        const sparkMat=new THREE.MeshBasicMaterial({color:0xffb300,transparent:true,opacity:1,blending:THREE.AdditiveBlending,depthWrite:false});
-        for(let i=0;i<5;i++){
-            const spark=new THREE.Mesh(new THREE.SphereGeometry(.06,.5,5),sparkMat.clone());
+        pos.y += .8 + Math.random()*1.2;
+        const count=Math.min(3, Math.max(1, Math.floor(COMBAT_PERF.maxInfantryFX/30)));
+        for(let i=0;i<count;i++){
+            const spark=new THREE.Mesh(
+                new THREE.SphereGeometry(.045,5,4),
+                new THREE.MeshBasicMaterial({color:0xffb300,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false})
+            );
             spark.position.copy(pos);
-            spark.position.x += (Math.random()-.5)*1.4;
-            spark.position.z += (Math.random()-.5)*1.4;
+            spark.userData.v=new THREE.Vector3((Math.random()-.5)*.13,.06+Math.random()*.10,(Math.random()-.5)*.13);
             scene.add(spark);
-            const vx=(Math.random()-.5)*.12, vy=.08+Math.random()*.12, vz=(Math.random()-.5)*.12;
-            const start=performance.now(), life=220+Math.random()*220;
-            const tick=()=>{
-                if(!spark.parent){return;}
-                const t=(performance.now()-start)/life;
-                if(t>=1){
-                    scene.remove(spark); spark.geometry.dispose(); spark.material.dispose(); return;
-                }
-                spark.position.x+=vx; spark.position.y+=vy; spark.position.z+=vz;
-                spark.material.opacity=1-t;
-                requestAnimationFrame(tick);
-            };
-            requestAnimationFrame(tick);
+            infantryCombatFX.push({kind:'softDamageSpark',mesh:spark,life:18,maxLife:18});
         }
     }
 
@@ -9650,6 +9632,28 @@ function createArmyFactory(x,z,ghost=false){
             pos.y+=Math.random()*2.2;
             addSmokeParticle(pos,i<7?0x151515:0x555555, .8+Math.random()*.9);
         }
+        // عند احتراق وتدمير المركبة: عجلاتها/بكراتها تطير قليلاً ثم تختفي.
+        const wheels=[];
+        unit.mesh.traverse(o=>{
+            if(o.isMesh && (o.name||'').toLowerCase().includes('trackwheel') && wheels.length<4) wheels.push(o);
+        });
+        wheels.forEach((wheel,index)=>{
+            if(!wheel.parent) return;
+            const worldPos=new THREE.Vector3(); wheel.getWorldPosition(worldPos);
+            const detached=wheel.clone();
+            detached.position.copy(worldPos);
+            detached.quaternion.copy(wheel.getWorldQuaternion(new THREE.Quaternion()));
+            detached.scale.copy(wheel.getWorldScale(new THREE.Vector3()));
+            scene.add(detached);
+            const v=new THREE.Vector3((Math.random()-.5)*.13,.16+Math.random()*.12,(Math.random()-.5)*.13);
+            infantryCombatFX.push({kind:'wreckWheel',mesh:detached,life:55+index*8,maxLife:55+index*8,v});
+            wheel.visible=false;
+        });
+        // الهيكل المحترق يبقى لحظة قصيرة ثم يختفي من المعركة.
+        setTimeout(()=>{
+            if(unit.mesh && unit.mesh.parent) unit.mesh.visible=false;
+            const labels=unit.hpLabel; if(labels) labels.style.display='none';
+        },4200);
     }
 
     function updateUnitDamageEffects(unit){
@@ -9778,13 +9782,13 @@ function createArmyFactory(x,z,ghost=false){
         unit.fireShake = Math.max(unit.fireShake || 0, 1);
         unit.fireShakeTime = 9;
         // هزة كاميرا خفيفة جداً لحظة الإطلاق، مع بقاء التحكم سلساً.
-        shakeTimer = Math.max(shakeTimer || 0, 4);
-        shakeIntensity = Math.max(shakeIntensity || 0, 0.055);
+        shakeTimer = Math.max(shakeTimer || 0, 3);
+        shakeIntensity = Math.min(0.032, Math.max(shakeIntensity || 0, 0.032));
 
         // دخان قصير حول جسم الدبابة بعد الضربة.
         const base = unit.mesh.position.clone();
         base.y += 1.0;
-        for (let i = 0; i < 9; i++) {
+        for (let i = 0; i < 3; i++) {
             const a = Math.random() * Math.PI * 2;
             const r = 1.4 + Math.random() * 2.6;
             const pos = base.clone();
@@ -9797,25 +9801,16 @@ function createArmyFactory(x,z,ghost=false){
 
     function createTankFireSmokeBurst(tank){
         if(!tank || !tank.mesh) return;
+        // مؤثر خفيف جداً: لا ننشئ عشرات المجسمات عند كل طلقة.
         const base=tank.mesh.position.clone();
-        // دخان كثيف قصير حول جسم الدبابة لحظة القصف.
-        for(let i=0;i<7;i++){
+        base.y += 1.0;
+        for(let i=0;i<2;i++){
             const p=base.clone();
-            p.x+=(Math.random()-.5)*5.2;
-            p.z+=(Math.random()-.5)*5.2;
-            p.y+=1.0+Math.random()*2.0;
-            addSmokeParticle(p, i<5?0x3a3a38:0x686864, .45+Math.random()*.42);
+            p.x+=(Math.random()-.5)*1.5;
+            p.z+=(Math.random()-.5)*1.5;
+            p.y+=Math.random()*.7;
+            addSmokeParticle(p, i===0?0x3b3b38:0x666662, .28+Math.random()*.16);
         }
-        const g=new THREE.Group();
-        const fireMat=new THREE.MeshBasicMaterial({color:0xff6a18,transparent:true,opacity:.86,depthWrite:false,blending:THREE.AdditiveBlending});
-        const hotMat=new THREE.MeshBasicMaterial({color:0xffe08a,transparent:true,opacity:.92,depthWrite:false,blending:THREE.AdditiveBlending});
-        for(let i=0;i<3;i++){
-            const f=new THREE.Mesh(new THREE.SphereGeometry(.5+Math.random()*.28,10,8),i===1?hotMat:fireMat);
-            f.position.set((Math.random()-.5)*3.6,.8+Math.random()*1.6,(Math.random()-.5)*3.6);
-            f.scale.y=1.3; g.add(f);
-        }
-        g.position.copy(base); scene.add(g);
-        combatEffects.push({mesh:g,life:10,maxLife:10,kind:'muzzle'});
     }
 
     // خط رؤية واقعي: لا يسمح لأي قذيفة/رصاصة/صاروخ بالمرور عبر مبنى أو آلية.
@@ -9860,6 +9855,8 @@ function createArmyFactory(x,z,ghost=false){
 
     function fireBullet(fromTank, targetTank) {
         if (fromTank && fromTank.team === 'player' && !playerCanFire(fromTank)) return;
+        // المدفع لا يطلق أثناء الحركة: يجب أن تكون الدبابة متوقفة تماماً.
+        if(fromTank && fromTank.isMovingCombat) return;
         if (fromTank && targetTank) {
             if(!hasClearLineOfFire(fromTank,targetTank)) return;
             aimTankTurretAt(fromTank, targetTank);
@@ -9887,7 +9884,7 @@ function createArmyFactory(x,z,ghost=false){
         bulletMesh.userData.isTankShell=true;
         scene.add(bulletMesh);
         const shellTargetPos = targetTank && targetTank.mesh ? targetTank.mesh.position.clone() : bulletMesh.position.clone();
-        bullets.push({ mesh: bulletMesh, fromTank: fromTank, fromTeam: fromTank.team, targetTank: targetTank, targetPos: shellTargetPos, speed: fromTank.team === 'enemy' ? 24.0 : 24.0, damage: fromTank.team === 'enemy' ? 62 : 55, tankShell:true });
+        bullets.push({ mesh: bulletMesh, fromTank: fromTank, fromTeam: fromTank.team, targetTank: targetTank, targetPos: shellTargetPos, speed: 30.0, damage: fromTank.team === 'enemy' ? 62 : 55, tankShell:true });
     }
 
     function fireTacticalMissile(fromTank, targetTank) {
@@ -9955,7 +9952,7 @@ function createArmyFactory(x,z,ghost=false){
             launchFrames: 0,
             verticalLaunchHeight: 50,
             // Slower flight with a clear vertical rise, then a smooth gravity-like ballistic bend.
-            totalDuration: 165,
+            totalDuration: 135,
             turnBlend: 1.0,
             lastPos: startPos.clone()
         });
@@ -10515,7 +10512,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
                 revealUnitHp(impactTarget, 5000, b.fromTeam);
                 updateUnitDamageEffects(impactTarget);
-                if(!b.infantryBullet){ playSound('explosion',.42); }
+                if(!b.infantryBullet && !b.tankShell){ playSound('explosion',.28); }
                 if (impactTarget.isCommandBase) {
                     damageCommandBase(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isBarracks) {
@@ -10831,7 +10828,7 @@ function createArmyFactory(x,z,ghost=false){
                     
                     // السكود لا يدخل في اشتباك قريب: إذا اقترب العدو أكثر من 105، يتراجع للخلف حتى يستعيد مسافة أمان.
                     const scudSafeDistance=112;
-                    const scudFireMaxDistance=170;
+                    const scudFireMaxDistance=230;
                     if (distToTarget < scudSafeDistance && tankData.team==='player') {
                         // Player SCUD stays put under close pressure; rotate toward the threat.
                         const dx=enemyTarget.mesh.position.x-tankData.mesh.position.x;
@@ -11007,6 +11004,7 @@ function createArmyFactory(x,z,ghost=false){
                         if(canSee){
                             // Stop and turn the hull toward the enemy; the turret then tracks precisely.
                             isMoving=false;
+                            tankData.isMovingCombat=false;
                             tankData.combatState='firing';
                             const faceX=enemyTarget.mesh.position.x-tankData.mesh.position.x;
                             const faceZ=enemyTarget.mesh.position.z-tankData.mesh.position.z;
