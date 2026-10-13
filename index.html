@@ -10089,12 +10089,10 @@ function createArmyFactory(x,z,ghost=false){
         fromTank.scudReloadTime = 5000;
         fromTank.nextMissileFireAt = Date.now() + 5000;
 
+        // السكود يستخدم ملف صوت الصاروخ الموجود فقط؛ لا نشغّل صوت المدفع معه.
         playSound('rocket', fromTank.team === 'player' ? 1.0 : 0.5);
         if (fromTank.team === 'player') {
-            playSound('attack', 0.9);
             triggerTankRecoil(fromTank, 0.65);
-        } else {
-            playSound('attack', 0.42);
         }
 
         let scudBed = fromTank.mesh.getObjectByName("scudBed");
@@ -14038,4 +14036,29 @@ body.battle-active #start-menu {
   background-repeat:no-repeat,no-repeat !important;
 }
 /* Keep the existing in-game/background 3 untouched. */
+</style>
+
+<style id="fixed-tiny-factory-production-bar">
+/* شريط إنتاج صغير وثابت بالبكسل؛ لا يتغير حجمه عند تقريب/إبعاد الكاميرا */
+#factory-world-progress {
+  display:none; position:fixed !important; box-sizing:border-box !important;
+  width:56px !important; min-width:56px !important; max-width:56px !important;
+  height:5px !important; padding:0 !important; margin:0 !important;
+  transform:translate(-50%,-50%) !important; transform-origin:center center !important;
+  zoom:1 !important; pointer-events:none !important; text-align:center !important;
+}
+#factory-world-progress .factory-world-label { display:none !important; }
+#factory-world-progress .factory-world-bg {
+  display:block !important; box-sizing:border-box !important;
+  width:56px !important; min-width:56px !important; max-width:56px !important;
+  height:5px !important; margin:0 !important; padding:0 !important;
+  border-radius:3px !important; overflow:hidden !important;
+  background:rgba(0,0,0,.78) !important; border:1px solid rgba(255,255,255,.35) !important;
+  box-shadow:0 1px 3px rgba(0,0,0,.65) !important;
+}
+#factory-world-progress .factory-world-fill {
+  display:block !important; height:100% !important; min-height:0 !important;
+  max-height:100% !important; border-radius:2px !important;
+  box-shadow:none !important;
+}
 </style>
