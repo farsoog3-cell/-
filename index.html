@@ -9727,7 +9727,7 @@ function createArmyFactory(x,z,ghost=false){
         if(factory.mesh && factory.mesh.userData && factory.mesh.userData.hpLabel) factory.mesh.userData.hpLabel.style.display='none';
         if(factory.mesh){
             const pos=factory.mesh.position.clone();
-            createModernImpactFlash(pos, fromTeam); playSound('explosion');
+            createModernImpactFlash(pos, fromTeam); playSound('explosion',1.0);
             for(let i=0;i<22;i++) addSmokeParticle(pos, i<8?0x171717:0x555555, 1.5+Math.random()*1.8);
             const rubble=createFactoryRubble(pos,factory.mesh.rotation.y);
             factory.rubble=rubble;
@@ -10279,7 +10279,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function createShockwaveAndExplosion(centerPos, fromTeam, isScud=false) {
-        playSound('explosion',1.0,centerPos);
+        playSound('explosion',1.0);
         createModernImpactFlash(centerPos, fromTeam);
         createBlackImpactCrater(centerPos, 3.5 + Math.random()*2.8);
 
@@ -10752,7 +10752,7 @@ function createArmyFactory(x,z,ghost=false){
                 const impactTarget = (b.targetTank && !b.targetTank.isDestroyed && b.targetTank.mesh && b.targetTank.mesh.position.distanceTo(b.targetPos) <= 3.2) ? b.targetTank : null;
                 if(!impactTarget){
                         if(!b.infantryBullet) createModernImpactFlash(b.targetPos.clone(), b.fromTeam);
-                    if(!b.infantryBullet) playSound('explosion', b.tankShell ? .62 : .42, b.targetPos.clone());
+                    if(!b.infantryBullet) playSound('explosion', b.tankShell ? .9 : .7);
                     // Missed shots still leave a crater, but avoid unbounded decoration
                     // when a large group fires at one static structure.
                     const targetIsStructure=!!(b.targetTank && (b.targetTank.isCommandBase||b.targetTank.isBarracks||b.targetTank.isFactory));
@@ -10784,7 +10784,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
                 revealUnitHp(impactTarget, 5000, b.fromTeam);
                 updateUnitDamageEffects(impactTarget);
-                if(!b.infantryBullet && !b.tankShell){ playSound('explosion',.28); }
+                if(!b.infantryBullet && !b.tankShell){ playSound('explosion',.65); }
                 if (impactTarget.isCommandBase) {
                     damageCommandBase(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isBarracks) {
@@ -14097,140 +14097,105 @@ body.battle-active #start-menu {
   'use strict';
   var audio = document.getElementById('intro-voice-audio');
   if (!audio) return;
+
   audio.src = 'sounds/intro-voice.mp3';
-  audio.loop = false;
   audio.preload = 'auto';
+  audio.loop = false;
+  audio.volume = 1;
 
-  var played = false;
-  var playPending = false;
-  var retryListenersInstalled = false;
-  var waitFrames = 0;
-  var waitScheduled = false;
+  var hasStarted = false;
+  var retryArmed = false;
 
-  function menuIsHidden(id) {
-    var el = document.getElementById(id);
-    if (!el) return true;
-    var style = window.getComputedStyle(el);
-    var rect = el.getBoundingClientRect();
-    return style.display === 'none' || style.visibility === 'hidden' ||
-      Number(style.opacity) === 0 || rect.width === 0 || rect.height === 0;
-  }
-
-  function battleIsActuallyVisible() {
+  function battleBaseIsVisible() {
     if (!document.body || !document.body.classList.contains('battle-active')) return false;
-    if (!menuIsHidden('settings-modal') || !menuIsHidden('start-menu') ||
-        !menuIsHidden('room-loading-overlay')) return false;
-    var canvas = document.querySelector('canvas');
-    if (!canvas) return false;
-    var rect = canvas.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return false;
-    // لا يبدأ التسجيل قبل وجود المعسكر الأساسي داخل مشهد المعركة.
+    var menu = document.getElementById('settings-modal');
+    var startMenu = document.getElementById('start-menu');
+    function hidden(el) {
+      if (!el) return true;
+      var s = getComputedStyle(el), r = el.getBoundingClientRect();
+      return s.display === 'none' || s.visibility === 'hidden' || r.width === 0 || r.height === 0;
+    }
+    if (!hidden(menu) || !hidden(startMenu)) return false;
     try {
-      if (typeof playerBaseGroup !== 'undefined' && playerBaseGroup) {
-        if (playerBaseGroup.visible === false) return false;
-        if (typeof scene !== 'undefined' && scene && !scene.getObjectById(playerBaseGroup.id)) return false;
-      } else {
-        return false;
-      }
+      if (typeof playerBaseGroup === 'undefined' || !playerBaseGroup || playerBaseGroup.visible === false) return false;
+      if (typeof scene !== 'undefined' && scene && !scene.getObjectById(playerBaseGroup.id)) return false;
     } catch (e) { return false; }
     return true;
   }
 
-  function removeRetryListeners() {
-    if (!retryListenersInstalled) return;
-    document.removeEventListener('pointerdown', retryAfterGesture, true);
-    document.removeEventListener('touchstart', retryAfterGesture, true);
-    document.removeEventListener('keydown', retryAfterGesture, true);
-    retryListenersInstalled = false;
-  }
-
-  function retryAfterGesture() {
-    if (played || playPending || !battleIsActuallyVisible()) return;
-    startVoice();
-  }
-
-  function startVoice() {
-    if (played || playPending || !battleIsActuallyVisible()) return;
-    playPending = true;
+  function tryStartVoice() {
+    if (hasStarted || !battleBaseIsVisible()) return;
     try {
       audio.currentTime = 0;
-      var promise = audio.play();
-      if (promise && typeof promise.then === 'function') {
-        promise.then(function () {
-          played = true;
-          playPending = false;
-          removeRetryListeners();
+      var p = audio.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function () {
+          hasStarted = true;
+          removeRetry();
         }).catch(function () {
-          playPending = false;
-          if (!retryListenersInstalled) {
-            retryListenersInstalled = true;
-            document.addEventListener('pointerdown', retryAfterGesture, true);
-            document.addEventListener('touchstart', retryAfterGesture, true);
-            document.addEventListener('keydown', retryAfterGesture, true);
-          }
+          armRetry();
         });
       } else {
-        played = true;
-        playPending = false;
-        removeRetryListeners();
+        hasStarted = true;
+        removeRetry();
       }
     } catch (e) {
-      playPending = false;
+      armRetry();
     }
   }
 
-  function waitForVisibleBattle() {
-    waitScheduled = false;
-    if (played) return;
-    if (battleIsActuallyVisible()) {
-      // بعد أول إطار مرئي للمعسكر والقواعد، وليس أثناء انتقال القائمة.
-      requestAnimationFrame(function () {
-        if (battleIsActuallyVisible()) startVoice();
-        else scheduleWait();
-      });
-      return;
-    }
-    if (++waitFrames < 1800) scheduleWait();
+  function retry() {
+    if (hasStarted) return;
+    // Retry only after the match is active and the main base is visible.
+    tryStartVoice();
   }
-
-  function scheduleWait() {
-    if (waitScheduled || played) return;
-    waitScheduled = true;
-    requestAnimationFrame(waitForVisibleBattle);
+  function armRetry() {
+    if (retryArmed) return;
+    retryArmed = true;
+    document.addEventListener('pointerdown', retry, true);
+    document.addEventListener('touchstart', retry, true);
+    document.addEventListener('keydown', retry, true);
+  }
+  function removeRetry() {
+    document.removeEventListener('pointerdown', retry, true);
+    document.removeEventListener('touchstart', retry, true);
+    document.removeEventListener('keydown', retry, true);
+    retryArmed = false;
   }
 
   audio.addEventListener('ended', function () {
     audio.pause();
     try { audio.currentTime = 0; } catch (e) {}
-    removeRetryListeners();
   });
 
-  // الانتظار يبدأ بعد انتهاء دالة دخول المعركة؛ القوائم وشاشة تحميل الغرفة يجب أن تختفي أولاً.
-  var priorBegin = window.beginConfiguredGame;
-  if (typeof priorBegin === 'function' && !priorBegin.__introVoiceGate) {
-    var wrappedBegin = function () {
-      var result = priorBegin.apply(this, arguments);
-      waitFrames = 0;
-      scheduleWait();
+  // Play immediately after the real game-start function hides the menus and positions the camera.
+  // Keeping play() in the same click call stack avoids mobile-browser autoplay blocking.
+  var original = window.beginConfiguredGame;
+  if (typeof original === 'function' && !original.__introVoiceFixed) {
+    var wrapped = function () {
+      var result = original.apply(this, arguments);
+      if (battleBaseIsVisible()) tryStartVoice();
+      else {
+        // Wait for the base to become visible, then try once; mobile can retry on the next user gesture.
+        var frames = 0;
+        function wait() {
+          if (hasStarted) return;
+          if (battleBaseIsVisible()) tryStartVoice();
+          else if (++frames < 600) requestAnimationFrame(wait);
+        }
+        requestAnimationFrame(wait);
+      }
       return result;
     };
-    wrappedBegin.__introVoiceGate = true;
-    window.beginConfiguredGame = wrappedBegin;
+    wrapped.__introVoiceFixed = true;
+    window.beginConfiguredGame = wrapped;
   }
 
+  // If the online room starts through a different code path, wait for the actual battlefield.
   var observer = new MutationObserver(function () {
-    if (!played && document.body && document.body.classList.contains('battle-active')) {
-      waitFrames = 0;
-      scheduleWait();
-    }
+    if (!hasStarted && battleBaseIsVisible()) tryStartVoice();
   });
   if (document.body) observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-  document.addEventListener('transitionend', function () {
-    if (!played) {
-      waitFrames = 0;
-      scheduleWait();
-    }
-  }, true);
 })();
 </script>
 
