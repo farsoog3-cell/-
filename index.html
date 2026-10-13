@@ -2603,7 +2603,16 @@
         ambulanceSiren: 'sounds/ambulance_siren.mp3',
         mapOpen: 'sounds/minimap_open.mp3',
         redAlarm: 'sounds/red_alarm.mp3',
-        wind: 'sounds/wind.mp3'
+        wind: 'sounds/wind.mp3',
+        introVoice: 'sounds/intro-voice.mp3',
+        factorySelect: 'sounds/factory_select.mp3',
+        barracksSelect: 'sounds/barracks_select.mp3',
+        unitExit: 'sounds/unit_exit.mp3',
+        soldierExit: 'sounds/soldier_exit.mp3',
+        constructionStart: 'sounds/construction_start.mp3',
+        constructionComplete: 'sounds/construction_complete.mp3',
+        attackEnemy: 'sounds/attack_enemy.mp3',
+        underAttack: 'sounds/under_attack.mp3'
     };
 
     // إذا لم يوجد ملف صوت جديد، لا يختفي الصوت؛ يستخدم بديلاً مناسباً.
@@ -2817,6 +2826,15 @@
         }else{
             playAudioElement(audio,finalVolume,true).catch(cleanup);
         }
+    }
+
+    // أصوات أحداث المعركة من ملفات خارجية مع حد زمني يمنع تكرار النداءات.
+    const battleCueLastPlayedAt = Object.create(null);
+    function playBattleCue(type, volume = 0.85, cooldownMs = 10000) {
+        const now = Date.now();
+        if (now - (battleCueLastPlayedAt[type] || 0) < cooldownMs) return;
+        battleCueLastPlayedAt[type] = now;
+        playSound(type, volume);
     }
 
     let menuBgmAudio = createManagedAudio('menuBgm', true);
@@ -5326,6 +5344,7 @@ function startGame(){openBattleSetup();}
 
         if(soldier.team==='player'){
             playSound('machineGun',.30);
+            playBattleCue('attackEnemy', 0.78, 12000);
         }else{
             // Enemy infantry must not replay the base alarm for every bullet.
             const soundNow=performance.now();
@@ -7500,7 +7519,7 @@ function startGame(){openBattleSetup();}
         const c=activeBarracksConstruction;if(!c)return;const b=c.builder;
         if(!b||b.isDestroyed){removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);activeBarracksConstruction=null;updateConstructionBarForSelection();return;}
         if(!c.started){
-            if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();showFloatingMsg('🪖 Barracks construction started — crane operating');}
+            if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();playSound('constructionStart',0.82);showFloatingMsg('🪖 Barracks construction started — crane operating');}
             return;
         }
         c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateBarracksConstructionLift(c.lift);
@@ -7518,7 +7537,7 @@ function startGame(){openBattleSetup();}
             if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}
             const r=c.build.rotation||0,forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));const retreat=c.build.mesh.position.clone().sub(forward.multiplyScalar(9));retreat.y=getTerrainHeight(retreat.x,retreat.z);
             b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.factoryRetreating=true;
-            constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});activeBarracksConstruction=null;updateConstructionBarForSelection();showFloatingMsg('✅ Military barracks complete — select it to train soldiers');
+            constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});activeBarracksConstruction=null;playSound('constructionComplete',0.9);updateConstructionBarForSelection();showFloatingMsg('✅ Military barracks complete — select it to train soldiers');
         }
     }
     function queueBarracksUnit(type){
@@ -7560,6 +7579,7 @@ function startGame(){openBattleSetup();}
         const spawn=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(5.5));spawn.y=getTerrainHeight(spawn.x,spawn.z);
         const team=barracks.owner==='enemy'?'enemy':'player';
         const unit=createInfantrySoldier(spawn.x,spawn.z,team);unit.mesh.rotation.y=r;unit.manualControl=(team==='player');
+        if(team==='player') playSound('soldierExit', 0.82, spawn);
         unit.barracksExiting=true;unit.barracksExitLock=true;unit.barracksExitBarracks=barracks;unit.barracksExitTarget=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(14));unit.barracksExitTarget.y=getTerrainHeight(unit.barracksExitTarget.x,unit.barracksExitTarget.z);unit.target=null;unit.factoryFinalTarget=null;
         unit.barracksExitSpeed=Math.max(0.10, Math.min(0.18, (unit.speed||0.10)*1.15));
         if(team==='enemy'){
@@ -7958,6 +7978,7 @@ function createArmyFactory(x,z,ghost=false){
         unit.target=null; unit.factoryFinalTarget=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);
         unit.factoryExitSpeed=Math.max(.065,Math.min(.105,(unit.speed||.10)*.72));
         unit.factoryExitFactory=factory;
+        if(factory.owner !== 'enemy') playSound('unitExit', 0.78, spawn);
         if(type==='ambulance') ambulances.push(unit); else if(type==='scout'){reconVehicles.push(unit); setTimeout(()=>deployReconDish(unit),1200);} else enemyTanks.push(unit);
         // فتح أبواب المصنع تلقائياً أيضاً عند خروج وحدات العدو من أي نوع.
         animateFactoryDoors(factory,3200);
@@ -8307,6 +8328,7 @@ function createArmyFactory(x,z,ghost=false){
         showFloatingMsg('🛢️ Oil rig selected');
     }
     function selectBarracks(barracks){
+        if(barracks && barracks.owner !== 'enemy') playSound('barracksSelect', 0.8);
         if(barracks&&!barracks.buildCost)barracks.buildCost=150;
         selectedBarracks=barracks; selectedOilRig=null; selectedFactory=null; selectedTank=null; selectedUnitKind='barracks'; selectionMode='single'; defenseCommandArmed=false;
         clearSelectionVisuals();
@@ -8444,6 +8466,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function selectFactory(factory) {
+        if(factory && factory.owner !== 'enemy') playSound('factorySelect', 0.8);
         if(factory&&!factory.buildCost)factory.buildCost=400;
         selectedFactory=factory; selectedBarracks=null; selectedOilRig=null; selectedTank=null; selectedUnitKind='factory'; selectionMode='single'; defenseCommandArmed=false;
         clearSelectionVisuals();
@@ -10060,6 +10083,7 @@ function createArmyFactory(x,z,ghost=false){
         createTankFireSmokeBurst(fromTank);
         if (fromTank.team === 'player') {
             playSound('attack', 0.8);
+            playBattleCue('attackEnemy', 0.82, 12000);
             triggerTankRecoil(fromTank, 0.62);
         } else {
             playSound('attack', 0.36);
@@ -10373,6 +10397,8 @@ function createArmyFactory(x,z,ghost=false){
             window.attackAlertTimer=setTimeout(()=>alertEl.classList.remove('active'),5000);
         }
 
+        // صوت خارجي عند دخول هجوم العدو إلى محيط القاعدة، مع الحفاظ على إنذار الخطر الأصلي.
+        playBattleCue('underAttack', 0.9, 20000);
         // Red attack warning: create/play the audio only when an attack is actually triggered.
         try{
             if(!redAlarmAudio){
@@ -11817,7 +11843,7 @@ function createArmyFactory(x,z,ghost=false){
             const b=c.builder;
             if(!b||b.isDestroyed){removeConstructionLift(c);removeFactoryConstructionCage(c);continue;}
             if(!c.started){
-                if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
+                if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();playSound('constructionStart',0.82);showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
                 remaining.push(c);continue;
             }
             c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateConstructionLift(c.lift);
@@ -11829,7 +11855,7 @@ function createArmyFactory(x,z,ghost=false){
             if(c.elapsed%60===0&&c.elapsed<c.build.duration)showFloatingMsg(`🏭 Factory construction: ${Math.floor(p*100)}%`);
             if(p>=1){
                 c.build.done=true;c.build.ghost=false;c.build.mesh.scale.setScalar(1);c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
-                removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);
+                removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);playSound('constructionComplete',0.9);
                 showFloatingMsg('✅ Factory complete — construction dozer retreating');
             }else remaining.push(c);
         }
@@ -14071,46 +14097,106 @@ body.battle-active #start-menu {
   'use strict';
   var audio = document.getElementById('intro-voice-audio');
   if (!audio) return;
-
-  var matchStarted = false;
-  var played = false;
+  audio.src = 'sounds/intro-voice.mp3';
   audio.loop = false;
   audio.preload = 'auto';
 
-  function removeRetryListeners() {
-    document.removeEventListener('pointerdown', retryAfterMatchStart, true);
-    document.removeEventListener('touchstart', retryAfterMatchStart, true);
-    document.removeEventListener('keydown', retryAfterMatchStart, true);
+  var played = false;
+  var playPending = false;
+  var retryListenersInstalled = false;
+  var waitFrames = 0;
+  var waitScheduled = false;
+
+  function menuIsHidden(id) {
+    var el = document.getElementById(id);
+    if (!el) return true;
+    var style = window.getComputedStyle(el);
+    var rect = el.getBoundingClientRect();
+    return style.display === 'none' || style.visibility === 'hidden' ||
+      Number(style.opacity) === 0 || rect.width === 0 || rect.height === 0;
   }
 
-  function retryAfterMatchStart() {
-    if (!matchStarted || played) return;
-    playIntroOnce();
-  }
-
-  function playIntroOnce() {
-    if (!matchStarted || played) return;
+  function battleIsActuallyVisible() {
+    if (!document.body || !document.body.classList.contains('battle-active')) return false;
+    if (!menuIsHidden('settings-modal') || !menuIsHidden('start-menu') ||
+        !menuIsHidden('room-loading-overlay')) return false;
+    var canvas = document.querySelector('canvas');
+    if (!canvas) return false;
+    var rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
+    // لا يبدأ التسجيل قبل وجود المعسكر الأساسي داخل مشهد المعركة.
     try {
-      var result = audio.play();
-      if (result && typeof result.then === 'function') {
-        result.then(function () {
+      if (typeof playerBaseGroup !== 'undefined' && playerBaseGroup) {
+        if (playerBaseGroup.visible === false) return false;
+        if (typeof scene !== 'undefined' && scene && !scene.getObjectById(playerBaseGroup.id)) return false;
+      } else {
+        return false;
+      }
+    } catch (e) { return false; }
+    return true;
+  }
+
+  function removeRetryListeners() {
+    if (!retryListenersInstalled) return;
+    document.removeEventListener('pointerdown', retryAfterGesture, true);
+    document.removeEventListener('touchstart', retryAfterGesture, true);
+    document.removeEventListener('keydown', retryAfterGesture, true);
+    retryListenersInstalled = false;
+  }
+
+  function retryAfterGesture() {
+    if (played || playPending || !battleIsActuallyVisible()) return;
+    startVoice();
+  }
+
+  function startVoice() {
+    if (played || playPending || !battleIsActuallyVisible()) return;
+    playPending = true;
+    try {
+      audio.currentTime = 0;
+      var promise = audio.play();
+      if (promise && typeof promise.then === 'function') {
+        promise.then(function () {
           played = true;
+          playPending = false;
           removeRetryListeners();
         }).catch(function () {
-          // Browser autoplay policy: retry only after a user gesture, and only once the match has started.
-          document.addEventListener('pointerdown', retryAfterMatchStart, true);
-          document.addEventListener('touchstart', retryAfterMatchStart, true);
-          document.addEventListener('keydown', retryAfterMatchStart, true);
+          playPending = false;
+          if (!retryListenersInstalled) {
+            retryListenersInstalled = true;
+            document.addEventListener('pointerdown', retryAfterGesture, true);
+            document.addEventListener('touchstart', retryAfterGesture, true);
+            document.addEventListener('keydown', retryAfterGesture, true);
+          }
         });
       } else {
         played = true;
+        playPending = false;
         removeRetryListeners();
       }
     } catch (e) {
-      document.addEventListener('pointerdown', retryAfterMatchStart, true);
-      document.addEventListener('touchstart', retryAfterMatchStart, true);
-      document.addEventListener('keydown', retryAfterMatchStart, true);
+      playPending = false;
     }
+  }
+
+  function waitForVisibleBattle() {
+    waitScheduled = false;
+    if (played) return;
+    if (battleIsActuallyVisible()) {
+      // بعد أول إطار مرئي للمعسكر والقواعد، وليس أثناء انتقال القائمة.
+      requestAnimationFrame(function () {
+        if (battleIsActuallyVisible()) startVoice();
+        else scheduleWait();
+      });
+      return;
+    }
+    if (++waitFrames < 1800) scheduleWait();
+  }
+
+  function scheduleWait() {
+    if (waitScheduled || played) return;
+    waitScheduled = true;
+    requestAnimationFrame(waitForVisibleBattle);
   }
 
   audio.addEventListener('ended', function () {
@@ -14119,27 +14205,32 @@ body.battle-active #start-menu {
     removeRetryListeners();
   });
 
-  // Hook the final game-start entry point. The voice cannot start in the main menu or setup screens.
-  var originalBegin = window.beginConfiguredGame;
-  if (typeof originalBegin === 'function') {
-    window.beginConfiguredGame = function () {
-      var result = originalBegin.apply(this, arguments);
-      matchStarted = true;
-      playIntroOnce();
+  // الانتظار يبدأ بعد انتهاء دالة دخول المعركة؛ القوائم وشاشة تحميل الغرفة يجب أن تختفي أولاً.
+  var priorBegin = window.beginConfiguredGame;
+  if (typeof priorBegin === 'function' && !priorBegin.__introVoiceGate) {
+    var wrappedBegin = function () {
+      var result = priorBegin.apply(this, arguments);
+      waitFrames = 0;
+      scheduleWait();
       return result;
     };
+    wrappedBegin.__introVoiceGate = true;
+    window.beginConfiguredGame = wrappedBegin;
   }
 
-  // Also support game builds that signal match entry by activating the battle UI directly.
-  // This observer is deliberately inert until the actual battle-active state appears.
-  var bodyObserver = new MutationObserver(function () {
-    if (!matchStarted && document.body && document.body.classList.contains('battle-active')) {
-      matchStarted = true;
-      playIntroOnce();
-      bodyObserver.disconnect();
+  var observer = new MutationObserver(function () {
+    if (!played && document.body && document.body.classList.contains('battle-active')) {
+      waitFrames = 0;
+      scheduleWait();
     }
   });
-  if (document.body) bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  if (document.body) observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('transitionend', function () {
+    if (!played) {
+      waitFrames = 0;
+      scheduleWait();
+    }
+  }, true);
 })();
 </script>
 
