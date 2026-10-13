@@ -13973,6 +13973,53 @@ window.updateCameraSensitivity=function(v){
 }
 </style>
 
+
+<style id="responsive-contained-production-bar-v2">
+/* شريط إنتاج متجاوب: الصورة داخل الإطار والسعر أسفلها دون خروج أو قص */
+#construction-bar{
+  box-sizing:border-box!important; width:calc(100vw - 8px)!important; max-width:900px!important;
+  height:clamp(112px, 18vh, 148px)!important; min-height:112px!important; max-height:148px!important;
+  left:50%!important; bottom:4px!important; transform:translateX(-50%)!important;
+  padding:5px!important; gap:4px!important; align-items:stretch!important;
+  overflow-x:auto!important; overflow-y:hidden!important; overscroll-behavior-x:contain;
+  scrollbar-width:thin; scrollbar-color:#68765b #111611;
+}
+#construction-bar .build-title{flex:0 0 38px!important;width:38px!important;min-width:38px!important;max-width:38px!important;font-size:8px!important;line-height:10px!important;overflow:hidden!important}
+#construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .barracks-build-card,#construction-bar .factory-unit-card,#construction-bar .barracks-unit-card{
+  box-sizing:border-box!important; flex:0 0 clamp(64px, 18vw, 108px)!important;
+  width:clamp(64px, 18vw, 108px)!important; min-width:clamp(64px, 18vw, 108px)!important; max-width:clamp(64px, 18vw, 108px)!important;
+  height:100%!important; min-height:0!important; max-height:none!important;
+  padding:4px!important; gap:4px!important; display:flex; flex-direction:column!important;
+  align-items:stretch!important; justify-content:space-between!important; overflow:hidden!important;
+  border:1px solid #68765a!important; border-radius:5px!important;
+}
+#construction-bar .build-preview,#construction-bar .factory-preview,#construction-bar .barracks-preview,#construction-bar .factory-unit-preview,#construction-bar .barracks-unit-preview{
+  box-sizing:border-box!important; position:relative!important; flex:1 1 auto!important;
+  width:100%!important; min-width:0!important; max-width:100%!important;
+  height:auto!important; min-height:0!important; max-height:none!important;
+  overflow:hidden!important; border:1px solid rgba(190,205,170,.55)!important;
+  border-radius:3px!important; background:rgba(0,0,0,.22)!important;
+}
+#construction-bar .external-bar-image{position:absolute!important;inset:2px!important;width:calc(100% - 4px)!important;height:calc(100% - 4px)!important;object-fit:contain!important;object-position:center!important;padding:0!important}
+#construction-bar .build-price,#construction-bar .factory-unit-price,#construction-bar .barracks-build-card .build-price,#construction-bar .barracks-unit-card .factory-unit-price{
+  box-sizing:border-box!important; flex:0 0 23px!important; width:100%!important; min-width:0!important;
+  height:23px!important; min-height:23px!important; max-height:23px!important; margin:0!important; padding:2px 1px!important;
+  display:flex!important; align-items:center!important; justify-content:center!important;
+  font-size:clamp(10px, 2.8vw, 14px)!important; line-height:1!important; font-weight:900!important; white-space:nowrap!important;
+  overflow:hidden!important; text-overflow:clip!important; border-top:1px solid rgba(183,198,145,.35)!important;
+}
+#construction-bar .build-card .build-name,#construction-bar .build-card .build-desc,#construction-bar .build-card .build-hint,#construction-bar .build-card .build-info,#construction-bar .factory-unit-name,#construction-bar .factory-unit-time,#construction-bar .build-title{
+  text-overflow:clip!important;
+}
+#construction-bar .has-external-image > :not(.external-bar-image){display:none!important}
+@media(max-width:380px){
+ #construction-bar{height:112px!important;padding:4px!important;gap:3px!important}
+ #construction-bar .build-title{flex-basis:28px!important;width:28px!important;min-width:28px!important;max-width:28px!important;font-size:7px!important}
+ #construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .barracks-build-card,#construction-bar .factory-unit-card,#construction-bar .barracks-unit-card{flex-basis:64px!important;width:64px!important;min-width:64px!important;max-width:64px!important}
+}
+@media(min-width:700px){#construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .barracks-build-card,#construction-bar .factory-unit-card,#construction-bar .barracks-unit-card{flex-basis:clamp(82px, 11vw, 112px)!important;width:clamp(82px, 11vw, 112px)!important;min-width:clamp(82px, 11vw, 112px)!important;max-width:clamp(82px, 11vw, 112px)!important}}
+</style>
+
 </body>
 </html>
 
