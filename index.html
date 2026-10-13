@@ -3019,7 +3019,7 @@
     // سرعة مستقلة لكل آلية: لا تعتمد أي وحدة على سرعة آلية أخرى.
     const UNIT_SPEEDS = Object.freeze({
         tank: 0.105,      // دبابة القتال: حركة أهدأ وأكثر ثقلاً
-        scud: 0.048,      // قاذفة الصاروخ بطيئة وثقيلة
+        scud: 0.058,      // قاذفة الصاروخ ثقيلة لكن أسرع قليلاً
         ambulance: 0.16,  // الإسعاف أسرع نسبياً من الدبابة
         scout: 0.145,     // الاستطلاع
         dozer: 0.085      // تركس البناء بطيء وثقيل
@@ -4037,7 +4037,7 @@ function drawRealBattleMap(){
 function applyBattleBotConfig(){
     const presets={weak:{money:.85,speed:1.0,aggression:.72},medium:{money:1.0,speed:1.0,aggression:1.0},strong:{money:1.3,speed:1.0,aggression:1.25}};
     const preset=presets[battleConfig.bot]||presets.medium;
-    enemyMoney=Math.max(0,Math.round(battleConfig.money));
+    enemyMoney=Math.max(0,Math.round(Number(battleConfig.money)||0));
     window.battleBotStrength=battleConfig.bot;
     window.battleBotAggression=preset.aggression;
     window.battleBotSpeedMultiplier=preset.speed;
@@ -5882,17 +5882,24 @@ function startGame(){openBattleSetup();}
                 if(d*d<best){best=d*d;target=e;}
             }
 
+            if(!target){
+                const structures=[...constructedFactories.filter(f=>f && f.done && !f.isDestroyed && f.owner!==(u.team)), ...constructedBarracks.filter(b=>b && b.done && !b.isDestroyed && b.owner!==(u.team))];
+                for(const st of structures){const d=u.mesh.position.distanceTo(st.mesh.position);if(d<120 && d*d<best){target=st;best=d*d;}}
+            }
             if(!target && enemyCommandBase && !enemyCommandBase.isDestroyed){
                 const bd=u.mesh.position.distanceTo(enemyCommandBase.mesh.position);
                 if(bd<120){target=enemyCommandBase;best=bd*bd;}
             }
+            const guardPointDistance = u.guardPoint ? u.mesh.position.distanceTo(u.guardPoint) : 0;
+            const travellingToGuardPoint = !!(u.guardPoint && u.holdPosition && guardPointDistance > (u.guardRadius || 18));
+            if(travellingToGuardPoint){ target=null; best=120*120; }
             if(target&&!u.ceaseFire){
                 const d=Math.sqrt(best);
                 u.target=target;
                 u.isAiming=true;u.aimTarget=target;u.aimUntil=performance.now()+260;
                 // Player infantry holds its ground when an enemy enters engagement range;
                 // turn toward the threat and fire instead of wandering through the battle.
-                if(u.team==='player' && d<=48){
+                if(d<=48){
                     u.combatState='aiming';
                     const dx=target.mesh.position.x-u.mesh.position.x;
                     const dz=target.mesh.position.z-u.mesh.position.z;
@@ -6886,7 +6893,7 @@ function startGame(){openBattleSetup();}
 
         // حجم ميداني أصغر وأكثر تناسباً مع MAP، مع الحفاظ على تفاصيل النموذج.
         // السكود والتركس أصغر بصرياً، والدبابة أصغر قليلاً لتجنب ازدحام الوحدات.
-        const visualScale = type === 'rocket' ? 0.72 : (type === 'normal' ? 0.82 : 0.78);
+        const visualScale = type === 'rocket' ? 0.80 : (type === 'normal' ? 0.87 : 0.81);
         tankGroup.scale.setScalar(visualScale);
         scene.add(tankGroup);
         tankGroup.traverse(o=>{ if(o.isMesh) o.castShadow=false; });
@@ -9882,7 +9889,7 @@ function createArmyFactory(x,z,ghost=false){
 
         const flyingMissileGroup = createModernScudMissile();
         // SCUD in flight is intentionally smaller for realistic scale.
-        flyingMissileGroup.scale.setScalar(0.52);
+        flyingMissileGroup.scale.setScalar(0.56);
 
         // Dynamic multi-layer rocket flame: orange envelope + white-hot core + glow plume.
         const exhaustGroup = new THREE.Group();
@@ -9920,7 +9927,7 @@ function createArmyFactory(x,z,ghost=false){
             launchFrames: 0,
             verticalLaunchHeight: 50,
             // Slower flight with a clear vertical rise, then a smooth gravity-like ballistic bend.
-            totalDuration: 240,
+            totalDuration: 165,
             turnBlend: 1.0,
             lastPos: startPos.clone()
         });
@@ -10059,8 +10066,9 @@ function createArmyFactory(x,z,ghost=false){
         allCombatUnits.forEach(unit => {
             if (unit.isDestroyed) return;
             let dist = unit.mesh.position.distanceTo(centerPos);
-            if (dist < 34) {
-                let damageAmount = Math.floor((isScud ? 205 : 160) * (1 - dist / 34));
+            if (dist < (isScud ? 38 : 34)) {
+                const blastRadius = isScud ? 38 : 34;
+                let damageAmount = Math.floor((isScud ? 255 : 160) * (1 - dist / blastRadius));
                 unit.hp -= Math.max(40, damageAmount);
                 if(unit.isInfantry){
                     unit.lastHitWasExplosion = true;
@@ -10088,8 +10096,9 @@ function createArmyFactory(x,z,ghost=false){
         [playerBaseGroup, enemyBaseGroup].forEach(base=>{
             if(!base || base.isDestroyed) return;
             const dist=base.mesh.position.distanceTo(centerPos);
-            if(dist<42){
-                const damage=Math.max(120,Math.floor(1200*(1-dist/42)));
+            if(dist<(isScud?48:42)){
+                const radius=isScud?48:42;
+                const damage=Math.max(120,Math.floor((isScud?1450:1200)*(1-dist/radius)));
                 damageCommandBase(base,damage,fromTeam);
             }
         });
@@ -10098,8 +10107,9 @@ function createArmyFactory(x,z,ghost=false){
         oilRigs.forEach(rig=>{
             if(!rig || rig.isDestroyed)return;
             const dist=Math.hypot(rig.x-centerPos.x,rig.z-centerPos.z);
-            if(dist<30){
-                const damage=Math.max(90,Math.floor(520*(1-dist/30)));
+            if(dist<(isScud?34:30)){
+                const radius=isScud?34:30;
+                const damage=Math.max(90,Math.floor((isScud?680:520)*(1-dist/radius)));
                 damageOilRig(rig,damage,fromTeam);
             }
         });
@@ -10107,15 +10117,16 @@ function createArmyFactory(x,z,ghost=false){
         [...(constructedBarracks||[])].forEach(b=>{
             if(!b||b.isDestroyed||!b.done)return;
             const dist=b.mesh.position.distanceTo(centerPos);
-            if(dist<26){const damage=Math.max(80,Math.floor(700*(1-dist/26)));damageBarracks(b,damage,fromTeam);}
+            if(dist<(isScud?30:26)){const radius=isScud?30:26;const damage=Math.max(80,Math.floor((isScud?880:700)*(1-dist/radius)));damageBarracks(b,damage,fromTeam);}
         });
 
         // المصانع أيضاً أهداف قابلة للتدمير، وكذلك أي مصنع تابع لأي طرف.
         [...new Set([...(constructedFactories||[]), ...(enemyFactories||[])])].forEach(factory=>{
             if(!factory || factory.isDestroyed || !factory.done) return;
             const dist=factory.mesh.position.distanceTo(centerPos);
-            if(dist<34){
-                const damage=Math.max(100,Math.floor(950*(1-dist/34)));
+            if(dist<(isScud?38:34)){
+                const radius=isScud?38:34;
+                const damage=Math.max(100,Math.floor((isScud?1150:950)*(1-dist/radius)));
                 damageFactory(factory,damage,fromTeam);
             }
         });
@@ -10457,6 +10468,7 @@ function createArmyFactory(x,z,ghost=false){
                 const impactTarget = (b.targetTank && !b.targetTank.isDestroyed && b.targetTank.mesh && b.targetTank.mesh.position.distanceTo(b.targetPos) <= 3.2) ? b.targetTank : null;
                 if(!impactTarget){
                     if(!b.infantryBullet) createModernImpactFlash(b.targetPos.clone(), b.fromTeam);
+                    if(!b.infantryBullet) playSound('explosion', b.tankShell ? .62 : .42, b.targetPos.clone());
                     createBlackImpactCrater(b.targetPos.clone(), b.tankShell ? 1.05 : .45, b.tankShell ? 6500 : 2200);
                     scene.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); bullets.splice(i, 1);
                     continue;
@@ -10479,6 +10491,8 @@ function createArmyFactory(x,z,ghost=false){
                 if(!b.infantryBullet){ playSound('explosion',.42); }
                 if (impactTarget.isCommandBase) {
                     damageCommandBase(impactTarget, b.damage, b.fromTeam);
+                } else if (impactTarget.isBarracks) {
+                    damageBarracks(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isFactory) {
                     damageFactory(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isDestroyed !== undefined) {
@@ -10641,6 +10655,14 @@ function createArmyFactory(x,z,ghost=false){
                 }
             }
             if (!enemyTarget) {
+                const targetBarracks = constructedBarracks.filter(b=>b && b.done && !b.isDestroyed && b.owner === (tankData.team === 'player' ? 'enemy' : 'player'));
+                for (const b of targetBarracks) {
+                    const dx=b.mesh.position.x-tankData.mesh.position.x, dz=b.mesh.position.z-tankData.mesh.position.z;
+                    const dsq=dx*dx+dz*dz;
+                    if(dsq<bestTargetDistSq){bestTargetDistSq=dsq;enemyTarget=b;}
+                }
+            }
+            if (!enemyTarget) {
                 const baseTarget = tankData.team === 'player' ? enemyBaseGroup : playerBaseGroup;
                 if(baseTarget && !baseTarget.isDestroyed){
                     const dx=baseTarget.mesh.position.x-tankData.mesh.position.x, dz=baseTarget.mesh.position.z-tankData.mesh.position.z;
@@ -10649,9 +10671,14 @@ function createArmyFactory(x,z,ghost=false){
                 }
             }
 
+            // During a DEFEND order, travel to the requested point first; nearby combat AI must not divert the unit.
+            const guardTravelDistance = tankData.guardPoint ? tankData.mesh.position.distanceTo(tankData.guardPoint) : 0;
+            const travellingToGuardPoint = !!(tankData.team==='player' && tankData.guardPoint && tankData.holdPosition && guardTravelDistance > (tankData.guardRadius || 18));
+            if(travellingToGuardPoint) enemyTarget = null;
+
             // Defensive hold: close enemy threats override old movement/roaming orders.
             // Factory exit remains exempt so produced units can leave the factory correctly.
-            if(tankData.team==='player' && enemyTarget && !tankData.isBuilder && !tankData.factoryExiting){
+            if(!travellingToGuardPoint && tankData.team==='player' && enemyTarget && !tankData.isBuilder && !tankData.factoryExiting){
                 const threatDistance=tankData.mesh.position.distanceTo(enemyTarget.mesh.position);
                 if(threatDistance<=76){ tankData.target=null; tankData.aiTarget=null; tankData.combatHoldTarget=enemyTarget; }
                 else tankData.combatHoldTarget=null;
@@ -13247,7 +13274,8 @@ window.updateCameraSensitivity=function(v){
     applyTeamVisual('enemy',battleConfig.enemyColor);
     if(typeof updateEconomyUI==='function')updateEconomyUI();
     closeBattleSetup();
-    try{menuBgmAudio.pause();menuBgmAudio.currentTime=0;}catch(e){}
+    try{if(typeof stopPreGameMusic==='function')stopPreGameMusic();}catch(e){}
+    try{if(menuBgmAudio){menuBgmAudio.pause();menuBgmAudio.currentTime=0;}}catch(e){}
     try{unlockGameAudio();playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});}catch(e){}
     try{cleanupIntroBackground();}catch(e){}
     const s=document.getElementById('settings-modal');if(s)s.style.display='none';
