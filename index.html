@@ -14433,3 +14433,64 @@ body.battle-active #start-menu {
 })();
 </script>
 
+
+<style id="compact-production-cards-and-sell-button">
+/* Tight, clean production strip: artwork close together, price directly beneath. */
+#construction-bar{column-gap:2px!important;gap:2px!important;padding-left:4px!important;padding-right:4px!important;}
+#construction-bar .build-card,
+#construction-bar .factory-build-card,
+#construction-bar .factory-unit-card,
+#construction-bar .barracks-build-card,
+#construction-bar .barracks-unit-card{
+  flex:0 0 clamp(58px,6.8vw,74px)!important;
+  width:clamp(58px,6.8vw,74px)!important;
+  min-width:clamp(58px,6.8vw,74px)!important;
+  max-width:clamp(58px,6.8vw,74px)!important;
+  height:clamp(76px,11vh,88px)!important;
+  min-height:clamp(76px,11vh,88px)!important;
+  max-height:clamp(76px,11vh,88px)!important;
+  padding:1px!important;gap:1px!important;margin:0!important;
+  flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;
+}
+#construction-bar .build-preview,
+#construction-bar .factory-preview,
+#construction-bar .factory-unit-preview,
+#construction-bar .barracks-preview,
+#construction-bar .barracks-unit-preview{
+  flex:1 1 auto!important;width:100%!important;height:clamp(48px,7.5vh,64px)!important;
+  min-height:46px!important;max-height:64px!important;margin:0!important;padding:0!important;
+}
+#construction-bar .build-price,
+#construction-bar .factory-unit-price,
+#construction-bar .barracks-build-card .build-price,
+#construction-bar .barracks-unit-card .factory-unit-price{
+  display:block!important;visibility:visible!important;opacity:1!important;
+  width:100%!important;margin:0!important;padding:2px 0 0!important;
+  text-align:center!important;line-height:1.05!important;
+  font-size:clamp(10px,1.05vw,12px)!important;font-weight:900!important;
+  white-space:nowrap!important;color:#f6d365!important;
+}
+/* Small professional sell action; preserves the existing sell handler. */
+#sell-building-btn{
+  flex:0 0 auto!important;min-width:58px!important;max-width:66px!important;
+  width:62px!important;min-height:30px!important;height:32px!important;
+  padding:3px 5px!important;gap:1px!important;border-radius:7px!important;
+  border:1px solid rgba(190,211,160,.55)!important;
+  background:linear-gradient(145deg,rgba(49,67,48,.98),rgba(19,29,22,.98))!important;
+  color:#e8f3d8!important;font-size:9px!important;font-weight:800!important;
+  line-height:1.05!important;letter-spacing:0!important;
+  box-shadow:inset 0 1px rgba(255,255,255,.10),0 2px 5px rgba(0,0,0,.28)!important;
+}
+#sell-building-btn:hover{border-color:#c9e5a9!important;filter:brightness(1.1)!important;}
+#sell-building-btn:active{transform:scale(.96)!important;}
+#sell-building-btn:disabled{opacity:.4!important;}
+@media(max-width:600px){
+ #construction-bar{gap:1px!important;padding-left:2px!important;padding-right:2px!important;}
+ #construction-bar .build-card,
+ #construction-bar .factory-build-card,
+ #construction-bar .factory-unit-card,
+ #construction-bar .barracks-build-card,
+ #construction-bar .barracks-unit-card{flex-basis:58px!important;width:58px!important;min-width:58px!important;max-width:58px!important;}
+ #sell-building-btn{min-width:54px!important;max-width:58px!important;width:56px!important;height:29px!important;min-height:29px!important;padding:2px 3px!important;font-size:8px!important;border-radius:6px!important;}
+}
+</style>
