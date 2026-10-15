@@ -2737,9 +2737,9 @@
             const panner=ac.createPanner();
             panner.panningModel='HRTF';
             panner.distanceModel='inverse';
-            panner.refDistance=24;
-            panner.maxDistance=700;
-            panner.rolloffFactor=0.55;
+            panner.refDistance=8;
+            panner.maxDistance=420;
+            panner.rolloffFactor=1.05;
             panner.coneInnerAngle=360;
             panner.coneOuterAngle=360;
             source.connect(gain);
@@ -2846,7 +2846,7 @@
     let menuBgmAudio = createManagedAudio('menuBgm', true);
     let preGameBgmAudio = createManagedAudio('preGameBgm', true);
     let battleBgmAudio = createManagedAudio('battleBgm', true);
-    let sfxVolumeSetting = 0.85;
+    let sfxVolumeSetting = 0.60;
     const MASTER_SFX_BOOST = 1.35;
 
     menuBgmAudio.volume = 0.10;
@@ -7585,7 +7585,7 @@ function startGame(){openBattleSetup();}
         const spawn=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(5.5));spawn.y=getTerrainHeight(spawn.x,spawn.z);
         const team=barracks.owner==='enemy'?'enemy':'player';
         const unit=createInfantrySoldier(spawn.x,spawn.z,team);unit.mesh.rotation.y=r;unit.manualControl=(team==='player');
-        if(team==='player') playSound('soldierExit', 1.0, spawn);
+        if(team==='player') playSound('soldierExit', 0.82, spawn);
         unit.barracksExiting=true;unit.barracksExitLock=true;unit.barracksExitBarracks=barracks;unit.barracksExitTarget=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(14));unit.barracksExitTarget.y=getTerrainHeight(unit.barracksExitTarget.x,unit.barracksExitTarget.z);unit.target=null;unit.factoryFinalTarget=null;
         unit.barracksExitSpeed=Math.max(0.10, Math.min(0.18, (unit.speed||0.10)*1.15));
         if(team==='enemy'){
@@ -7984,7 +7984,7 @@ function createArmyFactory(x,z,ghost=false){
         unit.target=null; unit.factoryFinalTarget=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);
         unit.factoryExitSpeed=Math.max(.065,Math.min(.105,(unit.speed||.10)*.72));
         unit.factoryExitFactory=factory;
-        if(factory.owner !== 'enemy') playSound('unitExit', 1.0, spawn);
+        if(factory.owner !== 'enemy') playSound('unitExit', 0.78, spawn);
         if(type==='ambulance') ambulances.push(unit); else if(type==='scout'){reconVehicles.push(unit); setTimeout(()=>deployReconDish(unit),1200);} else enemyTanks.push(unit);
         // فتح أبواب المصنع تلقائياً أيضاً عند خروج وحدات العدو من أي نوع.
         animateFactoryDoors(factory,3200);
@@ -14173,15 +14173,6 @@ body.battle-active #start-menu {
     audio.pause();
     try { audio.currentTime = 0; } catch (e) {}
   });
-
-  // إعادة محاولة صوت القائد عند لمس ساحة المعركة بعد اختفاء قائمة الانتظار.
-  document.addEventListener('pointerdown', function (event) {
-    if (hasStarted || !battleBaseIsVisible()) return;
-    var target = event.target;
-    // إذا كان اللمس على واجهة القيادة، نترك أصوات الأزرار المعتادة تعمل ولا نكرر صوت الترحيب.
-    if (target && target.closest && target.closest('button, input, #construction-bar, #minimap-container, #minimap-tools')) return;
-    tryStartVoice();
-  }, true);
 
   // Play immediately after the real game-start function hides the menus and positions the camera.
   // Keeping play() in the same click call stack avoids mobile-browser autoplay blocking.
