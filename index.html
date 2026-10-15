@@ -1069,12 +1069,6 @@
 
         /* إزالة نصوص الإرشادات أسفل/حول الخريطة المصغرة مع إبقاء أزرار التحكم. */
         #minimap-instructions, #minimap-hint, .minimap-instructions, .minimap-hint, [data-minimap-instructions] { display:none !important; }
-
-/* External replacement images for the fixed build/production bar */
-#construction-bar .build-preview, #construction-bar .factory-preview, #construction-bar .barracks-preview,
-#construction-bar .factory-unit-preview, #construction-bar .barracks-unit-preview { position:relative; overflow:hidden; }
-#construction-bar .external-bar-image { display:block; position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; z-index:5; padding:2px; box-sizing:border-box; background:transparent; }
-#construction-bar .has-external-image > :not(.external-bar-image) { display:none !important; }
 </style>
 
 <style>
@@ -2432,7 +2426,7 @@
         <button id="sell-building-btn" type="button" onclick="playClickSound(); sellSelectedBuilding()" style="display:none" title="بيع المبنى واسترداد نصف قيمته">💰 بيع المبنى · 50٪</button>
         <div class="build-title"><span class="build-title-icon">⚙</span><b>COMMAND</b><small>PRODUCTION</small></div>
         <div class="build-card" id="construction-truck-card" onclick="playClickSound(); buyConstructionTruck()">
-            <div class="build-preview modern-builder-preview" aria-label="تركس بناء حديث"><img class="external-bar-image" src="images/units/construction-truck.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="build-preview modern-builder-preview" aria-label="تركس بناء حديث">
                 <div class="mb-shadow"></div><div class="mb-chassis"></div><div class="mb-cab"></div><div class="mb-glass"></div><div class="mb-bed"></div><div class="mb-crane"></div><div class="mb-hook"></div>
                 <i class="mb-wheel a"></i><i class="mb-wheel b"></i><i class="mb-wheel c"></i>
             </div>
@@ -2444,7 +2438,7 @@
             <div class="build-price">300$</div>
         </div>
         <div class="factory-build-card" id="factory-build-card" onclick="playClickSound(); armFactoryBuild()">
-            <div class="factory-preview" aria-label="مصنع جيش"><img class="external-bar-image" src="images/units/factory.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="factory-preview" aria-label="مصنع جيش">
                 <div class="f-tower"></div><div class="f-roof"></div><div class="f-base"></div><div class="f-door"></div><div class="f-light"></div>
             </div>
             <div class="build-info">
@@ -2456,7 +2450,7 @@
         </div>
 
         <div class="barracks-build-card" id="barracks-build-card" onclick="playClickSound(); armBarracksBuild()">
-            <div class="barracks-preview" aria-label="سكنة عسكرية"><img class="external-bar-image" src="images/units/barracks.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="barracks-preview" aria-label="سكنة عسكرية">
                 <div class="b-base"></div><div class="b-roof"></div><div class="b-door"></div><div class="b-window"></div><div class="b-flagpole"></div><div class="b-flag"></div>
             </div>
             <div class="build-info">
@@ -2467,19 +2461,19 @@
             <div class="build-price">150$</div>
         </div>
         <div class="factory-unit-card" id="factory-scud-card" onclick="playClickSound(); queueFactoryUnit('rocket')">
-            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scud.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scud"></div></div>
+            <div class="factory-unit-preview"><div class="mini-scud"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🚀 SCUD</div><div class="factory-unit-price">800$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
         </div>
         <div class="factory-unit-card" id="factory-tank-card" onclick="playClickSound(); queueFactoryUnit('normal')">
-            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/tank.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-tank"></div></div>
+            <div class="factory-unit-preview"><div class="mini-tank"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🪖 TANK</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
         </div>
         <div class="factory-unit-card infantry-card" id="factory-infantry-card" onclick="playClickSound(); queueFactoryUnit('infantry')">
-            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-infantry"></div><div class="infantry-preview-rifle"></div></div>
+            <div class="factory-unit-preview"><div class="mini-infantry"></div><div class="infantry-preview-rifle"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🪖 RIFLEMAN</div><div class="factory-unit-price">250$</div><div class="factory-unit-time">Ready in 6 sec</div></div>
         </div>
         <div class="barracks-unit-card" id="barracks-infantry-card" onclick="playClickSound(); queueBarracksUnit('infantry')" title="تدريب جندي مشاة">
-            <div class="barracks-unit-preview pro-soldier-icon" aria-label="جندي مشاة"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="barracks-unit-preview pro-soldier-icon" aria-label="جندي مشاة">
                 <span class="soldier-shadow"></span><span class="soldier-helmet"></span><span class="soldier-head"></span>
                 <span class="soldier-vest"></span><span class="soldier-arm a"></span><span class="soldier-arm b"></span>
                 <span class="soldier-rifle"></span><span class="soldier-leg a"></span><span class="soldier-leg b"></span>
@@ -2487,11 +2481,11 @@
             <div class="factory-unit-info"><div class="factory-unit-name">INFANTRY</div><div class="factory-unit-price">250$</div><div class="factory-unit-time">TRAIN • 6 SEC</div></div>
         </div>
         <div class="factory-unit-card" id="factory-ambulance-card" onclick="playClickSound(); queueFactoryUnit('ambulance')">
-            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/ambulance.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-ambulance"></div></div>
+            <div class="factory-unit-preview"><div class="mini-ambulance"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🚑 AMBULANCE</div><div class="factory-unit-price">600$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
         </div>
         <div class="factory-unit-card scout-factory-card" id="factory-scout-card" onclick="playClickSound(); queueFactoryUnit('scout')">
-            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scout.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scout"></div></div>
+            <div class="factory-unit-preview"><div class="mini-scout"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">📡 SCOUT</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Reveals the area and activates minimap</div></div>
         </div>
         <div class="bar-unit-controls" id="bar-unit-controls" aria-label="أوامر الوحدة">
@@ -2609,16 +2603,7 @@
         ambulanceSiren: 'sounds/ambulance_siren.mp3',
         mapOpen: 'sounds/minimap_open.mp3',
         redAlarm: 'sounds/red_alarm.mp3',
-        wind: 'sounds/wind.mp3',
-        introVoice: 'sounds/intro-voice.mp3',
-        factorySelect: 'sounds/factory_select.mp3',
-        barracksSelect: 'sounds/barracks_select.mp3',
-        unitExit: 'sounds/unit_exit.mp3',
-        soldierExit: 'sounds/soldier_exit.mp3',
-        constructionStart: 'sounds/construction_start.mp3',
-        constructionComplete: 'sounds/construction_complete.mp3',
-        attackEnemy: 'sounds/attack_enemy.mp3',
-        underAttack: 'sounds/under_attack.mp3'
+        wind: 'sounds/wind.mp3'
     };
 
     // إذا لم يوجد ملف صوت جديد، لا يختفي الصوت؛ يستخدم بديلاً مناسباً.
@@ -2816,10 +2801,7 @@
 
         const audio = createManagedAudio(actualType, false);
         if (!audio) return;
-        // أصوات خروج الوحدات أعلى بوضوح من المؤثرات العادية.
-        // يظل مستوى الصوت العام قابلاً للتحكم، مع رفع خاص للمصنع والثكنة.
-        const productionExitBoost = (actualType === 'unitExit' || actualType === 'soldierExit') ? 1.65 : 1;
-        const finalVolume = Math.max(0, Math.min(1, volume * sfxVolumeSetting * productionExitBoost));
+        const finalVolume = Math.max(0, Math.min(1, volume * sfxVolumeSetting));
         activeOneShots.add(audio);
 
         const cleanup = () => {
@@ -2835,15 +2817,6 @@
         }else{
             playAudioElement(audio,finalVolume,true).catch(cleanup);
         }
-    }
-
-    // أصوات أحداث المعركة من ملفات خارجية مع حد زمني يمنع تكرار النداءات.
-    const battleCueLastPlayedAt = Object.create(null);
-    function playBattleCue(type, volume = 0.85, cooldownMs = 10000) {
-        const now = Date.now();
-        if (now - (battleCueLastPlayedAt[type] || 0) < cooldownMs) return;
-        battleCueLastPlayedAt[type] = now;
-        playSound(type, volume);
     }
 
     let menuBgmAudio = createManagedAudio('menuBgm', true);
@@ -5353,7 +5326,6 @@ function startGame(){openBattleSetup();}
 
         if(soldier.team==='player'){
             playSound('machineGun',.30);
-            playBattleCue('attackEnemy', 0.78, 12000);
         }else{
             // Enemy infantry must not replay the base alarm for every bullet.
             const soundNow=performance.now();
@@ -7528,7 +7500,7 @@ function startGame(){openBattleSetup();}
         const c=activeBarracksConstruction;if(!c)return;const b=c.builder;
         if(!b||b.isDestroyed){removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);activeBarracksConstruction=null;updateConstructionBarForSelection();return;}
         if(!c.started){
-            if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();playSound('constructionStart',0.82);showFloatingMsg('🪖 Barracks construction started — crane operating');}
+            if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();showFloatingMsg('🪖 Barracks construction started — crane operating');}
             return;
         }
         c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateBarracksConstructionLift(c.lift);
@@ -7546,7 +7518,7 @@ function startGame(){openBattleSetup();}
             if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}
             const r=c.build.rotation||0,forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));const retreat=c.build.mesh.position.clone().sub(forward.multiplyScalar(9));retreat.y=getTerrainHeight(retreat.x,retreat.z);
             b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.factoryRetreating=true;
-            constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});activeBarracksConstruction=null;playSound('constructionComplete',0.9);updateConstructionBarForSelection();showFloatingMsg('✅ Military barracks complete — select it to train soldiers');
+            constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});activeBarracksConstruction=null;updateConstructionBarForSelection();showFloatingMsg('✅ Military barracks complete — select it to train soldiers');
         }
     }
     function queueBarracksUnit(type){
@@ -7588,7 +7560,6 @@ function startGame(){openBattleSetup();}
         const spawn=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(5.5));spawn.y=getTerrainHeight(spawn.x,spawn.z);
         const team=barracks.owner==='enemy'?'enemy':'player';
         const unit=createInfantrySoldier(spawn.x,spawn.z,team);unit.mesh.rotation.y=r;unit.manualControl=(team==='player');
-        if(team==='player') playSound('soldierExit', 1.0, spawn);
         unit.barracksExiting=true;unit.barracksExitLock=true;unit.barracksExitBarracks=barracks;unit.barracksExitTarget=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(14));unit.barracksExitTarget.y=getTerrainHeight(unit.barracksExitTarget.x,unit.barracksExitTarget.z);unit.target=null;unit.factoryFinalTarget=null;
         unit.barracksExitSpeed=Math.max(0.10, Math.min(0.18, (unit.speed||0.10)*1.15));
         if(team==='enemy'){
@@ -7987,7 +7958,6 @@ function createArmyFactory(x,z,ghost=false){
         unit.target=null; unit.factoryFinalTarget=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);
         unit.factoryExitSpeed=Math.max(.065,Math.min(.105,(unit.speed||.10)*.72));
         unit.factoryExitFactory=factory;
-        if(factory.owner !== 'enemy') playSound('unitExit', 1.0, spawn);
         if(type==='ambulance') ambulances.push(unit); else if(type==='scout'){reconVehicles.push(unit); setTimeout(()=>deployReconDish(unit),1200);} else enemyTanks.push(unit);
         // فتح أبواب المصنع تلقائياً أيضاً عند خروج وحدات العدو من أي نوع.
         animateFactoryDoors(factory,3200);
@@ -8337,7 +8307,6 @@ function createArmyFactory(x,z,ghost=false){
         showFloatingMsg('🛢️ Oil rig selected');
     }
     function selectBarracks(barracks){
-        if(barracks && barracks.owner !== 'enemy') playSound('barracksSelect', 0.8);
         if(barracks&&!barracks.buildCost)barracks.buildCost=150;
         selectedBarracks=barracks; selectedOilRig=null; selectedFactory=null; selectedTank=null; selectedUnitKind='barracks'; selectionMode='single'; defenseCommandArmed=false;
         clearSelectionVisuals();
@@ -8475,7 +8444,6 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function selectFactory(factory) {
-        if(factory && factory.owner !== 'enemy') playSound('factorySelect', 0.8);
         if(factory&&!factory.buildCost)factory.buildCost=400;
         selectedFactory=factory; selectedBarracks=null; selectedOilRig=null; selectedTank=null; selectedUnitKind='factory'; selectionMode='single'; defenseCommandArmed=false;
         clearSelectionVisuals();
@@ -9736,7 +9704,7 @@ function createArmyFactory(x,z,ghost=false){
         if(factory.mesh && factory.mesh.userData && factory.mesh.userData.hpLabel) factory.mesh.userData.hpLabel.style.display='none';
         if(factory.mesh){
             const pos=factory.mesh.position.clone();
-            createModernImpactFlash(pos, fromTeam); playSound('explosion',1.0);
+            createModernImpactFlash(pos, fromTeam); playSound('explosion');
             for(let i=0;i<22;i++) addSmokeParticle(pos, i<8?0x171717:0x555555, 1.5+Math.random()*1.8);
             const rubble=createFactoryRubble(pos,factory.mesh.rotation.y);
             factory.rubble=rubble;
@@ -10092,7 +10060,6 @@ function createArmyFactory(x,z,ghost=false){
         createTankFireSmokeBurst(fromTank);
         if (fromTank.team === 'player') {
             playSound('attack', 0.8);
-            playBattleCue('attackEnemy', 0.82, 12000);
             triggerTankRecoil(fromTank, 0.62);
         } else {
             playSound('attack', 0.36);
@@ -10288,7 +10255,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function createShockwaveAndExplosion(centerPos, fromTeam, isScud=false) {
-        playSound('explosion',1.0);
+        playSound('explosion',1.0,centerPos);
         createModernImpactFlash(centerPos, fromTeam);
         createBlackImpactCrater(centerPos, 3.5 + Math.random()*2.8);
 
@@ -10406,8 +10373,6 @@ function createArmyFactory(x,z,ghost=false){
             window.attackAlertTimer=setTimeout(()=>alertEl.classList.remove('active'),5000);
         }
 
-        // صوت خارجي عند دخول هجوم العدو إلى محيط القاعدة، مع الحفاظ على إنذار الخطر الأصلي.
-        playBattleCue('underAttack', 0.9, 20000);
         // Red attack warning: create/play the audio only when an attack is actually triggered.
         try{
             if(!redAlarmAudio){
@@ -10761,7 +10726,7 @@ function createArmyFactory(x,z,ghost=false){
                 const impactTarget = (b.targetTank && !b.targetTank.isDestroyed && b.targetTank.mesh && b.targetTank.mesh.position.distanceTo(b.targetPos) <= 3.2) ? b.targetTank : null;
                 if(!impactTarget){
                         if(!b.infantryBullet) createModernImpactFlash(b.targetPos.clone(), b.fromTeam);
-                    if(!b.infantryBullet) playSound('explosion', b.tankShell ? .9 : .7);
+                    if(!b.infantryBullet) playSound('explosion', b.tankShell ? .62 : .42, b.targetPos.clone());
                     // Missed shots still leave a crater, but avoid unbounded decoration
                     // when a large group fires at one static structure.
                     const targetIsStructure=!!(b.targetTank && (b.targetTank.isCommandBase||b.targetTank.isBarracks||b.targetTank.isFactory));
@@ -10793,7 +10758,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
                 revealUnitHp(impactTarget, 5000, b.fromTeam);
                 updateUnitDamageEffects(impactTarget);
-                if(!b.infantryBullet && !b.tankShell){ playSound('explosion',.65); }
+                if(!b.infantryBullet && !b.tankShell){ playSound('explosion',.28); }
                 if (impactTarget.isCommandBase) {
                     damageCommandBase(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isBarracks) {
@@ -11852,7 +11817,7 @@ function createArmyFactory(x,z,ghost=false){
             const b=c.builder;
             if(!b||b.isDestroyed){removeConstructionLift(c);removeFactoryConstructionCage(c);continue;}
             if(!c.started){
-                if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();playSound('constructionStart',0.82);showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
+                if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
                 remaining.push(c);continue;
             }
             c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateConstructionLift(c.lift);
@@ -11864,7 +11829,7 @@ function createArmyFactory(x,z,ghost=false){
             if(c.elapsed%60===0&&c.elapsed<c.build.duration)showFloatingMsg(`🏭 Factory construction: ${Math.floor(p*100)}%`);
             if(p>=1){
                 c.build.done=true;c.build.ghost=false;c.build.mesh.scale.setScalar(1);c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
-                removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);playSound('constructionComplete',0.9);
+                removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);
                 showFloatingMsg('✅ Factory complete — construction dozer retreating');
             }else remaining.push(c);
         }
@@ -13920,6 +13885,57 @@ window.updateCameraSensitivity=function(v){
 
 <!-- صوت الترحيب الخارجي: ضع الملف في sounds/intro-voice.mp3 -->
 <audio id="intro-voice-audio" src="sounds/intro-voice.mp3" preload="auto" playsinline></audio>
+<script id="intro-voice-autoplay">
+(function () {
+  'use strict';
+  var audio = document.getElementById('intro-voice-audio');
+  if (!audio) return;
+  audio.loop = false;
+  var started = false;
+  var finished = false;
+  function removeFallbackListeners() {
+    document.removeEventListener('pointerdown', startOnFirstGesture, true);
+    document.removeEventListener('touchstart', startOnFirstGesture, true);
+    document.removeEventListener('keydown', startOnFirstGesture, true);
+  }
+  function startOnFirstGesture() {
+    if (started || finished) return;
+    started = true;
+    removeFallbackListeners();
+    try {
+      var p = audio.play();
+      if (p && typeof p.catch === 'function') p.catch(function () { started = false; });
+    } catch (e) { started = false; }
+  }
+  audio.addEventListener('ended', function () {
+    finished = true;
+    started = true;
+    removeFallbackListeners();
+    audio.pause();
+  }, { once: true });
+  function tryAutoplayImmediately() {
+    if (started || finished) return;
+    try {
+      var p = audio.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function () { started = true; removeFallbackListeners(); }).catch(function () {
+          document.addEventListener('pointerdown', startOnFirstGesture, true);
+          document.addEventListener('touchstart', startOnFirstGesture, true);
+          document.addEventListener('keydown', startOnFirstGesture, true);
+        });
+      } else { started = true; }
+    } catch (e) {
+      document.addEventListener('pointerdown', startOnFirstGesture, true);
+      document.addEventListener('touchstart', startOnFirstGesture, true);
+      document.addEventListener('keydown', startOnFirstGesture, true);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryAutoplayImmediately, { once: true });
+  } else { tryAutoplayImmediately(); }
+})();
+</script>
+
 </body>
 </html>
 
@@ -14100,111 +14116,3 @@ body.battle-active #start-menu {
   box-shadow:none !important;
 }
 </style>
-
-<script id="intro-voice-on-match-start">
-(function () {
-  'use strict';
-  var audio = document.getElementById('intro-voice-audio');
-  if (!audio) return;
-
-  audio.src = 'sounds/intro-voice.mp3';
-  audio.preload = 'auto';
-  audio.loop = false;
-  audio.volume = 1;
-
-  var hasStarted = false;
-  var retryArmed = false;
-
-  function battleBaseIsVisible() {
-    if (!document.body || !document.body.classList.contains('battle-active')) return false;
-    var menu = document.getElementById('settings-modal');
-    var startMenu = document.getElementById('start-menu');
-    function hidden(el) {
-      if (!el) return true;
-      var s = getComputedStyle(el), r = el.getBoundingClientRect();
-      return s.display === 'none' || s.visibility === 'hidden' || r.width === 0 || r.height === 0;
-    }
-    if (!hidden(menu) || !hidden(startMenu)) return false;
-    try {
-      if (typeof playerBaseGroup === 'undefined' || !playerBaseGroup || playerBaseGroup.visible === false) return false;
-      if (typeof scene !== 'undefined' && scene && !scene.getObjectById(playerBaseGroup.id)) return false;
-    } catch (e) { return false; }
-    return true;
-  }
-
-  function tryStartVoice() {
-    if (hasStarted || !battleBaseIsVisible()) return;
-    try {
-      audio.currentTime = 0;
-      var p = audio.play();
-      if (p && typeof p.then === 'function') {
-        p.then(function () {
-          hasStarted = true;
-          removeRetry();
-        }).catch(function () {
-          armRetry();
-        });
-      } else {
-        hasStarted = true;
-        removeRetry();
-      }
-    } catch (e) {
-      armRetry();
-    }
-  }
-
-  function retry() {
-    if (hasStarted) return;
-    // Retry only after the match is active and the main base is visible.
-    tryStartVoice();
-  }
-  function armRetry() {
-    if (retryArmed) return;
-    retryArmed = true;
-    document.addEventListener('pointerdown', retry, true);
-    document.addEventListener('touchstart', retry, true);
-    document.addEventListener('keydown', retry, true);
-  }
-  function removeRetry() {
-    document.removeEventListener('pointerdown', retry, true);
-    document.removeEventListener('touchstart', retry, true);
-    document.removeEventListener('keydown', retry, true);
-    retryArmed = false;
-  }
-
-  audio.addEventListener('ended', function () {
-    audio.pause();
-    try { audio.currentTime = 0; } catch (e) {}
-  });
-
-  // Play immediately after the real game-start function hides the menus and positions the camera.
-  // Keeping play() in the same click call stack avoids mobile-browser autoplay blocking.
-  var original = window.beginConfiguredGame;
-  if (typeof original === 'function' && !original.__introVoiceFixed) {
-    var wrapped = function () {
-      var result = original.apply(this, arguments);
-      if (battleBaseIsVisible()) tryStartVoice();
-      else {
-        // Wait for the base to become visible, then try once; mobile can retry on the next user gesture.
-        var frames = 0;
-        function wait() {
-          if (hasStarted) return;
-          if (battleBaseIsVisible()) tryStartVoice();
-          else if (++frames < 600) requestAnimationFrame(wait);
-        }
-        requestAnimationFrame(wait);
-      }
-      return result;
-    };
-    wrapped.__introVoiceFixed = true;
-    window.beginConfiguredGame = wrapped;
-  }
-
-  // If the online room starts through a different code path, wait for the actual battlefield.
-  var observer = new MutationObserver(function () {
-    if (!hasStarted && battleBaseIsVisible()) tryStartVoice();
-  });
-  if (document.body) observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-})();
-</script>
-
