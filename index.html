@@ -2495,11 +2495,11 @@
             <div class="factory-unit-info"><div class="factory-unit-name">📡 SCOUT</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Reveals the area and activates minimap</div></div>
         </div>
         <div class="bar-unit-controls" id="bar-unit-controls" aria-label="أوامر الوحدة">
-            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="حدد منطقة الحماية لوحداتك">
-                <span class="bar-icon shield-icon">⬡</span><small>الحماية</small>
+            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="حدد منطقة دائرية؛ ستهاجم وحداتك الأعداء الذين يقتربون منها">
+                <span class="bar-icon shield-icon">◎</span><small>قصف المنطقة</small>
             </button>
             <button class="bar-control-btn" id="bar-cancel-btn" onclick="playClickSound(); cancelUnitSelection()" title="CANCEL تحديد الوحدة">
-                <span class="bar-icon">✕</span><small>إلغاء التحديد</small>
+                <span class="bar-icon">✕</span><small>CANCEL</small>
             </button>
             <button class="bar-control-btn" id="bar-all-btn" onclick="playClickSound(); setSelectionMode('all')" title="تحديد ALL">
                 <span class="bar-icon">▦</span><small>ALL</small>
@@ -3682,7 +3682,6 @@
         const cancelBtn = document.getElementById('cancel-select-btn');
         const allBtn = document.getElementById('sel-all-btn');
         const singleBtn = document.getElementById('sel-single-btn');
-        const barDefendBtn = document.getElementById('bar-defend-btn');
         const hasSelection = !!(selectedTank && !selectedTank.isDestroyed && selectedUnitKind && selectedUnitKind !== 'factory');
 
         // أزرار التحكم تظهر فقط عند تحديد دبابة أو عربة أو إسعاف
@@ -3693,14 +3692,7 @@
         if (btn) {
             btn.disabled = !hasSelection;
             btn.classList.toggle('armed', defenseCommandArmed);
-            btn.innerText = defenseCommandArmed ? '⬡ اختر منطقة الحماية' : '⬡ الحماية';
-        }
-        if (barDefendBtn) {
-            barDefendBtn.disabled = !hasSelection;
-            barDefendBtn.classList.toggle('active', defenseCommandArmed);
-            barDefendBtn.title = defenseCommandArmed ? 'المس نقطة على الأرض لتحديد منطقة الحماية' : 'تحديد منطقة حماية للوحدات';
-            const label=barDefendBtn.querySelector('small');
-            if(label)label.textContent=defenseCommandArmed?'اختر المنطقة':'الحماية';
+            btn.innerText = defenseCommandArmed ? '◎ اختر منطقة القصف' : '◎ قصف المنطقة';
         }
         if (cancelBtn) {
             cancelBtn.disabled = !hasSelection;
@@ -3769,13 +3761,6 @@
     }
 
     function clearSelectionVisuals() {
-        // Hide all building selection rings, including a previous selection whose pointer
-        // has already been replaced by the newly tapped object.
-        [...(constructedFactories||[]), ...(enemyFactories||[]), ...(constructedBarracks||[])].forEach(b=>{
-            if(!b||!b.mesh)return;
-            const fg=b.mesh.getObjectByName('factorySelectionGlow'); if(fg)fg.visible=false;
-            const bg=b.mesh.getObjectByName('barracksSelectionGlow'); if(bg)bg.visible=false;
-        });
         if (selectedFactory && selectedFactory.mesh) { const fg=selectedFactory.mesh.getObjectByName('factorySelectionGlow'); if(fg) fg.visible=false; }
         if (selectedBarracks && selectedBarracks.mesh) { const bg=selectedBarracks.mesh.getObjectByName('barracksSelectionGlow'); if(bg) bg.visible=false; }
         playerTanks.forEach(t => {
@@ -8375,7 +8360,7 @@ function createArmyFactory(x,z,ghost=false){
         if(!bar) return;
         const title=bar.querySelector('.build-title');
         bar.classList.remove('base-mode','factory-mode','factory-selected','unit-selected','builder-selected');
-        bar.classList.add('open','barracks-selected','building-selected');
+        bar.classList.add('open','barracks-selected');
         if(title) title.innerHTML='السكنة<br>العسكرية';
         const soldier=document.getElementById('barracks-infantry-card');
         if(soldier){
@@ -8508,9 +8493,8 @@ function createArmyFactory(x,z,ghost=false){
     function updateFactoryBar() {
         const bar=document.getElementById('construction-bar');
         if(!bar) return;
-        bar.classList.remove('base-mode','factory-mode','unit-selected','barracks-selected');
+        bar.classList.remove('base-mode','factory-mode','unit-selected');
         bar.classList.toggle('factory-selected',!!selectedFactory);
-        bar.classList.toggle('building-selected',!!selectedFactory);
         if(selectedFactory){
             const barracksSoldierCard=document.getElementById('barracks-infantry-card'); if(barracksSoldierCard) barracksSoldierCard.style.removeProperty('display');
             bar.classList.add('open');
@@ -11934,45 +11918,26 @@ function createArmyFactory(x,z,ghost=false){
         const factoryCard=document.getElementById('factory-build-card');
         const title=bar?bar.querySelector('.build-title'):null;
         if(!bar||!factoryCard)return;
-
         const sellBtn=document.getElementById('sell-building-btn');
-        const hasFactory=!!(selectedFactory&&!selectedFactory.isDestroyed);
-        const hasBarracks=!!(selectedBarracks&&!selectedBarracks.isDestroyed);
-        if(sellBtn){const canSell=!!((hasFactory&&selectedFactory.owner!=='enemy')||(hasBarracks&&selectedBarracks.owner!=='enemy'));sellBtn.style.display=canSell?'block':'none';sellBtn.disabled=!canSell;}
-
+        if(sellBtn){const canSell=!!((selectedFactory&&!selectedFactory.isDestroyed&&selectedFactory.owner!=='enemy')||(selectedBarracks&&!selectedBarracks.isDestroyed&&selectedBarracks.owner!=='enemy'));sellBtn.style.display=canSell?'block':'none';sellBtn.disabled=!canSell;}
         const hasUnit=!!(selectedTank&&!selectedTank.isDestroyed);
         const builderSelected=hasUnit&&getUnitKind(selectedTank)==='builder';
         const ambulanceSelected=hasUnit&&getUnitKind(selectedTank)==='ambulance';
         const combatSelected=hasUnit&&!builderSelected&&!ambulanceSelected;
-
-        // Reset mutually exclusive selection modes first. This prevents old factory/barracks
-        // cards from leaking into the next selection after a tap on a soldier or vehicle.
         bar.classList.toggle('unit-selected',hasUnit);
         bar.classList.toggle('builder-selected',builderSelected);
-        bar.classList.toggle('factory-selected',hasFactory);
-        bar.classList.toggle('barracks-selected',hasBarracks);
-        bar.classList.toggle('building-selected',hasFactory||hasBarracks);
-        if(hasUnit||hasFactory||hasBarracks||selectedOilRig)bar.classList.add('open');
-
+        if(hasUnit)bar.classList.add('open');
         const ba=document.getElementById('bar-all-btn'),bs=document.getElementById('bar-single-btn'),sf=document.getElementById('bar-stop-fire-btn');
         if(ba)ba.classList.toggle('active',selectionMode==='all');
         if(bs)bs.classList.toggle('active',selectionMode==='single');
-        if(sf){sf.style.display=combatSelected?'flex':'none';sf.classList.toggle('active',combatSelected&&getSelectedCombatUnits().some(u=>u.ceaseFire));}
-
-        if(selectedOilRig){
-            bar.classList.remove('base-mode','factory-mode','factory-selected','barracks-selected','building-selected','unit-selected','builder-selected');
-            if(title)title.innerHTML='OIL<br>FIELD';
-            return;
+        if(sf){
+            sf.style.display=combatSelected?'flex':'none';
+            sf.classList.toggle('active',combatSelected && getSelectedCombatUnits().some(u=>u.ceaseFire));
         }
-        if(hasBarracks){
-            bar.classList.remove('factory-mode','factory-selected','unit-selected','builder-selected');
-            bar.classList.add('barracks-selected','building-selected');
-            updateBarracksBar();
-            return;
-        }
-        if(hasFactory){
-            bar.classList.remove('barracks-selected','unit-selected','builder-selected','factory-mode','base-mode');
-            bar.classList.add('factory-selected','building-selected');
+        if(selectedOilRig){ bar.classList.remove('base-mode','factory-mode','factory-selected','barracks-selected','unit-selected','builder-selected'); bar.classList.add('open'); if(title)title.innerHTML='OIL<br>FIELD'; return;}
+        if(selectedBarracks){updateBarracksBar();return;}
+        if(selectedFactory){
+            bar.classList.remove('barracks-selected','builder-selected','unit-selected');
             const barracksBuildCard=document.getElementById('barracks-build-card');
             const factoryInfantryCard=document.getElementById('factory-infantry-card');
             if(barracksBuildCard)barracksBuildCard.style.display='none';
@@ -11980,18 +11945,18 @@ function createArmyFactory(x,z,ghost=false){
             updateFactoryBar();
             return;
         }
-        // No building is selected: remove all building-only modes and controls.
-        bar.classList.remove('factory-selected','barracks-selected','building-selected');
         if(builderSelected){
-            bar.classList.add('open','factory-mode');bar.classList.remove('base-mode');
+            bar.classList.add('open','factory-mode');bar.classList.remove('base-mode','factory-selected','barracks-selected');
             const barracksSoldierCard=document.getElementById('barracks-infantry-card'); const factoryInfantryCard=document.getElementById('factory-infantry-card');
-            if(barracksSoldierCard)barracksSoldierCard.style.removeProperty('display');
-            if(factoryInfantryCard)factoryInfantryCard.style.removeProperty('display');
+            if(barracksSoldierCard) barracksSoldierCard.style.removeProperty('display'); if(factoryInfantryCard) factoryInfantryCard.style.removeProperty('display');
             if(title)title.innerHTML='FACTORY<br>BUILD';
             factoryCard.classList.toggle('disabled',playerMoney<400||isBuilderFactoryBusy(selectedTank));
             const barracksCard=document.getElementById('barracks-build-card');
             const hasArmyFactory=constructedFactories.some(f=>f&&f.done&&!f.isDestroyed&&f.owner!=='enemy');
-            if(barracksCard){barracksCard.style.display='flex';barracksCard.classList.toggle('disabled',!hasArmyFactory||playerMoney<150||!!getBuilderBarracksConstruction(selectedTank));}
+            if(barracksCard){
+                barracksCard.style.display='flex';
+                barracksCard.classList.toggle('disabled',!hasArmyFactory||playerMoney<150||!!getBuilderBarracksConstruction(selectedTank));
+            }
         }else if(hasUnit){
             bar.classList.remove('factory-mode','base-mode');
             if(title)title.innerHTML='ORDERS';
@@ -15099,53 +15064,4 @@ body.battle-active #start-menu {
   background-image:linear-gradient(180deg,rgba(0,0,0,.26),rgba(0,0,0,.48)),url("images/loading2.jpg")!important;
   background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
 }
-
-    /* Selection toolbar fixes: building selection shows its own card(s) plus cancel only. */
-    #construction-bar.building-selected .bar-unit-controls{display:flex!important;}
-    #construction-bar.building-selected #bar-unit-controls button:not(#bar-cancel-btn){display:none!important;}
-    #construction-bar.building-selected #bar-cancel-btn{display:flex!important;min-width:88px!important;width:auto!important;padding:4px 8px!important;}
-    #construction-bar.building-selected #bar-cancel-btn small{font-size:9px!important;white-space:nowrap!important;}
-    #construction-bar.unit-selected #bar-unit-controls button{display:flex!important;}
-    #construction-bar.unit-selected #bar-stop-fire-btn[style*="display: none"]{display:none!important;}
-    #construction-bar.unit-selected #factory-build-card,
-    #construction-bar.unit-selected #barracks-build-card,
-    #construction-bar.unit-selected #factory-infantry-card,
-    #construction-bar.unit-selected #barracks-infantry-card{display:none!important;}
-    #construction-bar.factory-selected #barracks-infantry-card,
-    #construction-bar.factory-selected #barracks-build-card,
-    #construction-bar.factory-selected #factory-infantry-card{display:none!important;}
-    #construction-bar.barracks-selected .factory-unit-card,
-    #construction-bar.barracks-selected #factory-build-card,
-    #construction-bar.barracks-selected #barracks-build-card,
-    #construction-bar.barracks-selected #factory-infantry-card{display:none!important;}
-    #construction-bar.barracks-selected #barracks-infantry-card{display:flex!important;}
-</style>
-
-
-<style id="final-dozer-only-two-cards-and-empty-selection">
-/* لا تعرض الشريط الثابت إذا لم يكن هناك عنصر محدد */
-#construction-bar.open:not(.unit-selected):not(.factory-selected):not(.barracks-selected):not(.building-selected){
-  display:none!important; visibility:hidden!important; opacity:0!important; pointer-events:none!important;
-}
-/* التركس المحدد: بطاقتا بناء المصنع ومعسكر الجنود فقط */
-#construction-bar.unit-selected.builder-selected .build-title{display:none!important}
-#construction-bar.unit-selected.builder-selected .bar-unit-controls,
-#construction-bar.unit-selected.builder-selected .build-card,
-#construction-bar.unit-selected.builder-selected .factory-unit-card,
-#construction-bar.unit-selected.builder-selected .barracks-unit-card,
-#construction-bar.unit-selected.builder-selected #factory-infantry-card,
-#construction-bar.unit-selected.builder-selected #barracks-infantry-card{display:none!important}
-#construction-bar.unit-selected.builder-selected .factory-build-card,
-#construction-bar.unit-selected.builder-selected .barracks-build-card{
-  display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;
-}
-/* عند تحديد أي وحدة غير التركس: أوامر الوحدة فقط */
-#construction-bar.unit-selected:not(.builder-selected) .factory-build-card,
-#construction-bar.unit-selected:not(.builder-selected) .barracks-build-card,
-#construction-bar.unit-selected:not(.builder-selected) .factory-unit-card,
-#construction-bar.unit-selected:not(.builder-selected) .barracks-unit-card,
-#construction-bar.unit-selected:not(.builder-selected) #factory-infantry-card,
-#construction-bar.unit-selected:not(.builder-selected) #barracks-infantry-card{display:none!important}
-/* زر البيع لا يظهر إلا مع مبنى محدد */
-#construction-bar:not(.factory-selected):not(.barracks-selected) #sell-building-btn{display:none!important;visibility:hidden!important}
 </style>
