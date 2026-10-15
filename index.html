@@ -2919,7 +2919,7 @@
 
     let cameraRadius = 280, targetCameraRadius = 280;
     let cameraTheta = Math.PI / 4;
-    let cameraPhi = Math.PI / 3.5;
+    let cameraPhi = 1.18;
     let targetLookAt = new THREE.Vector3(0, 0, 0);
 
     let shakeTimer = 0;
@@ -4149,7 +4149,7 @@ function beginConfiguredGame(){
     playSound('buy');
     let playerCampX=CORNER_OFFSET, playerCampZ=CORNER_OFFSET, terrainH=getTerrainHeight(playerCampX,playerCampZ);
     targetLookAt.set(playerCampX,terrainH,playerCampZ);
-    targetCameraRadius=110; cameraPhi=Math.PI/3.8; cameraRadius=targetCameraRadius; updateCameraPosition();
+    targetCameraRadius=125; cameraPhi=1.18; cameraRadius=targetCameraRadius; updateCameraPosition();
     showFloatingMsg(`⚔ Battle started! Bot strength: ${{weak:'WEAK',medium:'MEDIUM',strong:'STRONG'}}[battleConfig.bot]||'MEDIUM'}.`);
 }
 function startGame(){openBattleSetup();}
@@ -8963,7 +8963,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function updateCameraPosition() {
-        cameraRadius = THREE.MathUtils.lerp(cameraRadius, targetCameraRadius, 0.095);
+        cameraRadius = THREE.MathUtils.lerp(cameraRadius, targetCameraRadius, 0.14);
         let shakeX = 0, shakeY = 0;
         if (shakeTimer > 0) {
             shakeTimer--;
@@ -8971,8 +8971,8 @@ function createArmyFactory(x,z,ghost=false){
             shakeY = (Math.random() - 0.5) * shakeIntensity;
         }
         if (isCinematicEnding && cinematicTargetLook) {
-            targetLookAt.lerp(cinematicTargetLook, 0.035);
-            cameraRadius = THREE.MathUtils.lerp(cameraRadius, 70, 0.05);
+            targetLookAt.lerp(cinematicTargetLook, 0.06);
+            cameraRadius = THREE.MathUtils.lerp(cameraRadius, 70, 0.10);
             cameraTheta += 0.01;
         }
         camera.position.x = targetLookAt.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta) + shakeX;
@@ -9309,7 +9309,7 @@ function createArmyFactory(x,z,ghost=false){
             // Desktop mouse keeps the original camera rotate behavior.
             if (hasMoved) {
                 cameraTheta -= deltaX * (window.cameraSensitivity || 0.0048);
-                cameraPhi = Math.max(0.2, Math.min(Math.PI / 2 - 0.05, cameraPhi - deltaY * (window.cameraSensitivity || 0.0048)));
+                cameraPhi = Math.max(1.00, Math.min(1.38, cameraPhi - deltaY * (window.cameraSensitivity || 0.0020)));
             }
             previousTouchX = e.clientX;
             previousTouchY = e.clientY;
@@ -12499,7 +12499,7 @@ function createArmyFactory(x,z,ghost=false){
     document.getElementById('ui-overlay').style.display='block';
     playSound('buy');
     let playerCampX=CORNER_OFFSET,playerCampZ=CORNER_OFFSET,terrainH=getTerrainHeight(playerCampX,playerCampZ);
-    targetLookAt.set(playerCampX,terrainH,playerCampZ);targetCameraRadius=110;cameraPhi=Math.PI/3.8;cameraRadius=targetCameraRadius;updateCameraPosition();
+    targetLookAt.set(playerCampX,terrainH,playerCampZ);targetCameraRadius=125;cameraPhi=1.18;cameraRadius=targetCameraRadius;updateCameraPosition();
     showFloatingMsg('⚔ Battle started!');
   };
   /* Factory accent follows selected enemy color instead of fixed red. */
@@ -13815,14 +13815,14 @@ document.addEventListener('DOMContentLoaded',function(){
 </style>
 
 <script id="camera-sensitivity-runtime">
-window.cameraSensitivity=0.0031;window.cameraPanSensitivity=0.50;window.cameraZoomSensitivity=0.40;window.cameraWheelSensitivity=0.14;
+window.cameraSensitivity=0.0027;window.cameraPanSensitivity=0.44;window.cameraZoomSensitivity=0.34;window.cameraWheelSensitivity=0.12;
 window.updateCameraSensitivity=function(v){
   const n=Math.max(20,Math.min(80,Number(v)||50));
   const t=(n-20)/60;
-  window.cameraSensitivity=0.0022+t*0.0022;
-  window.cameraPanSensitivity=0.42+t*0.18;
-  window.cameraZoomSensitivity=0.32+t*0.16;
-  window.cameraWheelSensitivity=0.10+t*0.08;
+  window.cameraSensitivity=0.0018+t*0.0018;
+  window.cameraPanSensitivity=0.34+t*0.16;
+  window.cameraZoomSensitivity=0.28+t*0.14;
+  window.cameraWheelSensitivity=0.08+t*0.06;
   const out=document.getElementById('camera-sens-val');if(out)out.textContent=n+'%';
 };
 </script>
@@ -13932,7 +13932,7 @@ window.updateCameraSensitivity=function(v){
     const u=document.getElementById('ui-overlay');if(u)u.style.display='block';
     try{playSound('buy');}catch(e){}
     let px=CORNER_OFFSET,pz=CORNER_OFFSET,th=getTerrainHeight(px,pz);
-    targetLookAt.set(px,th,pz);targetCameraRadius=110;cameraPhi=Math.PI/3.8;cameraRadius=targetCameraRadius;updateCameraPosition();
+    targetLookAt.set(px,th,pz);targetCameraRadius=125;cameraPhi=1.18;cameraRadius=targetCameraRadius;updateCameraPosition();
     showFloatingMsg('⚔ Battle started!');
   };
 })();
