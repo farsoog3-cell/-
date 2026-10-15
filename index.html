@@ -2919,7 +2919,7 @@
 
     let cameraRadius = 280, targetCameraRadius = 280;
     let cameraTheta = Math.PI / 4;
-    let cameraPhi = 1.12;
+    let cameraPhi = 1.18;
     let targetLookAt = new THREE.Vector3(0, 0, 0);
 
     let shakeTimer = 0;
@@ -4149,7 +4149,7 @@ function beginConfiguredGame(){
     playSound('buy');
     let playerCampX=CORNER_OFFSET, playerCampZ=CORNER_OFFSET, terrainH=getTerrainHeight(playerCampX,playerCampZ);
     targetLookAt.set(playerCampX,terrainH,playerCampZ);
-    targetCameraRadius=125; cameraPhi=1.12; cameraRadius=targetCameraRadius; updateCameraPosition();
+    targetCameraRadius=125; cameraPhi=1.18; cameraRadius=targetCameraRadius; updateCameraPosition();
     showFloatingMsg(`⚔ Battle started! Bot strength: ${{weak:'WEAK',medium:'MEDIUM',strong:'STRONG'}}[battleConfig.bot]||'MEDIUM'}.`);
 }
 function startGame(){openBattleSetup();}
@@ -12499,7 +12499,7 @@ function createArmyFactory(x,z,ghost=false){
     document.getElementById('ui-overlay').style.display='block';
     playSound('buy');
     let playerCampX=CORNER_OFFSET,playerCampZ=CORNER_OFFSET,terrainH=getTerrainHeight(playerCampX,playerCampZ);
-    targetLookAt.set(playerCampX,terrainH,playerCampZ);targetCameraRadius=125;cameraPhi=1.12;cameraRadius=targetCameraRadius;updateCameraPosition();
+    targetLookAt.set(playerCampX,terrainH,playerCampZ);targetCameraRadius=125;cameraPhi=1.18;cameraRadius=targetCameraRadius;updateCameraPosition();
     showFloatingMsg('⚔ Battle started!');
   };
   /* Factory accent follows selected enemy color instead of fixed red. */
@@ -13932,7 +13932,7 @@ window.updateCameraSensitivity=function(v){
     const u=document.getElementById('ui-overlay');if(u)u.style.display='block';
     try{playSound('buy');}catch(e){}
     let px=CORNER_OFFSET,pz=CORNER_OFFSET,th=getTerrainHeight(px,pz);
-    targetLookAt.set(px,th,pz);targetCameraRadius=125;cameraPhi=1.12;cameraRadius=targetCameraRadius;updateCameraPosition();
+    targetLookAt.set(px,th,pz);targetCameraRadius=125;cameraPhi=1.18;cameraRadius=targetCameraRadius;updateCameraPosition();
     showFloatingMsg('⚔ Battle started!');
   };
 })();
@@ -13965,12 +13965,7 @@ window.updateCameraSensitivity=function(v){
 .room-field label,.room-field .field-label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}
 .room-field select,.room-field input{width:100%;min-height:36px;background:#0d110b;color:#fff;border:2px solid #050605;border-radius:0;padding:5px;font-size:14px}
 .room-button{width:100%;min-height:42px;background:linear-gradient(#6e795d,#394331);color:white;border:2px solid #050605;box-shadow:inset 0 0 0 1px #899174,0 3px 0 #050605;border-radius:1px;font-weight:900;font-size:14px;margin-top:8px}
-.room-button:disabled{opacity:.45;filter:saturate(.55)}
-.room-actions{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;align-items:stretch;margin-top:4px}
-.room-actions .room-button{margin-top:0;min-width:0;min-height:42px;padding:5px 7px;white-space:normal;line-height:1.2}
-.room-ready-action{background:linear-gradient(#7d8d63,#465536)!important}
-.room-start-action{background:linear-gradient(#b08b3c,#66501e)!important}
-.room-cancel-action{background:linear-gradient(#656b65,#303530)!important}
+.room-button:disabled{opacity:.45}
 .room-swatches{display:flex;gap:7px;flex-wrap:wrap}
 .room-swatch{width:29px;height:29px;border:2px solid #080a07;box-shadow:inset 0 0 0 1px #ffffff70}
 .room-swatch.active{outline:2px solid white;outline-offset:1px}
@@ -13989,8 +13984,6 @@ window.updateCameraSensitivity=function(v){
 .room-image-tools label{font-size:10px;text-align:center;padding:7px 3px;background:#20271c;border:1px solid #080a07}
 .room-image-tools input{display:none}
 @media(max-height:650px){.room-panel{max-height:96dvh;padding:8px}.room-title{margin-bottom:5px;padding:5px}.room-row{margin:5px 0}.room-field{padding:6px}.room-button{min-height:36px;margin-top:5px}}
-@media(orientation:landscape){#room-setup-overlay .room-panel{width:min(96vw,900px)}#room-setup-overlay .room-actions{grid-template-columns:1fr 1.2fr 1fr}}
-@media(max-width:520px) and (orientation:portrait){.room-actions{grid-template-columns:1fr}.room-actions .room-button{min-height:38px}}
 </style>
 <div id="room-setup-overlay" aria-hidden="true">
  <div class="room-panel">
@@ -14005,12 +13998,10 @@ window.updateCameraSensitivity=function(v){
    <div class="room-field"><label for="room-money">المال الابتدائي</label><select id="room-money"><option value="">اختر المال</option><option value="100">100</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
   </div>
   <div class="room-field"><span class="field-label">لون علم اللاعب</span><div class="room-swatches" id="player-swatches"></div><div class="room-status" id="player-ready-status">اختر لون العلم</div></div>
+  <button class="room-button" id="room-ready-btn">جاهز</button>
   <div class="room-status" id="room-main-status">أكمل الخيارات ثم اضغط جاهز</div>
-  <div class="room-actions">
-   <button class="room-button room-ready-action" id="room-ready-btn">جاهز</button>
-   <button class="room-button room-start-action" id="room-start-btn" disabled>بدء اللعب</button>
-   <button class="room-button room-cancel-action" id="room-cancel-btn">رجوع للقائمة</button>
-  </div>
+  <button class="room-button" id="room-start-btn" disabled>بدء اللعب</button>
+  <button class="room-button" id="room-cancel-btn">رجوع للقائمة</button>
   <div class="room-field" style="margin-top:10px"><span class="field-label">صور التحميل التلقائية من مجلد images (يمكن استبدالها من هنا)</span><div class="room-image-tools">
    <label>الصورة 1<input type="file" accept="image/*" id="room-image-1"></label>
    <label>الصورة 2<input type="file" accept="image/*" id="room-image-2"></label>
@@ -14055,7 +14046,7 @@ window.updateCameraSensitivity=function(v){
   const botOn=botEnabled.value==='yes';
   if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerColorName=colors.find(c=>c[1]===chosen.playerColor)?.[0]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyColorName=colors.find(c=>c[1]===chosen.botColor)?.[0]||'BOT';battleConfig.bot='medium';}else{battleConfig.bot='weak';}}
   $('room-setup-overlay').classList.remove('show');$('room-loading-overlay').classList.add('show');$('room-loading-overlay').setAttribute('aria-hidden','false');
-  let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='جاري دخول القوات... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
+  let progress=0;showSlide();const timer=setInterval(()=>{progress=Math.min(100,progress+2);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},45);
  };
  // Replace the two legacy buttons and remove the old globe intro permanently.
  const start=$('start-btn'),sound=$('sound-settings-btn');
@@ -14120,172 +14111,7 @@ window.updateCameraSensitivity=function(v){
 <!-- صوت الترحيب الخارجي: ضع الملف في sounds/intro-voice.mp3 -->
 <audio id="intro-voice-audio" src="sounds/intro-voice.mp3" preload="auto" playsinline></audio>
 </body>
-
-<style id="mobile-landscape-room-fix">
-/* واجهة الغرفة مصممة للوضع الأفقي وتستوعب الشاشات القصيرة */
-@media (orientation: landscape) {
-  #room-setup-overlay,#room-loading-overlay { padding: max(5px,1vh) max(8px,1vw); }
-  #room-setup-overlay .room-panel {
-    width:min(94vw,900px)!important; max-width:900px!important;
-    max-height:96dvh!important; padding:clamp(6px,1.1vw,12px)!important;
-    overflow-y:auto!important; overscroll-behavior:contain;
-  }
-  #room-setup-overlay .room-title {font-size:clamp(13px,2.1vh,18px)!important;margin-bottom:5px!important;padding:5px!important}
-  #room-setup-overlay .room-row {grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:5px 0}
-  #room-setup-overlay .room-field {padding:clamp(4px,.8vh,8px)!important}
-  #room-setup-overlay .room-field label,#room-setup-overlay .room-field .field-label {font-size:clamp(10px,1.7vh,13px)!important;margin-bottom:3px}
-  #room-setup-overlay .room-field select,#room-setup-overlay .room-field input {min-height:30px!important;font-size:12px!important;padding:3px 5px!important}
-  #room-setup-overlay .room-swatch {width:clamp(20px,4vh,29px)!important;height:clamp(20px,4vh,29px)!important}
-  #room-setup-overlay .room-status {font-size:clamp(10px,1.6vh,13px)!important;padding:3px!important}
-  #room-setup-overlay .room-button {min-height:clamp(30px,5.5vh,40px)!important;margin-top:4px!important;font-size:clamp(11px,1.8vh,14px)!important}
-}
-@media (orientation: landscape) and (max-height:420px) {
-  #room-setup-overlay .room-panel {max-height:98dvh!important;padding:4px!important}
-  #room-setup-overlay .room-title {padding:3px!important;margin-bottom:2px!important}
-  #room-setup-overlay .room-row {margin:2px 0!important;gap:4px!important}
-  #room-setup-overlay .room-field {padding:3px!important}
-  #room-setup-overlay .room-field select,#room-setup-overlay .room-field input {min-height:25px!important}
-  #room-setup-overlay .room-button {min-height:26px!important;margin-top:2px!important}
-}
-</style>
-<script id="mobile-landscape-fullscreen">
-(function(){
-  let attempted=false;
-  async function enterLandscape(){
-    const root=document.documentElement;
-    try {
-      if (!document.fullscreenElement && root.requestFullscreen) {
-        await root.requestFullscreen({navigationUI:'hide'});
-      }
-    } catch(e) {}
-    try {
-      if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
-    } catch(e) {
-      /* Orientation locking is restricted by some mobile browsers; retry after the first tap. */
-    }
-    document.documentElement.classList.add('landscape-requested');
-  }
-  function firstAttempt(){
-    if(attempted) return;
-    attempted=true;
-    enterLandscape();
-  }
-  /* Try immediately; if the browser requires a user gesture, retry on the first touch/click. */
-  document.addEventListener('DOMContentLoaded',firstAttempt,{once:true});
-  window.addEventListener('load',firstAttempt,{once:true});
-  document.addEventListener('pointerdown',function(){enterLandscape();},{once:true,passive:true});
-  document.addEventListener('touchend',function(){enterLandscape();},{once:true,passive:true});
-  document.addEventListener('fullscreenchange',function(){
-    if(document.fullscreenElement && screen.orientation && screen.orientation.lock){
-      screen.orientation.lock('landscape').catch(function(){});
-    }
-  });
-  window.addEventListener('orientationchange',function(){window.dispatchEvent(new Event('resize'));});
-})();
-</script>
-
-
-<style id="requested-camera-hud-layout-fix">
-/* كاميرا أكثر ميلاً للأرض، مع حساسية لمس متوازنة */
-#construction-bar{padding-left:86px!important;}
-#minimap-container{
-  position:absolute!important;left:7px!important;right:auto!important;top:50%!important;bottom:auto!important;
-  transform:translateY(-50%)!important;width:68px!important;height:68px!important;min-width:68px!important;
-  border-radius:8px!important;border:1px solid rgba(164,190,137,.85)!important;
-  background:#10170f!important;box-shadow:0 2px 8px rgba(0,0,0,.8),inset 0 0 0 1px rgba(255,255,255,.08)!important;
-  z-index:5!important;overflow:hidden!important;
-}
-#minimap-canvas{width:100%!important;height:100%!important;display:block!important;}
-#minimap-container .minimap-title{display:none!important;}
-/* إخفاء التعليمات/النصوص القديمة أسفل الخريطة المصغرة */
-#minimap-instructions,#minimap-hint,.minimap-instructions,.minimap-hint,[data-minimap-instructions],
-#minimap-tools .minimap-instructions,#minimap-tools .minimap-hint{display:none!important;}
-/* زر بيع حديث واضح، بلون نحاسي عسكري */
-#sell-building-btn{
-  position:absolute!important;top:-38px!important;left:8px!important;right:auto!important;bottom:auto!important;
-  min-width:104px!important;height:32px!important;padding:4px 10px!important;box-sizing:border-box!important;
-  display:none;border:1px solid #d8a85c!important;border-radius:7px!important;
-  background:linear-gradient(180deg,#7e5424,#382512)!important;color:#fff3d0!important;
-  font:900 11px/1.2 system-ui,sans-serif!important;letter-spacing:.1px!important;
-  box-shadow:0 3px 9px #0009,inset 0 1px #ffffff35!important;text-shadow:0 1px 2px #000!important;
-}
-#sell-building-btn:not(:disabled):active{transform:translateY(1px) scale(.98)!important;filter:brightness(1.18)!important;}
-#sell-building-btn:disabled{opacity:.5!important;filter:grayscale(.5)!important;}
-/* شاشة الانتظار ودخول المعركة تبقى واضحة مع شريط تقدم ظاهر */
-#room-loading-overlay{z-index:20000!important;box-sizing:border-box!important;padding:clamp(12px,3vw,28px)!important;gap:clamp(8px,2vh,16px)!important;}
-#room-loading-overlay.show{display:flex!important;}
-#room-loading-overlay .room-slideshow{width:min(82vw,680px)!important;height:min(45vh,300px)!important;max-height:42dvh!important;border-radius:12px!important;overflow:hidden!important;}
-#room-load-label{font-size:clamp(12px,2.5vw,18px)!important;text-align:center!important;}
-#room-loading-overlay .room-loading-track{width:min(82vw,680px)!important;height:10px!important;flex:0 0 10px!important;border-radius:10px!important;overflow:hidden!important;border:1px solid #7b8966!important;background:#090d08!important;}
-#room-loading-fill{height:100%!important;background:linear-gradient(90deg,#4b7e32,#b6d47a)!important;box-shadow:0 0 10px #8ab65b88!important;transition:width .12s linear!important;}
-@media(max-width:700px){
- #construction-bar{width:calc(100vw - 8px)!important;max-width:none!important;min-height:78px!important;height:auto!important;max-height:27dvh!important;overflow-x:auto!important;overflow-y:hidden!important;gap:4px!important;padding:5px 5px 5px 78px!important;scrollbar-width:thin!important;}
- #minimap-container{left:5px!important;width:64px!important;height:64px!important;min-width:64px!important;}
- #construction-bar .build-title{width:48px!important;flex:0 0 48px!important;min-width:48px!important;height:64px!important;}
- #construction-bar .build-title-icon{font-size:17px!important;}
- #construction-bar .build-title b{font-size:7px!important;line-height:9px!important;}
- #construction-bar .build-title small{font-size:6px!important;line-height:7px!important;}
- #construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .factory-unit-card,#construction-bar .barracks-build-card,#construction-bar .barracks-unit-card{height:64px!important;min-height:64px!important;max-height:64px!important;min-width:116px!important;max-width:150px!important;flex:0 0 132px!important;padding:3px!important;gap:4px!important;}
- #construction-bar .build-preview,#construction-bar .factory-preview,#construction-bar .factory-unit-preview,#construction-bar .barracks-preview,#construction-bar .barracks-unit-preview{width:42px!important;height:45px!important;flex:0 0 42px!important;min-width:42px!important;}
- #construction-bar .build-name,#construction-bar .factory-unit-name{font-size:7px!important;white-space:normal!important;line-height:9px!important;}
- #construction-bar .build-desc,#construction-bar .factory-unit-time,#construction-bar .build-hint{font-size:6px!important;white-space:normal!important;line-height:8px!important;}
- #construction-bar .build-price,#construction-bar .factory-unit-price{font-size:8px!important;}
- #sell-building-btn{top:-34px!important;left:4px!important;min-width:92px!important;height:28px!important;font-size:10px!important;}
-}
-@media(max-height:440px) and (orientation:landscape){
- #construction-bar{bottom:3px!important;min-height:68px!important;max-height:22dvh!important;padding-top:3px!important;padding-bottom:3px!important;}
- #construction-bar .build-title,#construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .factory-unit-card,#construction-bar .barracks-build-card,#construction-bar .barracks-unit-card{height:56px!important;min-height:56px!important;max-height:56px!important;}
- #minimap-container{width:52px!important;height:52px!important;min-width:52px!important;}
- #construction-bar{padding-left:62px!important;}
- #construction-bar .build-preview,#construction-bar .factory-preview,#construction-bar .factory-unit-preview,#construction-bar .barracks-preview,#construction-bar .barracks-unit-preview{height:38px!important;}
- #sell-building-btn{top:-30px!important;height:25px!important;}
- #room-loading-overlay .room-slideshow{height:32dvh!important;max-height:32dvh!important;}
-}
-@media(orientation:portrait){
- #construction-bar{max-width:calc(100vw - 6px)!important;}
- #room-loading-overlay .room-slideshow{width:90vw!important;height:30dvh!important;max-height:30dvh!important;}
-}
-</style>
-<script id="requested-camera-angle-and-minimap-placement">
-(function(){
-  function tuneCamera(){
-    try{
-      // Lower polar angle means the camera looks down at the battlefield a little more.
-      if(typeof cameraPhi==='number') cameraPhi=Math.min(cameraPhi,0.96);
-      if(typeof cameraRadius==='number' && typeof targetCameraRadius==='number') cameraRadius=targetCameraRadius;
-      if(typeof updateCameraPosition==='function') updateCameraPosition();
-    }catch(e){}
-  }
-  function dockMinimap(){
-    const bar=document.getElementById('construction-bar');
-    const map=document.getElementById('minimap-container');
-    if(bar&&map&&map.parentElement!==bar) bar.insertBefore(map,bar.firstChild);
-    // Keep the map available when reconnaissance is active; preserve the game's own visibility logic.
-    const tools=document.getElementById('minimap-tools');
-    if(tools){
-      tools.querySelectorAll('.minimap-instructions,.minimap-hint,[data-minimap-instructions]').forEach(el=>el.remove());
-    }
-  }
-  function apply(){dockMinimap();tuneCamera();}
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',apply,{once:true}); else apply();
-  window.addEventListener('resize',dockMinimap,{passive:true});
-  // More natural touch sensitivity: less jumpy panning/zooming, with the angle retained.
-  const oldUpdate=window.updateCameraSensitivity;
-  window.updateCameraSensitivity=function(v){
-    if(typeof oldUpdate==='function') oldUpdate(v);
-    const n=Math.max(20,Math.min(80,Number(v)||40));
-    const t=(n-20)/60;
-    window.cameraSensitivity=0.0017+t*0.0015;
-    window.cameraPanSensitivity=0.30+t*0.12;
-    window.cameraZoomSensitivity=0.24+t*0.12;
-    window.cameraWheelSensitivity=0.07+t*0.05;
-  };
-  // Slightly lower angle on initial battlefield resets without altering camera movement rules.
-  const oldBegin=window.beginConfiguredGame;
-  if(typeof oldBegin==='function') window.beginConfiguredGame=function(){const r=oldBegin.apply(this,arguments);setTimeout(()=>{try{cameraPhi=Math.min(cameraPhi,0.96);updateCameraPosition();}catch(e){}dockMinimap();},80);return r;};
-})();
-</script>
-
+</html>
 
 
 <style id="fix-command-menu-stays-visible-in-battle">
@@ -14572,317 +14398,3 @@ body.battle-active #start-menu {
 })();
 </script>
 
-
-<style id="room-setup-all-screens-final-fix">
-/* ملاءمة نافذة إنشاء الغرفة لكل المقاسات مع إبقاء أزرار الإجراءات ظاهرة */
-#room-setup-overlay {
-  box-sizing:border-box !important;
-  padding:clamp(3px,1vh,10px) !important;
-  align-items:center !important;
-  justify-content:center !important;
-  overflow:hidden !important;
-}
-#room-setup-overlay .room-panel {
-  box-sizing:border-box !important;
-  width:min(96vw,900px) !important;
-  max-width:900px !important;
-  max-height:calc(100dvh - 8px) !important;
-  min-height:0 !important;
-  padding:clamp(5px,1vw,12px) !important;
-  overflow-x:hidden !important;
-  overflow-y:auto !important;
-  overscroll-behavior:contain !important;
-  scrollbar-width:thin;
-  display:flex !important;
-  flex-direction:column !important;
-  gap:clamp(3px,.6vh,7px) !important;
-}
-#room-setup-overlay .room-title { flex:0 0 auto !important; margin:0 !important; padding:clamp(3px,.7vh,7px) !important; font-size:clamp(12px,2.1vh,18px) !important; }
-#room-setup-overlay .room-row { flex:0 0 auto !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:clamp(4px,.8vw,8px) !important; margin:0 !important; }
-#room-setup-overlay .room-field { box-sizing:border-box !important; min-width:0 !important; flex:0 0 auto !important; padding:clamp(4px,.8vh,8px) !important; margin:0 !important; }
-#room-setup-overlay .room-field label,
-#room-setup-overlay .room-field .field-label { font-size:clamp(10px,1.65vh,13px) !important; margin:0 0 3px !important; }
-#room-setup-overlay .room-field select,
-#room-setup-overlay .room-field input { box-sizing:border-box !important; width:100% !important; min-width:0 !important; min-height:clamp(26px,4.4vh,36px) !important; font-size:clamp(11px,1.7vh,14px) !important; }
-#room-setup-overlay .room-swatches { gap:clamp(4px,.8vw,8px) !important; }
-#room-setup-overlay .room-swatch { flex:0 0 auto !important; width:clamp(20px,4vh,29px) !important; height:clamp(20px,4vh,29px) !important; padding:0 !important; }
-#room-setup-overlay .room-status { flex:0 0 auto !important; margin:0 !important; padding:clamp(2px,.5vh,5px) !important; font-size:clamp(10px,1.55vh,13px) !important; line-height:1.2 !important; }
-#room-setup-overlay .room-actions {
-  position:sticky !important; bottom:0 !important; z-index:3 !important;
-  flex:0 0 auto !important; display:grid !important;
-  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-  gap:clamp(4px,.8vw,9px) !important; margin:0 !important;
-  padding:clamp(4px,.7vh,7px) 0 2px !important;
-  background:linear-gradient(180deg,rgba(28,34,23,.88),#20271c 35%) !important;
-}
-#room-setup-overlay .room-actions .room-button {
-  box-sizing:border-box !important; width:100% !important; min-width:0 !important;
-  min-height:clamp(32px,5.2vh,44px) !important; height:auto !important;
-  margin:0 !important; padding:clamp(4px,.6vh,7px) 3px !important;
-  font-size:clamp(10px,1.8vh,14px) !important; line-height:1.15 !important;
-  white-space:normal !important; overflow-wrap:anywhere !important;
-}
-#room-setup-overlay .room-image-tools { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
-#room-setup-overlay .room-image-tools label { min-width:0 !important; overflow-wrap:anywhere !important; }
-@media (orientation:portrait) and (max-width:600px) {
-  #room-setup-overlay .room-panel { width:min(96vw,520px) !important; }
-  #room-setup-overlay .room-actions { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
-  #room-setup-overlay .room-actions .room-button { font-size:clamp(9px,2.6vw,12px) !important; }
-}
-@media (orientation:landscape) and (max-height:500px) {
-  #room-setup-overlay { padding:2px 6px !important; }
-  #room-setup-overlay .room-panel { width:min(98vw,1000px) !important; max-height:98dvh !important; padding:3px 6px !important; gap:2px !important; }
-  #room-setup-overlay .room-title { padding:2px !important; font-size:12px !important; }
-  #room-setup-overlay .room-field { padding:3px 5px !important; }
-  #room-setup-overlay .room-field select,#room-setup-overlay .room-field input { min-height:24px !important; }
-  #room-setup-overlay .room-swatch { width:20px !important; height:20px !important; }
-  #room-setup-overlay .room-actions .room-button { min-height:28px !important; padding:3px !important; }
-}
-</style>
-
-
-<style id="minimap-outside-bar-and-sell-button-layout">
-/* الخريطة المصغرة مستقلة بجانب شريط القيادة، وليست جزءاً من داخله */
-#minimap-container{
-  position:fixed!important;left:8px!important;right:auto!important;top:auto!important;bottom:8px!important;
-  transform:none!important;width:112px!important;height:112px!important;min-width:112px!important;min-height:112px!important;
-  box-sizing:border-box!important;padding:3px!important;border-radius:9px!important;
-  border:2px solid #657653!important;background:#11170f!important;
-  box-shadow:0 4px 16px #000c,inset 0 0 0 1px #d2e0ad38!important;z-index:60!important;overflow:hidden!important;
-}
-#minimap-canvas{width:100%!important;height:100%!important;display:block!important;object-fit:contain!important;}
-/* إزاحة الشريط إلى يمين الخريطة حتى لا يتداخلا */
-#construction-bar{
-  left:128px!important;right:8px!important;transform:none!important;
-  width:auto!important;max-width:none!important;box-sizing:border-box!important;
-  padding-left:6px!important;min-width:0!important;
-}
-#construction-bar #sell-building-btn{
-  position:fixed!important;left:128px!important;right:auto!important;top:auto!important;bottom:calc(100% + 9px)!important;
-  transform:none!important;z-index:65!important;min-width:116px!important;width:116px!important;max-width:116px!important;
-  height:38px!important;min-height:38px!important;padding:5px 8px!important;box-sizing:border-box!important;
-  display:none;align-items:center!important;justify-content:center!important;white-space:nowrap!important;
-  border:2px solid #f0c36c!important;border-radius:8px!important;
-  background:linear-gradient(180deg,#9b6126,#4c2c12)!important;color:#fff4d7!important;
-  font:900 12px/1.1 system-ui,Tahoma,sans-serif!important;
-  box-shadow:0 3px 10px #000b,inset 0 1px #ffffff55,inset 0 -2px #0005!important;
-  text-shadow:0 1px 2px #000!important;
-}
-#construction-bar #sell-building-btn:not(:disabled):active{transform:translateY(1px) scale(.98)!important;filter:brightness(1.15)!important;}
-@media(max-width:900px){
- #minimap-container{left:6px!important;bottom:6px!important;width:92px!important;height:92px!important;min-width:92px!important;min-height:92px!important;}
- #construction-bar{left:106px!important;right:6px!important;bottom:6px!important;gap:4px!important;}
- #construction-bar #sell-building-btn{left:106px!important;bottom:calc(100% + 7px)!important;width:104px!important;min-width:104px!important;max-width:104px!important;height:34px!important;min-height:34px!important;font-size:11px!important;}
-}
-@media(max-width:560px){
- #minimap-container{left:4px!important;bottom:4px!important;width:76px!important;height:76px!important;min-width:76px!important;min-height:76px!important;padding:2px!important;}
- #construction-bar{left:86px!important;right:4px!important;bottom:4px!important;padding:4px!important;gap:3px!important;}
- #construction-bar #sell-building-btn{left:86px!important;bottom:calc(100% + 6px)!important;width:94px!important;min-width:94px!important;max-width:94px!important;height:31px!important;min-height:31px!important;font-size:10px!important;padding:3px!important;}
-}
-@media(max-height:440px) and (orientation:landscape){
- #minimap-container{width:70px!important;height:70px!important;min-width:70px!important;min-height:70px!important;bottom:4px!important;left:4px!important;}
- #construction-bar{left:80px!important;right:4px!important;bottom:4px!important;min-height:58px!important;max-height:23dvh!important;}
- #construction-bar #sell-building-btn{left:80px!important;bottom:calc(100% + 4px)!important;height:27px!important;min-height:27px!important;width:88px!important;min-width:88px!important;max-width:88px!important;font-size:9px!important;}
-}
-@media(orientation:portrait){
- #minimap-container{width:70px!important;height:70px!important;min-width:70px!important;min-height:70px!important;left:4px!important;bottom:4px!important;}
- #construction-bar{left:78px!important;right:4px!important;bottom:4px!important;max-width:none!important;}
- #construction-bar #sell-building-btn{left:78px!important;bottom:calc(100% + 5px)!important;width:86px!important;min-width:86px!important;max-width:86px!important;height:29px!important;min-height:29px!important;font-size:9px!important;}
-}
-</style>
-<script id="keep-minimap-next-to-command-bar">
-(function(){
- function moveMapBesideBar(){
-  const map=document.getElementById('minimap-container');
-  if(!map)return;
-  /* الخريطة تكون شقيقة للشريط داخل الحاوية الرئيسية، لا عنصراً داخله */
-  const bar=document.getElementById('construction-bar');
-  if(bar && map.parentElement===bar){
-    const parent=bar.parentElement;
-    if(parent) parent.insertBefore(map,bar);
-    else document.body.appendChild(map);
-  }
-  if(map.parentElement===bar){document.body.appendChild(map);}
- }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',moveMapBesideBar,{once:true});else moveMapBesideBar();
- window.addEventListener('resize',moveMapBesideBar,{passive:true});
- setTimeout(moveMapBesideBar,100);setTimeout(moveMapBesideBar,500);
-})();
-</script>
-
-<style id="final-minimap-build-buttons-loading-fix">
-/* خريطة أكبر ومستقلة تماماً بجانب شريط القيادة */
-#minimap-container{
- position:fixed!important;left:8px!important;right:auto!important;top:auto!important;bottom:8px!important;
- width:128px!important;height:128px!important;min-width:128px!important;min-height:128px!important;
- transform:none!important;box-sizing:border-box!important;padding:3px!important;z-index:90!important;
- border:2px solid #7e9363!important;border-radius:10px!important;background:#10170e!important;
- box-shadow:0 4px 16px #000c,inset 0 0 0 1px #d2e0ad38!important;overflow:hidden!important;
-}
-#minimap-canvas{display:block!important;width:100%!important;height:100%!important;}
-#construction-bar{
- position:fixed!important;left:146px!important;right:8px!important;bottom:8px!important;top:auto!important;
- width:auto!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important;
- padding:5px!important;gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;
- scrollbar-width:thin!important;z-index:55!important;
-}
-/* اجعل خيارات بناء المصنع ومعسكر الجنود ظاهرة داخل شريط البناء المفتوح */
-#construction-bar.open #factory-build-card,
-#construction-bar.open #barracks-build-card,
-#construction-bar #factory-build-card,
-#construction-bar #barracks-build-card{
- display:flex!important;visibility:visible!important;opacity:1!important;flex-shrink:0!important;
-}
-#construction-bar #factory-build-card,#construction-bar #barracks-build-card{
- min-width:132px!important;flex:0 0 132px!important;min-height:60px!important;
-}
-/* زر البيع ظاهر دائماً بمكان ثابت وواضح؛ تبقى آلية البيع الأصلية كما هي */
-#sell-building-btn,#construction-bar #sell-building-btn{
- display:flex!important;visibility:visible!important;opacity:1!important;align-items:center!important;justify-content:center!important;
- position:fixed!important;left:146px!important;right:auto!important;top:auto!important;bottom:calc(100% + 8px)!important;
- z-index:100!important;width:120px!important;min-width:120px!important;max-width:120px!important;
- height:38px!important;min-height:38px!important;padding:5px 8px!important;box-sizing:border-box!important;
- border:2px solid #f0c36c!important;border-radius:9px!important;
- background:linear-gradient(180deg,#9b6126,#4c2c12)!important;color:#fff4d7!important;
- font:900 12px/1.1 system-ui,Tahoma,sans-serif!important;white-space:nowrap!important;
- box-shadow:0 3px 10px #000b,inset 0 1px #ffffff55,inset 0 -2px #0005!important;
-}
-#sell-building-btn:disabled{opacity:.65!important;filter:grayscale(.25)!important;}
-#room-loading-overlay{z-index:20000!important;position:fixed!important;inset:0!important;display:none;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:14px!important;background:#080b07!important;background-image:linear-gradient(180deg,rgba(0,0,0,.3),rgba(0,0,0,.65)),url('images/loading1.jpg')!important;background-size:cover!important;background-position:center!important;}
-#room-loading-overlay.show{display:flex!important;}
-#room-loading-overlay .room-slideshow{width:min(84vw,720px)!important;height:min(48dvh,320px)!important;max-height:48dvh!important;border:2px solid #68794e!important;box-shadow:0 8px 28px #000b!important;}
-#room-loading-overlay .room-loading-track{width:min(84vw,720px)!important;height:12px!important;flex:0 0 12px!important;background:#090d08!important;border:1px solid #9aaa7a!important;}
-#room-loading-fill{height:100%!important;background:linear-gradient(90deg,#47752e,#c1d78b)!important;}
-@media(max-width:900px){
- #minimap-container{left:6px!important;bottom:6px!important;width:104px!important;height:104px!important;min-width:104px!important;min-height:104px!important;}
- #construction-bar{left:120px!important;right:6px!important;bottom:6px!important;}
- #construction-bar #sell-building-btn,#sell-building-btn{left:120px!important;width:112px!important;min-width:112px!important;max-width:112px!important;height:34px!important;min-height:34px!important;font-size:11px!important;}
-}
-@media(max-width:560px){
- #minimap-container{left:4px!important;bottom:4px!important;width:88px!important;height:88px!important;min-width:88px!important;min-height:88px!important;}
- #construction-bar{left:100px!important;right:4px!important;bottom:4px!important;gap:3px!important;padding:3px!important;}
- #construction-bar #sell-building-btn,#sell-building-btn{left:100px!important;width:100px!important;min-width:100px!important;max-width:100px!important;height:31px!important;min-height:31px!important;font-size:10px!important;}
- #construction-bar #factory-build-card,#construction-bar #barracks-build-card{min-width:118px!important;flex-basis:118px!important;}
-}
-@media(max-height:440px) and (orientation:landscape){
- #minimap-container{left:4px!important;bottom:4px!important;width:82px!important;height:82px!important;min-width:82px!important;min-height:82px!important;}
- #construction-bar{left:94px!important;right:4px!important;bottom:4px!important;min-height:56px!important;max-height:25dvh!important;}
- #construction-bar #sell-building-btn,#sell-building-btn{left:94px!important;bottom:calc(100% + 4px)!important;width:92px!important;min-width:92px!important;max-width:92px!important;height:27px!important;min-height:27px!important;font-size:9px!important;}
- #room-loading-overlay .room-slideshow{height:35dvh!important;max-height:35dvh!important;}
-}
-</style>
-<script id="final-minimap-build-buttons-loading-runtime">
-(function(){
- function ensureHUD(){
-  const map=document.getElementById('minimap-container');
-  const bar=document.getElementById('construction-bar');
-  if(map&&map.parentElement===bar) document.body.appendChild(map);
-  if(bar){bar.style.setProperty('overflow-x','auto','important');bar.style.setProperty('overflow-y','hidden','important');}
-  const sell=document.getElementById('sell-building-btn');
-  if(sell){sell.style.removeProperty('display');sell.style.setProperty('display','flex','important');sell.style.setProperty('visibility','visible','important');}
- }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureHUD,{once:true});else ensureHUD();
- window.addEventListener('resize',ensureHUD,{passive:true});
- setTimeout(ensureHUD,100);setTimeout(ensureHUD,500);setTimeout(ensureHUD,1500);
-})();
-</script>
-
-<style id="factory-barracks-selection-final-fix">
-/* عند تحديد المصنع: بطاقات الجيش فقط، بدون خيارات البناء */
-#construction-bar.factory-selected .build-title,
-#construction-bar.factory-selected .build-card,
-#construction-bar.factory-selected .factory-build-card,
-#construction-bar.factory-selected .barracks-build-card,
-#construction-bar.factory-selected .barracks-unit-card,
-#construction-bar.factory-selected .bar-unit-controls { display:none!important; }
-#construction-bar.factory-selected .factory-unit-card {
-  display:flex!important; visibility:visible!important; opacity:1!important;
-  flex:0 0 78px!important; width:78px!important; min-width:78px!important; max-width:78px!important;
-  height:66px!important; min-height:66px!important; max-height:66px!important;
-  align-items:center!important; justify-content:flex-start!important; flex-direction:column!important;
-  gap:2px!important; padding:3px!important; overflow:hidden!important;
-}
-#construction-bar.factory-selected .factory-unit-preview {
-  display:block!important; visibility:visible!important; width:48px!important; height:34px!important;
-  min-width:48px!important; flex:0 0 34px!important; zoom:1!important; margin:0 auto!important;
-}
-#construction-bar.factory-selected .factory-unit-preview .external-bar-image {display:block!important; visibility:visible!important; object-fit:contain!important; width:100%!important; height:100%!important;}
-#construction-bar.factory-selected .factory-unit-info {display:block!important; width:100%!important; height:auto!important; min-height:20px!important; overflow:visible!important; text-align:center!important;}
-#construction-bar.factory-selected .factory-unit-name {display:block!important; font-size:9px!important; line-height:11px!important; white-space:nowrap!important;}
-#construction-bar.factory-selected .factory-unit-price {display:block!important; position:static!important; font-size:9px!important; line-height:11px!important;}
-#construction-bar.factory-selected #factory-infantry-card {display:none!important;}
-
-/* عند تحديد معسكر الجنود: بطاقة الجندي فقط، بدون أي مبانٍ أو وحدات مصنع */
-#construction-bar.barracks-selected .build-title,
-#construction-bar.barracks-selected .build-card,
-#construction-bar.barracks-selected .factory-build-card,
-#construction-bar.barracks-selected .barracks-build-card,
-#construction-bar.barracks-selected .factory-unit-card,
-#construction-bar.barracks-selected .bar-unit-controls {display:none!important;}
-#construction-bar.barracks-selected #barracks-infantry-card {
-  display:flex!important; visibility:visible!important; opacity:1!important;
-  flex:0 0 88px!important; width:88px!important; min-width:88px!important; max-width:88px!important;
-  height:66px!important; min-height:66px!important; max-height:66px!important;
-  flex-direction:column!important; align-items:center!important; justify-content:flex-start!important;
-  gap:2px!important; padding:3px!important; overflow:hidden!important;
-}
-#construction-bar.barracks-selected .barracks-unit-preview {
-  display:block!important; visibility:visible!important; width:48px!important; height:34px!important;
-  min-width:48px!important; flex:0 0 34px!important; margin:0 auto!important;
-}
-#construction-bar.barracks-selected .barracks-unit-preview .external-bar-image {display:block!important; visibility:visible!important; object-fit:contain!important; width:100%!important; height:100%!important;}
-#construction-bar.barracks-selected .factory-unit-info {display:block!important; width:100%!important; height:auto!important; min-height:20px!important; overflow:visible!important; text-align:center!important;}
-#construction-bar.barracks-selected .factory-unit-name {display:block!important; font-size:9px!important; line-height:11px!important; white-space:nowrap!important;}
-#construction-bar.barracks-selected .factory-unit-price {display:block!important; position:static!important; font-size:9px!important; line-height:11px!important;}
-
-/* زر البيع لا يظهر إلا عند تحديد مصنع أو معسكر جنود تابع للاعب */
-#construction-bar #sell-building-btn {display:none!important;}
-#construction-bar.factory-selected #sell-building-btn,
-#construction-bar.barracks-selected #sell-building-btn {display:flex!important;}
-#construction-bar #sell-building-btn {left:146px!important; bottom:calc(100% + 8px)!important; z-index:100!important;}
-@media(max-width:900px){#construction-bar #sell-building-btn{left:120px!important;}}
-@media(max-width:560px){#construction-bar #sell-building-btn{left:100px!important;}}
-@media(max-height:440px) and (orientation:landscape){#construction-bar #sell-building-btn{left:94px!important;}}
-</style>
-<script id="factory-barracks-sell-visibility-runtime">
-(function(){
-  function syncSellButton(){
-    const bar=document.getElementById('construction-bar');
-    const sell=document.getElementById('sell-building-btn');
-    if(!bar||!sell)return;
-    const show=bar.classList.contains('factory-selected')||bar.classList.contains('barracks-selected');
-    sell.style.setProperty('display',show?'flex':'none','important');
-    sell.style.setProperty('visibility',show?'visible':'hidden','important');
-    sell.disabled=!show;
-  }
-  if(typeof window.updateConstructionBarForSelection==='function'){
-    const original=window.updateConstructionBarForSelection;
-    window.updateConstructionBarForSelection=function(){
-      const result=original.apply(this,arguments);
-      syncSellButton();
-      return result;
-    };
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncSellButton,{once:true});else syncSellButton();
-  window.addEventListener('resize',syncSellButton,{passive:true});
-  setTimeout(syncSellButton,100);setTimeout(syncSellButton,600);setTimeout(syncSellButton,1600);
-})();
-</script>
-
-
-<style id="restore-sell-button-inside-fixed-command-bar">
-/* إعادة زر البيع إلى مكانه الأصلي داخل شريط القيادة الثابت */
-#construction-bar #sell-building-btn{
-  position:relative!important; left:auto!important; right:auto!important; top:auto!important; bottom:auto!important;
-  transform:none!important; z-index:8!important; flex:0 0 auto!important; align-self:center!important;
-  width:clamp(70px,10vw,108px)!important; min-width:70px!important; max-width:108px!important;
-  height:auto!important; min-height:38px!important; padding:5px 7px!important; margin:0 3px!important;
-  box-sizing:border-box!important; white-space:nowrap!important;
-}
-#construction-bar.factory-selected #sell-building-btn,
-#construction-bar.barracks-selected #sell-building-btn{display:flex!important; visibility:visible!important;}
-#construction-bar:not(.factory-selected):not(.barracks-selected) #sell-building-btn{display:none!important; visibility:hidden!important;}
-@media(max-width:560px){#construction-bar #sell-building-btn{width:70px!important;min-width:70px!important;max-width:70px!important;font-size:9px!important;padding:4px 3px!important;}}
-</style>
-
-</html>
