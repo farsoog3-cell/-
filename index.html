@@ -2816,7 +2816,10 @@
 
         const audio = createManagedAudio(actualType, false);
         if (!audio) return;
-        const finalVolume = Math.max(0, Math.min(1, volume * sfxVolumeSetting));
+        // أصوات خروج الوحدات أعلى بوضوح من المؤثرات العادية.
+        // يظل مستوى الصوت العام قابلاً للتحكم، مع رفع خاص للمصنع والثكنة.
+        const productionExitBoost = (actualType === 'unitExit' || actualType === 'soldierExit') ? 1.65 : 1;
+        const finalVolume = Math.max(0, Math.min(1, volume * sfxVolumeSetting * productionExitBoost));
         activeOneShots.add(audio);
 
         const cleanup = () => {
@@ -7585,7 +7588,7 @@ function startGame(){openBattleSetup();}
         const spawn=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(5.5));spawn.y=getTerrainHeight(spawn.x,spawn.z);
         const team=barracks.owner==='enemy'?'enemy':'player';
         const unit=createInfantrySoldier(spawn.x,spawn.z,team);unit.mesh.rotation.y=r;unit.manualControl=(team==='player');
-        if(team==='player') playSound('soldierExit', 0.82, spawn);
+        if(team==='player') playSound('soldierExit', 1.0, spawn);
         unit.barracksExiting=true;unit.barracksExitLock=true;unit.barracksExitBarracks=barracks;unit.barracksExitTarget=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(14));unit.barracksExitTarget.y=getTerrainHeight(unit.barracksExitTarget.x,unit.barracksExitTarget.z);unit.target=null;unit.factoryFinalTarget=null;
         unit.barracksExitSpeed=Math.max(0.10, Math.min(0.18, (unit.speed||0.10)*1.15));
         if(team==='enemy'){
@@ -7984,7 +7987,7 @@ function createArmyFactory(x,z,ghost=false){
         unit.target=null; unit.factoryFinalTarget=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);
         unit.factoryExitSpeed=Math.max(.065,Math.min(.105,(unit.speed||.10)*.72));
         unit.factoryExitFactory=factory;
-        if(factory.owner !== 'enemy') playSound('unitExit', 0.78, spawn);
+        if(factory.owner !== 'enemy') playSound('unitExit', 1.0, spawn);
         if(type==='ambulance') ambulances.push(unit); else if(type==='scout'){reconVehicles.push(unit); setTimeout(()=>deployReconDish(unit),1200);} else enemyTanks.push(unit);
         // فتح أبواب المصنع تلقائياً أيضاً عند خروج وحدات العدو من أي نوع.
         animateFactoryDoors(factory,3200);
