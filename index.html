@@ -2112,6 +2112,143 @@
 #construction-bar{background:linear-gradient(180deg,#1c241f 0%,#0d120f 55%,#070a08 100%)!important;}
 #construction-bar:after{content:none!important;display:none!important;background:none!important;}
 </style>
+
+<style id="requested-production-and-loading-tweaks">
+/* خيارات الجيش: صورة واضحة بلا إطار أو بطاقة، والسعر فقط */
+#construction-bar .build-card,
+#construction-bar .factory-build-card,
+#construction-bar .factory-unit-card,
+#construction-bar .barracks-build-card,
+#construction-bar .barracks-unit-card {
+  min-width:64px !important;
+  max-width:112px !important;
+  width:auto !important;
+  flex:1 1 0 !important;
+  height:78px !important;
+  min-height:70px !important;
+  max-height:82px !important;
+  padding:3px 4px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:center !important;
+  gap:2px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:visible !important;
+}
+#construction-bar .build-preview,
+#construction-bar .factory-preview,
+#construction-bar .factory-unit-preview,
+#construction-bar .barracks-preview,
+#construction-bar .barracks-unit-preview {
+  width:clamp(38px,6vw,64px) !important;
+  height:clamp(34px,5.8vw,52px) !important;
+  min-width:0 !important;
+  max-width:64px !important;
+  flex:0 1 auto !important;
+  margin:0 auto !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:hidden !important;
+}
+#construction-bar .build-preview:after,
+#construction-bar .factory-unit-preview:after { display:none !important; }
+#construction-bar .external-bar-image {
+  object-fit:contain !important;
+  width:100% !important;
+  height:100% !important;
+}
+#construction-bar .build-name,
+#construction-bar .build-desc,
+#construction-bar .build-hint,
+#construction-bar .factory-unit-name,
+#construction-bar .factory-unit-time,
+#construction-bar .barracks-build-card .build-name,
+#construction-bar .barracks-unit-card .factory-unit-name {
+  display:none !important;
+}
+#construction-bar .build-info,
+#construction-bar .factory-unit-info {
+  flex:0 0 auto !important;
+  width:100% !important;
+  min-width:0 !important;
+  text-align:center !important;
+}
+#construction-bar .build-price,
+#construction-bar .factory-unit-price {
+  display:block !important;
+  margin:0 !important;
+  padding:0 !important;
+  font-size:clamp(9px,1.5vw,12px) !important;
+  line-height:1.2 !important;
+  white-space:nowrap !important;
+  color:#facc15 !important;
+  text-shadow:0 1px 3px #000 !important;
+}
+#construction-bar .build-title {
+  flex:0 0 48px !important;
+  width:48px !important;
+  height:auto !important;
+  font-size:8px !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+#construction-bar .build-title-icon { font-size:17px !important; }
+#construction-bar:after { display:none !important; }
+#construction-bar .build-card:hover,
+#construction-bar .factory-build-card:hover,
+#construction-bar .factory-unit-card:hover,
+#construction-bar .barracks-build-card:hover,
+#construction-bar .barracks-unit-card:hover {
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  filter:brightness(1.15) !important;
+}
+#modern-loading-container,
+.loading-container-bottom#modern-loading-container {
+  position:absolute !important;
+  top:auto !important;
+  bottom:max(8px, env(safe-area-inset-bottom)) !important;
+  left:50% !important;
+  transform:translateX(-50%) !important;
+  width:min(82vw,420px) !important;
+  z-index:999 !important;
+}
+@media(max-width:600px) {
+  #construction-bar {
+    bottom:max(5px, env(safe-area-inset-bottom)) !important;
+    min-height:76px !important;
+    height:auto !important;
+    padding:4px 5px !important;
+    gap:2px !important;
+  }
+  #construction-bar .build-title {
+    flex-basis:36px !important;
+    width:36px !important;
+  }
+  #construction-bar .build-title b,
+  #construction-bar .build-title small { display:none !important; }
+  #construction-bar .build-card,
+  #construction-bar .factory-build-card,
+  #construction-bar .factory-unit-card,
+  #construction-bar .barracks-build-card,
+  #construction-bar .barracks-unit-card {
+    min-width:48px !important;
+    max-width:82px !important;
+    height:66px !important;
+    min-height:62px !important;
+    padding:2px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -13917,6 +14054,53 @@ window.updateCameraSensitivity=function(v){
 
 <!-- صوت الترحيب الخارجي: ضع الملف في sounds/intro-voice.mp3 -->
 <audio id="intro-voice-audio" src="sounds/intro-voice.mp3" preload="auto" playsinline></audio>
+
+<style id="final-external-images-landscape-loading">
+/* Keep externally supplied army artwork visible; remove only its frame, never the image. */
+#construction-bar .build-preview,
+#construction-bar .factory-preview,
+#construction-bar .factory-unit-preview,
+#construction-bar .barracks-preview,
+#construction-bar .barracks-unit-preview{display:flex!important;visibility:visible!important;opacity:1!important;align-items:center!important;justify-content:center!important;}
+#construction-bar img,
+#construction-bar .external-bar-image,
+#construction-bar .build-preview img,
+#construction-bar .factory-preview img,
+#construction-bar .factory-unit-preview img,
+#construction-bar .barracks-preview img,
+#construction-bar .barracks-unit-preview img{display:block!important;visibility:visible!important;opacity:1!important;max-width:100%!important;max-height:100%!important;width:100%!important;height:100%!important;object-fit:contain!important;background:transparent!important;border:0!important;box-shadow:none!important;}
+#construction-bar .build-name,#construction-bar .build-desc,#construction-bar .build-hint,
+#construction-bar .factory-unit-name,#construction-bar .factory-unit-time{display:none!important;}
+#construction-bar .build-price,#construction-bar .factory-unit-price{display:block!important;visibility:visible!important;opacity:1!important;}
+/* Initial entry/loading indicator sits at the bottom edge of the visible screen. */
+#modern-loading-container{display:flex!important;visibility:visible!important;opacity:1!important;position:fixed!important;left:50%!important;right:auto!important;top:auto!important;bottom:max(8px,env(safe-area-inset-bottom))!important;transform:translateX(-50%)!important;z-index:99999!important;margin:0!important;}
+#modern-loading-container .loading-spinner,#modern-loading-text{display:block!important;visibility:visible!important;opacity:1!important;}
+#modern-loading-text{font-size:clamp(12px,2.2vw,17px)!important;text-align:center!important;}
+@media(orientation:landscape){#modern-loading-container{bottom:max(6px,env(safe-area-inset-bottom))!important;}}
+html,body{max-width:100vw;max-height:100dvh;}
+</style>
+<script id="start-landscape-fullscreen">
+(function(){
+  'use strict';
+  function enterLandscape(){
+    var root=document.documentElement;
+    try{if(!document.fullscreenElement && root.requestFullscreen){var fp=root.requestFullscreen({navigationUI:'hide'});if(fp&&fp.catch)fp.catch(function(){});}}catch(e){}
+    try{if(screen.orientation && screen.orientation.lock){var op=screen.orientation.lock('landscape');if(op&&op.catch)op.catch(function(){});}}catch(e){}
+  }
+  function cleanup(){document.removeEventListener('pointerdown',onFirstGesture,true);document.removeEventListener('touchstart',onFirstGesture,true);document.removeEventListener('keydown',onFirstGesture,true);}
+  function onFirstGesture(){enterLandscape();cleanup();}
+  function boot(){
+    /* Try immediately; mobile browsers may require a user gesture, so retry on first touch. */
+    enterLandscape();
+    document.addEventListener('pointerdown',onFirstGesture,true);
+    document.addEventListener('touchstart',onFirstGesture,true);
+    document.addEventListener('keydown',onFirstGesture,true);
+    document.addEventListener('fullscreenchange',function(){if(document.fullscreenElement){try{if(screen.orientation&&screen.orientation.lock){var op=screen.orientation.lock('landscape');if(op&&op.catch)op.catch(function(){});}}catch(e){}}});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
+</script>
+
 </body>
 </html>
 
