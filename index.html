@@ -14914,3 +14914,100 @@ body.battle-active #start-menu {
 </style>
 
 </html>
+<style id="fullscreen-entry-menu-no-frame-fix">
+/* شاشة الدخول الرئيسية: الخلفية تملأ الشاشة كاملة، بلا إطار حول القائمة */
+#settings-modal.settings-card-overlay,
+#settings-modal {
+  position:fixed !important;
+  inset:0 !important;
+  width:100vw !important;
+  height:100vh !important;
+  height:100dvh !important;
+  min-height:100vh !important;
+  min-height:100dvh !important;
+  max-width:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  box-sizing:border-box !important;
+  background-color:#080b0d !important;
+  background-image:linear-gradient(180deg,rgba(0,0,0,.20),rgba(0,0,0,.42)),url("images/loading2.jpg") !important;
+  background-position:center center !important;
+  background-size:cover !important;
+  background-repeat:no-repeat !important;
+  border:0 !important;
+  border-radius:0 !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+#settings-modal:before,
+#settings-modal:after { display:none !important; content:none !important; }
+#settings-modal .menu-card {
+  width:min(92vw,390px) !important;
+  max-width:390px !important;
+  min-width:0 !important;
+  max-height:calc(100dvh - 24px) !important;
+  height:auto !important;
+  margin:auto !important;
+  padding:clamp(12px,3.5vw,20px) !important;
+  box-sizing:border-box !important;
+  background:rgba(5,10,15,.30) !important;
+  border:0 !important;
+  outline:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  overflow-y:auto !important;
+}
+#settings-modal .menu-card h1 {
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  text-shadow:0 2px 8px #000 !important;
+}
+@media (orientation:landscape) {
+  #settings-modal .menu-card { width:min(70vw,430px) !important; max-width:430px !important; }
+}
+</style>
+
+
+<style id="exact-three-loading-images-map">
+/* الصورة 1: شاشة الدخول الأولى */
+#boot-loading-overlay{
+  background-color:#080b0d!important;
+  background-image:linear-gradient(180deg,rgba(0,0,0,.24),rgba(0,0,0,.48)),url("images/loading1.jpg")!important;
+  background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
+  width:100vw!important;height:100vh!important;height:100dvh!important;inset:0!important;
+}
+/* الصورة 2: خلفية قائمة إنشاء الغرفة، بدون صندوق خلفي معتم */
+#room-setup-overlay{
+  background-color:transparent!important;
+  background-image:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,.48)),url("images/loading2.jpg")!important;
+  background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
+  width:100vw!important;height:100vh!important;height:100dvh!important;inset:0!important;
+}
+#room-setup-overlay .room-panel{
+  background:rgba(5,12,18,.42)!important;border:1px solid rgba(180,210,235,.24)!important;
+  box-shadow:0 8px 28px rgba(0,0,0,.24)!important;backdrop-filter:blur(2px)!important;
+}
+/* الصورة 3: خلفية شاشة انتظار دخول اللعبة بكامل الشاشة؛ لا صور داخل إطار */
+#room-loading-overlay{
+  background-color:#080b0d!important;
+  background-image:linear-gradient(180deg,rgba(0,0,0,.22),rgba(0,0,0,.52)),url("images/loading3.jpg")!important;
+  background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
+  width:100vw!important;height:100vh!important;height:100dvh!important;inset:0!important;
+  justify-content:flex-end!important;padding:0 16px max(22px,env(safe-area-inset-bottom))!important;
+}
+#room-loading-overlay .room-slideshow{display:none!important;}
+#room-loading-overlay .room-load-label{width:min(88vw,560px)!important;text-align:center!important;text-shadow:0 2px 6px #000!important;}
+#room-loading-overlay .room-loading-track{width:min(88vw,560px)!important;margin-bottom:8px!important;}
+#room-loading-overlay>div:last-child{ text-shadow:0 2px 6px #000!important;margin-bottom:2px!important;}
+/* إبقاء الصورة 2 على شاشة القائمة الرئيسية خلف أزرار الدخول */
+#settings-modal:not(.battle-active){
+  background-color:#080b0d!important;
+  background-image:linear-gradient(180deg,rgba(0,0,0,.26),rgba(0,0,0,.48)),url("images/loading2.jpg")!important;
+  background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
+}
+</style>
