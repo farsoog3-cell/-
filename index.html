@@ -14102,6 +14102,50 @@ html,body{max-width:100vw;max-height:100dvh;}
 </script>
 
 </body>
+
+<style id="show-full-army-images">
+/* Show complete external unit artwork at a useful size, matching the soldier thumbnails. */
+#construction-bar .build-card,
+#construction-bar .factory-build-card,
+#construction-bar .factory-unit-card,
+#construction-bar .barracks-build-card,
+#construction-bar .barracks-unit-card{
+  box-sizing:border-box!important; flex:0 0 clamp(66px,8vw,88px)!important;
+  width:clamp(66px,8vw,88px)!important; min-width:clamp(66px,8vw,88px)!important; max-width:clamp(66px,8vw,88px)!important;
+  height:clamp(78px,12vh,96px)!important; min-height:clamp(78px,12vh,96px)!important; max-height:clamp(78px,12vh,96px)!important;
+  padding:3px!important; gap:2px!important; flex-direction:column!important; justify-content:center!important;
+  overflow:hidden!important; border:0!important; border-radius:0!important; background:transparent!important; box-shadow:none!important;
+}
+#construction-bar .build-preview,
+#construction-bar .factory-preview,
+#construction-bar .factory-unit-preview,
+#construction-bar .barracks-preview,
+#construction-bar .barracks-unit-preview{
+  display:flex!important; flex:1 1 auto!important; width:100%!important; min-width:0!important;
+  height:clamp(54px,8vh,72px)!important; min-height:54px!important; max-height:72px!important;
+  flex-basis:auto!important; zoom:1!important; transform:none!important;
+  margin:0!important; padding:0!important; border:0!important; border-radius:0!important;
+  background:transparent!important; box-shadow:none!important; overflow:visible!important;
+}
+#construction-bar .build-preview img,
+#construction-bar .factory-preview img,
+#construction-bar .factory-unit-preview img,
+#construction-bar .barracks-preview img,
+#construction-bar .barracks-unit-preview img,
+#construction-bar img.external-bar-image{
+  display:block!important; width:100%!important; height:100%!important; max-width:100%!important; max-height:100%!important;
+  object-fit:contain!important; object-position:center center!important;
+  image-rendering:auto!important; border:0!important; border-radius:0!important; background:transparent!important; box-shadow:none!important;
+}
+#construction-bar .build-price, #construction-bar .factory-unit-price{
+  flex:0 0 auto!important; display:block!important; width:100%!important; margin:0!important; padding:0!important;
+  font-size:clamp(10px,1.2vw,13px)!important; line-height:1.15!important; text-align:center!important; white-space:nowrap!important;
+}
+@media (max-height:420px){
+ #construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .factory-unit-card,#construction-bar .barracks-build-card,#construction-bar .barracks-unit-card{height:74px!important;min-height:74px!important;max-height:74px!important}
+ #construction-bar .build-preview,#construction-bar .factory-preview,#construction-bar .factory-unit-preview,#construction-bar .barracks-preview,#construction-bar .barracks-unit-preview{height:51px!important;min-height:51px!important;max-height:51px!important}
+}
+</style>
 </html>
 
 
