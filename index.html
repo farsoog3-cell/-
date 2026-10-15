@@ -1069,6 +1069,12 @@
 
         /* إزالة نصوص الإرشادات أسفل/حول الخريطة المصغرة مع إبقاء أزرار التحكم. */
         #minimap-instructions, #minimap-hint, .minimap-instructions, .minimap-hint, [data-minimap-instructions] { display:none !important; }
+
+/* External replacement images for the fixed build/production bar */
+#construction-bar .build-preview, #construction-bar .factory-preview, #construction-bar .barracks-preview,
+#construction-bar .factory-unit-preview, #construction-bar .barracks-unit-preview { position:relative; overflow:hidden; }
+#construction-bar .external-bar-image { display:block; position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center; z-index:5; padding:2px; box-sizing:border-box; background:transparent; }
+#construction-bar .has-external-image > :not(.external-bar-image) { display:none !important; }
 </style>
 
 <style>
@@ -2426,7 +2432,7 @@
         <button id="sell-building-btn" type="button" onclick="playClickSound(); sellSelectedBuilding()" style="display:none" title="بيع المبنى واسترداد نصف قيمته">💰 بيع المبنى · 50٪</button>
         <div class="build-title"><span class="build-title-icon">⚙</span><b>COMMAND</b><small>PRODUCTION</small></div>
         <div class="build-card" id="construction-truck-card" onclick="playClickSound(); buyConstructionTruck()">
-            <div class="build-preview modern-builder-preview" aria-label="تركس بناء حديث">
+            <div class="build-preview modern-builder-preview" aria-label="تركس بناء حديث"><img class="external-bar-image" src="images/units/construction-truck.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="mb-shadow"></div><div class="mb-chassis"></div><div class="mb-cab"></div><div class="mb-glass"></div><div class="mb-bed"></div><div class="mb-crane"></div><div class="mb-hook"></div>
                 <i class="mb-wheel a"></i><i class="mb-wheel b"></i><i class="mb-wheel c"></i>
             </div>
@@ -2438,7 +2444,7 @@
             <div class="build-price">300$</div>
         </div>
         <div class="factory-build-card" id="factory-build-card" onclick="playClickSound(); armFactoryBuild()">
-            <div class="factory-preview" aria-label="مصنع جيش">
+            <div class="factory-preview" aria-label="مصنع جيش"><img class="external-bar-image" src="images/units/factory.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="f-tower"></div><div class="f-roof"></div><div class="f-base"></div><div class="f-door"></div><div class="f-light"></div>
             </div>
             <div class="build-info">
@@ -2450,7 +2456,7 @@
         </div>
 
         <div class="barracks-build-card" id="barracks-build-card" onclick="playClickSound(); armBarracksBuild()">
-            <div class="barracks-preview" aria-label="سكنة عسكرية">
+            <div class="barracks-preview" aria-label="سكنة عسكرية"><img class="external-bar-image" src="images/units/barracks.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="b-base"></div><div class="b-roof"></div><div class="b-door"></div><div class="b-window"></div><div class="b-flagpole"></div><div class="b-flag"></div>
             </div>
             <div class="build-info">
@@ -2461,19 +2467,19 @@
             <div class="build-price">150$</div>
         </div>
         <div class="factory-unit-card" id="factory-scud-card" onclick="playClickSound(); queueFactoryUnit('rocket')">
-            <div class="factory-unit-preview"><div class="mini-scud"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scud.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scud"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🚀 SCUD</div><div class="factory-unit-price">800$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
         </div>
         <div class="factory-unit-card" id="factory-tank-card" onclick="playClickSound(); queueFactoryUnit('normal')">
-            <div class="factory-unit-preview"><div class="mini-tank"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/tank.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-tank"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🪖 TANK</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
         </div>
         <div class="factory-unit-card infantry-card" id="factory-infantry-card" onclick="playClickSound(); queueFactoryUnit('infantry')">
-            <div class="factory-unit-preview"><div class="mini-infantry"></div><div class="infantry-preview-rifle"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-infantry"></div><div class="infantry-preview-rifle"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🪖 RIFLEMAN</div><div class="factory-unit-price">250$</div><div class="factory-unit-time">Ready in 6 sec</div></div>
         </div>
         <div class="barracks-unit-card" id="barracks-infantry-card" onclick="playClickSound(); queueBarracksUnit('infantry')" title="تدريب جندي مشاة">
-            <div class="barracks-unit-preview pro-soldier-icon" aria-label="جندي مشاة">
+            <div class="barracks-unit-preview pro-soldier-icon" aria-label="جندي مشاة"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <span class="soldier-shadow"></span><span class="soldier-helmet"></span><span class="soldier-head"></span>
                 <span class="soldier-vest"></span><span class="soldier-arm a"></span><span class="soldier-arm b"></span>
                 <span class="soldier-rifle"></span><span class="soldier-leg a"></span><span class="soldier-leg b"></span>
@@ -2481,11 +2487,11 @@
             <div class="factory-unit-info"><div class="factory-unit-name">INFANTRY</div><div class="factory-unit-price">250$</div><div class="factory-unit-time">TRAIN • 6 SEC</div></div>
         </div>
         <div class="factory-unit-card" id="factory-ambulance-card" onclick="playClickSound(); queueFactoryUnit('ambulance')">
-            <div class="factory-unit-preview"><div class="mini-ambulance"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/ambulance.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-ambulance"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🚑 AMBULANCE</div><div class="factory-unit-price">600$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
         </div>
         <div class="factory-unit-card scout-factory-card" id="factory-scout-card" onclick="playClickSound(); queueFactoryUnit('scout')">
-            <div class="factory-unit-preview"><div class="mini-scout"></div></div>
+            <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scout.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scout"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">📡 SCOUT</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Reveals the area and activates minimap</div></div>
         </div>
         <div class="bar-unit-controls" id="bar-unit-controls" aria-label="أوامر الوحدة">
@@ -2603,7 +2609,16 @@
         ambulanceSiren: 'sounds/ambulance_siren.mp3',
         mapOpen: 'sounds/minimap_open.mp3',
         redAlarm: 'sounds/red_alarm.mp3',
-        wind: 'sounds/wind.mp3'
+        wind: 'sounds/wind.mp3',
+        introVoice: 'sounds/intro-voice.mp3',
+        factorySelect: 'sounds/factory_select.mp3',
+        barracksSelect: 'sounds/barracks_select.mp3',
+        unitExit: 'sounds/unit_exit.mp3',
+        soldierExit: 'sounds/soldier_exit.mp3',
+        constructionStart: 'sounds/construction_start.mp3',
+        constructionComplete: 'sounds/construction_complete.mp3',
+        attackEnemy: 'sounds/attack_enemy.mp3',
+        underAttack: 'sounds/under_attack.mp3'
     };
 
     // إذا لم يوجد ملف صوت جديد، لا يختفي الصوت؛ يستخدم بديلاً مناسباً.
@@ -2801,7 +2816,10 @@
 
         const audio = createManagedAudio(actualType, false);
         if (!audio) return;
-        const finalVolume = Math.max(0, Math.min(1, volume * sfxVolumeSetting));
+        // أصوات خروج الوحدات أعلى بوضوح من المؤثرات العادية.
+        // يظل مستوى الصوت العام قابلاً للتحكم، مع رفع خاص للمصنع والثكنة.
+        const productionExitBoost = (actualType === 'unitExit' || actualType === 'soldierExit') ? 1.65 : 1;
+        const finalVolume = Math.max(0, Math.min(1, volume * sfxVolumeSetting * productionExitBoost));
         activeOneShots.add(audio);
 
         const cleanup = () => {
@@ -2817,6 +2835,15 @@
         }else{
             playAudioElement(audio,finalVolume,true).catch(cleanup);
         }
+    }
+
+    // أصوات أحداث المعركة من ملفات خارجية مع حد زمني يمنع تكرار النداءات.
+    const battleCueLastPlayedAt = Object.create(null);
+    function playBattleCue(type, volume = 0.85, cooldownMs = 10000) {
+        const now = Date.now();
+        if (now - (battleCueLastPlayedAt[type] || 0) < cooldownMs) return;
+        battleCueLastPlayedAt[type] = now;
+        playSound(type, volume);
     }
 
     let menuBgmAudio = createManagedAudio('menuBgm', true);
@@ -3555,11 +3582,21 @@
             mesh.material=mat; mesh.castShadow=false; mesh.receiveShadow=true;
             // يضمن توحيد وضع المجسم مع إحداثيات العالم التي تستخدمها الوحدات.
             root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
+            root.updateMatrixWorld(true);
             const oldTerrain=terrainMesh;
             if(oldTerrain && oldTerrain.parent) oldTerrain.parent.remove(oldTerrain);
             scene.add(root); terrainMesh=mesh;
             window.__externalTerrainModel=root;
-            console.log('تم تحميل الخريطة والخامات الخارجية بنجاح');
+            // بعد تثبيت خريطة GLB وخامة الارتفاع الخارجية، نعيد بناء ارتفاعات الضباب
+            // فوق الأرض نفسها، بدلاً من الاعتماد على التضاريس الإجرائية التي أزيلت.
+            if (!warFogMesh) initWarFogOfWar();
+            // انتظر إطاراً واحداً لضمان أن إحداثيات الخريطة الخارجية أصبحت جاهزة قبل مطابقة الضباب.
+            requestAnimationFrame(() => {
+                refreshWarFogSurface();
+                if (warFogTexture) warFogTexture.needsUpdate = true;
+                if (warFogMesh) { warFogMesh.visible = true; warFogMesh.renderOrder = 20; }
+            });
+            console.log('تم تحميل الخريطة الخارجية وتحديث سطح ضباب الحرب ليتبعها');
         }, undefined, function(err) { console.error('فشل تحميل الخريطة الخارجية؛ ستبقى الأرض الاحتياطية ظاهرة.',err); });
     }
 
@@ -5326,6 +5363,7 @@ function startGame(){openBattleSetup();}
 
         if(soldier.team==='player'){
             playSound('machineGun',.30);
+            playBattleCue('attackEnemy', 0.78, 12000);
         }else{
             // Enemy infantry must not replay the base alarm for every bullet.
             const soundNow=performance.now();
@@ -7500,7 +7538,7 @@ function startGame(){openBattleSetup();}
         const c=activeBarracksConstruction;if(!c)return;const b=c.builder;
         if(!b||b.isDestroyed){removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);activeBarracksConstruction=null;updateConstructionBarForSelection();return;}
         if(!c.started){
-            if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();showFloatingMsg('🪖 Barracks construction started — crane operating');}
+            if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();playSound('constructionStart',0.82);showFloatingMsg('🪖 Barracks construction started — crane operating');}
             return;
         }
         c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateBarracksConstructionLift(c.lift);
@@ -7518,7 +7556,7 @@ function startGame(){openBattleSetup();}
             if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}
             const r=c.build.rotation||0,forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));const retreat=c.build.mesh.position.clone().sub(forward.multiplyScalar(9));retreat.y=getTerrainHeight(retreat.x,retreat.z);
             b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.factoryRetreating=true;
-            constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});activeBarracksConstruction=null;updateConstructionBarForSelection();showFloatingMsg('✅ Military barracks complete — select it to train soldiers');
+            constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});activeBarracksConstruction=null;playSound('constructionComplete',0.9);updateConstructionBarForSelection();showFloatingMsg('✅ Military barracks complete — select it to train soldiers');
         }
     }
     function queueBarracksUnit(type){
@@ -7560,6 +7598,7 @@ function startGame(){openBattleSetup();}
         const spawn=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(5.5));spawn.y=getTerrainHeight(spawn.x,spawn.z);
         const team=barracks.owner==='enemy'?'enemy':'player';
         const unit=createInfantrySoldier(spawn.x,spawn.z,team);unit.mesh.rotation.y=r;unit.manualControl=(team==='player');
+        if(team==='player') playSound('soldierExit', 1.0, spawn);
         unit.barracksExiting=true;unit.barracksExitLock=true;unit.barracksExitBarracks=barracks;unit.barracksExitTarget=barracks.mesh.position.clone().add(forward.clone().multiplyScalar(14));unit.barracksExitTarget.y=getTerrainHeight(unit.barracksExitTarget.x,unit.barracksExitTarget.z);unit.target=null;unit.factoryFinalTarget=null;
         unit.barracksExitSpeed=Math.max(0.10, Math.min(0.18, (unit.speed||0.10)*1.15));
         if(team==='enemy'){
@@ -7958,6 +7997,7 @@ function createArmyFactory(x,z,ghost=false){
         unit.target=null; unit.factoryFinalTarget=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);
         unit.factoryExitSpeed=Math.max(.065,Math.min(.105,(unit.speed||.10)*.72));
         unit.factoryExitFactory=factory;
+        if(factory.owner !== 'enemy') playSound('unitExit', 1.0, spawn);
         if(type==='ambulance') ambulances.push(unit); else if(type==='scout'){reconVehicles.push(unit); setTimeout(()=>deployReconDish(unit),1200);} else enemyTanks.push(unit);
         // فتح أبواب المصنع تلقائياً أيضاً عند خروج وحدات العدو من أي نوع.
         animateFactoryDoors(factory,3200);
@@ -8307,6 +8347,7 @@ function createArmyFactory(x,z,ghost=false){
         showFloatingMsg('🛢️ Oil rig selected');
     }
     function selectBarracks(barracks){
+        if(barracks && barracks.owner !== 'enemy') playSound('barracksSelect', 0.8);
         if(barracks&&!barracks.buildCost)barracks.buildCost=150;
         selectedBarracks=barracks; selectedOilRig=null; selectedFactory=null; selectedTank=null; selectedUnitKind='barracks'; selectionMode='single'; defenseCommandArmed=false;
         clearSelectionVisuals();
@@ -8444,6 +8485,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function selectFactory(factory) {
+        if(factory && factory.owner !== 'enemy') playSound('factorySelect', 0.8);
         if(factory&&!factory.buildCost)factory.buildCost=400;
         selectedFactory=factory; selectedBarracks=null; selectedOilRig=null; selectedTank=null; selectedUnitKind='factory'; selectionMode='single'; defenseCommandArmed=false;
         clearSelectionVisuals();
@@ -9704,7 +9746,7 @@ function createArmyFactory(x,z,ghost=false){
         if(factory.mesh && factory.mesh.userData && factory.mesh.userData.hpLabel) factory.mesh.userData.hpLabel.style.display='none';
         if(factory.mesh){
             const pos=factory.mesh.position.clone();
-            createModernImpactFlash(pos, fromTeam); playSound('explosion');
+            createModernImpactFlash(pos, fromTeam); playSound('explosion',1.0);
             for(let i=0;i<22;i++) addSmokeParticle(pos, i<8?0x171717:0x555555, 1.5+Math.random()*1.8);
             const rubble=createFactoryRubble(pos,factory.mesh.rotation.y);
             factory.rubble=rubble;
@@ -10060,6 +10102,7 @@ function createArmyFactory(x,z,ghost=false){
         createTankFireSmokeBurst(fromTank);
         if (fromTank.team === 'player') {
             playSound('attack', 0.8);
+            playBattleCue('attackEnemy', 0.82, 12000);
             triggerTankRecoil(fromTank, 0.62);
         } else {
             playSound('attack', 0.36);
@@ -10255,7 +10298,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function createShockwaveAndExplosion(centerPos, fromTeam, isScud=false) {
-        playSound('explosion',1.0,centerPos);
+        playSound('explosion',1.0);
         createModernImpactFlash(centerPos, fromTeam);
         createBlackImpactCrater(centerPos, 3.5 + Math.random()*2.8);
 
@@ -10373,6 +10416,8 @@ function createArmyFactory(x,z,ghost=false){
             window.attackAlertTimer=setTimeout(()=>alertEl.classList.remove('active'),5000);
         }
 
+        // صوت خارجي عند دخول هجوم العدو إلى محيط القاعدة، مع الحفاظ على إنذار الخطر الأصلي.
+        playBattleCue('underAttack', 0.9, 20000);
         // Red attack warning: create/play the audio only when an attack is actually triggered.
         try{
             if(!redAlarmAudio){
@@ -10726,7 +10771,7 @@ function createArmyFactory(x,z,ghost=false){
                 const impactTarget = (b.targetTank && !b.targetTank.isDestroyed && b.targetTank.mesh && b.targetTank.mesh.position.distanceTo(b.targetPos) <= 3.2) ? b.targetTank : null;
                 if(!impactTarget){
                         if(!b.infantryBullet) createModernImpactFlash(b.targetPos.clone(), b.fromTeam);
-                    if(!b.infantryBullet) playSound('explosion', b.tankShell ? .62 : .42, b.targetPos.clone());
+                    if(!b.infantryBullet) playSound('explosion', b.tankShell ? .9 : .7);
                     // Missed shots still leave a crater, but avoid unbounded decoration
                     // when a large group fires at one static structure.
                     const targetIsStructure=!!(b.targetTank && (b.targetTank.isCommandBase||b.targetTank.isBarracks||b.targetTank.isFactory));
@@ -10758,7 +10803,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
                 revealUnitHp(impactTarget, 5000, b.fromTeam);
                 updateUnitDamageEffects(impactTarget);
-                if(!b.infantryBullet && !b.tankShell){ playSound('explosion',.28); }
+                if(!b.infantryBullet && !b.tankShell){ playSound('explosion',.65); }
                 if (impactTarget.isCommandBase) {
                     damageCommandBase(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isBarracks) {
@@ -11620,6 +11665,190 @@ function createArmyFactory(x,z,ghost=false){
         });
     }
 
+
+    // ===== ضباب الحرب: أرض معتمة بشفافية، والمسار ينكشف ويبقى مكتشفاً =====
+    let warFogMesh = null, warFogCanvas = null, warFogCtx = null, warFogTexture = null;
+    let warFogExploredCanvas = null, warFogExploredCtx = null;
+    let warFogLastUpdate = 0;
+    const WAR_FOG_SIZE = 1024;
+    const WAR_FOG_WORLD = 800; // حدود الخريطة: -400 إلى +400
+
+    function initWarFogOfWar() {
+        if (warFogMesh || !scene || !THREE) return;
+        warFogCanvas = document.createElement('canvas');
+        warFogCanvas.width = warFogCanvas.height = WAR_FOG_SIZE;
+        warFogCtx = warFogCanvas.getContext('2d', { alpha: true });
+        warFogExploredCanvas = document.createElement('canvas');
+        warFogExploredCanvas.width = warFogExploredCanvas.height = WAR_FOG_SIZE;
+        warFogExploredCtx = warFogExploredCanvas.getContext('2d', { alpha: true });
+
+        warFogTexture = new THREE.CanvasTexture(warFogCanvas);
+        warFogTexture.colorSpace = THREE.SRGBColorSpace;
+        warFogTexture.anisotropy = renderer && renderer.capabilities ? Math.min(4, renderer.capabilities.getMaxAnisotropy()) : 1;
+        const material = new THREE.MeshBasicMaterial({
+            map: warFogTexture, transparent: true, opacity: 1,
+            depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+            polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2
+        });
+
+        // Subdivided surface follows the actual terrain height so fog never floats above hills
+        // or disappears below valleys.
+        const segments = 128;
+        const geometry = new THREE.PlaneGeometry(WAR_FOG_WORLD, WAR_FOG_WORLD, segments, segments);
+        const pos = geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i);
+            const localY = pos.getY(i);
+            const worldZ = -localY;
+            let ground = 0;
+            try { ground = typeof getTerrainHeight === 'function' ? getTerrainHeight(x, worldZ) : 0; } catch (_) {}
+            pos.setZ(i, (Number.isFinite(ground) ? ground : 0) + 0.10);
+        }
+        pos.needsUpdate = true;
+        geometry.computeVertexNormals();
+        warFogMesh = new THREE.Mesh(geometry, material);
+        warFogMesh.rotation.x = -Math.PI / 2;
+        warFogMesh.position.y = 0;
+        warFogMesh.renderOrder = 3;
+        warFogMesh.frustumCulled = false;
+        warFogMesh.name = 'warFogOfWarOverlay';
+        scene.add(warFogMesh);
+    }
+
+    // يعيد مطابقة سطح الضباب مع ارتفاعات الخريطة الفعلية بعد تحميل GLB الخارجي.
+    // مهم: init() يبدأ قبل اكتمال تحميل assets/terrain_map.glb، لذلك لا يجوز
+    // ترك الضباب على ارتفاعات الأرض الاحتياطية القديمة.
+    function refreshWarFogSurface() {
+        if (!warFogMesh || !warFogMesh.geometry || !warFogMesh.geometry.attributes.position) return;
+        const geometry = warFogMesh.geometry;
+        const pos = geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const x = pos.getX(i);
+            const z = -pos.getY(i); // PlaneGeometry يدور -90 درجة حول X
+            let ground = 0;
+            try {
+                ground = typeof getTerrainHeight === 'function' ? getTerrainHeight(x, z) : 0;
+            } catch (_) {}
+            if (!Number.isFinite(ground)) ground = 0;
+            // هامش صغير فوق سطح الخريطة لتجنب اختفاء الضباب داخل المثلثات.
+            pos.setZ(i, ground + 0.48);
+        }
+        pos.needsUpdate = true;
+        geometry.computeVertexNormals();
+        geometry.computeBoundingSphere();
+        warFogMesh.visible = true;
+        warFogMesh.frustumCulled = false;
+    }
+
+    function updateWarFogOfWar(now) {
+        if (!scene || !renderer || !camera) return;
+        if (!warFogMesh) initWarFogOfWar();
+        if (!warFogCtx || !warFogTexture || !warFogMesh || !warFogExploredCtx) return;
+        if (now - warFogLastUpdate < 140) return;
+        const elapsed = warFogLastUpdate ? Math.min(500, now - warFogLastUpdate) : 140;
+        warFogLastUpdate = now;
+        const w = WAR_FOG_SIZE, h = WAR_FOG_SIZE;
+        const explored = warFogExploredCtx;
+        const revealers = [];
+
+        // رؤية قصيرة للقوات العادية؛ مركبة الاستطلاع وحدها تكشف مساحة أكبر.
+        const addUnits = (arr, kind) => (arr || []).forEach(u => {
+            if (!u || u.isDestroyed || u.destroyed || !u.mesh || u.team === 'enemy' || u.owner === 'enemy') return;
+            // المباني والمنشآت لا تكشف أي جزء من الخريطة؛ الرؤية للمركبات والجنود المتحركين فقط.
+            const unitType = String(u.type || u.kind || u.mesh.userData?.type || '').toLowerCase();
+            if (u.isBuilding || u.isStructure || u.isFactory || u.isBarracks || u.isBase ||
+                u.mesh.userData?.isBuilding || u.mesh.userData?.isStructure ||
+                /building|structure|factory|barracks|base|headquarters|hq|مبنى|مصنع|معسكر/.test(unitType)) return;
+            const p = u.mesh.position || u.position;
+            if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)) return;
+            const type = String(u.type || '').toLowerCase();
+            const isScout = kind === 'recon' || type === 'scout' || type === 'recon' || type.includes('recon');
+            let radius = isScout ? 112 : 38;
+            if (u.isBuilder || type.includes('builder') || type.includes('construction')) radius = 34;
+            if (type === 'infantry' || u.isInfantry || kind === 'soldiers') radius = 25;
+            if (type === 'ambulance' || kind === 'ambulances') radius = 34;
+            // الاستطلاع له الأفضلية دائمًا حتى لو كان نوعه مسجلًا بشكل عام.
+            if (isScout) radius = 112;
+            revealers.push({ x: p.x, z: p.z, r: radius });
+        });
+        addUnits(playerTanks, 'tanks');
+        addUnits(ambulances, 'ambulances');
+        addUnits(reconVehicles, 'recon');
+        addUnits(typeof soldiers !== 'undefined' ? soldiers : [], 'soldiers');
+
+        // المباني الصديقة تكشف محيطها ما دامت قائمة وسليمة؛ إذا دُمّرت أو أزيلت
+        // تتوقف عن الكشف، ثم يعود الضباب تدريجيًا إلى المنطقة التي كانت تكشفها.
+        const addStructureVision = (structure, radius) => {
+            if (!structure || structure.isDestroyed || structure.destroyed || structure.done === false) return;
+            if (structure.owner === 'enemy' || structure.team === 'enemy') return;
+            const mesh = structure.mesh || structure;
+            if (!mesh || mesh.visible === false) return;
+            const p = mesh.position || structure.position;
+            if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)) return;
+            // لا تكشف المباني أثناء وضع شبح البناء أو قبل اكتمالها.
+            if (structure.isGhost || structure.isPlacementGhost || structure.underConstruction) return;
+            revealers.push({ x: p.x, z: p.z, r: radius });
+        };
+        // المعسكر الرئيسي، مصنع الآليات، ومعسكر الجنود جميعها تملك مجال كشف.
+        addStructureVision(playerBaseGroup, 52);
+        (constructedFactories || []).forEach(f => addStructureVision(f, 44));
+        (constructedBarracks || []).forEach(b => addStructureVision(b, 38));
+
+        // تلاشي المناطق المكتشفة خلال بضع ثوانٍ، كي يعود الضباب بعد مغادرة القوات
+        // أو تدمير وحدة/مبنى كان يكشفها.
+        explored.globalCompositeOperation = 'destination-out';
+        explored.fillStyle = 'rgba(0,0,0,' + Math.min(0.16, 0.035 * (elapsed / 140)) + ')';
+        explored.fillRect(0, 0, w, h);
+        explored.globalCompositeOperation = 'source-over';
+        revealers.forEach(v => {
+            const x = ((v.x + WAR_FOG_WORLD / 2) / WAR_FOG_WORLD) * w;
+            const y = ((v.z + WAR_FOG_WORLD / 2) / WAR_FOG_WORLD) * h;
+            const r = (v.r / WAR_FOG_WORLD) * w;
+            const g = explored.createRadialGradient(x, y, r * 0.30, x, y, r);
+            g.addColorStop(0, 'rgba(255,255,255,1)');
+            g.addColorStop(0.72, 'rgba(255,255,255,0.95)');
+            g.addColorStop(1, 'rgba(255,255,255,0)');
+            explored.fillStyle = g;
+            explored.beginPath(); explored.arc(x, y, r, 0, Math.PI * 2); explored.fill();
+        });
+
+        const ctx = warFogCtx;
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = 'rgba(26, 31, 32, 0.50)';
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.drawImage(warFogExploredCanvas, 0, 0);
+        ctx.globalCompositeOperation = 'source-over';
+        warFogTexture.needsUpdate = true;
+
+        // لا تُظهر مركبات العدو إلا داخل مجال الرؤية النشط الآن.
+        const isVisible = obj => {
+            if (!obj || !obj.mesh || obj.isDestroyed || obj.destroyed) return false;
+            const p = obj.mesh.position || obj.position;
+            if (!p) return false;
+            return revealers.some(v => {
+                const dx = p.x - v.x, dz = p.z - v.z;
+                return dx * dx + dz * dz <= (v.r + 8) * (v.r + 8);
+            });
+        };
+        const setEnemyVisibility = (obj, visible) => {
+            if (!obj) return;
+            const mesh = obj.mesh || obj;
+            if (!mesh || !mesh.userData) return;
+            if (mesh.userData.warFogOriginalVisible === undefined) mesh.userData.warFogOriginalVisible = mesh.visible;
+            mesh.visible = !!mesh.userData.warFogOriginalVisible && visible;
+        };
+        const updateEnemies = arr => (arr || []).forEach(u => {
+            if (!u || !u.mesh || u.isDestroyed || u.destroyed) return;
+            if (u.team === 'enemy' || u.owner === 'enemy' || arr === enemyTanks)
+                setEnemyVisibility(u, isVisible(u));
+        });
+        updateEnemies(enemyTanks);
+        updateEnemies((ambulances || []).filter(u => u && (u.team === 'enemy' || u.owner === 'enemy')));
+        updateEnemies((reconVehicles || []).filter(u => u && (u.team === 'enemy' || u.owner === 'enemy')));
+    }
+
     function animate(now) {
         requestAnimationFrame(animate);
         performanceFrame++;
@@ -11671,6 +11900,7 @@ function createArmyFactory(x,z,ghost=false){
             beam.rotation.z = Math.sin(phase * 0.5) * 0.012;
         });
 
+        updateWarFogOfWar(now);
         renderer.render(scene, camera);
     }
 
@@ -11817,7 +12047,7 @@ function createArmyFactory(x,z,ghost=false){
             const b=c.builder;
             if(!b||b.isDestroyed){removeConstructionLift(c);removeFactoryConstructionCage(c);continue;}
             if(!c.started){
-                if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
+                if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();playSound('constructionStart',0.82);showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
                 remaining.push(c);continue;
             }
             c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateConstructionLift(c.lift);
@@ -11829,7 +12059,7 @@ function createArmyFactory(x,z,ghost=false){
             if(c.elapsed%60===0&&c.elapsed<c.build.duration)showFloatingMsg(`🏭 Factory construction: ${Math.floor(p*100)}%`);
             if(p>=1){
                 c.build.done=true;c.build.ghost=false;c.build.mesh.scale.setScalar(1);c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
-                removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);
+                removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);playSound('constructionComplete',0.9);
                 showFloatingMsg('✅ Factory complete — construction dozer retreating');
             }else remaining.push(c);
         }
@@ -13885,57 +14115,6 @@ window.updateCameraSensitivity=function(v){
 
 <!-- صوت الترحيب الخارجي: ضع الملف في sounds/intro-voice.mp3 -->
 <audio id="intro-voice-audio" src="sounds/intro-voice.mp3" preload="auto" playsinline></audio>
-<script id="intro-voice-autoplay">
-(function () {
-  'use strict';
-  var audio = document.getElementById('intro-voice-audio');
-  if (!audio) return;
-  audio.loop = false;
-  var started = false;
-  var finished = false;
-  function removeFallbackListeners() {
-    document.removeEventListener('pointerdown', startOnFirstGesture, true);
-    document.removeEventListener('touchstart', startOnFirstGesture, true);
-    document.removeEventListener('keydown', startOnFirstGesture, true);
-  }
-  function startOnFirstGesture() {
-    if (started || finished) return;
-    started = true;
-    removeFallbackListeners();
-    try {
-      var p = audio.play();
-      if (p && typeof p.catch === 'function') p.catch(function () { started = false; });
-    } catch (e) { started = false; }
-  }
-  audio.addEventListener('ended', function () {
-    finished = true;
-    started = true;
-    removeFallbackListeners();
-    audio.pause();
-  }, { once: true });
-  function tryAutoplayImmediately() {
-    if (started || finished) return;
-    try {
-      var p = audio.play();
-      if (p && typeof p.then === 'function') {
-        p.then(function () { started = true; removeFallbackListeners(); }).catch(function () {
-          document.addEventListener('pointerdown', startOnFirstGesture, true);
-          document.addEventListener('touchstart', startOnFirstGesture, true);
-          document.addEventListener('keydown', startOnFirstGesture, true);
-        });
-      } else { started = true; }
-    } catch (e) {
-      document.addEventListener('pointerdown', startOnFirstGesture, true);
-      document.addEventListener('touchstart', startOnFirstGesture, true);
-      document.addEventListener('keydown', startOnFirstGesture, true);
-    }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', tryAutoplayImmediately, { once: true });
-  } else { tryAutoplayImmediately(); }
-})();
-</script>
-
 </body>
 </html>
 
@@ -14116,3 +14295,111 @@ body.battle-active #start-menu {
   box-shadow:none !important;
 }
 </style>
+
+<script id="intro-voice-on-match-start">
+(function () {
+  'use strict';
+  var audio = document.getElementById('intro-voice-audio');
+  if (!audio) return;
+
+  audio.src = 'sounds/intro-voice.mp3';
+  audio.preload = 'auto';
+  audio.loop = false;
+  audio.volume = 1;
+
+  var hasStarted = false;
+  var retryArmed = false;
+
+  function battleBaseIsVisible() {
+    if (!document.body || !document.body.classList.contains('battle-active')) return false;
+    var menu = document.getElementById('settings-modal');
+    var startMenu = document.getElementById('start-menu');
+    function hidden(el) {
+      if (!el) return true;
+      var s = getComputedStyle(el), r = el.getBoundingClientRect();
+      return s.display === 'none' || s.visibility === 'hidden' || r.width === 0 || r.height === 0;
+    }
+    if (!hidden(menu) || !hidden(startMenu)) return false;
+    try {
+      if (typeof playerBaseGroup === 'undefined' || !playerBaseGroup || playerBaseGroup.visible === false) return false;
+      if (typeof scene !== 'undefined' && scene && !scene.getObjectById(playerBaseGroup.id)) return false;
+    } catch (e) { return false; }
+    return true;
+  }
+
+  function tryStartVoice() {
+    if (hasStarted || !battleBaseIsVisible()) return;
+    try {
+      audio.currentTime = 0;
+      var p = audio.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function () {
+          hasStarted = true;
+          removeRetry();
+        }).catch(function () {
+          armRetry();
+        });
+      } else {
+        hasStarted = true;
+        removeRetry();
+      }
+    } catch (e) {
+      armRetry();
+    }
+  }
+
+  function retry() {
+    if (hasStarted) return;
+    // Retry only after the match is active and the main base is visible.
+    tryStartVoice();
+  }
+  function armRetry() {
+    if (retryArmed) return;
+    retryArmed = true;
+    document.addEventListener('pointerdown', retry, true);
+    document.addEventListener('touchstart', retry, true);
+    document.addEventListener('keydown', retry, true);
+  }
+  function removeRetry() {
+    document.removeEventListener('pointerdown', retry, true);
+    document.removeEventListener('touchstart', retry, true);
+    document.removeEventListener('keydown', retry, true);
+    retryArmed = false;
+  }
+
+  audio.addEventListener('ended', function () {
+    audio.pause();
+    try { audio.currentTime = 0; } catch (e) {}
+  });
+
+  // Play immediately after the real game-start function hides the menus and positions the camera.
+  // Keeping play() in the same click call stack avoids mobile-browser autoplay blocking.
+  var original = window.beginConfiguredGame;
+  if (typeof original === 'function' && !original.__introVoiceFixed) {
+    var wrapped = function () {
+      var result = original.apply(this, arguments);
+      if (battleBaseIsVisible()) tryStartVoice();
+      else {
+        // Wait for the base to become visible, then try once; mobile can retry on the next user gesture.
+        var frames = 0;
+        function wait() {
+          if (hasStarted) return;
+          if (battleBaseIsVisible()) tryStartVoice();
+          else if (++frames < 600) requestAnimationFrame(wait);
+        }
+        requestAnimationFrame(wait);
+      }
+      return result;
+    };
+    wrapped.__introVoiceFixed = true;
+    window.beginConfiguredGame = wrapped;
+  }
+
+  // If the online room starts through a different code path, wait for the actual battlefield.
+  var observer = new MutationObserver(function () {
+    if (!hasStarted && battleBaseIsVisible()) tryStartVoice();
+  });
+  if (document.body) observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+})();
+</script>
+
