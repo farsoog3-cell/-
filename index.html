@@ -3582,7 +3582,6 @@
             mesh.material=mat; mesh.castShadow=false; mesh.receiveShadow=true;
             // يضمن توحيد وضع المجسم مع إحداثيات العالم التي تستخدمها الوحدات.
             root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
-            root.updateMatrixWorld(true);
             const oldTerrain=terrainMesh;
             if(oldTerrain && oldTerrain.parent) oldTerrain.parent.remove(oldTerrain);
             scene.add(root); terrainMesh=mesh;
@@ -3590,12 +3589,8 @@
             // بعد تثبيت خريطة GLB وخامة الارتفاع الخارجية، نعيد بناء ارتفاعات الضباب
             // فوق الأرض نفسها، بدلاً من الاعتماد على التضاريس الإجرائية التي أزيلت.
             if (!warFogMesh) initWarFogOfWar();
-            // انتظر إطاراً واحداً لضمان أن إحداثيات الخريطة الخارجية أصبحت جاهزة قبل مطابقة الضباب.
-            requestAnimationFrame(() => {
-                refreshWarFogSurface();
-                if (warFogTexture) warFogTexture.needsUpdate = true;
-                if (warFogMesh) { warFogMesh.visible = true; warFogMesh.renderOrder = 20; }
-            });
+            refreshWarFogSurface();
+            if (warFogTexture) warFogTexture.needsUpdate = true;
             console.log('تم تحميل الخريطة الخارجية وتحديث سطح ضباب الحرب ليتبعها');
         }, undefined, function(err) { console.error('فشل تحميل الخريطة الخارجية؛ ستبقى الأرض الاحتياطية ظاهرة.',err); });
     }
@@ -4678,27 +4673,27 @@ function startGame(){openBattleSetup();}
 
             // Satellite/radar tower — four lattice legs.
             const towerX=-10.4, towerZ=6.0;
-            const baseY=.62, towerH=9.2;
+            const baseY=.62, towerH=13.4;
             for(const [dx,dz] of [[-1.05,-1.05],[1.05,-1.05],[-1.05,1.05],[1.05,1.05]]){
                 addLine(new THREE.Vector3(towerX+dx,baseY,towerZ+dz),new THREE.Vector3(towerX+dx*.48,baseY+towerH,towerZ+dz*.48),metal);
             }
-            for(let y=2.0;y<9.5;y+=1.25){
+            for(let y=2.0;y<13.5;y+=1.35){
                 const s=.92-(y-baseY)/towerH*.42;
                 for(const [dx,dz] of [[-1, -1],[1,-1],[-1,1],[1,1]]) addLine(new THREE.Vector3(towerX+dx*s,y,towerZ+dz*s),new THREE.Vector3(towerX-dx*s,y,towerZ-dz*s),metalDark);
             }
             // Cross braces.
-            for(let y=1.5;y<9.0;y+=1.5){
+            for(let y=1.5;y<13.0;y+=1.5){
                 const s1=.98-(y-baseY)/towerH*.4, s2=.98-(y+.95-baseY)/towerH*.4;
                 addLine(new THREE.Vector3(towerX-s1,y,towerZ-s1),new THREE.Vector3(towerX+s2,y+.95,towerZ+s2),metalDark);
                 addLine(new THREE.Vector3(towerX+s1,y,towerZ-s1),new THREE.Vector3(towerX-s2,y+.95,towerZ+s2),metalDark);
             }
             // Radar mast.
-            addCyl(.18,.12,1.9,metalDark,towerX,baseY+towerH+.85,towerZ,10);
-            const radarGroup=new THREE.Group(); radarGroup.position.set(towerX,baseY+towerH+1.45,towerZ); parentGroup.add(radarGroup);
-            const radarDish=new THREE.Mesh(new THREE.SphereGeometry(1.45,20,10,0,Math.PI*2,0,Math.PI*.48),white);
+            addCyl(.22,.15,2.5,metalDark,towerX,baseY+towerH+1.05,towerZ,12);
+            const radarGroup=new THREE.Group(); radarGroup.position.set(towerX,baseY+towerH+1.85,towerZ); parentGroup.add(radarGroup);
+            const radarDish=new THREE.Mesh(new THREE.SphereGeometry(2.15,24,12,0,Math.PI*2,0,Math.PI*.48),white);
             radarDish.rotation.x=-Math.PI/2.25; radarGroup.add(radarDish);
-            const radarArm=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,2.9,8),metalDark); radarArm.rotation.z=Math.PI/2; radarArm.position.x=1.0; radarGroup.add(radarArm);
-            const radarHub=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.35,10),dark); radarHub.rotation.z=Math.PI/2; radarHub.position.x=2.45; radarGroup.add(radarHub);
+            const radarArm=new THREE.Mesh(new THREE.CylinderGeometry(.10,.10,4.2,10),metalDark); radarArm.rotation.z=Math.PI/2; radarArm.position.x=1.45; radarGroup.add(radarArm);
+            const radarHub=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.48,12),dark); radarHub.rotation.z=Math.PI/2; radarHub.position.x=3.45; radarGroup.add(radarHub);
             radarGroup.userData.isRadar=true;
             if(typeof rotatingRadars!=='undefined') rotatingRadars.push(radarGroup);
 
@@ -11687,7 +11682,7 @@ function createArmyFactory(x,z,ghost=false){
         warFogTexture.anisotropy = renderer && renderer.capabilities ? Math.min(4, renderer.capabilities.getMaxAnisotropy()) : 1;
         const material = new THREE.MeshBasicMaterial({
             map: warFogTexture, transparent: true, opacity: 1,
-            depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+            depthWrite: false, depthTest: true, side: THREE.DoubleSide,
             polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2
         });
 
@@ -11731,7 +11726,7 @@ function createArmyFactory(x,z,ghost=false){
             } catch (_) {}
             if (!Number.isFinite(ground)) ground = 0;
             // هامش صغير فوق سطح الخريطة لتجنب اختفاء الضباب داخل المثلثات.
-            pos.setZ(i, ground + 0.48);
+            pos.setZ(i, ground + 0.32);
         }
         pos.needsUpdate = true;
         geometry.computeVertexNormals();
@@ -11790,9 +11785,9 @@ function createArmyFactory(x,z,ghost=false){
             revealers.push({ x: p.x, z: p.z, r: radius });
         };
         // المعسكر الرئيسي، مصنع الآليات، ومعسكر الجنود جميعها تملك مجال كشف.
-        addStructureVision(playerBaseGroup, 52);
-        (constructedFactories || []).forEach(f => addStructureVision(f, 44));
-        (constructedBarracks || []).forEach(b => addStructureVision(b, 38));
+        addStructureVision(playerBaseGroup, 92);
+        (constructedFactories || []).forEach(f => addStructureVision(f, 78));
+        (constructedBarracks || []).forEach(b => addStructureVision(b, 72));
 
         // تلاشي المناطق المكتشفة خلال بضع ثوانٍ، كي يعود الضباب بعد مغادرة القوات
         // أو تدمير وحدة/مبنى كان يكشفها.
@@ -11815,7 +11810,7 @@ function createArmyFactory(x,z,ghost=false){
         const ctx = warFogCtx;
         ctx.globalCompositeOperation = 'source-over';
         ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = 'rgba(26, 31, 32, 0.50)';
+        ctx.fillStyle = 'rgba(26, 31, 32, 0.43)';
         ctx.fillRect(0, 0, w, h);
         ctx.globalCompositeOperation = 'destination-out';
         ctx.drawImage(warFogExploredCanvas, 0, 0);
