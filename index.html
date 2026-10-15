@@ -15120,3 +15120,32 @@ body.battle-active #start-menu {
     #construction-bar.barracks-selected #factory-infantry-card{display:none!important;}
     #construction-bar.barracks-selected #barracks-infantry-card{display:flex!important;}
 </style>
+
+
+<style id="final-dozer-only-two-cards-and-empty-selection">
+/* لا تعرض الشريط الثابت إذا لم يكن هناك عنصر محدد */
+#construction-bar.open:not(.unit-selected):not(.factory-selected):not(.barracks-selected):not(.building-selected){
+  display:none!important; visibility:hidden!important; opacity:0!important; pointer-events:none!important;
+}
+/* التركس المحدد: بطاقتا بناء المصنع ومعسكر الجنود فقط */
+#construction-bar.unit-selected.builder-selected .build-title{display:none!important}
+#construction-bar.unit-selected.builder-selected .bar-unit-controls,
+#construction-bar.unit-selected.builder-selected .build-card,
+#construction-bar.unit-selected.builder-selected .factory-unit-card,
+#construction-bar.unit-selected.builder-selected .barracks-unit-card,
+#construction-bar.unit-selected.builder-selected #factory-infantry-card,
+#construction-bar.unit-selected.builder-selected #barracks-infantry-card{display:none!important}
+#construction-bar.unit-selected.builder-selected .factory-build-card,
+#construction-bar.unit-selected.builder-selected .barracks-build-card{
+  display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;
+}
+/* عند تحديد أي وحدة غير التركس: أوامر الوحدة فقط */
+#construction-bar.unit-selected:not(.builder-selected) .factory-build-card,
+#construction-bar.unit-selected:not(.builder-selected) .barracks-build-card,
+#construction-bar.unit-selected:not(.builder-selected) .factory-unit-card,
+#construction-bar.unit-selected:not(.builder-selected) .barracks-unit-card,
+#construction-bar.unit-selected:not(.builder-selected) #factory-infantry-card,
+#construction-bar.unit-selected:not(.builder-selected) #barracks-infantry-card{display:none!important}
+/* زر البيع لا يظهر إلا مع مبنى محدد */
+#construction-bar:not(.factory-selected):not(.barracks-selected) #sell-building-btn{display:none!important;visibility:hidden!important}
+</style>
