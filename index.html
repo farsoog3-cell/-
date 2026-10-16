@@ -2495,17 +2495,17 @@
             <div class="factory-unit-info"><div class="factory-unit-name">📡 SCOUT</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Reveals the area and activates minimap</div></div>
         </div>
         <div class="bar-unit-controls" id="bar-unit-controls" aria-label="أوامر الوحدة">
-            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="حدد منطقة دائرية؛ ستهاجم وحداتك الأعداء الذين يقتربون منها">
-                <span class="bar-icon shield-icon">◎</span><small>قصف المنطقة</small>
+            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="حماية الوحدة: المس الأرض لتحديد منطقة الحماية">
+                <span class="bar-icon shield-icon">🛡</span><small>حماية</small>
             </button>
-            <button class="bar-control-btn" id="bar-cancel-btn" onclick="playClickSound(); cancelUnitSelection()" title="CANCEL تحديد الوحدة">
-                <span class="bar-icon">✕</span><small>CANCEL</small>
+            <button class="bar-control-btn" id="bar-cancel-btn" onclick="playClickSound(); cancelUnitSelection()" title="إلغاء التحديد">
+                <span class="bar-icon">✕</span><small>إلغاء</small>
             </button>
-            <button class="bar-control-btn" id="bar-all-btn" onclick="playClickSound(); setSelectionMode('all')" title="تحديد ALL">
-                <span class="bar-icon">▦</span><small>ALL</small>
+            <button class="bar-control-btn" id="bar-all-btn" onclick="playClickSound(); setSelectionMode('all')" title="تحديد كل الوحدات من النوع نفسه">
+                <span class="bar-icon">▦</span><small>تحديد الكل</small>
             </button>
-            <button class="bar-control-btn" id="bar-single-btn" onclick="playClickSound(); setSelectionMode('single')" title="تحديد SINGLE">
-                <span class="bar-icon">▣</span><small>SINGLE</small>
+            <button class="bar-control-btn" id="bar-single-btn" onclick="playClickSound(); setSelectionMode('single')" title="تحديد وحدة واحدة فقط">
+                <span class="bar-icon">▣</span><small>فردي</small>
             </button>
             <button class="bar-control-btn fire-stop-btn" id="bar-stop-fire-btn" onclick="playClickSound(); toggleSelectedFire()" title="توقف عن القصف">
                 <span class="bar-icon">⛔</span><small>CEASE FIRE</small>
@@ -3692,7 +3692,7 @@
         if (btn) {
             btn.disabled = !hasSelection;
             btn.classList.toggle('armed', defenseCommandArmed);
-            btn.innerText = defenseCommandArmed ? '◎ اختر منطقة القصف' : '◎ قصف المنطقة';
+            btn.innerText = defenseCommandArmed ? '🛡 اختر منطقة الحماية' : '🛡 حماية';
         }
         if (cancelBtn) {
             cancelBtn.disabled = !hasSelection;
@@ -3913,9 +3913,9 @@
         defenseCommandArmed = !defenseCommandArmed;
         updateDefenseButton();
         if (defenseCommandArmed) {
-            showFloatingMsg('◎ اختر نقطة على الأرض لتحديد منطقة القصف');
+            showFloatingMsg('🛡 المس الأرض لتحديد منطقة الحماية');
         } else {
-            showFloatingMsg('تم إلغاء أمر قصف المنطقة');
+            showFloatingMsg('تم إلغاء أمر الحماية');
         }
     }
 
@@ -14808,14 +14808,14 @@ body.battle-active #start-menu {
  padding:5px!important;gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;
  scrollbar-width:thin!important;z-index:55!important;
 }
-/* اجعل خيارات بناء المصنع ومعسكر الجنود ظاهرة داخل شريط البناء المفتوح */
-#construction-bar.open #factory-build-card,
-#construction-bar.open #barracks-build-card,
+/* لا تظهر بطاقات إنشاء المباني إلا عند تحديد تركس البناء */
 #construction-bar #factory-build-card,
 #construction-bar #barracks-build-card{
- display:flex!important;visibility:visible!important;opacity:1!important;flex-shrink:0!important;
+ display:none!important;visibility:hidden!important;opacity:0!important;
 }
-#construction-bar #factory-build-card,#construction-bar #barracks-build-card{
+#construction-bar.builder-selected #factory-build-card,
+#construction-bar.builder-selected #barracks-build-card{
+ display:flex!important;visibility:visible!important;opacity:1!important;flex-shrink:0!important;
  min-width:132px!important;flex:0 0 132px!important;min-height:60px!important;
 }
 /* زر البيع ظاهر دائماً بمكان ثابت وواضح؛ تبقى آلية البيع الأصلية كما هي */
@@ -15063,5 +15063,25 @@ body.battle-active #start-menu {
   background-color:#080b0d!important;
   background-image:linear-gradient(180deg,rgba(0,0,0,.26),rgba(0,0,0,.48)),url("images/loading2.jpg")!important;
   background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important;
+}
+</style>
+
+<style id="final-all-unit-selection-controls">
+/* أظهر أزرار إلغاء التحديد والحماية وتحديد الكل والفردي عند تحديد أي وحدة أو جندي */
+#construction-bar.unit-selected .bar-unit-controls,
+#construction-bar.unit-selected.builder-selected .bar-unit-controls,
+#construction-bar.unit-selected.ambulance-selected .bar-unit-controls{display:flex!important;visibility:visible!important;opacity:1!important}
+#construction-bar.unit-selected .bar-control-btn{display:flex!important;visibility:visible!important;opacity:1!important}
+#construction-bar.unit-selected #bar-defend-btn,
+#construction-bar.unit-selected #bar-cancel-btn,
+#construction-bar.unit-selected #bar-all-btn,
+#construction-bar.unit-selected #bar-single-btn{display:flex!important}
+#construction-bar.unit-selected #bar-all-btn small,
+#construction-bar.unit-selected #bar-single-btn small,
+#construction-bar.unit-selected #bar-cancel-btn small,
+#construction-bar.unit-selected #bar-defend-btn small{font-size:7px!important;line-height:9px!important;white-space:nowrap!important}
+@media(max-width:700px){
+ #construction-bar.unit-selected .bar-unit-controls{gap:2px!important;padding:1px!important}
+ #construction-bar.unit-selected .bar-control-btn{width:42px!important;min-width:42px!important}
 }
 </style>
