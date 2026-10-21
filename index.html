@@ -2585,6 +2585,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 
 <script>
     // ===== نظام صوت موحّد وإصلاح تشغيل الأصوات على الهاتف =====
@@ -5180,6 +5181,124 @@ function startGame(){openBattleSetup();}
         addRearFlagDecal(root,team,0,2.15,-4.78,1.95,.94,Math.PI);
     }
 
+    // ===== Ready-rigged animated infantry model (GLB) =====
+    // The existing procedural soldier remains as a fallback if the network/model fails.
+    const infantryModelPending = new Set();
+    let infantryGLTFSource = null;
+    let infantryGLTFLoading = false;
+    let infantryGLTFFailed = false;
+    function beginInfantryModelLoad(){
+        if(infantryGLTFSource || infantryGLTFLoading || infantryGLTFFailed) return;
+        if(!THREE.GLTFLoader || !THREE.SkeletonUtils || !THREE.SkeletonUtils.clone){
+            console.warn('Animated infantry loader unavailable; using fallback soldier.');
+            infantryGLTFFailed=true; return;
+        }
+        infantryGLTFLoading=true;
+        const loader=new THREE.GLTFLoader();
+        loader.load('https://threejs.org/examples/models/gltf/Soldier.glb', gltf=>{
+            infantryGLTFSource=gltf;
+            infantryGLTFLoading=false;
+            for(const soldier of infantryModelPending) attachAnimatedInfantryModel(soldier);
+            infantryModelPending.clear();
+        }, undefined, err=>{
+            infantryGLTFLoading=false; infantryGLTFFailed=true;
+            console.warn('Animated soldier model could not load; using procedural fallback.',err);
+            infantryModelPending.clear();
+        });
+    }
+    function attachAnimatedInfantryModel(soldier){
+        if(!soldier || soldier.isDestroyed || !infantryGLTFSource || soldier.animatedModelRoot) return;
+        try{
+            const model=THREE.SkeletonUtils.clone(infantryGLTFSource.scene);
+            model.name='animatedInfantryGLB';
+            // The source model is authored at human scale; scale to match this game's unit scale.
+            model.scale.setScalar(2.35);
+            model.position.set(0,0,0);
+            // The source Soldier.glb faces the opposite local Z direction from this game's movement convention.
+            // Rotate only the visual model so movement and facing stay aligned on all four directions.
+            model.rotation.y=Math.PI;
+            model.traverse(o=>{
+                if(!o.isMesh) return;
+                o.castShadow=true; o.receiveShadow=true;
+                // Keep the uniform military green, but give exposed skin a natural warm tone.
+                const mats=Array.isArray(o.material)?o.material:[o.material];
+                for(const mat of mats){
+                    if(!mat) continue;
+                    const n=String(mat.name||o.name||'').toLowerCase();
+                    if(/skin|face|hand|body_skin/.test(n) && mat.color){
+                        mat.color.set(0xc58b62);
+                        mat.needsUpdate=true;
+                    }
+                }
+            });
+            soldier.mesh.add(model);
+            soldier.animatedModelRoot=model;
+            soldier.infantryVisualRoot.visible=false;
+            soldier.infantryChestFlag.visible=false;
+            // The downloaded Soldier.glb has no weapon. Add a compact rifle to the animated rig
+            // and use its muzzle as the actual projectile origin, rather than leaving the old
+            // procedural rifle hidden with the fallback body.
+            const rifleMat=new THREE.MeshStandardMaterial({color:0x202722,roughness:.62,metalness:.48});
+            const rifleDark=new THREE.MeshStandardMaterial({color:0x0b0e0c,roughness:.78,metalness:.22});
+            const rifleMetal=new THREE.MeshStandardMaterial({color:0x68716a,roughness:.42,metalness:.76});
+            const rifle=new THREE.Group(); rifle.name='animatedInfantryRifle';
+            // Place the weapon at chest/hand height, not at the abdomen. The barrel points forward (-Z before model facing correction).
+            rifle.position.set(.10,1.34,-.02); rifle.rotation.set(-.08,0,0); rifle.scale.setScalar(.30);
+            const addGunPart=(geo,mat,x,y,z,rx=0,ry=0,rz=0)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.rotation.set(rx,ry,rz);m.castShadow=true;rifle.add(m);return m;};
+            addGunPart(new THREE.BoxGeometry(.20,.17,.44),rifleDark,0,0,.15);
+            addGunPart(new THREE.BoxGeometry(.24,.19,.50),rifleMat,0,0,-.10);
+            addGunPart(new THREE.BoxGeometry(.14,.14,.72),rifleDark,0,.01,-.53);
+            addGunPart(new THREE.CylinderGeometry(.027,.032,.92,10),rifleMetal,0,0,-1.25,Math.PI/2);
+            addGunPart(new THREE.BoxGeometry(.12,.34,.14),rifleMat,0,-.22,-.06,-.16);
+            addGunPart(new THREE.BoxGeometry(.09,.09,.19),rifleMetal,0,.14,-.43);
+            const muzzle=new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),new THREE.MeshBasicMaterial({color:0xffb52e,transparent:true,opacity:0,depthWrite:false}));
+            muzzle.name='animatedInfantryMuzzle'; muzzle.position.set(0,0,-1.64); rifle.add(muzzle); model.add(rifle);
+            // Ensure no flag/pole meshes from any prior visual are visible on the animated soldier.
+            model.traverse(o=>{ if(/flag|banner|pole|standard/i.test(String(o.name||''))) o.visible=false; });
+            soldier.infantryRifle=rifle; soldier.infantryMuzzle=muzzle;
+            const mixer=new THREE.AnimationMixer(model);
+            soldier.infantryMixer=mixer;
+            soldier.infantryActions={};
+            for(const clip of infantryGLTFSource.animations || []){
+                const key=clip.name.toLowerCase();
+                const action=mixer.clipAction(clip);
+                if(key.includes('idle')) soldier.infantryActions.idle=action;
+                else if(key.includes('run')) soldier.infantryActions.run=action;
+                else if(key.includes('walk')) soldier.infantryActions.walk=action;
+                else if(key.includes('t-pose') || key.includes('tpose')) soldier.infantryActions.pose=action;
+            }
+            const idle=soldier.infantryActions.idle || soldier.infantryActions.pose || (infantryGLTFSource.animations[0] ? mixer.clipAction(infantryGLTFSource.animations[0]) : null);
+            if(idle){ idle.play(); soldier.infantryCurrentAction=idle; }
+            // Camp color is part of the uniform itself, not a flag attached to the soldier.
+            const teamHex=soldier.team==='enemy'
+                ? (battleConfig.enemyColor || '#f43f5e')
+                : (battleConfig.playerColor || '#168cff');
+            const uniformTeamMat=new THREE.MeshStandardMaterial({color:new THREE.Color(teamHex),roughness:.78,metalness:.04});
+            const uniformTeamDark=new THREE.MeshStandardMaterial({color:new THREE.Color(teamHex).multiplyScalar(.72),roughness:.84,metalness:.02});
+            const addUniformAccent=(w,h,d,mat,x,y,z)=>{
+                const piece=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+                piece.position.set(x,y,z); piece.castShadow=true; piece.receiveShadow=true;
+                piece.name='campColorUniformDetail'; model.add(piece); return piece;
+            };
+            // Small colored cloth panels on the chest and shoulders, scaled with the animated model.
+            addUniformAccent(.20,.075,.018,uniformTeamMat,0,1.34,-.115);
+            addUniformAccent(.075,.12,.025,uniformTeamMat,-.205,1.34,-.055);
+            addUniformAccent(.075,.12,.025,uniformTeamMat,.205,1.34,-.055);
+            addUniformAccent(.16,.025,.018,uniformTeamDark,0,1.25,-.12);
+        }catch(e){ console.warn('Could not attach animated soldier; using fallback.',e); }
+    }
+    function setInfantryAnimation(soldier, moving, aiming){
+        if(!soldier || !soldier.infantryMixer || !soldier.infantryActions) return;
+        const actions=soldier.infantryActions;
+        const next=moving ? (actions.run || actions.walk || actions.idle) : (actions.idle || actions.pose || actions.walk);
+        if(next && next!==soldier.infantryCurrentAction){
+            next.reset().fadeIn(.18).play();
+            if(soldier.infantryCurrentAction) soldier.infantryCurrentAction.fadeOut(.18);
+            soldier.infantryCurrentAction=next;
+        }
+        soldier.infantryMixer.update(1/60);
+    }
+
     // ===== نظام مشاة عسكري احترافي =====
     function createInfantrySoldier(x,z,team='player'){
         // INFANTRY v3 — completely rebuilt visual model.  Gameplay state remains compatible.
@@ -5295,8 +5414,8 @@ function startGame(){openBattleSetup();}
         const slingMesh=new THREE.Mesh(new THREE.TubeGeometry(slingCurve,22,.025,7,false),strap); slingMesh.name='infantryRifleSling'; rifle.add(slingMesh);
     
         // Team marking only — never tint the human model.
-        const flagMat=new THREE.MeshBasicMaterial({map:createFlagTexture(enemy?enemyFlagType:playerFlagType),side:THREE.DoubleSide,transparent:true});
-        const chestFlag=new THREE.Mesh(new THREE.PlaneGeometry(.38,.22),flagMat); chestFlag.name='soldierChestFlag'; chestFlag.userData.teamFlag=true; chestFlag.userData.team=team; chestFlag.position.set(0,2.43,.70); visualRoot.add(chestFlag);
+        // Keep the compatibility reference used by older animation code, but do not render a flag on the soldier.
+        const chestFlag=new THREE.Group(); chestFlag.name='soldierChestFlag'; chestFlag.visible=false; visualRoot.add(chestFlag);
     
         const shadow=new THREE.Mesh(new THREE.CircleGeometry(.72,28),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.30,depthWrite:false})); shadow.rotation.x=-Math.PI/2; shadow.position.y=.035; g.add(shadow);
         const terrainY=getTerrainHeight(x,z); g.position.set(x,terrainY,z); g.rotation.y=team==='player'?-Math.PI/4:Math.PI*3/4; scene.add(g);
@@ -5304,10 +5423,14 @@ function startGame(){openBattleSetup();}
     
         const soldier={mesh:g,team,target:null,hpLabel,hpFill,hp:100,maxHp:100,hpRevealUntil:0,lastShot:0,reloadTime:0,speed:.105,isDestroyed:false,destructionTimer:0,type:'infantry',manualControl:team==='player',hasPlayerMoveOrder:false,ceaseFire:false,guardPoint:null,guardRadius:14,holdPosition:false,
             infantryLegL:L.root,infantryLegR:R.root,infantryArmL:armL,infantryArmR:armR,infantryThighL:L.thigh,infantryThighR:R.thigh,infantryShinL:L.shin,infantryShinR:R.shin,
-            infantryRifle:rifle,infantryMuzzle:muzzle,infantryVisualRoot:visualRoot,infantryHead:head,walkCycle:Math.random()*6.28,infantryAttackCycle:0,lastDustPos:new THREE.Vector3(x,terrainY,z),noInfantryTrail:true,isInfantry:true,isAiming:false,aimTarget:null,aimUntil:0,lastStepIndex:-1,infantryBurstLeft:0,infantryBurstTimer:0,deathStyle:null,deathStart:0,lastHitWasExplosion:false,
+            infantryRifle:rifle,infantryMuzzle:muzzle,infantryVisualRoot:visualRoot,infantryHead:head,infantryChestFlag:chestFlag,walkCycle:Math.random()*6.28,infantryAttackCycle:0,lastDustPos:new THREE.Vector3(x,terrainY,z),noInfantryTrail:true,isInfantry:true,isAiming:false,aimTarget:null,aimUntil:0,lastStepIndex:-1,infantryBurstLeft:0,infantryBurstTimer:0,deathStyle:null,deathStart:0,lastHitWasExplosion:false,
             breathPhase:Math.random()*Math.PI*2,breathAmount:.012,infantryIdleTime:0,injuryCount:0,combatState:'moving',combatSpeed:.108,weaponShake:0,smokeTimer:0,prone:false,runAudioCooldown:0,lastRunAudioAt:0};
         // Explicitly opt this infantry out of vehicle silver recoloring.
-        applySilverArmyStyle(soldier); addUnitTeamFlag(soldier,team); return soldier;
+        // Infantry uses camp-color uniform accents; never attach a pole or flag to the soldier.
+        applySilverArmyStyle(soldier);
+        infantryModelPending.add(soldier); beginInfantryModelLoad();
+        if(infantryGLTFSource){ attachAnimatedInfantryModel(soldier); infantryModelPending.delete(soldier); }
+        return soldier;
     }
     function fireInfantryWeapon(soldier,target){
         if(!soldier||soldier.isDestroyed||!target||target.isDestroyed||soldier.reloadTime>0)return;
@@ -5654,7 +5777,8 @@ function startGame(){openBattleSetup();}
 
     function updateInfantryVisual(soldier,isMoving){
         if(!soldier)return;
-        if(soldier.isDestroyed){ updateInfantryDeath(soldier); return; }
+        if(soldier.isDestroyed){ if(soldier.animatedModelRoot) soldier.animatedModelRoot.visible=false; if(soldier.infantryVisualRoot) soldier.infantryVisualRoot.visible=true; updateInfantryDeath(soldier); return; }
+        if(soldier.animatedModelRoot){ soldier.animatedModelRoot.visible=true; if(soldier.infantryVisualRoot) soldier.infantryVisualRoot.visible=false; setInfantryAnimation(soldier,!!isMoving,!!soldier.isAiming); }
 
         if(soldier.reloadTime>0)soldier.reloadTime-=16.67;
         if(soldier.reloadTime<0)soldier.reloadTime=0;
@@ -5711,7 +5835,7 @@ function startGame(){openBattleSetup();}
         // STOPPED: rifle comes forward horizontally and both hands grip it.
         // AIMING: rifle rises to the eye line; body leans forward slightly.
         const rifle=soldier.infantryRifle;
-        if(rifle){
+        if(rifle && !soldier.animatedModelRoot){
             let tx,ty,tz,rx,ry,rz;
             if(combat||aiming){
                 // READY/AIM: rifle is carried horizontally across both hands, never vertically.
@@ -5839,7 +5963,7 @@ function startGame(){openBattleSetup();}
             soldier.mesh.position.y=getTerrainHeight(soldier.mesh.position.x,soldier.mesh.position.z);
         }
 
-        if(rifle){
+        if(rifle && !soldier.animatedModelRoot){
             const recoil=(soldier.infantryAttackCycle||0)>0?.12:0;
             rifle.position.z-=recoil;
         }
