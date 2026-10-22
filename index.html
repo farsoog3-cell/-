@@ -2878,6 +2878,53 @@
     let menuBgmAudio = createManagedAudio('menuBgm', true);
     let preGameBgmAudio = createManagedAudio('preGameBgm', true);
     let battleBgmAudio = createManagedAudio('battleBgm', true);
+    // موسيقى المعركة: هدوء افتراضي، موسيقى battle_bgm الحالية عند هجوم العدو،
+    // وموسيقى مستقلة عندما يهاجم اللاعب.
+    soundFiles.neutralBgm = 'sounds/battle_ambient.mp3';
+    soundFiles.playerAttackBgm = 'sounds/player_attack_bgm.mp3';
+    let neutralBgmAudio = createManagedAudio('neutralBgm', true);
+    let playerAttackBgmAudio = createManagedAudio('playerAttackBgm', true);
+    let battleMusicMode = 'neutral';
+    let playerAttackMusicTimer = null;
+    let enemyAttackMusicTimer = null;
+    function switchBattleMusic(mode, holdMs=18000) {
+        if (gameOver || !battleAudioActive || !audioUnlocked) {
+            battleMusicMode = mode;
+            return;
+        }
+        battleMusicMode = mode;
+        [battleBgmAudio, neutralBgmAudio, playerAttackBgmAudio].forEach(a=>{
+            if(a){try{a.pause(); a.currentTime=0;}catch(e){}}
+        });
+        const target = mode === 'enemy' ? battleBgmAudio :
+                       mode === 'player' ? playerAttackBgmAudio : neutralBgmAudio;
+        if(target){
+            target.loop = true;
+            target.volume = Math.max(0, Math.min(1, (Number(document.getElementById('bgm-slider')?.value || 10)/100)));
+            playAudioElement(target,target.volume,false).catch(()=>{});
+        }
+        clearTimeout(playerAttackMusicTimer);
+        clearTimeout(enemyAttackMusicTimer);
+        if(mode==='player'){
+            playerAttackMusicTimer=setTimeout(()=>{
+                if(battleMusicMode==='player') switchBattleMusic('neutral');
+            },holdMs);
+        } else if(mode==='enemy'){
+            enemyAttackMusicTimer=setTimeout(()=>{
+                if(battleMusicMode==='enemy') switchBattleMusic('neutral');
+            },Math.max(holdMs,22000));
+        }
+    }
+    function signalPlayerAttackMusic(){
+        if(!battleAudioActive || gameOver) return;
+        unlockGameAudio();
+        switchBattleMusic('player',18000);
+    }
+    function signalEnemyAttackMusic(){
+        if(!battleAudioActive || gameOver) return;
+        unlockGameAudio();
+        switchBattleMusic('enemy',22000);
+    }
     let sfxVolumeSetting = 0.60;
     const MASTER_SFX_BOOST = 1.35;
 
@@ -2905,6 +2952,8 @@
         menuBgmAudio.volume = v;
         preGameBgmAudio.volume = v;
         battleBgmAudio.volume = v;
+        if(neutralBgmAudio) neutralBgmAudio.volume=v;
+        if(playerAttackBgmAudio) playerAttackBgmAudio.volume=v;
         document.getElementById('bgm-val').innerText = `${val}%`;
     }
 
@@ -4169,7 +4218,7 @@ function beginConfiguredGame(){
     if(menuBgmAudio){menuBgmAudio.pause();try{menuBgmAudio.currentTime=0;}catch(e){}}
     unlockGameAudio();
     try { startWindAudio(); } catch(e) {}
-    playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});
+    switchBattleMusic('neutral');
     cleanupIntroBackground();
     document.body.classList.add('battle-active');
     document.getElementById('settings-modal').style.display='none';
@@ -4985,6 +5034,7 @@ function startGame(){openBattleSetup();}
     }
 
     function damageCommandBase(base,amount,fromTeam){
+        if(fromTeam==='player') signalPlayerAttackMusic();
         if(!base||base.isDestroyed)return;
         base.hp=Math.max(0,(base.hp||base.maxHp)-Math.max(1,amount));
         base.hpRevealUntil=Date.now()+5000;
@@ -9906,6 +9956,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function damageFactory(factory, amount, fromTeam){
+        if(fromTeam==='player') signalPlayerAttackMusic();
         if(!factory || factory.isDestroyed || !factory.done) return;
         factory.hp=Math.max(0,(factory.hp||factory.maxHp||1600)-Math.max(1,amount));
         factory.hpRevealUntil=Date.now()+5000;
@@ -10375,6 +10426,7 @@ function createArmyFactory(x,z,ghost=false){
 
 
     function damageBarracks(barracks,amount,fromTeam){
+        if(fromTeam==='player') signalPlayerAttackMusic();
         if(!barracks||barracks.isDestroyed)return;
         barracks.hp=Math.max(0,(barracks.hp||barracks.maxHp||900)-Math.max(1,amount));barracks.hpRevealUntil=Date.now()+5000;
         if(barracks.hp<=0){barracks.isDestroyed=true;barracks.hp=0;if(barracks.hpLabel)barracks.hpLabel.style.display='none';
@@ -10398,6 +10450,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function damageOilRig(rig, amount, fromTeam){
+        if(fromTeam==='player') signalPlayerAttackMusic();
         if(!rig || rig.isDestroyed)return;
         rig.hp=Math.max(0,(rig.hp||rig.maxHp||700)-Math.max(1,amount));
         rig.hpRevealUntil=Date.now()+5000;
@@ -10564,6 +10617,7 @@ function createArmyFactory(x,z,ghost=false){
         }
 
         // صوت خارجي عند دخول هجوم العدو إلى محيط القاعدة، مع الحفاظ على إنذار الخطر الأصلي.
+        signalEnemyAttackMusic();
         playBattleCue('underAttack', 0.9, 20000);
         // Red attack warning: create/play the audio only when an attack is actually triggered.
         try{
@@ -11693,8 +11747,8 @@ function createArmyFactory(x,z,ghost=false){
         gameOver = true;
         isCinematicEnding = true;
         
-        battleBgmAudio.pause();
-        battleBgmAudio.currentTime = 0;
+        [battleBgmAudio,neutralBgmAudio,playerAttackBgmAudio].forEach(a=>{if(a){try{a.pause();a.currentTime=0;}catch(e){}}});
+        clearTimeout(playerAttackMusicTimer);clearTimeout(enemyAttackMusicTimer);
 
         // إدارة حطام سيارات الإسعاف المدمرة.
         ambulances.forEach(ambulance => {
@@ -12643,7 +12697,7 @@ function createArmyFactory(x,z,ghost=false){
     if(typeof updateEconomyUI==='function')updateEconomyUI();
     closeBattleSetup();
     menuBgmAudio.pause();menuBgmAudio.currentTime=0;
-    unlockGameAudio();playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});
+    unlockGameAudio();switchBattleMusic('neutral');
     cleanupIntroBackground();
     document.body.classList.add('battle-active');
     document.getElementById('settings-modal').style.display='none';
@@ -14077,7 +14131,7 @@ window.updateCameraSensitivity=function(v){
     closeBattleSetup();
     try{if(typeof stopPreGameMusic==='function')stopPreGameMusic();}catch(e){}
     try{if(menuBgmAudio){menuBgmAudio.pause();menuBgmAudio.currentTime=0;}}catch(e){}
-    try{unlockGameAudio();playAudioElement(battleBgmAudio,battleBgmAudio.volume,false).catch(()=>{});}catch(e){}
+    try{unlockGameAudio();switchBattleMusic('neutral');}catch(e){}
     try{cleanupIntroBackground();}catch(e){}
     const s=document.getElementById('settings-modal');if(s)s.style.display='none';
     const m=document.getElementById('start-menu');if(m)m.style.display='none';
@@ -14355,6 +14409,49 @@ window.updateCameraSensitivity=function(v){
  check();
 })();
 </script>
+
+<style id="final-mobile-landscape-ui-reconciliation">
+/* توحيد الطبقات النهائية حتى لا تتراكب قواعد الواجهة القديمة والجديدة على الهاتف */
+html,body{width:100%;height:100%;min-height:100%;overflow:hidden;overscroll-behavior:none}
+#canvas-container{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important}
+#ui-overlay{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;overflow:hidden!important}
+#settings-modal,#battle-setup-modal,#room-setup-overlay,#room-loading-overlay,#victory-screen{
+  max-width:100vw;max-height:100dvh;box-sizing:border-box
+}
+#construction-bar{max-width:100vw!important;box-sizing:border-box!important}
+@media (orientation:landscape) and (max-height:520px){
+  #construction-bar{bottom:max(3px,env(safe-area-inset-bottom))!important;height:auto!important;min-height:74px!important;max-height:30dvh!important;padding:4px!important;gap:4px!important}
+  #construction-bar .build-title{height:58px!important;flex-basis:55px!important;width:55px!important;font-size:8px!important}
+  #construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .factory-unit-card{height:58px!important;min-width:135px!important;padding:3px!important}
+  #construction-bar .build-preview,#construction-bar .factory-preview,#construction-bar .factory-unit-preview{height:48px!important;width:52px!important;flex-basis:52px!important}
+  #minimap-container{width:clamp(76px,15vh,110px)!important;height:clamp(76px,15vh,110px)!important;top:5px!important;right:5px!important}
+  #minimap-tools{top:calc(clamp(76px,15vh,110px) + 10px)!important;right:5px!important;width:clamp(76px,15vh,110px)!important}
+  #mini-money{top:5px!important;left:5px!important}
+}
+@media (orientation:portrait){
+  #construction-bar{max-width:100vw!important;width:100vw!important;left:0!important;transform:none!important;overflow-x:auto!important}
+  #minimap-container{top:6px!important;right:6px!important}
+  #minimap-tools{right:6px!important}
+}
+</style>
+<script id="final-battle-audio-and-layout-safety">
+(function(){
+  // إعادة حساب القياسات بعد قلب الشاشة دون إنشاء طبقات أو قوائم إضافية.
+  let resizeRAF=0;
+  function syncLayout(){
+    if(resizeRAF) cancelAnimationFrame(resizeRAF);
+    resizeRAF=requestAnimationFrame(()=>{
+      const c=document.getElementById('canvas-container');
+      if(c){c.style.width=window.innerWidth+'px';c.style.height=window.innerHeight+'px';}
+      window.dispatchEvent(new Event('resize'));
+    });
+  }
+  window.addEventListener('orientationchange',()=>setTimeout(syncLayout,120),{passive:true});
+  window.addEventListener('resize',syncLayout,{passive:true});
+  document.addEventListener('fullscreenchange',syncLayout);
+})();
+</script>
+
 </body>
 
 <style id="mobile-landscape-room-fix">
