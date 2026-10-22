@@ -2888,31 +2888,28 @@
     let playerAttackMusicTimer = null;
     let enemyAttackMusicTimer = null;
     function switchBattleMusic(mode, holdMs=18000) {
+        // لا نغيّر ولا نوقف battle_bgm.mp3؛ هذا الملف مخصص لصوت الهواء عندك.
+        // هجوم العدو لا يبدّل الموسيقى: تظل الموسيقى الحالية كما هي.
+        if (mode === 'enemy') return;
         if (gameOver || !battleAudioActive || !audioUnlocked) {
             battleMusicMode = mode;
             return;
         }
         battleMusicMode = mode;
-        [battleBgmAudio, neutralBgmAudio, playerAttackBgmAudio].forEach(a=>{
+        [neutralBgmAudio, playerAttackBgmAudio].forEach(a=>{
             if(a){try{a.pause(); a.currentTime=0;}catch(e){}}
         });
-        const target = mode === 'enemy' ? battleBgmAudio :
-                       mode === 'player' ? playerAttackBgmAudio : neutralBgmAudio;
+        const target = mode === 'player' ? playerAttackBgmAudio : neutralBgmAudio;
         if(target){
             target.loop = true;
             target.volume = Math.max(0, Math.min(1, (Number(document.getElementById('bgm-slider')?.value || 10)/100)));
             playAudioElement(target,target.volume,false).catch(()=>{});
         }
         clearTimeout(playerAttackMusicTimer);
-        clearTimeout(enemyAttackMusicTimer);
         if(mode==='player'){
             playerAttackMusicTimer=setTimeout(()=>{
-                if(battleMusicMode==='player') switchBattleMusic('neutral');
+                if(battleMusicMode==='player' && !gameOver) switchBattleMusic('neutral');
             },holdMs);
-        } else if(mode==='enemy'){
-            enemyAttackMusicTimer=setTimeout(()=>{
-                if(battleMusicMode==='enemy') switchBattleMusic('neutral');
-            },Math.max(holdMs,22000));
         }
     }
     function signalPlayerAttackMusic(){
@@ -2921,9 +2918,8 @@
         switchBattleMusic('player',18000);
     }
     function signalEnemyAttackMusic(){
-        if(!battleAudioActive || gameOver) return;
-        unlockGameAudio();
-        switchBattleMusic('enemy',22000);
+        // هجوم العدو لا يلمس ملف الهواء القديم ولا يبدّل الموسيقى الحالية.
+        return;
     }
     let sfxVolumeSetting = 0.60;
     const MASTER_SFX_BOOST = 1.35;
@@ -6335,7 +6331,7 @@ function startGame(){openBattleSetup();}
         const idleAudio = createManagedAudio('idle', true);
         const moveAudio = createManagedAudio('move', true);
         if (idleAudio) { idleAudio.volume = 0.25; try { idleAudio.load(); } catch(e) {} }
-        if (moveAudio) { moveAudio.volume = 0.45; try { moveAudio.load(); } catch(e) {} }
+        if (moveAudio) { moveAudio.volume = 0.18; try { moveAudio.load(); } catch(e) {} }
 
         const scoutUnit={mesh:group,team,target:null,hpLabel,hpFill,hp:100,maxHp:100,speed:UNIT_SPEEDS.scout,isDestroyed:false,destructionTimer:0,type:'scout',guardPoint:null,ceaseFire:true,hasPlayerMoveOrder:false,manualControl:true,guardRadius:18,holdPosition:false,reloadTime:0,isRecon:true,reconDish:dishRig,idleAudio,moveAudio,isIdlePlaying:false,isMovePlaying:false,hpRevealUntil:0,lastShot:0,lastTrackPos:new THREE.Vector3(x,terrainY,z),lastDustPos:new THREE.Vector3(x,terrainY,z)};
         applySilverArmyStyle(scoutUnit); addUnitTeamFlag(scoutUnit,team); return scoutUnit;
@@ -6471,7 +6467,7 @@ function startGame(){openBattleSetup();}
         const sirenAudio = createManagedAudio('ambulanceSiren', true) || createManagedAudio('danger', true);
         const engineAudio = createManagedAudio('move', true);
         const idleAudio = createManagedAudio('idle', true);
-        if (engineAudio) { engineAudio.volume = 0.45; try { engineAudio.load(); } catch(e) {} }
+        if (engineAudio) { engineAudio.volume = 0.18; try { engineAudio.load(); } catch(e) {} }
         if (idleAudio) { idleAudio.volume = 0.25; try { idleAudio.load(); } catch(e) {} }
         if (sirenAudio) { sirenAudio.volume = 0.48; try { sirenAudio.load(); } catch(e) {} }
         const ambulanceUnit={
@@ -6547,7 +6543,7 @@ function startGame(){openBattleSetup();}
         };
         if (isMoving) {
             stop(ambulance.idleAudio, 'isIdlePlaying');
-            loop(ambulance.engineAudio, 'isEnginePlaying', 0.55);
+            loop(ambulance.engineAudio, 'isEnginePlaying', 0.22);
             loop(ambulance.sirenAudio, 'isSirenPlaying', 0.52);
         } else {
             stop(ambulance.engineAudio, 'isEnginePlaying');
@@ -7238,7 +7234,7 @@ function startGame(){openBattleSetup();}
         let idleAudio = createManagedAudio('idle', true);
         let moveAudio = createManagedAudio('move', true);
         if (idleAudio) { idleAudio.volume = 0.25; try { idleAudio.load(); } catch(e) {} }
-        if (moveAudio) { moveAudio.volume = 0.45; try { moveAudio.load(); } catch(e) {} }
+        if (moveAudio) { moveAudio.volume = 0.18; try { moveAudio.load(); } catch(e) {} }
 
         const tankUnit={ 
             mesh: tankGroup, 
@@ -7402,7 +7398,7 @@ function startGame(){openBattleSetup();}
         };
         if (isMoving) {
             stopAudio(tank.idleAudio, 'isIdlePlaying');
-            startLoop(tank.moveAudio, 'isMovePlaying', 0.58);
+            startLoop(tank.moveAudio, 'isMovePlaying', 0.22);
         } else {
             stopAudio(tank.moveAudio, 'isMovePlaying');
             startLoop(tank.idleAudio, 'isIdlePlaying', 0.32);
@@ -11747,7 +11743,7 @@ function createArmyFactory(x,z,ghost=false){
         gameOver = true;
         isCinematicEnding = true;
         
-        [battleBgmAudio,neutralBgmAudio,playerAttackBgmAudio].forEach(a=>{if(a){try{a.pause();a.currentTime=0;}catch(e){}}});
+        [neutralBgmAudio,playerAttackBgmAudio].forEach(a=>{if(a){try{a.pause();a.currentTime=0;}catch(e){}}});
         clearTimeout(playerAttackMusicTimer);clearTimeout(enemyAttackMusicTimer);
 
         // إدارة حطام سيارات الإسعاف المدمرة.
@@ -15333,4 +15329,18 @@ body.battle-active #start-menu {
  #construction-bar.unit-selected .bar-unit-controls{gap:2px!important;padding:1px!important}
  #construction-bar.unit-selected .bar-control-btn{width:42px!important;min-width:42px!important}
 }
+</style>
+
+
+<style id="restore-money-counter-position">
+/* إعادة عداد المال إلى مكانه الأصلي أعلى يسار الشاشة */
+#mini-money{
+  position:fixed!important;top:8px!important;left:8px!important;right:auto!important;bottom:auto!important;
+  transform:none!important;z-index:90!important;width:auto!important;min-width:0!important;height:auto!important;
+  padding:3px 7px!important;border:1px solid rgba(34,197,94,.65)!important;border-radius:7px!important;
+  background:rgba(5,15,8,.90)!important;color:#22c55e!important;font-size:11px!important;
+  font-weight:900!important;line-height:16px!important;box-shadow:0 3px 10px rgba(0,0,0,.4)!important;
+}
+#mini-money:before,#mini-money:after{display:none!important}
+@media(max-width:700px){#mini-money{top:8px!important;left:8px!important;bottom:auto!important;font-size:10px!important;padding:3px 7px!important;line-height:15px!important}}
 </style>
