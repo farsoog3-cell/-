@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CONTROL BATTLE الاستراتيجية - عربات سكود الحقيقية</title>
     <link rel="stylesheet" href="style.css">
-
     
 
 
@@ -733,6 +732,9 @@
     let cameraTheta = Math.PI / 4;
     let cameraPhi = 1.12;
     let targetLookAt = new THREE.Vector3(0, 0, 0);
+    // Smooth camera focus prevents the world from feeling like it zooms or snaps while panning.
+    let smoothedCameraLookAt = new THREE.Vector3(0, 0, 0);
+    let cameraFocusInitialized = false;
 
     let shakeTimer = 0;
     let shakeIntensity = 0;
@@ -1460,8 +1462,8 @@
         targetLookAt.x = Math.max(-420, Math.min(420, targetLookAt.x + dx));
         targetLookAt.z = Math.max(-420, Math.min(420, targetLookAt.z + dz));
 
-        if (camInputs.zi) targetCameraRadius = Math.max(60, targetCameraRadius - 2.5);
-        if (camInputs.zo) targetCameraRadius = Math.min(550, targetCameraRadius + 2.5);
+        if (camInputs.zi) targetCameraRadius = Math.max(65, targetCameraRadius - 1.5);
+        if (camInputs.zo) targetCameraRadius = Math.min(420, targetCameraRadius + 1.5);
     }
 
     function getUnitKind(unit) {
@@ -3111,48 +3113,16 @@ function startGame(){openBattleSetup();}
         soldier.infantryMixer.update(1/60);
     }
 
-    // ===== خامة قماش وتمويه مشاة — تُنشأ مرة واحدة وتُعاد مشاركتها بين الجنود =====
-    let infantryCamoTextureCache = null;
-    function getInfantryCamoTexture(){
-        if(infantryCamoTextureCache) return infantryCamoTextureCache;
-        const canvas=document.createElement('canvas'); canvas.width=128; canvas.height=128;
-        const ctx=canvas.getContext('2d');
-        ctx.fillStyle='#56634a'; ctx.fillRect(0,0,128,128);
-        // بقع تمويه صغيرة غير منتظمة تعطي القماش مظهراً عسكرياً بدلاً من اللون المسطح.
-        let seed=7319;
-        const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-        const colors=['#354333','#687153','#77765a','#414b37','#8a8060','#29372d'];
-        for(let i=0;i<170;i++){
-            ctx.fillStyle=colors[Math.floor(rnd()*colors.length)];
-            ctx.globalAlpha=.42+rnd()*.42;
-            const x=rnd()*128,y=rnd()*128,w=3+rnd()*15,h=2+rnd()*9;
-            ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w*.55,y-h*.15);ctx.lineTo(x+w,y+h*.35);ctx.lineTo(x+w*.68,y+h);ctx.lineTo(x+w*.12,y+h*.72);ctx.closePath();ctx.fill();
-        }
-        ctx.globalAlpha=1;
-        for(let i=0;i<900;i++){
-            const v=rnd()>.5?255:20;ctx.fillStyle=`rgba(${v},${v},${v},${rnd()*.07})`;
-            ctx.fillRect(rnd()*128,rnd()*128,1,1);
-        }
-        const tex=new THREE.CanvasTexture(canvas); tex.wrapS=THREE.RepeatWrapping; tex.wrapT=THREE.RepeatWrapping;
-        tex.repeat.set(1.8,1.8); tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=renderer&&renderer.capabilities?renderer.capabilities.getMaxAnisotropy():1;
-        infantryCamoTextureCache=tex; return tex;
-    }
-
     // ===== نظام مشاة عسكري احترافي =====
     function createInfantrySoldier(x,z,team='player'){
         // INFANTRY v3 — completely rebuilt visual model.  Gameplay state remains compatible.
         const g=new THREE.Group(); g.name='infantrySoldier';
         const enemy=team==='enemy';
         const M=(c,r=.8,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
-        const skin=M(0xb98160,.92), skinHi=M(0xd39a76,.9), skinDark=M(0x704936,.98);
-        const cloth=M(0x7b8462,.98), cloth2=M(0x343d2f,.99), camo=M(0xffffff,.98);
-        // قماش تمويه مطفي على الزي والبنطال، مع إبقاء الجلد والعتاد منفصلين عن الخامة.
-        const fabricTex=getInfantryCamoTexture();
-        cloth.map=fabricTex; cloth2.map=fabricTex; camo.map=fabricTex;
-        cloth.color.setHex(0xc2c7aa); cloth2.color.setHex(0x777f68);
-        cloth.needsUpdate=true; cloth2.needsUpdate=true; camo.needsUpdate=true;
-        const armor=M(0x141917,.88,.12), gear=M(0x252d28,.92), helmet=M(0x3f4941,.88,.08);
-        const helmetHi=M(0x667066,.82,.08), boot=M(0x111412,.98), rubber=M(0x080a09,.99);
+        const skin=M(0xb77a58,.90), skinHi=M(0xd49a78,.88), skinDark=M(0x754833,.96);
+        const cloth=M(0x48533d,.96), cloth2=M(0x303a2c,.98), camo=M(0x697451,.94);
+        const armor=M(0x222a22,.88,.12), gear=M(0x30392d,.92), helmet=M(0x46523f,.88,.08);
+        const helmetHi=M(0x737d68,.82,.08), boot=M(0x191c16,.98), rubber=M(0x10120e,.99);
         const gun=M(0x20231f,.76,.35), gunHi=M(0x59605a,.55,.75), gunDark=M(0x0b0d0c,.92,.2);
         const strap=M(0x161b18,.98), eye=new THREE.MeshBasicMaterial({color:0x10100d});
         const add=(geo,mat,p,x=0,y=0,z=0,rx=0,ry=0,rz=0,s=null)=>{const q=new THREE.Mesh(geo,mat);q.position.set(x,y,z);q.rotation.set(rx,ry,rz);if(s)q.scale.set(...s);q.castShadow=true;q.receiveShadow=true;p.add(q);return q;};
@@ -3240,7 +3210,7 @@ function startGame(){openBattleSetup();}
         box(.16,.30,.12,gear,pack,.33,.12,.16,0,0,.12);
     
         // Rifle: visibly attached to shoulder; long barrel, handguard, magazine, optic and stock.
-        const rifle=new THREE.Group(); rifle.name='infantryRifle'; rifle.position.set(.30,2.55,.58); rifle.scale.set(.98,.98,.98); visualRoot.add(rifle);
+        const rifle=new THREE.Group(); rifle.name='infantryRifle'; rifle.position.set(.22,2.48,.62); rifle.scale.set(.94,.94,.94); visualRoot.add(rifle);
         box(.22,.19,.48,gunDark,rifle,0,0,-.62);
         box(.34,.24,.55,gun,rifle,0,0,-.12);
         box(.21,.18,.82,gunDark,rifle,0,0,.55);
@@ -3269,12 +3239,12 @@ function startGame(){openBattleSetup();}
             infantryLegL:L.root,infantryLegR:R.root,infantryArmL:armL,infantryArmR:armR,infantryThighL:L.thigh,infantryThighR:R.thigh,infantryShinL:L.shin,infantryShinR:R.shin,
             infantryRifle:rifle,infantryMuzzle:muzzle,infantryVisualRoot:visualRoot,infantryHead:head,infantryChestFlag:chestFlag,walkCycle:Math.random()*6.28,infantryAttackCycle:0,lastDustPos:new THREE.Vector3(x,terrainY,z),noInfantryTrail:true,isInfantry:true,isAiming:false,aimTarget:null,aimUntil:0,lastStepIndex:-1,infantryBurstLeft:0,infantryBurstTimer:0,deathStyle:null,deathStart:0,lastHitWasExplosion:false,
             breathPhase:Math.random()*Math.PI*2,breathAmount:.012,infantryIdleTime:0,injuryCount:0,combatState:'moving',combatSpeed:.108,weaponShake:0,smokeTimer:0,prone:false,runAudioCooldown:0,lastRunAudioAt:0};
-        // Explicitly opt this infantry out of vehicle silver recoloring.
-        // Infantry uses camp-color uniform accents; never attach a pole or flag to the soldier.
+        // Keep the articulated procedural soldier as the actual gameplay model.
+        // The remote generic GLB replaced this rig and left the rifle detached from the hands.
+        // Do not start an external model request; this keeps the face, skin, uniform, hands,
+        // rifle pose, aiming, recoil and walking animation controlled by the game's own rig.
         applySilverArmyStyle(soldier);
-        // نستخدم النموذج البشري المفصّل المدمج مع اللعبة مباشرةً: وجه ويدان بلون بشري،
-        // خامة تمويه وسلاح مربوط بوضع اليدين. لا نستبدله بنموذج خارجي قد لا يحمل السلاح
-        // أو قد تتغير خاماته حسب اتصال الإنترنت، لتبقى الصورة والحركة ثابتتين دائماً.
+        infantryGLTFFailed = true;
         return soldier;
     }
     function fireInfantryWeapon(soldier,target){
@@ -6932,7 +6902,14 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function updateCameraPosition() {
-        cameraRadius = THREE.MathUtils.lerp(cameraRadius, targetCameraRadius, 0.14);
+        // Keep zoom and camera focus independent: moving across the map must never change zoom.
+        cameraRadius = THREE.MathUtils.lerp(cameraRadius, targetCameraRadius, 0.085);
+        if (!cameraFocusInitialized) {
+            smoothedCameraLookAt.copy(targetLookAt);
+            cameraFocusInitialized = true;
+        } else {
+            smoothedCameraLookAt.lerp(targetLookAt, 0.16);
+        }
         let shakeX = 0, shakeY = 0;
         if (shakeTimer > 0) {
             shakeTimer--;
@@ -6941,13 +6918,15 @@ function createArmyFactory(x,z,ghost=false){
         }
         if (isCinematicEnding && cinematicTargetLook) {
             targetLookAt.lerp(cinematicTargetLook, 0.06);
+            smoothedCameraLookAt.lerp(targetLookAt, 0.18);
             cameraRadius = THREE.MathUtils.lerp(cameraRadius, 70, 0.10);
             cameraTheta += 0.01;
         }
-        camera.position.x = targetLookAt.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta) + shakeX;
-        camera.position.y = targetLookAt.y + cameraRadius * Math.cos(cameraPhi) + shakeY;
-        camera.position.z = targetLookAt.z + cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
-        camera.lookAt(targetLookAt);
+        const focus = smoothedCameraLookAt;
+        camera.position.x = focus.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta) + shakeX;
+        camera.position.y = focus.y + cameraRadius * Math.cos(cameraPhi) + shakeY;
+        camera.position.z = focus.z + cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+        camera.lookAt(focus);
     }
 
     function triggerCameraShake(){ /* camera shake intentionally disabled; recoil is applied to the firing tank */ }
@@ -7235,7 +7214,7 @@ function createArmyFactory(x,z,ghost=false){
                         pinchStartRadius = targetCameraRadius;
                     }
                     targetCameraRadius = THREE.MathUtils.clamp(
-                        pinchStartRadius - (distance - pinchStartDistance) * (window.cameraZoomSensitivity || 0.55), 50, 550
+                        pinchStartRadius - (distance - pinchStartDistance) * (window.cameraZoomSensitivity || 0.18), 65, 420
                     );
                     touchMode = 'pinch';
                     return;
@@ -7254,8 +7233,9 @@ function createArmyFactory(x,z,ghost=false){
                         gestureMoved = true;
                     }
 
-                    // RTS camera pan: finger direction = camera movement direction.
-                    const speed = window.cameraPanSensitivity || 0.70;
+                    // RTS camera pan: resolution-aware movement, independent of zoom perception.
+                    const worldPerPixel = (2 * Math.max(60, cameraRadius) * Math.tan(THREE.MathUtils.degToRad(22.5))) / Math.max(320, window.innerHeight);
+                    const speed = worldPerPixel * (window.cameraPanSensitivity || 0.70);
                     targetLookAt.x += (dx * Math.cos(cameraTheta) + dy * Math.sin(cameraTheta)) * speed;
                     targetLookAt.z += (-dx * Math.sin(cameraTheta) + dy * Math.cos(cameraTheta)) * speed;
                     targetLookAt.x = THREE.MathUtils.clamp(targetLookAt.x, -420, 420);
@@ -7331,7 +7311,7 @@ function createArmyFactory(x,z,ghost=false){
         });
 
         dom.addEventListener('wheel', (e) => {
-            if (!isCinematicEnding) targetCameraRadius = Math.max(50, Math.min(550, targetCameraRadius + e.deltaY * (window.cameraWheelSensitivity || 0.22)));
+            if (!isCinematicEnding) targetCameraRadius = Math.max(65, Math.min(420, targetCameraRadius + e.deltaY * (window.cameraWheelSensitivity || 0.045)));
         }, { passive: true });
     }
 
@@ -10264,7 +10244,7 @@ function createArmyFactory(x,z,ghost=false){
     document.getElementById('ui-overlay').style.display='block';
     playSound('buy');
     let playerCampX=CORNER_OFFSET,playerCampZ=CORNER_OFFSET,terrainH=getTerrainHeight(playerCampX,playerCampZ);
-    targetLookAt.set(playerCampX,terrainH,playerCampZ);targetCameraRadius=125;cameraPhi=1.12;cameraRadius=targetCameraRadius;updateCameraPosition();
+    targetLookAt.set(playerCampX,terrainH,playerCampZ);smoothedCameraLookAt.copy(targetLookAt);cameraFocusInitialized=true;targetCameraRadius=135;cameraPhi=1.10;cameraRadius=targetCameraRadius;updateCameraPosition();
     showFloatingMsg('⚔ Battle started!');
   };
   /* Factory accent follows selected enemy color instead of fixed red. */
@@ -10350,14 +10330,14 @@ document.addEventListener('DOMContentLoaded',function(){
 
 
 <script id="camera-sensitivity-runtime">
-window.cameraSensitivity=0.0027;window.cameraPanSensitivity=0.44;window.cameraZoomSensitivity=0.34;window.cameraWheelSensitivity=0.12;
+window.cameraSensitivity=0.0024;window.cameraPanSensitivity=0.70;window.cameraZoomSensitivity=0.18;window.cameraWheelSensitivity=0.045;
 window.updateCameraSensitivity=function(v){
   const n=Math.max(20,Math.min(80,Number(v)||50));
   const t=(n-20)/60;
   window.cameraSensitivity=0.0018+t*0.0018;
-  window.cameraPanSensitivity=0.34+t*0.16;
-  window.cameraZoomSensitivity=0.28+t*0.14;
-  window.cameraWheelSensitivity=0.08+t*0.06;
+  window.cameraPanSensitivity=0.55+t*0.30;
+  window.cameraZoomSensitivity=0.12+t*0.10;
+  window.cameraWheelSensitivity=0.025+t*0.035;
   const out=document.getElementById('camera-sens-val');if(out)out.textContent=n+'%';
 };
 </script>
@@ -10467,7 +10447,7 @@ window.updateCameraSensitivity=function(v){
     const u=document.getElementById('ui-overlay');if(u)u.style.display='block';
     try{playSound('buy');}catch(e){}
     let px=CORNER_OFFSET,pz=CORNER_OFFSET,th=getTerrainHeight(px,pz);
-    targetLookAt.set(px,th,pz);targetCameraRadius=125;cameraPhi=1.12;cameraRadius=targetCameraRadius;updateCameraPosition();
+    targetLookAt.set(px,th,pz);smoothedCameraLookAt.copy(targetLookAt);cameraFocusInitialized=true;targetCameraRadius=135;cameraPhi=1.10;cameraRadius=targetCameraRadius;updateCameraPosition();
     showFloatingMsg('⚔ Battle started!');
   };
 })();
@@ -10715,9 +10695,9 @@ window.updateCameraSensitivity=function(v){
     const n=Math.max(20,Math.min(80,Number(v)||40));
     const t=(n-20)/60;
     window.cameraSensitivity=0.0017+t*0.0015;
-    window.cameraPanSensitivity=0.30+t*0.12;
-    window.cameraZoomSensitivity=0.24+t*0.12;
-    window.cameraWheelSensitivity=0.07+t*0.05;
+    window.cameraPanSensitivity=0.55+t*0.30;
+    window.cameraZoomSensitivity=0.12+t*0.10;
+    window.cameraWheelSensitivity=0.025+t*0.035;
   };
   // Slightly lower angle on initial battlefield resets without altering camera movement rules.
   const oldBegin=window.beginConfiguredGame;
