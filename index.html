@@ -4543,7 +4543,7 @@ function startGame(){openBattleSetup();}
             model.scale.setScalar(1);
             const initialBox=new THREE.Box3().setFromObject(model);
             const initialSize=initialBox.getSize(new THREE.Vector3());
-            const targetWidth=4.2;
+            const targetWidth=7.4;
             const sourceWidth=Math.max(initialSize.x,0.001);
             const uniformScale=targetWidth/sourceWidth;
             model.scale.setScalar(uniformScale);
@@ -4560,6 +4560,17 @@ function startGame(){openBattleSetup();}
                     o.castShadow=true;
                     o.receiveShadow=true;
                     o.frustumCulled=true;
+                    const mats = Array.isArray(o.material) ? o.material : [o.material];
+                    mats.forEach(mat=>{
+                        if(!mat) return;
+                        // Keep the original texture maps, but lift the dark metal slightly
+                        // so rust and panel detail remain readable in shadow.
+                        if(mat.color) mat.color.multiplyScalar(1.12);
+                        if(mat.emissive && mat.emissive.set) mat.emissive.set(0x24150b);
+                        if('emissiveIntensity' in mat) mat.emissiveIntensity = Math.max(mat.emissiveIntensity || 0, 0.16);
+                        if('roughness' in mat) mat.roughness = Math.max(mat.roughness || 0, 0.48);
+                        mat.needsUpdate = true;
+                    });
                 }
             });
 
@@ -4578,22 +4589,24 @@ function startGame(){openBattleSetup();}
             rigGroup.position.set(pos.x,getTerrainHeight(pos.x,pos.z),pos.z);
             rigGroup.name=`oilSite_${index}`;
 
-            const barrelMat=new THREE.MeshStandardMaterial({color:0x252a2d,roughness:.62,metalness:.72});
+            const barrelMat=new THREE.MeshStandardMaterial({color:0x41403a,roughness:.72,metalness:.52,emissive:0x100a04,emissiveIntensity:.10});
             const rimMat=new THREE.MeshStandardMaterial({color:0x70777b,roughness:.42,metalness:.82});
             const barrelGroup=new THREE.Group();
             barrelGroup.name='oilBarrels';
+            // Keep barrels outside the refinery footprint so they never intersect the model.
+            barrelGroup.position.set(7.4,0,5.2);
 
-            [-2,0,2].forEach(x=>{
-                const barrel=new THREE.Mesh(new THREE.CylinderGeometry(1.05,1.05,2.65,20),barrelMat);
-                barrel.position.set(x,1.35,0);
+            [-2.0,0,2.0].forEach(x=>{
+                const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.58,.58,1.65,20),barrelMat);
+                barrel.position.set(x,.825,0);
                 barrel.castShadow=true;
                 barrel.receiveShadow=true;
                 barrelGroup.add(barrel);
 
                 [-1,1].forEach(y=>{
-                    const rim=new THREE.Mesh(new THREE.TorusGeometry(1,.075,8,20),rimMat);
+                    const rim=new THREE.Mesh(new THREE.TorusGeometry(.56,.045,8,20),rimMat);
                     rim.rotation.x=Math.PI/2;
-                    rim.position.set(x,1.35+y*1.02,0);
+                    rim.position.set(x,.825+y*.62,0);
                     barrelGroup.add(rim);
                 });
             });
@@ -9892,6 +9905,10 @@ function createArmyFactory(x,z,ghost=false){
         addStructureVision(playerBaseGroup, 92);
         (constructedFactories || []).forEach(f => addStructureVision(f, 78));
         (constructedBarracks || []).forEach(b => addStructureVision(b, 72));
+        // A captured oil field remains visible to the player and clears war fog around it.
+        (oilRigs || []).forEach(r => {
+            if (r && !r.isDestroyed && r.owner === 'player') addStructureVision(r, 76);
+        });
 
         // تلاشي المناطق المكتشفة خلال بضع ثوانٍ، كي يعود الضباب بعد مغادرة القوات
         // أو تدمير وحدة/مبنى كان يكشفها.
