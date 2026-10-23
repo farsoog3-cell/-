@@ -2901,6 +2901,38 @@ function startGame(){openBattleSetup();}
         unit.mesh.add(g);
     }
 
+    // External material maps: replace files in images/textures/ to customize each asset.
+    const externalAlbedoCache = Object.create(null);
+    function applyExternalAlbedo(root, assetKey, mode='vehicle') {
+        if (!root || !assetKey || !window.THREE) return;
+        const path = `images/textures/${assetKey}_albedo.png`;
+        const applyTexture = (texture) => {
+            texture.colorSpace = THREE.SRGBColorSpace || texture.colorSpace;
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(1, 1);
+            root.traverse((obj) => {
+                if (!obj.isMesh || !obj.material || obj.userData.teamFlag) return;
+                const nm = (obj.name || '').toLowerCase();
+                if (/glass|window|windshield|beacon|light|muzzle|flash|smoke|flag|wheel|tire|tyre|track|shoe|tread|hub|rim|hydraulic|rifle|skin|eye|teeth|shadow/.test(nm)) return;
+                const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+                mats.forEach((mat) => {
+                    if (!mat || !mat.color || mat.isShaderMaterial || (mat.userData && (mat.userData.teamAccent || mat.userData.keepArmyColor))) return;
+                    // For buildings and oil props preserve metal/trim parts; texture only broad surfaces.
+                    if (mode === 'building' && /metal|pipe|barrel|lamp|flag|glass/.test(nm)) return;
+                    mat.map = texture;
+                    mat.color.setHex(0xffffff);
+                    mat.needsUpdate = true;
+                });
+            });
+        };
+        if (externalAlbedoCache[path]) { applyTexture(externalAlbedoCache[path]); return; }
+        try {
+            new THREE.TextureLoader().load(path, (texture) => { externalAlbedoCache[path] = texture; applyTexture(texture); }, undefined, () => {
+                // If a custom file is absent, keep the game's built-in material; no gameplay impact.
+            });
+        } catch (e) {}
+    }
+
     function applySilverArmyStyle(unit){
         if(!unit||!unit.mesh)return unit;
         // الجندي البشري يحتفظ بخاماته الخاصة. المركبات تحصل على تمويه عسكري حقيقي.
@@ -3244,6 +3276,7 @@ function startGame(){openBattleSetup();}
         // Do not start an external model request; this keeps the face, skin, uniform, hands,
         // rifle pose, aiming, recoil and walking animation controlled by the game's own rig.
         applySilverArmyStyle(soldier);
+        // Keep articulated skin/uniform colors intact; soldier_albedo.png is supplied as a customization source.
         infantryGLTFFailed = true;
         return soldier;
     }
@@ -4075,7 +4108,7 @@ function startGame(){openBattleSetup();}
         if (moveAudio) { moveAudio.volume = 0.18; try { moveAudio.load(); } catch(e) {} }
 
         const scoutUnit={mesh:group,team,target:null,hpLabel,hpFill,hp:100,maxHp:100,speed:UNIT_SPEEDS.scout,isDestroyed:false,destructionTimer:0,type:'scout',guardPoint:null,ceaseFire:true,hasPlayerMoveOrder:false,manualControl:true,guardRadius:18,holdPosition:false,reloadTime:0,isRecon:true,reconDish:dishRig,idleAudio,moveAudio,isIdlePlaying:false,isMovePlaying:false,hpRevealUntil:0,lastShot:0,lastTrackPos:new THREE.Vector3(x,terrainY,z),lastDustPos:new THREE.Vector3(x,terrainY,z)};
-        applySilverArmyStyle(scoutUnit); addUnitTeamFlag(scoutUnit,team); return scoutUnit;
+        applySilverArmyStyle(scoutUnit); applyExternalAlbedo(group, 'recon'); addUnitTeamFlag(scoutUnit,team); return scoutUnit;
     }
 
     function createModernAmbulance(x, z, team = 'player') {
@@ -4244,7 +4277,7 @@ function startGame(){openBattleSetup();}
             guardRadius: 18,
             holdPosition: false
         };
-        applySilverArmyStyle(ambulanceUnit);
+        applySilverArmyStyle(ambulanceUnit); applyExternalAlbedo(ambulanceUnit.mesh, 'ambulance');
         addUnitTeamFlag(ambulanceUnit,team);
         return ambulanceUnit;
     }
@@ -4544,6 +4577,8 @@ function startGame(){openBattleSetup();}
 
             // تكبير منشأة النفط قليلاً مع الحفاظ على موضعها في الخريطة.
             rigGroup.scale.setScalar(1.18);
+            applyExternalAlbedo(rigGroup, 'oil_rig', 'building');
+            applyExternalAlbedo(barrelGroup, 'oil_barrels', 'building');
             scene.add(rigGroup); obstacles.push({x:pos.x,z:pos.z,radius:10});
             const oilHpLabel=document.createElement('div'); oilHpLabel.className='tank-hp-label hp-player'; const oilHpFill=document.createElement('div'); oilHpFill.className='tank-hp-fill'; oilHpLabel.appendChild(oilHpFill); document.getElementById('hp-labels-container').appendChild(oilHpLabel); oilHpLabel.style.display='none';
             oilRigs.push({x:pos.x,z:pos.z,group:rigGroup,beam:null,isOilRig:true,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:barrelGroup});
@@ -5008,7 +5043,7 @@ function startGame(){openBattleSetup();}
             speed: type === 'rocket' ? UNIT_SPEEDS.scud : UNIT_SPEEDS.tank,
             isReversing: false
         };
-        applySilverArmyStyle(tankUnit);
+        applySilverArmyStyle(tankUnit); applyExternalAlbedo(tankGroup, isRocketTank ? 'scud' : 'tank');
         addUnitTeamFlag(tankUnit,team);
         return tankUnit;
     }
@@ -5639,7 +5674,7 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
 
         const groundY=getBuildingGroundLevel(x,z,'barracks',g.rotation.y); g.position.set(x,groundY+.03,z);
         g.rotation.y=(typeof barracksPlacementRotation==='number'?barracksPlacementRotation:0);
-        g.scale.setScalar(ghost?.1:1); scene.add(g);
+        g.scale.setScalar(ghost?.1:1); if(!ghost) applyExternalAlbedo(g, 'barracks', 'building'); scene.add(g);
         if(ghost) g.traverse(o=>{if(o.material){o.material.transparent=true;o.material.opacity=Math.min(o.material.opacity||1,.30);o.material.depthWrite=false;}});
 
         return {mesh:g,x,z,rotation:g.rotation.y,progress:0,duration:REAL_BUILD_BARRACKS_SEC*REAL_TICKS_PER_SECOND,done:!ghost,ghost,hp:900,maxHp:900,isDestroyed:false,hpRevealUntil:0,owner,isBarracks:true,hpLabel,hpFill,collisionRadius:8,productionJob:null};
@@ -5762,7 +5797,7 @@ function createArmyFactory(x,z,ghost=false){
         activeFlagMeshes.push(factoryFlagData); group.userData.factoryFlagData=factoryFlagData;
 
         const groundY=getBuildingGroundLevel(x,z,'factory',factoryPlacementRotation); group.position.set(x,groundY+.03,z);
-        group.scale.setScalar(ghost?.95:.08); group.rotation.y=factoryPlacementRotation;
+        group.scale.setScalar(ghost?.95:.08); group.rotation.y=factoryPlacementRotation; if(!ghost) applyExternalAlbedo(group, 'factory', 'building');
         if(ghost) group.traverse(o=>{if(o.material){o.material.transparent=true;o.material.opacity=.30;o.material.depthWrite=false;o.material.emissive?.setHex(0x173b20);o.material.emissiveIntensity=.5;}});
         scene.add(group);
 
@@ -6665,7 +6700,7 @@ function createArmyFactory(x,z,ghost=false){
         const terrainY=getTerrainHeight(x,z); group.position.set(x,terrainY,z); scene.add(group);
         const hpLabel=document.createElement('div'); hpLabel.className=`tank-hp-label ${team==='player'?'hp-player':'hp-enemy'}`; const hpFill=document.createElement('div'); hpFill.className='tank-hp-fill'; hpLabel.appendChild(hpFill); document.getElementById('hp-labels-container').appendChild(hpLabel);
         const unit={mesh:group,team,type:'builder',isBuilder:true,isConstructionTruck:true,hpLabel,hpFill,hpRevealUntil:0,isDestroyed:false,hp:700,maxHp:700,speed:UNIT_SPEEDS.dozer||.105,combatSpeed:UNIT_SPEEDS.dozer||.105,target:null,buildTarget:null,isBuilding:false,buildBlade:bladeGroup,bulldozerBlade:bladeMain,bladeGroup, builderBoom:boomBase,builderCable:cable,builderHook:hook,trackBeltL,trackBeltR,factoryRetreating:false,hasPlayerMoveOrder:false,isReversing:false,collisionRadius:5.0,buildRadius:7.0,Pos:new THREE.Vector3(x,terrainY,z),lastDustPos:new THREE.Vector3(x,terrainY,z)};
-        applySilverArmyStyle(unit); addUnitTeamMarkings(unit,team);
+        applySilverArmyStyle(unit); applyExternalAlbedo(group, 'dozer'); addUnitTeamMarkings(unit,team);
         return unit;
     }
 
