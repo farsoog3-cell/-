@@ -85,8 +85,8 @@
             <input type="range" min="0" max="100" value="10" class="settings-slider" id="bgm-slider" oninput="updateBgmVolume(this.value)">
             <div class="settings-label" style="margin-top:4px;">SFX VOLUME: <span id="sfx-val">60%</span></div>
             <input type="range" min="0" max="100" value="60" class="settings-slider" id="sfx-slider" oninput="updateSfxVolume(this.value)">
-            <div class="settings-label" style="margin-top:8px;">CAMERA SENSITIVITY: <span id="camera-sens-val">40%</span></div>
-            <input type="range" min="20" max="80" value="40" class="settings-slider" id="camera-sens-slider" oninput="updateCameraSensitivity(this.value)">
+            <div class="settings-label" style="margin-top:8px;">CAMERA SENSITIVITY: <span id="camera-sens-val">28%</span></div>
+            <input type="range" min="20" max="80" value="28" class="settings-slider" id="camera-sens-slider" oninput="updateCameraSensitivity(this.value)">
             <button class="menu-btn" onclick="playClickSound(); toggleSoundSettings(false)">↩ BACK</button>
         </div>
     </div>
@@ -4062,7 +4062,7 @@ function startGame(){openBattleSetup();}
             const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,1.1,8),panel); antenna.position.set(side*1.55,3.55,-2.55); antenna.rotation.z=side*.18; group.add(antenna);
         });
 
-        const terrainY=getTerrainHeight(x,z); group.position.set(x,terrainY,z); scene.add(group);
+        const terrainY=getTerrainHeight(x,z); group.position.set(x,terrainY,z); group.scale.setScalar(0.82); scene.add(group);
         const hpLabel=document.createElement('div'); hpLabel.className=`tank-hp-label ${team==='player'?'hp-player':'hp-enemy'}`;
         const hpFill=document.createElement('div'); hpFill.className='tank-hp-fill'; hpLabel.appendChild(hpFill); document.getElementById('hp-labels-container').appendChild(hpLabel);
 
@@ -6752,16 +6752,19 @@ function createArmyFactory(x,z,ghost=false){
     function createFlagPole(group, x, z, flagType, role) {
         let terrainH = getTerrainHeight(x, z);
         group.position.set(x, terrainH, z);
-        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 22, 8), new THREE.MeshStandardMaterial({ color: 0xbfc5c8, roughness:.62, metalness:.34 }));
-        pole.position.set(16, 10.8, 0); pole.castShadow = true; group.add(pole);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.25, 17, 8), new THREE.MeshStandardMaterial({ color: 0xbfc5c8, roughness:.62, metalness:.34 }));
+        pole.position.set(16, 8.7, 0); pole.castShadow = true; group.add(pole);
 
+        // Smaller cloth flag: its left edge sits directly on the pole instead of floating away.
         const flagGeo = new THREE.PlaneGeometry(10, 6, 14, 4);
         const flagMat = new THREE.MeshStandardMaterial({ map: createFlagTexture(flagType), side: THREE.DoubleSide, transparent:true, roughness:.50, metalness:.04, emissive:0xffffff, emissiveIntensity:.085 });
         const flagMesh = new THREE.Mesh(flagGeo, flagMat);
-        flagMesh.position.set(21, 21.0, 0); 
+        flagMesh.position.set(19.1, 15.3, 0);
+        flagMesh.scale.set(0.62, 0.62, 1);
+        flagMesh.rotation.z = 0.055;
         group.add(flagMesh);
 
-        let flagDataObj = { mesh: flagMesh, baseHeight: 21.0, type: flagType, mainBaseFlag:true }; 
+        let flagDataObj = { mesh: flagMesh, baseHeight: 15.3, type: flagType, mainBaseFlag:true }; 
         activeFlagMeshes.push(flagDataObj);
 
         if (role === 'enemy') enemyFlagDataRef = flagDataObj;
@@ -6821,7 +6824,7 @@ function createArmyFactory(x,z,ghost=false){
             const baseHeight = item.baseHeight || item.mesh.position.y;
             const verticalAmount = item.mainBaseFlag ? 0.16 : 0.10;
             item.mesh.position.y = baseHeight + Math.sin(flagWaveTime * 0.58) * verticalAmount + Math.sin(flagWaveTime * 1.31) * (verticalAmount * .34);
-            item.mesh.rotation.z = Math.sin(flagWaveTime * 0.31) * (item.mainBaseFlag ? 0.045 : 0.025);
+            item.mesh.rotation.z = (item.mainBaseFlag ? 0.055 : 0) + Math.sin(flagWaveTime * 0.31) * (item.mainBaseFlag ? 0.035 : 0.025);
             item.mesh.rotation.y = item.mainBaseFlag ? Math.sin(flagWaveTime * 0.19) * 0.055 : 0;
             for (let i = 0; i < positions.count; i++) {
                 const u = positions.getX(i);
@@ -10330,7 +10333,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
 
 <script id="camera-sensitivity-runtime">
-window.cameraSensitivity=0.0024;window.cameraPanSensitivity=0.70;window.cameraZoomSensitivity=0.18;window.cameraWheelSensitivity=0.045;
+window.cameraSensitivity=0.00135;window.cameraPanSensitivity=0.52;window.cameraZoomSensitivity=0.085;window.cameraWheelSensitivity=0.020;
 window.updateCameraSensitivity=function(v){
   const n=Math.max(20,Math.min(80,Number(v)||50));
   const t=(n-20)/60;
@@ -10688,16 +10691,17 @@ window.updateCameraSensitivity=function(v){
   function apply(){dockMinimap();tuneCamera();}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',apply,{once:true}); else apply();
   window.addEventListener('resize',dockMinimap,{passive:true});
+  const sensSlider=document.getElementById('camera-sens-slider'); if(sensSlider) window.updateCameraSensitivity(sensSlider.value || 28);
   // More natural touch sensitivity: less jumpy panning/zooming, with the angle retained.
   const oldUpdate=window.updateCameraSensitivity;
   window.updateCameraSensitivity=function(v){
     if(typeof oldUpdate==='function') oldUpdate(v);
     const n=Math.max(20,Math.min(80,Number(v)||40));
     const t=(n-20)/60;
-    window.cameraSensitivity=0.0017+t*0.0015;
-    window.cameraPanSensitivity=0.55+t*0.30;
-    window.cameraZoomSensitivity=0.12+t*0.10;
-    window.cameraWheelSensitivity=0.025+t*0.035;
+    window.cameraSensitivity=0.00115+t*0.00115;
+    window.cameraPanSensitivity=0.48+t*0.22;
+    window.cameraZoomSensitivity=0.075+t*0.065;
+    window.cameraWheelSensitivity=0.016+t*0.020;
   };
   // Slightly lower angle on initial battlefield resets without altering camera movement rules.
   const oldBegin=window.beginConfiguredGame;

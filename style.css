@@ -4470,3 +4470,96 @@ body.battle-active #start-menu {
 }
 #mini-money:before,#mini-money:after{display:none!important}
 @media(max-width:700px){#mini-money{top:8px!important;left:8px!important;bottom:auto!important;font-size:10px!important;padding:3px 7px!important;line-height:15px!important}}
+
+
+/* === Final polish: borderless unit art, consistent fixed production strip === */
+#construction-bar .build-preview,
+#construction-bar .factory-preview,
+#construction-bar .barracks-preview,
+#construction-bar .factory-unit-preview,
+#construction-bar .barracks-unit-preview {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  border-radius: 3px !important;
+  background: transparent !important;
+}
+#construction-bar .build-preview:after,
+#construction-bar .factory-unit-preview:after { display:none !important; }
+#construction-bar .external-bar-image {
+  object-fit: contain !important;
+  object-position: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+}
+/* Unit image first, name and price directly below it; compact and evenly sized. */
+#construction-bar .factory-unit-card,
+#construction-bar .barracks-unit-card {
+  height: 78px !important;
+  min-height: 78px !important;
+  padding: 2px 3px !important;
+  gap: 0 !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+  border: 0 !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+  background: rgba(7, 13, 10, .35) !important;
+  overflow: hidden !important;
+}
+#construction-bar .factory-unit-preview,
+#construction-bar .barracks-unit-preview {
+  width: 100% !important;
+  max-width: 58px !important;
+  height: 35px !important;
+  min-height: 35px !important;
+  flex: 0 0 35px !important;
+  margin: 0 auto 1px !important;
+  overflow: hidden !important;
+}
+#construction-bar .factory-unit-info {
+  min-width: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  line-height: 1.05 !important;
+}
+#construction-bar .factory-unit-name {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: clamp(7px, 1.8vw, 9px) !important;
+  line-height: 1.05 !important;
+  text-align: center !important;
+}
+#construction-bar .factory-unit-price {
+  display: block !important;
+  margin-top: 2px !important;
+  font-size: clamp(9px, 2.1vw, 11px) !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+  color: #f5d76e !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+#construction-bar .factory-unit-time { display: none !important; }
+#construction-bar .factory-unit-card.disabled,
+#construction-bar .barracks-unit-card.disabled { opacity: .5 !important; }
+@media (max-width: 520px) {
+  #construction-bar { gap: 2px !important; padding: 3px !important; }
+  #construction-bar .factory-unit-card,
+  #construction-bar .barracks-unit-card { padding: 1px !important; }
+  #construction-bar .factory-unit-preview,
+  #construction-bar .barracks-unit-preview { max-width: 48px !important; height: 31px !important; flex-basis: 31px !important; }
+  #construction-bar .factory-unit-name { font-size: 7px !important; }
+  #construction-bar .factory-unit-price { font-size: 9px !important; }
+}
