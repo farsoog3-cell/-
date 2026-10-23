@@ -6640,7 +6640,7 @@ function createArmyFactory(x,z,ghost=false){
         const rearMark=box(2.2,.13,.10,accent,0,2.76,-3.42); rearMark.name='builderTeamStripe';
 
         // شفرة أمامية كبيرة وحديثة: أعرض من جسم التركس بوضوح، مع حافة قطع فولاذية وأسنان.
-        const bladeGroup=new THREE.Group(); bladeGroup.name='builderBlade'; bladeGroup.position.set(0,.10,4.08); group.add(bladeGroup);
+        const bladeGroup=new THREE.Group(); bladeGroup.name='builderBlade'; bladeGroup.position.set(0,.10,-2.45); bladeGroup.rotation.y=Math.PI; group.add(bladeGroup);
         const bladeMain=box(7.65,1.72,.42,bladeMat,0,.70,1.58,-.18,0,0,bladeGroup); bladeMain.name='bulldozerBlade';
         // انحناءة/تقوية الشفرة بطبقة خلفية.
         box(7.35,.22,.30,armorMat,0,1.46,1.48,-.18,0,0,bladeGroup);
@@ -6651,7 +6651,7 @@ function createArmyFactory(x,z,ghost=false){
         for(const sx of [-1,1]){
             box(.38,.46,3.55,steel,sx*2.15,1.32,2.30,-.20,0,0,bladeGroup);
             box(.24,.28,2.80,edgeMat,sx*1.72,2.06,2.68,-.28,0,0,bladeGroup);
-            const cyl=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,2.35,12),steel); cyl.rotation.x=Math.PI/2-.24; cyl.position.set(sx*1.72,2.08,2.55); cyl.name='bladeHydraulic'; group.add(cyl);
+            const cyl=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,2.35,12),steel); cyl.rotation.x=Math.PI/2-.24; cyl.position.set(sx*1.72,2.08,-2.55); cyl.name='bladeHydraulic'; group.add(cyl);
         }
         bladeGroup.userData.baseY=.10;
         bladeGroup.userData.lift=0;
