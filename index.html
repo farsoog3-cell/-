@@ -3111,14 +3111,46 @@ function startGame(){openBattleSetup();}
         soldier.infantryMixer.update(1/60);
     }
 
+    // ===== خامة قماش وتمويه مشاة — تُنشأ مرة واحدة وتُعاد مشاركتها بين الجنود =====
+    let infantryCamoTextureCache = null;
+    function getInfantryCamoTexture(){
+        if(infantryCamoTextureCache) return infantryCamoTextureCache;
+        const canvas=document.createElement('canvas'); canvas.width=128; canvas.height=128;
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='#56634a'; ctx.fillRect(0,0,128,128);
+        // بقع تمويه صغيرة غير منتظمة تعطي القماش مظهراً عسكرياً بدلاً من اللون المسطح.
+        let seed=7319;
+        const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+        const colors=['#354333','#687153','#77765a','#414b37','#8a8060','#29372d'];
+        for(let i=0;i<170;i++){
+            ctx.fillStyle=colors[Math.floor(rnd()*colors.length)];
+            ctx.globalAlpha=.42+rnd()*.42;
+            const x=rnd()*128,y=rnd()*128,w=3+rnd()*15,h=2+rnd()*9;
+            ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w*.55,y-h*.15);ctx.lineTo(x+w,y+h*.35);ctx.lineTo(x+w*.68,y+h);ctx.lineTo(x+w*.12,y+h*.72);ctx.closePath();ctx.fill();
+        }
+        ctx.globalAlpha=1;
+        for(let i=0;i<900;i++){
+            const v=rnd()>.5?255:20;ctx.fillStyle=`rgba(${v},${v},${v},${rnd()*.07})`;
+            ctx.fillRect(rnd()*128,rnd()*128,1,1);
+        }
+        const tex=new THREE.CanvasTexture(canvas); tex.wrapS=THREE.RepeatWrapping; tex.wrapT=THREE.RepeatWrapping;
+        tex.repeat.set(1.8,1.8); tex.colorSpace=THREE.SRGBColorSpace; tex.anisotropy=renderer&&renderer.capabilities?renderer.capabilities.getMaxAnisotropy():1;
+        infantryCamoTextureCache=tex; return tex;
+    }
+
     // ===== نظام مشاة عسكري احترافي =====
     function createInfantrySoldier(x,z,team='player'){
         // INFANTRY v3 — completely rebuilt visual model.  Gameplay state remains compatible.
         const g=new THREE.Group(); g.name='infantrySoldier';
         const enemy=team==='enemy';
         const M=(c,r=.8,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
-        const skin=M(0x9a634b,.92), skinHi=M(0xc48768,.9), skinDark=M(0x5b372b,.98);
-        const cloth=M(0x303a32,.96), cloth2=M(0x1c241f,.98), camo=M(0x56604e,.94);
+        const skin=M(0xb98160,.92), skinHi=M(0xd39a76,.9), skinDark=M(0x704936,.98);
+        const cloth=M(0x7b8462,.98), cloth2=M(0x343d2f,.99), camo=M(0xffffff,.98);
+        // قماش تمويه مطفي على الزي والبنطال، مع إبقاء الجلد والعتاد منفصلين عن الخامة.
+        const fabricTex=getInfantryCamoTexture();
+        cloth.map=fabricTex; cloth2.map=fabricTex; camo.map=fabricTex;
+        cloth.color.setHex(0xc2c7aa); cloth2.color.setHex(0x777f68);
+        cloth.needsUpdate=true; cloth2.needsUpdate=true; camo.needsUpdate=true;
         const armor=M(0x141917,.88,.12), gear=M(0x252d28,.92), helmet=M(0x3f4941,.88,.08);
         const helmetHi=M(0x667066,.82,.08), boot=M(0x111412,.98), rubber=M(0x080a09,.99);
         const gun=M(0x20231f,.76,.35), gunHi=M(0x59605a,.55,.75), gunDark=M(0x0b0d0c,.92,.2);
@@ -3240,8 +3272,9 @@ function startGame(){openBattleSetup();}
         // Explicitly opt this infantry out of vehicle silver recoloring.
         // Infantry uses camp-color uniform accents; never attach a pole or flag to the soldier.
         applySilverArmyStyle(soldier);
-        infantryModelPending.add(soldier); beginInfantryModelLoad();
-        if(infantryGLTFSource){ attachAnimatedInfantryModel(soldier); infantryModelPending.delete(soldier); }
+        // نستخدم النموذج البشري المفصّل المدمج مع اللعبة مباشرةً: وجه ويدان بلون بشري،
+        // خامة تمويه وسلاح مربوط بوضع اليدين. لا نستبدله بنموذج خارجي قد لا يحمل السلاح
+        // أو قد تتغير خاماته حسب اتصال الإنترنت، لتبقى الصورة والحركة ثابتتين دائماً.
         return soldier;
     }
     function fireInfantryWeapon(soldier,target){
