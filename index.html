@@ -2901,38 +2901,6 @@ function startGame(){openBattleSetup();}
         unit.mesh.add(g);
     }
 
-    // External material maps: replace files in images/textures/ to customize each asset.
-    const externalAlbedoCache = Object.create(null);
-    function applyExternalAlbedo(root, assetKey, mode='vehicle') {
-        if (!root || !assetKey || !window.THREE) return;
-        const path = `images/textures/${assetKey}_albedo.png`;
-        const applyTexture = (texture) => {
-            texture.colorSpace = THREE.SRGBColorSpace || texture.colorSpace;
-            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(1, 1);
-            root.traverse((obj) => {
-                if (!obj.isMesh || !obj.material || obj.userData.teamFlag) return;
-                const nm = (obj.name || '').toLowerCase();
-                if (/glass|window|windshield|beacon|light|muzzle|flash|smoke|flag|wheel|tire|tyre|track|shoe|tread|hub|rim|hydraulic|rifle|skin|eye|teeth|shadow/.test(nm)) return;
-                const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-                mats.forEach((mat) => {
-                    if (!mat || !mat.color || mat.isShaderMaterial || (mat.userData && (mat.userData.teamAccent || mat.userData.keepArmyColor))) return;
-                    // For buildings and oil props preserve metal/trim parts; texture only broad surfaces.
-                    if (mode === 'building' && /metal|pipe|barrel|lamp|flag|glass/.test(nm)) return;
-                    mat.map = texture;
-                    mat.color.setHex(0xffffff);
-                    mat.needsUpdate = true;
-                });
-            });
-        };
-        if (externalAlbedoCache[path]) { applyTexture(externalAlbedoCache[path]); return; }
-        try {
-            new THREE.TextureLoader().load(path, (texture) => { externalAlbedoCache[path] = texture; applyTexture(texture); }, undefined, () => {
-                // If a custom file is absent, keep the game's built-in material; no gameplay impact.
-            });
-        } catch (e) {}
-    }
-
     function applySilverArmyStyle(unit){
         if(!unit||!unit.mesh)return unit;
         // الجندي البشري يحتفظ بخاماته الخاصة. المركبات تحصل على تمويه عسكري حقيقي.
@@ -3276,7 +3244,6 @@ function startGame(){openBattleSetup();}
         // Do not start an external model request; this keeps the face, skin, uniform, hands,
         // rifle pose, aiming, recoil and walking animation controlled by the game's own rig.
         applySilverArmyStyle(soldier);
-        // Keep articulated skin/uniform colors intact; soldier_albedo.png is supplied as a customization source.
         infantryGLTFFailed = true;
         return soldier;
     }
@@ -4108,7 +4075,7 @@ function startGame(){openBattleSetup();}
         if (moveAudio) { moveAudio.volume = 0.18; try { moveAudio.load(); } catch(e) {} }
 
         const scoutUnit={mesh:group,team,target:null,hpLabel,hpFill,hp:100,maxHp:100,speed:UNIT_SPEEDS.scout,isDestroyed:false,destructionTimer:0,type:'scout',guardPoint:null,ceaseFire:true,hasPlayerMoveOrder:false,manualControl:true,guardRadius:18,holdPosition:false,reloadTime:0,isRecon:true,reconDish:dishRig,idleAudio,moveAudio,isIdlePlaying:false,isMovePlaying:false,hpRevealUntil:0,lastShot:0,lastTrackPos:new THREE.Vector3(x,terrainY,z),lastDustPos:new THREE.Vector3(x,terrainY,z)};
-        applySilverArmyStyle(scoutUnit); applyExternalAlbedo(group, 'recon'); addUnitTeamFlag(scoutUnit,team); return scoutUnit;
+        applySilverArmyStyle(scoutUnit); addUnitTeamFlag(scoutUnit,team); return scoutUnit;
     }
 
     function createModernAmbulance(x, z, team = 'player') {
@@ -4277,7 +4244,7 @@ function startGame(){openBattleSetup();}
             guardRadius: 18,
             holdPosition: false
         };
-        applySilverArmyStyle(ambulanceUnit); applyExternalAlbedo(ambulanceUnit.mesh, 'ambulance');
+        applySilverArmyStyle(ambulanceUnit);
         addUnitTeamFlag(ambulanceUnit,team);
         return ambulanceUnit;
     }
@@ -4523,65 +4490,211 @@ function startGame(){openBattleSetup();}
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
+    // ===== منشأة النفط الجديدة (GLB) =====
+    // النموذج الجديد يحتوي خاماته داخله، لذلك لا يحتاج إلى ملفات JPG منفصلة.
+    let oilBuildingGLTFSource = null;
+    let oilBuildingGLTFLoading = false;
+    let oilBuildingGLTFFailed = false;
+    const oilBuildingModelPending = new Set();
+
+    function beginOilBuildingModelLoad(){
+        if(oilBuildingGLTFSource || oilBuildingGLTFLoading || oilBuildingGLTFFailed) return;
+        if(!THREE.GLTFLoader){
+            console.warn('GLTFLoader غير متاح؛ سيتم إبقاء موقع النفط بدون نموذج المبنى الجديد.');
+            oilBuildingGLTFFailed=true;
+            return;
+        }
+
+        oilBuildingGLTFLoading=true;
+        const loader=new THREE.GLTFLoader();
+        loader.load(
+            'assets/oil/oil_building.glb',
+            gltf=>{
+                oilBuildingGLTFSource=gltf;
+                oilBuildingGLTFLoading=false;
+                for(const rig of oilBuildingModelPending) attachOilBuildingModel(rig);
+                oilBuildingModelPending.clear();
+            },
+            undefined,
+            err=>{
+                oilBuildingGLTFLoading=false;
+                oilBuildingGLTFFailed=true;
+                console.warn('تعذر تحميل مبنى النفط الجديد:',err);
+                oilBuildingModelPending.clear();
+            }
+        );
+    }
+
+    function attachOilBuildingModel(rig){
+        if(!rig || rig.isDestroyed || !oilBuildingGLTFSource || !rig.buildingModelSlot) return;
+        if(rig.buildingModelSlot.getObjectByName('oilBuildingGLB')) return;
+
+        try{
+            const source=oilBuildingGLTFSource.scene || oilBuildingGLTFSource.scenes[0];
+            if(!source) return;
+
+            const model=(THREE.SkeletonUtils && THREE.SkeletonUtils.clone)
+                ? THREE.SkeletonUtils.clone(source)
+                : source.clone(true);
+
+            model.name='oilBuildingGLB';
+
+            // توحيد الحجم تلقائياً مع حجم مبنى النفط القديم.
+            model.scale.setScalar(1);
+            const initialBox=new THREE.Box3().setFromObject(model);
+            const initialSize=initialBox.getSize(new THREE.Vector3());
+            const targetWidth=4.2;
+            const sourceWidth=Math.max(initialSize.x,0.001);
+            const uniformScale=targetWidth/sourceWidth;
+            model.scale.setScalar(uniformScale);
+
+            // تثبيت أسفل النموذج على أرض موقع النفط، وتوسيطه حول نقطة الموقع.
+            const box=new THREE.Box3().setFromObject(model);
+            const center=box.getCenter(new THREE.Vector3());
+            model.position.x-=center.x;
+            model.position.z-=center.z;
+            model.position.y-=box.min.y;
+
+            model.traverse(o=>{
+                if(o.isMesh){
+                    o.castShadow=true;
+                    o.receiveShadow=true;
+                    o.frustumCulled=true;
+                }
+            });
+
+            rig.buildingModelSlot.add(model);
+        }catch(err){
+            console.warn('تعذر تجهيز نموذج مبنى النفط:',err);
+        }
+    }
+
     function createOilRigs() {
+        beginOilBuildingModelLoad();
+
         const positions=[{x:95,z:-95},{x:-95,z:95},{x:-115,z:-105},{x:115,z:105}];
         positions.forEach((pos,index)=>{
             const rigGroup=new THREE.Group();
             rigGroup.position.set(pos.x,getTerrainHeight(pos.x,pos.z),pos.z);
             rigGroup.name=`oilSite_${index}`;
+
             const barrelMat=new THREE.MeshStandardMaterial({color:0x252a2d,roughness:.62,metalness:.72});
             const rimMat=new THREE.MeshStandardMaterial({color:0x70777b,roughness:.42,metalness:.82});
-            const barrelGroup=new THREE.Group(); barrelGroup.name='oilBarrels';
+            const barrelGroup=new THREE.Group();
+            barrelGroup.name='oilBarrels';
+
             [-2,0,2].forEach(x=>{
-                const barrel=new THREE.Mesh(new THREE.CylinderGeometry(1.05,1.05,2.65,20),barrelMat); barrel.position.set(x,1.35,0); barrel.castShadow=true; barrel.receiveShadow=true; barrelGroup.add(barrel);
-                [-1,1].forEach(y=>{const rim=new THREE.Mesh(new THREE.TorusGeometry(1,.075,8,20),rimMat);rim.rotation.x=Math.PI/2;rim.position.set(x,1.35+y*1.02,0);barrelGroup.add(rim);});
+                const barrel=new THREE.Mesh(new THREE.CylinderGeometry(1.05,1.05,2.65,20),barrelMat);
+                barrel.position.set(x,1.35,0);
+                barrel.castShadow=true;
+                barrel.receiveShadow=true;
+                barrelGroup.add(barrel);
+
+                [-1,1].forEach(y=>{
+                    const rim=new THREE.Mesh(new THREE.TorusGeometry(1,.075,8,20),rimMat);
+                    rim.rotation.x=Math.PI/2;
+                    rim.position.set(x,1.35+y*1.02,0);
+                    barrelGroup.add(rim);
+                });
             });
             rigGroup.add(barrelGroup);
+
             const valveMat=new THREE.MeshStandardMaterial({color:0x3b4144,roughness:.48,metalness:.78});
-            const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,2.8,10),valveMat); pipe.rotation.z=Math.PI/2; pipe.position.set(0,1.05,.95); pipe.castShadow=false; rigGroup.add(pipe);
-            const valve=new THREE.Mesh(new THREE.TorusGeometry(.32,.075,8,14),rimMat); valve.rotation.y=Math.PI/2; valve.position.set(0,1.05,2.35); valve.castShadow=false; rigGroup.add(valve);
-            const flagGroup=new THREE.Group(); flagGroup.position.set(4.2,0,0);
-            const pole=new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,10.5,12),rimMat); pole.position.y=5.25; pole.castShadow=true; flagGroup.add(pole);
+            const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,2.8,10),valveMat);
+            pipe.rotation.z=Math.PI/2;
+            pipe.position.set(0,1.05,.95);
+            pipe.castShadow=false;
+            rigGroup.add(pipe);
+
+            const valve=new THREE.Mesh(new THREE.TorusGeometry(.32,.075,8,14),rimMat);
+            valve.rotation.y=Math.PI/2;
+            valve.position.set(0,1.05,2.35);
+            valve.castShadow=false;
+            rigGroup.add(valve);
+
+            const flagGroup=new THREE.Group();
+            flagGroup.position.set(4.2,0,0);
+
+            const pole=new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,10.5,12),rimMat);
+            pole.position.y=5.25;
+            pole.castShadow=true;
+            flagGroup.add(pole);
+
             const flagGeo=new THREE.PlaneGeometry(4.4,2.45,12,4);
-            const flagMat=new THREE.MeshBasicMaterial({map:createFlagTexture('white'),side:THREE.DoubleSide,transparent:true,depthWrite:false});
-            const flagMesh=new THREE.Mesh(flagGeo,flagMat); flagMesh.position.set(2.2,9.15,0); flagGroup.add(flagMesh); rigGroup.add(flagGroup);
+            const flagMat=new THREE.MeshBasicMaterial({
+                map:createFlagTexture('white'),
+                side:THREE.DoubleSide,
+                transparent:true,
+                depthWrite:false
+            });
+            const flagMesh=new THREE.Mesh(flagGeo,flagMat);
+            flagMesh.position.set(2.2,9.15,0);
+            flagGroup.add(flagMesh);
+            rigGroup.add(flagGroup);
             flagMesh.visible=true;
-            const flagData={mesh:flagMesh,baseHeight:9.15,type:'white',isOil:true,owner:'none'}; activeFlagMeshes.push(flagData);
-            const wreckBase=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.9,.32,20),new THREE.MeshStandardMaterial({color:0x303335,roughness:.94,metalness:.1})); wreckBase.position.y=.16; wreckBase.visible=false; rigGroup.add(wreckBase);
 
-            // مبنى نفط صغير مع أنبوب نازل إلى الأرض وعلم فوقه.
-            const pumpHouse=new THREE.Group(); pumpHouse.name='oilPumpHouse';
-            const houseMat=new THREE.MeshStandardMaterial({color:0x4a5148,roughness:.72,metalness:.28});
-            const roofMat=new THREE.MeshStandardMaterial({color:0x252a27,roughness:.55,metalness:.62});
-            const house=new THREE.Mesh(new THREE.BoxGeometry(4.8,2.9,3.8),houseMat);
-            house.position.set(-5.4,1.45,3.8); house.castShadow=true; house.receiveShadow=true; pumpHouse.add(house);
-            const roof=new THREE.Mesh(new THREE.BoxGeometry(5.1,.32,4.1),roofMat);
-            roof.position.set(-5.4,3.05,3.8); roof.castShadow=true; pumpHouse.add(roof);
-            const door=new THREE.Mesh(new THREE.BoxGeometry(1.0,1.75,.12),new THREE.MeshStandardMaterial({color:0x151916,roughness:.7,metalness:.2}));
-            door.position.set(-5.4,1.0,5.72); pumpHouse.add(door);
-            const groundPipe=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,2.9,12),roofMat);
-            groundPipe.position.set(-3.0,1.45,3.15); groundPipe.rotation.z=Math.PI/2; groundPipe.castShadow=true; pumpHouse.add(groundPipe);
-            const downPipe=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,1.45,12),roofMat);
-            downPipe.position.set(-1.65,.72,3.15); downPipe.castShadow=true; pumpHouse.add(downPipe);
-            const pipeCap=new THREE.Mesh(new THREE.TorusGeometry(.24,.07,8,16),rimMat);
-            pipeCap.rotation.y=Math.PI/2; pipeCap.position.set(-1.65,.08,3.15); pumpHouse.add(pipeCap);
+            const flagData={
+                mesh:flagMesh,
+                baseHeight:9.15,
+                type:'white',
+                isOil:true,
+                owner:'none'
+            };
+            activeFlagMeshes.push(flagData);
 
-            const siteFlag=new THREE.Group(); siteFlag.position.set(-5.4,0,3.8);
-            const sitePole=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,5.8,10),rimMat);
-            sitePole.position.y=2.9; siteFlag.add(sitePole);
-            const siteFlagMesh=new THREE.Mesh(new THREE.PlaneGeometry(2.0,1.0,8,3),
-                new THREE.MeshBasicMaterial({map:createFlagTexture('none'),side:THREE.DoubleSide,transparent:true,depthWrite:false}));
-            siteFlagMesh.position.set(1.0,5.0,0); siteFlag.add(siteFlagMesh);
-            siteFlagMesh.visible=false; pumpHouse.add(siteFlag);
-            rigGroup.add(pumpHouse);
+            const wreckBase=new THREE.Mesh(
+                new THREE.CylinderGeometry(2.6,2.9,.32,20),
+                new THREE.MeshStandardMaterial({color:0x303335,roughness:.94,metalness:.1})
+            );
+            wreckBase.position.y=.16;
+            wreckBase.visible=false;
+            rigGroup.add(wreckBase);
 
-            // تكبير منشأة النفط قليلاً مع الحفاظ على موضعها في الخريطة.
+            // ===== المبنى الجديد =====
+            // تم حذف مبنى النفط الإجرائي القديم واستبداله بالكامل بنموذج GLB الجديد.
+            const buildingModelSlot=new THREE.Group();
+            buildingModelSlot.name='oilBuildingModelSlot';
+            rigGroup.add(buildingModelSlot);
+
+            const rig={
+                x:pos.x,
+                z:pos.z,
+                group:rigGroup,
+                beam:null,
+                isOilRig:true,
+                flagData,
+                owner:'none',
+                captureProgress:0,
+                hp:700,
+                maxHp:700,
+                isDestroyed:false,
+                hpRevealUntil:0,
+                hpLabel:null,
+                hpFill:null,
+                mesh:rigGroup,
+                wreckBase,
+                towerAssembly:barrelGroup,
+                buildingModelSlot
+            };
+
+            if(oilBuildingGLTFSource) attachOilBuildingModel(rig);
+            else if(!oilBuildingGLTFFailed) oilBuildingModelPending.add(rig);
+
             rigGroup.scale.setScalar(1.18);
-            applyExternalAlbedo(rigGroup, 'oil_rig', 'building');
-            applyExternalAlbedo(barrelGroup, 'oil_barrels', 'building');
-            scene.add(rigGroup); obstacles.push({x:pos.x,z:pos.z,radius:10});
-            const oilHpLabel=document.createElement('div'); oilHpLabel.className='tank-hp-label hp-player'; const oilHpFill=document.createElement('div'); oilHpFill.className='tank-hp-fill'; oilHpLabel.appendChild(oilHpFill); document.getElementById('hp-labels-container').appendChild(oilHpLabel); oilHpLabel.style.display='none';
-            oilRigs.push({x:pos.x,z:pos.z,group:rigGroup,beam:null,isOilRig:true,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:barrelGroup});
+            scene.add(rigGroup);
+            obstacles.push({x:pos.x,z:pos.z,radius:10});
+
+            const oilHpLabel=document.createElement('div');
+            oilHpLabel.className='tank-hp-label hp-player';
+            const oilHpFill=document.createElement('div');
+            oilHpFill.className='tank-hp-fill';
+            oilHpLabel.appendChild(oilHpFill);
+            document.getElementById('hp-labels-container').appendChild(oilHpLabel);
+            oilHpLabel.style.display='none';
+
+            rig.hpLabel=oilHpLabel;
+            rig.hpFill=oilHpFill;
+            oilRigs.push(rig);
         });
     }
 
@@ -5043,7 +5156,7 @@ function startGame(){openBattleSetup();}
             speed: type === 'rocket' ? UNIT_SPEEDS.scud : UNIT_SPEEDS.tank,
             isReversing: false
         };
-        applySilverArmyStyle(tankUnit); applyExternalAlbedo(tankGroup, isRocketTank ? 'scud' : 'tank');
+        applySilverArmyStyle(tankUnit);
         addUnitTeamFlag(tankUnit,team);
         return tankUnit;
     }
@@ -5674,7 +5787,7 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
 
         const groundY=getBuildingGroundLevel(x,z,'barracks',g.rotation.y); g.position.set(x,groundY+.03,z);
         g.rotation.y=(typeof barracksPlacementRotation==='number'?barracksPlacementRotation:0);
-        g.scale.setScalar(ghost?.1:1); if(!ghost) applyExternalAlbedo(g, 'barracks', 'building'); scene.add(g);
+        g.scale.setScalar(ghost?.1:1); scene.add(g);
         if(ghost) g.traverse(o=>{if(o.material){o.material.transparent=true;o.material.opacity=Math.min(o.material.opacity||1,.30);o.material.depthWrite=false;}});
 
         return {mesh:g,x,z,rotation:g.rotation.y,progress:0,duration:REAL_BUILD_BARRACKS_SEC*REAL_TICKS_PER_SECOND,done:!ghost,ghost,hp:900,maxHp:900,isDestroyed:false,hpRevealUntil:0,owner,isBarracks:true,hpLabel,hpFill,collisionRadius:8,productionJob:null};
@@ -5797,7 +5910,7 @@ function createArmyFactory(x,z,ghost=false){
         activeFlagMeshes.push(factoryFlagData); group.userData.factoryFlagData=factoryFlagData;
 
         const groundY=getBuildingGroundLevel(x,z,'factory',factoryPlacementRotation); group.position.set(x,groundY+.03,z);
-        group.scale.setScalar(ghost?.95:.08); group.rotation.y=factoryPlacementRotation; if(!ghost) applyExternalAlbedo(group, 'factory', 'building');
+        group.scale.setScalar(ghost?.95:.08); group.rotation.y=factoryPlacementRotation;
         if(ghost) group.traverse(o=>{if(o.material){o.material.transparent=true;o.material.opacity=.30;o.material.depthWrite=false;o.material.emissive?.setHex(0x173b20);o.material.emissiveIntensity=.5;}});
         scene.add(group);
 
@@ -6700,7 +6813,7 @@ function createArmyFactory(x,z,ghost=false){
         const terrainY=getTerrainHeight(x,z); group.position.set(x,terrainY,z); scene.add(group);
         const hpLabel=document.createElement('div'); hpLabel.className=`tank-hp-label ${team==='player'?'hp-player':'hp-enemy'}`; const hpFill=document.createElement('div'); hpFill.className='tank-hp-fill'; hpLabel.appendChild(hpFill); document.getElementById('hp-labels-container').appendChild(hpLabel);
         const unit={mesh:group,team,type:'builder',isBuilder:true,isConstructionTruck:true,hpLabel,hpFill,hpRevealUntil:0,isDestroyed:false,hp:700,maxHp:700,speed:UNIT_SPEEDS.dozer||.105,combatSpeed:UNIT_SPEEDS.dozer||.105,target:null,buildTarget:null,isBuilding:false,buildBlade:bladeGroup,bulldozerBlade:bladeMain,bladeGroup, builderBoom:boomBase,builderCable:cable,builderHook:hook,trackBeltL,trackBeltR,factoryRetreating:false,hasPlayerMoveOrder:false,isReversing:false,collisionRadius:5.0,buildRadius:7.0,Pos:new THREE.Vector3(x,terrainY,z),lastDustPos:new THREE.Vector3(x,terrainY,z)};
-        applySilverArmyStyle(unit); applyExternalAlbedo(group, 'dozer'); addUnitTeamMarkings(unit,team);
+        applySilverArmyStyle(unit); addUnitTeamMarkings(unit,team);
         return unit;
     }
 
