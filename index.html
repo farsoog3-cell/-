@@ -5806,9 +5806,73 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
         return {mesh:g,x,z,rotation:g.rotation.y,progress:0,duration:REAL_BUILD_BARRACKS_SEC*REAL_TICKS_PER_SECOND,done:!ghost,ghost,hp:900,maxHp:900,isDestroyed:false,hpRevealUntil:0,owner,isBarracks:true,hpLabel,hpFill,collisionRadius:8,productionJob:null};
     }
 
-function createArmyFactory(x,z,ghost=false){
+// ===== تحميل نموذج المصنع الجديد بخاماته الخارجية =====
+    let factoryGLTFSource = null;
+    let factoryGLTFLoading = false;
+    let factoryGLTFFailed = false;
+    const factoryModelPending = new Set();
+
+    function beginFactoryModelLoad(){
+        if(factoryGLTFSource || factoryGLTFLoading || factoryGLTFFailed) return;
+        if(!THREE.GLTFLoader){ console.warn('GLTFLoader غير متاح؛ سيبقى شكل المصنع الاحتياطي.'); factoryGLTFFailed=true; return; }
+        factoryGLTFLoading=true;
+        const loader=new THREE.GLTFLoader();
+        loader.load('assets/factory/factory_building.gltf', gltf=>{
+            factoryGLTFSource=gltf; factoryGLTFLoading=false;
+            for(const group of factoryModelPending) attachFactoryGLTF(group);
+            factoryModelPending.clear();
+        }, undefined, err=>{
+            factoryGLTFLoading=false; factoryGLTFFailed=true;
+            console.warn('تعذر تحميل نموذج المصنع الجديد؛ سيبقى الشكل الاحتياطي:',err);
+            factoryModelPending.clear();
+        });
+    }
+
+    function attachFactoryGLTF(group){
+        if(!group || !factoryGLTFSource || group.userData.factoryModelLoaded) return;
+        try{
+            const source=factoryGLTFSource.scene || factoryGLTFSource.scenes[0];
+            if(!source) return;
+            const model=(THREE.SkeletonUtils && THREE.SkeletonUtils.clone) ? THREE.SkeletonUtils.clone(source) : source.clone(true);
+            model.name='factoryBuildingGLTF';
+            model.scale.setScalar(1);
+            let bounds=new THREE.Box3().setFromObject(model);
+            const size=bounds.getSize(new THREE.Vector3());
+            const targetWidth=26.0;
+            const scale=targetWidth/Math.max(size.x, size.z, 0.001);
+            model.scale.setScalar(scale);
+            bounds=new THREE.Box3().setFromObject(model);
+            const center=bounds.getCenter(new THREE.Vector3());
+            model.position.x-=center.x;
+            model.position.z-=center.z;
+            model.position.y-=bounds.min.y;
+            model.traverse(o=>{
+                if(!o.isMesh) return;
+                o.castShadow=true; o.receiveShadow=true;
+                const mats=Array.isArray(o.material)?o.material:[o.material];
+                mats.forEach(m=>{ if(m){ m.needsUpdate=true; } });
+                if(group.userData.factoryGhost){
+                    mats.forEach(m=>{ if(m){ m=m; m.transparent=true; m.opacity=Math.min(m.opacity===undefined?1:m.opacity,.30); m.depthWrite=false; } });
+                }
+            });
+            // Replace only the old procedural factory body. Keep the owner flag and its pole intact.
+            group.traverse(o=>{
+                if(!o.isMesh || o===model) return;
+                if(o.name==='factoryFlag' || o.name==='factoryFlagPole') return;
+                o.visible=false;
+            });
+            group.add(model);
+            group.userData.factoryModelLoaded=true;
+        }catch(err){ console.warn('تعذر تركيب مجسم المصنع:',err); }
+    }
+
+    function createArmyFactory(x,z,ghost=false){
+        beginFactoryModelLoad();
         // مصنع جيش جديد: حظيرة إنتاج كبيرة وباب شحن مرتفع، من نفس معسكر القيادة لكن بوظيفة مصنع واضحة.
         const group=new THREE.Group(); group.name='armyFactory_USAReference';
+        group.userData.factoryGhost=!!ghost;
+        if(factoryGLTFSource) factoryModelPending.add(group);
+        else if(factoryGLTFLoading) factoryModelPending.add(group);
         const M=(c,r=.78,m=.12)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
         const concrete=M(0xb9bab3,.94,.04), wall=M(0xd0d2cc,.84,.08), panel=M(0xaeb3b0,.68,.30);
         const roof=M(0x59615f,.58,.68), dark=M(0x1e2523,.86,.28), steel=M(0x858d8a,.46,.76);
@@ -5914,13 +5978,14 @@ function createArmyFactory(x,z,ghost=false){
         // أعلام المصنع.
         const factoryFlagTeam=ghost?(typeof playerFlagType==='string'?playerFlagType:(battleConfig.playerColor||'#168cff')):((group.userData.factoryOwner==='enemy')?(typeof enemyFlagType==='string'?enemyFlagType:(battleConfig.enemyColor||'#f43f5e')):(typeof playerFlagType==='string'?playerFlagType:(battleConfig.playerColor||'#168cff')));
         const makeFlag=(px,pz,h,scale=1)=>{
-            const pole=new THREE.Mesh(new THREE.CylinderGeometry(.08,.12,h,10),steel);pole.position.set(px,h/2,pz);group.add(pole);
+            const pole=new THREE.Mesh(new THREE.CylinderGeometry(.08,.12,h,10),steel);pole.name='factoryFlagPole';pole.position.set(px,h/2,pz);group.add(pole);
             const fm=new THREE.MeshStandardMaterial({map:createFlagTexture(factoryFlagTeam),side:THREE.DoubleSide,transparent:true,roughness:.68,metalness:.02});
             const cloth=new THREE.Mesh(new THREE.PlaneGeometry(2.2*scale,1.25*scale,10,4),fm);cloth.position.set(px+1.05*scale,h-.62*scale,pz);cloth.name='factoryFlag';group.add(cloth);return cloth;
         };
         const factoryFlagMesh=makeFlag(-6.8,8.2,6.6,.9);
         const factoryFlagData={mesh:factoryFlagMesh,baseHeight:6.6,type:factoryFlagTeam,factoryFlag:true,owner:(group.userData.factoryOwner||'player')};
         activeFlagMeshes.push(factoryFlagData); group.userData.factoryFlagData=factoryFlagData;
+        if(factoryGLTFSource) attachFactoryGLTF(group); else if(factoryGLTFLoading) factoryModelPending.add(group);
 
         const groundY=getBuildingGroundLevel(x,z,'factory',factoryPlacementRotation); group.position.set(x,groundY+.03,z);
         group.scale.setScalar(ghost?.95:.08); group.rotation.y=factoryPlacementRotation;
