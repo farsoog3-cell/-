@@ -5817,7 +5817,7 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
         if(!THREE.GLTFLoader){ console.warn('GLTFLoader غير متاح؛ سيبقى شكل المصنع الاحتياطي.'); factoryGLTFFailed=true; return; }
         factoryGLTFLoading=true;
         const loader=new THREE.GLTFLoader();
-        loader.load('assets/factory/factory_building.gltf', gltf=>{
+        loader.load('assets/factory/factory_building.glb', gltf=>{
             factoryGLTFSource=gltf; factoryGLTFLoading=false;
             for(const group of factoryModelPending) attachFactoryGLTF(group);
             factoryModelPending.clear();
@@ -5835,33 +5835,53 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
             if(!source) return;
             const model=(THREE.SkeletonUtils && THREE.SkeletonUtils.clone) ? THREE.SkeletonUtils.clone(source) : source.clone(true);
             model.name='factoryBuildingGLTF';
-            model.scale.setScalar(1);
+            // Normalize from the actual complete model bounds, including all child meshes.
+            model.scale.set(1,1,1);
+            model.updateMatrixWorld(true);
             let bounds=new THREE.Box3().setFromObject(model);
-            const size=bounds.getSize(new THREE.Vector3());
-            const targetWidth=26.0;
-            const scale=targetWidth/Math.max(size.x, size.z, 0.001);
+            const originalSize=bounds.getSize(new THREE.Vector3());
+            if(!Number.isFinite(originalSize.x) || !Number.isFinite(originalSize.y) || !Number.isFinite(originalSize.z) || Math.max(originalSize.x,originalSize.y,originalSize.z)<0.001){
+                throw new Error('مجسم المصنع فارغ أو أبعاده غير صالحة');
+            }
+            // Fit by the largest horizontal dimension, keeping the whole model visible.
+            const targetWidth=30.0;
+            const horizontal=Math.max(originalSize.x,originalSize.z,0.001);
+            const scale=targetWidth/horizontal;
             model.scale.setScalar(scale);
+            model.updateMatrixWorld(true);
             bounds=new THREE.Box3().setFromObject(model);
             const center=bounds.getCenter(new THREE.Vector3());
             model.position.x-=center.x;
             model.position.z-=center.z;
             model.position.y-=bounds.min.y;
+            model.updateMatrixWorld(true);
             model.traverse(o=>{
                 if(!o.isMesh) return;
+                o.visible=true;
                 o.castShadow=true; o.receiveShadow=true;
+                // Keep original maps/materials, but show both sides to avoid apparently missing thin panels.
                 const mats=Array.isArray(o.material)?o.material:[o.material];
-                mats.forEach(m=>{ if(m){ m.needsUpdate=true; } });
-                if(group.userData.factoryGhost){
-                    mats.forEach(m=>{ if(m){ m=m; m.transparent=true; m.opacity=Math.min(m.opacity===undefined?1:m.opacity,.30); m.depthWrite=false; } });
-                }
+                mats.forEach(m=>{
+                    if(!m) return;
+                    m.side=THREE.DoubleSide;
+                    m.needsUpdate=true;
+                    if(group.userData.factoryGhost){
+                        m.transparent=true;
+                        m.opacity=Math.min(m.opacity===undefined?1:m.opacity,.30);
+                        m.depthWrite=false;
+                    }
+                });
             });
-            // Replace only the old procedural factory body. Keep the owner flag and its pole intact.
+            // Only hide the old procedural body after the new full model is validated and attached.
+            group.add(model);
             group.traverse(o=>{
-                if(!o.isMesh || o===model) return;
+                if(!o.isMesh || o===model || model.getObjectById(o.id)) return;
                 if(o.name==='factoryFlag' || o.name==='factoryFlagPole') return;
+                // Do not hide the newly attached GLB meshes.
+                if(model.children.some(child=>child===o)) return;
+                if(!o.parent || o.parent===model) return;
                 o.visible=false;
             });
-            group.add(model);
             group.userData.factoryModelLoaded=true;
         }catch(err){ console.warn('تعذر تركيب مجسم المصنع:',err); }
     }
