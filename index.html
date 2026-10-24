@@ -4490,224 +4490,63 @@ function startGame(){openBattleSetup();}
         playerPoleFlagMesh = createFlagPole(new THREE.Group(), CORNER_OFFSET, CORNER_OFFSET, playerFlagType, 'player');
     }
 
-    // ===== منشأة النفط الجديدة (GLB) =====
-    // النموذج الجديد يحتوي خاماته داخله، لذلك لا يحتاج إلى ملفات JPG منفصلة.
-    let oilBuildingGLTFSource = null;
-    let oilBuildingGLTFLoading = false;
-    let oilBuildingGLTFFailed = false;
-    const oilBuildingModelPending = new Set();
-
-    function beginOilBuildingModelLoad(){
-        if(oilBuildingGLTFSource || oilBuildingGLTFLoading || oilBuildingGLTFFailed) return;
-        if(!THREE.GLTFLoader){
-            console.warn('GLTFLoader غير متاح؛ سيتم إبقاء موقع النفط بدون نموذج المبنى الجديد.');
-            oilBuildingGLTFFailed=true;
-            return;
-        }
-
-        oilBuildingGLTFLoading=true;
-        const loader=new THREE.GLTFLoader();
-        loader.load(
-            'assets/oil/oil_building.glb',
-            gltf=>{
-                oilBuildingGLTFSource=gltf;
-                oilBuildingGLTFLoading=false;
-                for(const rig of oilBuildingModelPending) attachOilBuildingModel(rig);
-                oilBuildingModelPending.clear();
-            },
-            undefined,
-            err=>{
-                oilBuildingGLTFLoading=false;
-                oilBuildingGLTFFailed=true;
-                console.warn('تعذر تحميل مبنى النفط الجديد:',err);
-                oilBuildingModelPending.clear();
-            }
-        );
-    }
-
-    function attachOilBuildingModel(rig){
-        if(!rig || rig.isDestroyed || !oilBuildingGLTFSource || !rig.buildingModelSlot) return;
-        if(rig.buildingModelSlot.getObjectByName('oilBuildingGLB')) return;
-
-        try{
-            const source=oilBuildingGLTFSource.scene || oilBuildingGLTFSource.scenes[0];
-            if(!source) return;
-
-            const model=(THREE.SkeletonUtils && THREE.SkeletonUtils.clone)
-                ? THREE.SkeletonUtils.clone(source)
-                : source.clone(true);
-
-            model.name='oilBuildingGLB';
-
-            // توحيد الحجم تلقائياً مع حجم مبنى النفط القديم.
-            model.scale.setScalar(1);
-            const initialBox=new THREE.Box3().setFromObject(model);
-            const initialSize=initialBox.getSize(new THREE.Vector3());
-            const targetWidth=7.4;
-            const sourceWidth=Math.max(initialSize.x,0.001);
-            const uniformScale=targetWidth/sourceWidth;
-            model.scale.setScalar(uniformScale);
-
-            // تثبيت أسفل النموذج على أرض موقع النفط، وتوسيطه حول نقطة الموقع.
-            const box=new THREE.Box3().setFromObject(model);
-            const center=box.getCenter(new THREE.Vector3());
-            model.position.x-=center.x;
-            model.position.z-=center.z;
-            model.position.y-=box.min.y;
-
-            model.traverse(o=>{
-                if(o.isMesh){
-                    o.castShadow=true;
-                    o.receiveShadow=true;
-                    o.frustumCulled=true;
-                    const mats = Array.isArray(o.material) ? o.material : [o.material];
-                    mats.forEach(mat=>{
-                        if(!mat) return;
-                        // Keep the original texture maps, but lift the dark metal slightly
-                        // so rust and panel detail remain readable in shadow.
-                        if(mat.color) mat.color.multiplyScalar(1.12);
-                        if(mat.emissive && mat.emissive.set) mat.emissive.set(0x24150b);
-                        if('emissiveIntensity' in mat) mat.emissiveIntensity = Math.max(mat.emissiveIntensity || 0, 0.16);
-                        if('roughness' in mat) mat.roughness = Math.max(mat.roughness || 0, 0.48);
-                        mat.needsUpdate = true;
-                    });
-                }
-            });
-
-            rig.buildingModelSlot.add(model);
-        }catch(err){
-            console.warn('تعذر تجهيز نموذج مبنى النفط:',err);
-        }
-    }
-
     function createOilRigs() {
-        beginOilBuildingModelLoad();
-
         const positions=[{x:95,z:-95},{x:-95,z:95},{x:-115,z:-105},{x:115,z:105}];
         positions.forEach((pos,index)=>{
             const rigGroup=new THREE.Group();
             rigGroup.position.set(pos.x,getTerrainHeight(pos.x,pos.z),pos.z);
             rigGroup.name=`oilSite_${index}`;
-
-            const barrelMat=new THREE.MeshStandardMaterial({color:0x41403a,roughness:.72,metalness:.52,emissive:0x100a04,emissiveIntensity:.10});
+            const barrelMat=new THREE.MeshStandardMaterial({color:0x252a2d,roughness:.62,metalness:.72});
             const rimMat=new THREE.MeshStandardMaterial({color:0x70777b,roughness:.42,metalness:.82});
-            const barrelGroup=new THREE.Group();
-            barrelGroup.name='oilBarrels';
-            // Keep barrels outside the refinery footprint so they never intersect the model.
-            barrelGroup.position.set(7.4,0,5.2);
-
-            [-2.0,0,2.0].forEach(x=>{
-                const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.58,.58,1.65,20),barrelMat);
-                barrel.position.set(x,.825,0);
-                barrel.castShadow=true;
-                barrel.receiveShadow=true;
-                barrelGroup.add(barrel);
-
-                [-1,1].forEach(y=>{
-                    const rim=new THREE.Mesh(new THREE.TorusGeometry(.56,.045,8,20),rimMat);
-                    rim.rotation.x=Math.PI/2;
-                    rim.position.set(x,.825+y*.62,0);
-                    barrelGroup.add(rim);
-                });
+            const barrelGroup=new THREE.Group(); barrelGroup.name='oilBarrels';
+            [-2,0,2].forEach(x=>{
+                const barrel=new THREE.Mesh(new THREE.CylinderGeometry(1.05,1.05,2.65,20),barrelMat); barrel.position.set(x,1.35,0); barrel.castShadow=true; barrel.receiveShadow=true; barrelGroup.add(barrel);
+                [-1,1].forEach(y=>{const rim=new THREE.Mesh(new THREE.TorusGeometry(1,.075,8,20),rimMat);rim.rotation.x=Math.PI/2;rim.position.set(x,1.35+y*1.02,0);barrelGroup.add(rim);});
             });
             rigGroup.add(barrelGroup);
-
             const valveMat=new THREE.MeshStandardMaterial({color:0x3b4144,roughness:.48,metalness:.78});
-            const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,2.8,10),valveMat);
-            pipe.rotation.z=Math.PI/2;
-            pipe.position.set(0,1.05,.95);
-            pipe.castShadow=false;
-            rigGroup.add(pipe);
-
-            const valve=new THREE.Mesh(new THREE.TorusGeometry(.32,.075,8,14),rimMat);
-            valve.rotation.y=Math.PI/2;
-            valve.position.set(0,1.05,2.35);
-            valve.castShadow=false;
-            rigGroup.add(valve);
-
-            const flagGroup=new THREE.Group();
-            flagGroup.position.set(4.2,0,0);
-
-            const pole=new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,10.5,12),rimMat);
-            pole.position.y=5.25;
-            pole.castShadow=true;
-            flagGroup.add(pole);
-
+            const pipe=new THREE.Mesh(new THREE.CylinderGeometry(.16,.16,2.8,10),valveMat); pipe.rotation.z=Math.PI/2; pipe.position.set(0,1.05,.95); pipe.castShadow=false; rigGroup.add(pipe);
+            const valve=new THREE.Mesh(new THREE.TorusGeometry(.32,.075,8,14),rimMat); valve.rotation.y=Math.PI/2; valve.position.set(0,1.05,2.35); valve.castShadow=false; rigGroup.add(valve);
+            const flagGroup=new THREE.Group(); flagGroup.position.set(4.2,0,0);
+            const pole=new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,10.5,12),rimMat); pole.position.y=5.25; pole.castShadow=true; flagGroup.add(pole);
             const flagGeo=new THREE.PlaneGeometry(4.4,2.45,12,4);
-            const flagMat=new THREE.MeshBasicMaterial({
-                map:createFlagTexture('white'),
-                side:THREE.DoubleSide,
-                transparent:true,
-                depthWrite:false
-            });
-            const flagMesh=new THREE.Mesh(flagGeo,flagMat);
-            flagMesh.position.set(2.2,9.15,0);
-            flagGroup.add(flagMesh);
-            rigGroup.add(flagGroup);
+            const flagMat=new THREE.MeshBasicMaterial({map:createFlagTexture('white'),side:THREE.DoubleSide,transparent:true,depthWrite:false});
+            const flagMesh=new THREE.Mesh(flagGeo,flagMat); flagMesh.position.set(2.2,9.15,0); flagGroup.add(flagMesh); rigGroup.add(flagGroup);
             flagMesh.visible=true;
+            const flagData={mesh:flagMesh,baseHeight:9.15,type:'white',isOil:true,owner:'none'}; activeFlagMeshes.push(flagData);
+            const wreckBase=new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.9,.32,20),new THREE.MeshStandardMaterial({color:0x303335,roughness:.94,metalness:.1})); wreckBase.position.y=.16; wreckBase.visible=false; rigGroup.add(wreckBase);
 
-            const flagData={
-                mesh:flagMesh,
-                baseHeight:9.15,
-                type:'white',
-                isOil:true,
-                owner:'none'
-            };
-            activeFlagMeshes.push(flagData);
+            // مبنى نفط صغير مع أنبوب نازل إلى الأرض وعلم فوقه.
+            const pumpHouse=new THREE.Group(); pumpHouse.name='oilPumpHouse';
+            const houseMat=new THREE.MeshStandardMaterial({color:0x4a5148,roughness:.72,metalness:.28});
+            const roofMat=new THREE.MeshStandardMaterial({color:0x252a27,roughness:.55,metalness:.62});
+            const house=new THREE.Mesh(new THREE.BoxGeometry(4.8,2.9,3.8),houseMat);
+            house.position.set(-5.4,1.45,3.8); house.castShadow=true; house.receiveShadow=true; pumpHouse.add(house);
+            const roof=new THREE.Mesh(new THREE.BoxGeometry(5.1,.32,4.1),roofMat);
+            roof.position.set(-5.4,3.05,3.8); roof.castShadow=true; pumpHouse.add(roof);
+            const door=new THREE.Mesh(new THREE.BoxGeometry(1.0,1.75,.12),new THREE.MeshStandardMaterial({color:0x151916,roughness:.7,metalness:.2}));
+            door.position.set(-5.4,1.0,5.72); pumpHouse.add(door);
+            const groundPipe=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,2.9,12),roofMat);
+            groundPipe.position.set(-3.0,1.45,3.15); groundPipe.rotation.z=Math.PI/2; groundPipe.castShadow=true; pumpHouse.add(groundPipe);
+            const downPipe=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,1.45,12),roofMat);
+            downPipe.position.set(-1.65,.72,3.15); downPipe.castShadow=true; pumpHouse.add(downPipe);
+            const pipeCap=new THREE.Mesh(new THREE.TorusGeometry(.24,.07,8,16),rimMat);
+            pipeCap.rotation.y=Math.PI/2; pipeCap.position.set(-1.65,.08,3.15); pumpHouse.add(pipeCap);
 
-            const wreckBase=new THREE.Mesh(
-                new THREE.CylinderGeometry(2.6,2.9,.32,20),
-                new THREE.MeshStandardMaterial({color:0x303335,roughness:.94,metalness:.1})
-            );
-            wreckBase.position.y=.16;
-            wreckBase.visible=false;
-            rigGroup.add(wreckBase);
+            const siteFlag=new THREE.Group(); siteFlag.position.set(-5.4,0,3.8);
+            const sitePole=new THREE.Mesh(new THREE.CylinderGeometry(.07,.09,5.8,10),rimMat);
+            sitePole.position.y=2.9; siteFlag.add(sitePole);
+            const siteFlagMesh=new THREE.Mesh(new THREE.PlaneGeometry(2.0,1.0,8,3),
+                new THREE.MeshBasicMaterial({map:createFlagTexture('none'),side:THREE.DoubleSide,transparent:true,depthWrite:false}));
+            siteFlagMesh.position.set(1.0,5.0,0); siteFlag.add(siteFlagMesh);
+            siteFlagMesh.visible=false; pumpHouse.add(siteFlag);
+            rigGroup.add(pumpHouse);
 
-            // ===== المبنى الجديد =====
-            // تم حذف مبنى النفط الإجرائي القديم واستبداله بالكامل بنموذج GLB الجديد.
-            const buildingModelSlot=new THREE.Group();
-            buildingModelSlot.name='oilBuildingModelSlot';
-            rigGroup.add(buildingModelSlot);
-
-            const rig={
-                x:pos.x,
-                z:pos.z,
-                group:rigGroup,
-                beam:null,
-                isOilRig:true,
-                flagData,
-                owner:'none',
-                captureProgress:0,
-                hp:700,
-                maxHp:700,
-                isDestroyed:false,
-                hpRevealUntil:0,
-                hpLabel:null,
-                hpFill:null,
-                mesh:rigGroup,
-                wreckBase,
-                towerAssembly:barrelGroup,
-                buildingModelSlot
-            };
-
-            if(oilBuildingGLTFSource) attachOilBuildingModel(rig);
-            else if(!oilBuildingGLTFFailed) oilBuildingModelPending.add(rig);
-
+            // تكبير منشأة النفط قليلاً مع الحفاظ على موضعها في الخريطة.
             rigGroup.scale.setScalar(1.18);
-            scene.add(rigGroup);
-            obstacles.push({x:pos.x,z:pos.z,radius:10});
-
-            const oilHpLabel=document.createElement('div');
-            oilHpLabel.className='tank-hp-label hp-player';
-            const oilHpFill=document.createElement('div');
-            oilHpFill.className='tank-hp-fill';
-            oilHpLabel.appendChild(oilHpFill);
-            document.getElementById('hp-labels-container').appendChild(oilHpLabel);
-            oilHpLabel.style.display='none';
-
-            rig.hpLabel=oilHpLabel;
-            rig.hpFill=oilHpFill;
-            oilRigs.push(rig);
+            scene.add(rigGroup); obstacles.push({x:pos.x,z:pos.z,radius:10});
+            const oilHpLabel=document.createElement('div'); oilHpLabel.className='tank-hp-label hp-player'; const oilHpFill=document.createElement('div'); oilHpFill.className='tank-hp-fill'; oilHpLabel.appendChild(oilHpFill); document.getElementById('hp-labels-container').appendChild(oilHpLabel); oilHpLabel.style.display='none';
+            oilRigs.push({x:pos.x,z:pos.z,group:rigGroup,beam:null,isOilRig:true,flagData,owner:'none',captureProgress:0,hp:700,maxHp:700,isDestroyed:false,hpRevealUntil:0,hpLabel:oilHpLabel,hpFill:oilHpFill,mesh:rigGroup,wreckBase,towerAssembly:barrelGroup});
         });
     }
 
@@ -5806,93 +5645,61 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
         return {mesh:g,x,z,rotation:g.rotation.y,progress:0,duration:REAL_BUILD_BARRACKS_SEC*REAL_TICKS_PER_SECOND,done:!ghost,ghost,hp:900,maxHp:900,isDestroyed:false,hpRevealUntil:0,owner,isBarracks:true,hpLabel,hpFill,collisionRadius:8,productionJob:null};
     }
 
-// ===== تحميل نموذج المصنع الجديد بخاماته الخارجية =====
-    let factoryGLTFSource = null;
-    let factoryGLTFLoading = false;
-    let factoryGLTFFailed = false;
-    const factoryModelPending = new Set();
-
-    function beginFactoryModelLoad(){
-        if(factoryGLTFSource || factoryGLTFLoading || factoryGLTFFailed) return;
-        if(!THREE.GLTFLoader){ console.warn('GLTFLoader غير متاح؛ سيبقى شكل المصنع الاحتياطي.'); factoryGLTFFailed=true; return; }
-        factoryGLTFLoading=true;
-        const loader=new THREE.GLTFLoader();
-        loader.load('assets/factory/factory_building.glb', gltf=>{
-            factoryGLTFSource=gltf; factoryGLTFLoading=false;
-            for(const group of factoryModelPending) attachFactoryGLTF(group);
-            factoryModelPending.clear();
-        }, undefined, err=>{
-            factoryGLTFLoading=false; factoryGLTFFailed=true;
-            console.warn('تعذر تحميل نموذج المصنع الجديد؛ سيبقى الشكل الاحتياطي:',err);
-            factoryModelPending.clear();
-        });
-    }
-
-    function attachFactoryGLTF(group){
-        if(!group || !factoryGLTFSource || group.userData.factoryModelLoaded) return;
-        try{
-            const source=factoryGLTFSource.scene || factoryGLTFSource.scenes[0];
-            if(!source) return;
-            const model=(THREE.SkeletonUtils && THREE.SkeletonUtils.clone) ? THREE.SkeletonUtils.clone(source) : source.clone(true);
-            model.name='factoryBuildingGLTF';
-            // Normalize from the actual complete model bounds, including all child meshes.
-            model.scale.set(1,1,1);
-            model.updateMatrixWorld(true);
-            let bounds=new THREE.Box3().setFromObject(model);
-            const originalSize=bounds.getSize(new THREE.Vector3());
-            if(!Number.isFinite(originalSize.x) || !Number.isFinite(originalSize.y) || !Number.isFinite(originalSize.z) || Math.max(originalSize.x,originalSize.y,originalSize.z)<0.001){
-                throw new Error('مجسم المصنع فارغ أو أبعاده غير صالحة');
+// تحميل مجسم المصنع من أصل خارجي مستقل (glTF + ملفات خامات منفصلة).
+    let factoryModelPromise = null;
+    function loadExternalFactoryModel(factoryGroup, ghost=false){
+        if(!factoryGroup || !scene || !THREE.GLTFLoader) return;
+        if(!factoryModelPromise){
+            factoryModelPromise = new Promise((resolve,reject)=>{
+                new THREE.GLTFLoader().load('assets/factory/factory_model.gltf', g=>resolve(g.scene), undefined, reject);
+            });
+        }
+        factoryModelPromise.then(sourceModel=>{
+            if(!factoryGroup.parent) return;
+            // احتفظ بالعلم وساريته ومراجع الأبواب المستخدمة في كود الإنتاج، وأزل الشكل الإجرائي القديم.
+            const keepNames = new Set(['factoryFlag','factoryFlagPole','factoryDoorLeft','factoryDoorRight','factoryDoorInnerLeft','factoryDoorInnerRight']);
+            const oldChildren=[...factoryGroup.children];
+            for(const child of oldChildren){
+                if(keepNames.has(child.name)){
+                    if(/^factoryDoor/.test(child.name)) child.visible=false;
+                    continue;
+                }
+                factoryGroup.remove(child);
+                child.traverse?.(o=>{
+                    if(o.geometry) o.geometry.dispose();
+                    // المواد المشتركة في المجسم الإجرائي لا نحررها هنا حتى لا تتأثر عناصر أخرى.
+                });
             }
-            // Fit by the largest horizontal dimension, keeping the whole model visible.
-            const targetWidth=30.0;
-            const horizontal=Math.max(originalSize.x,originalSize.z,0.001);
-            const scale=targetWidth/horizontal;
-            model.scale.setScalar(scale);
-            model.updateMatrixWorld(true);
-            bounds=new THREE.Box3().setFromObject(model);
-            const center=bounds.getCenter(new THREE.Vector3());
-            model.position.x-=center.x;
-            model.position.z-=center.z;
-            model.position.y-=bounds.min.y;
-            model.updateMatrixWorld(true);
+            const model=sourceModel.clone(true); model.name='externalFactoryModel';
             model.traverse(o=>{
                 if(!o.isMesh) return;
-                o.visible=true;
                 o.castShadow=true; o.receiveShadow=true;
-                // Keep original maps/materials, but show both sides to avoid apparently missing thin panels.
                 const mats=Array.isArray(o.material)?o.material:[o.material];
-                mats.forEach(m=>{
-                    if(!m) return;
-                    m.side=THREE.DoubleSide;
-                    m.needsUpdate=true;
-                    if(group.userData.factoryGhost){
-                        m.transparent=true;
-                        m.opacity=Math.min(m.opacity===undefined?1:m.opacity,.30);
-                        m.depthWrite=false;
-                    }
-                });
+                mats.forEach(m=>{ if(m){m.side=THREE.DoubleSide; m.needsUpdate=true;} });
             });
-            // Only hide the old procedural body after the new full model is validated and attached.
-            group.add(model);
-            group.traverse(o=>{
-                if(!o.isMesh || o===model || model.getObjectById(o.id)) return;
-                if(o.name==='factoryFlag' || o.name==='factoryFlagPole') return;
-                // Do not hide the newly attached GLB meshes.
-                if(model.children.some(child=>child===o)) return;
-                if(!o.parent || o.parent===model) return;
-                o.visible=false;
-            });
-            group.userData.factoryModelLoaded=true;
-        }catch(err){ console.warn('تعذر تركيب مجسم المصنع:',err); }
+            // توسيط المجسم وتطبيعه إلى حجم مناسب، مع إبقاء كامل حدوده داخل مساحة المصنع.
+            model.updateMatrixWorld(true);
+            let box=new THREE.Box3().setFromObject(model);
+            const size=box.getSize(new THREE.Vector3());
+            const center=box.getCenter(new THREE.Vector3());
+            const fit=Math.min(23/Math.max(size.x,.001),21/Math.max(size.z,.001),8.5/Math.max(size.y,.001));
+            model.scale.setScalar(fit);
+            model.position.set(-center.x*fit, -box.min.y*fit, -center.z*fit);
+            model.updateMatrixWorld(true);
+            factoryGroup.add(model);
+            factoryGroup.userData.externalFactoryModel=model;
+            // يظل العلم فوق المجسم ويأخذ لون اللاعب الحالي.
+            const owner=factoryGroup.userData.factoryOwner||'player';
+            if(typeof updateFactoryFlagOwner==='function') updateFactoryFlagOwner({mesh:factoryGroup},owner);
+            if(ghost){
+                model.traverse(o=>{if(o.isMesh){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m){m.transparent=true;m.opacity=.30;m.depthWrite=false;}});}});
+            }
+        }).catch(err=>console.error('تعذر تحميل مجسم المصنع الخارجي:',err));
     }
 
     function createArmyFactory(x,z,ghost=false){
-        beginFactoryModelLoad();
         // مصنع جيش جديد: حظيرة إنتاج كبيرة وباب شحن مرتفع، من نفس معسكر القيادة لكن بوظيفة مصنع واضحة.
         const group=new THREE.Group(); group.name='armyFactory_USAReference';
-        group.userData.factoryGhost=!!ghost;
-        if(factoryGLTFSource) factoryModelPending.add(group);
-        else if(factoryGLTFLoading) factoryModelPending.add(group);
         const M=(c,r=.78,m=.12)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
         const concrete=M(0xb9bab3,.94,.04), wall=M(0xd0d2cc,.84,.08), panel=M(0xaeb3b0,.68,.30);
         const roof=M(0x59615f,.58,.68), dark=M(0x1e2523,.86,.28), steel=M(0x858d8a,.46,.76);
@@ -6005,12 +5812,12 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
         const factoryFlagMesh=makeFlag(-6.8,8.2,6.6,.9);
         const factoryFlagData={mesh:factoryFlagMesh,baseHeight:6.6,type:factoryFlagTeam,factoryFlag:true,owner:(group.userData.factoryOwner||'player')};
         activeFlagMeshes.push(factoryFlagData); group.userData.factoryFlagData=factoryFlagData;
-        if(factoryGLTFSource) attachFactoryGLTF(group); else if(factoryGLTFLoading) factoryModelPending.add(group);
 
         const groundY=getBuildingGroundLevel(x,z,'factory',factoryPlacementRotation); group.position.set(x,groundY+.03,z);
         group.scale.setScalar(ghost?.95:.08); group.rotation.y=factoryPlacementRotation;
         if(ghost) group.traverse(o=>{if(o.material){o.material.transparent=true;o.material.opacity=.30;o.material.depthWrite=false;o.material.emissive?.setHex(0x173b20);o.material.emissiveIntensity=.5;}});
         scene.add(group);
+        loadExternalFactoryModel(group,ghost);
 
         if(!ghost){
             const hpLabel=document.createElement('div'); hpLabel.className='hp-structure factory '+(group.userData.factoryOwner==='enemy'?'enemy':'player');
@@ -6057,7 +5864,7 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
             });
         });
         if(d){
-            d.owner=owner; d.type=owner==='enemy'?'red':'green';
+            d.owner=owner; d.type=owner==='enemy'?(typeof enemyFlagType==='string'?enemyFlagType:(battleConfig.enemyColor||'#f43f5e')):(typeof playerFlagType==='string'?playerFlagType:(battleConfig.playerColor||'#168cff'));
             if(d.mesh && d.mesh.material){ d.mesh.material.map=createFlagTexture(d.type); d.mesh.material.needsUpdate=true; }
         }
     }
@@ -9990,10 +9797,6 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
         addStructureVision(playerBaseGroup, 92);
         (constructedFactories || []).forEach(f => addStructureVision(f, 78));
         (constructedBarracks || []).forEach(b => addStructureVision(b, 72));
-        // A captured oil field remains visible to the player and clears war fog around it.
-        (oilRigs || []).forEach(r => {
-            if (r && !r.isDestroyed && r.owner === 'player') addStructureVision(r, 76);
-        });
 
         // تلاشي المناطق المكتشفة خلال بضع ثوانٍ، كي يعود الضباب بعد مغادرة القوات
         // أو تدمير وحدة/مبنى كان يكشفها.
