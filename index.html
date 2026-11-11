@@ -9489,7 +9489,7 @@ function startGame(){openBattleSetup();}
     }
 
     function createOilRigs() {
-        beginOilBuildingModelLoad();
+        // نموذج مضخة النفط المتحركة يأتي من الملف الخارجي oil_pumpjack.js.
 
         const positions=[{x:95,z:-95},{x:-95,z:95},{x:-115,z:-105},{x:115,z:105}];
         positions.forEach((pos,index)=>{
@@ -9598,8 +9598,8 @@ function startGame(){openBattleSetup();}
                 buildingModelSlot
             };
 
-            if(oilBuildingGLTFSource) attachOilBuildingModel(rig);
-            else if(!oilBuildingGLTFFailed) oilBuildingModelPending.add(rig);
+            // تحميل مضخة النفط الخارجية المتحركة داخل موقع النفط.
+            if (window.createAnimatedOilPump) window.createAnimatedOilPump(buildingModelSlot);
 
             rigGroup.scale.setScalar(1.18);
             scene.add(rigGroup);
@@ -16276,6 +16276,7 @@ window.updateCameraSensitivity=function(v){
 })();
 </script>
 
+<script src="assets/oil/oil_pumpjack.js"></script>
 </body>
 
 
