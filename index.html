@@ -6743,10 +6743,10 @@ function selectBattleColorTarget(target,el){
 function selectUnifiedBattleColor(color,name,el){
     if(!/^#[0-9a-fA-F]{6}$/.test(color)) return;
     if(battleColorTarget==='enemy'){
-        battleConfig.enemyColor=color; battleConfig.enemyColorName=name||color.toUpperCase(); enemyFlagType=color;
+        battleConfig.enemyColor=color; battleConfig.enemyColorName=name||color.toUpperCase(); /* علم المعسكر يحدد بصورة مستقلة عن لون الفريق */
         refreshAllTeamFlags();
     }else{
-        battleConfig.playerColor=color; battleConfig.playerColorName=name||color.toUpperCase(); playerFlagType=color;
+        battleConfig.playerColor=color; battleConfig.playerColorName=name||color.toUpperCase(); /* علم المعسكر يحدد بصورة مستقلة عن لون الفريق */
         refreshAllTeamFlags();
     }
     document.querySelectorAll('.unified-color-option').forEach(b=>b.classList.toggle('active',b.dataset.color.toLowerCase()===color.toLowerCase()));
@@ -9534,7 +9534,7 @@ function startGame(){openBattleSetup();}
             rigGroup.add(valve);
 
             const flagGroup=new THREE.Group();
-            flagGroup.position.set(4.2,0,0);
+            flagGroup.position.set(-11.0,0,-7.5); // العلم في جهة مستقلة بعيداً عن مضخة النفط والبراميل
 
             const pole=new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,10.5,12),rimMat);
             pole.position.y=5.25;
@@ -15594,7 +15594,7 @@ function createArmyFactory(x,z,ghost=false){
   }
   window.applySelectedTeamColor=function(team,color){
     if(!color)return;
-    if(team==='player') playerFlagType=color; else enemyFlagType=color;
+    /* اختيار العلم مستقل عن لون الفريق */
     setTeamUI(team,color);
     if(typeof scene!=='undefined'&&scene&&typeof THREE!=='undefined'){
       scene.traverse(o=>{
@@ -15615,10 +15615,10 @@ function createArmyFactory(x,z,ghost=false){
     if(!/^#[0-9a-fA-F]{6}$/.test(color))return;
     name=name||color.toUpperCase();
     if(battleColorTarget==='enemy'){
-      battleConfig.enemyColor=color;battleConfig.enemyColorName=name;enemyFlagType=color;
+      battleConfig.enemyColor=color;battleConfig.enemyColorName=name;/* علم المعسكر يحدد بصورة مستقلة عن لون الفريق */
       applySelectedTeamColor('enemy',color);
     }else{
-      battleConfig.playerColor=color;battleConfig.playerColorName=name;playerFlagType=color;
+      battleConfig.playerColor=color;battleConfig.playerColorName=name;/* علم المعسكر يحدد بصورة مستقلة عن لون الفريق */
       applySelectedTeamColor('player',color);
     }
     document.querySelectorAll('.unified-color-option').forEach(b=>b.classList.toggle('active',(b.dataset.color||'').toLowerCase()===color.toLowerCase()));
@@ -15794,14 +15794,14 @@ window.updateCameraSensitivity=function(v){
   function applyTeamVisual(team,color){
     if(!HEX.test(color))return;
     if(team==='player'){
-      playerFlagType=color;
+      /* علم المعسكر يحدد بصورة مستقلة عن لون الفريق */
       setBarColor(color);
       if(typeof playerBaseGroup!=='undefined'&&playerBaseGroup)recolorMaterials(playerBaseGroup,color,true);
       if(typeof playerTanks!=='undefined')playerTanks.forEach(u=>recolorUnit(u,color));
       if(typeof ambulances!=='undefined')ambulances.filter(u=>u.team==='player').forEach(u=>recolorUnit(u,color));
       if(typeof constructedFactories!=='undefined')constructedFactories.filter(f=>f.owner!=='enemy').forEach(f=>recolorMaterials(f.mesh,color,true));
     }else{
-      enemyFlagType=color;
+      /* علم المعسكر يحدد بصورة مستقلة عن لون الفريق */
       let eg=null;
       if(typeof scene!=='undefined'&&scene)eg=scene.getObjectByName('__ENEMY_BASE_GROUP__');
       if(eg)recolorMaterials(eg,color,true);
@@ -15880,12 +15880,12 @@ window.updateCameraSensitivity=function(v){
    <div class="room-field"><label for="room-bot-enabled">خيار البوت</label><select id="room-bot-enabled"><option value="yes">اختيار بوت</option><option value="no">بدون بوت</option></select></div>
    <div class="room-field" id="bot-number-field"><label for="room-bot-number">رقم البوت</label><select id="room-bot-number"><option value="">اختر الرقم</option><option value="1">بوت 1</option><option value="2">بوت 2</option></select></div>
   </div>
-  <div class="room-field"><span class="field-label">لون علم البوت</span><div class="room-swatches" id="bot-swatches"></div><div class="room-status" id="bot-ready-status">اختر لون العلم</div></div>
+  <div class="room-field"><span class="field-label">علم معسكر البوت</span><div class="room-swatches room-flag-grid" id="bot-swatches"></div><div class="room-status" id="bot-ready-status">اختر علم البوت</div></div>
   <div class="room-row">
    <div class="room-field"><label for="room-player-number">رقم اللاعب</label><select id="room-player-number"><option value="">اختر الرقم</option><option value="1">لاعب 1</option><option value="2">لاعب 2</option></select></div>
    <div class="room-field"><label for="room-money">المال الابتدائي</label><select id="room-money"><option value="">اختر المال</option><option value="100">100</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
   </div>
-  <div class="room-field"><span class="field-label">لون علم اللاعب</span><div class="room-swatches" id="player-swatches"></div><div class="room-status" id="player-ready-status">اختر لون العلم</div></div>
+  <div class="room-field"><span class="field-label">علم معسكري</span><div class="room-swatches room-flag-grid" id="player-swatches"></div><div class="room-status" id="player-ready-status">اختر علمك</div></div>
   <div class="room-status" id="room-main-status">أكمل الخيارات ثم اضغط جاهز</div>
   <div class="room-actions">
    <button class="room-button room-ready-action" id="room-ready-btn">جاهز</button>
@@ -15903,14 +15903,14 @@ window.updateCameraSensitivity=function(v){
 <script id="classic-green-room-runtime">
 (function(){
  const $=id=>document.getElementById(id);
- const colors=[['أزرق','#168cff'],['أحمر','#e53935'],['أصفر','#f2c230'],['أبيض','#f2f2e8'],['بنفسجي','#a855f7'],['برتقالي','#f97316']];
- const chosen={botColor:'',playerColor:'',ready:false};
- function buildSwatches(id,key){const root=$(id);colors.forEach(([name,color])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch';b.style.background=color;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{chosen[key]=color;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const st=$(key==='botColor'?'bot-ready-status':'player-ready-status');st.textContent=key==='botColor'?'البوت جاهز':'اللاعب جاهز';};root.appendChild(b);});}
- buildSwatches('bot-swatches','botColor');buildSwatches('player-swatches','playerColor');$('bot-swatches').style.opacity='.45';
+ const flags=[['tr','تركيا'],['sy','سوريا'],['iq','العراق'],['sa','السعودية'],['jo','الأردن'],['ps','فلسطين'],['eg','مصر'],['us','أمريكا'],['gb','بريطانيا'],['fr','فرنسا'],['de','ألمانيا'],['jp','اليابان']];
+ const chosen={botFlag:'',playerFlag:'',ready:false};
+ function buildSwatches(id,key){const root=$(id);flags.forEach(([code,name])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch room-flag-option';b.title=name;b.setAttribute('aria-label','علم '+name);const img=document.createElement('img');img.src='assets/flags/'+code+'.svg';img.alt='';const label=document.createElement('span');label.textContent=name;b.append(img,label);b.onclick=()=>{chosen[key]=code;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const st=$(key==='botFlag'?'bot-ready-status':'player-ready-status');st.textContent='تم اختيار علم '+name;validate();};root.appendChild(b);});}
+ buildSwatches('bot-swatches','botFlag');buildSwatches('player-swatches','playerFlag');$('bot-swatches').style.opacity='.45';
  const botEnabled=$('room-bot-enabled'),botNum=$('room-bot-number');
  botNum.disabled=true;$('bot-number-field').style.opacity='.5';
- botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';$('bot-swatches').style.opacity=on?'1':'.4';if(!on){botNum.value='';chosen.botColor='';$('bot-ready-status').textContent='بدون بوت';}else $('bot-ready-status').textContent='اختر لون العلم';validate();});
- function validate(){const bot=botEnabled.value==='no'||(botNum.value&&chosen.botColor);const player=$('room-player-number').value&&$('room-money').value&&chosen.playerColor; $('room-ready-btn').disabled=!(bot&&player);$('room-start-btn').disabled=!(chosen.ready&&bot&&player);}
+ botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';$('bot-swatches').style.opacity=on?'1':'.4';if(!on){botNum.value='';chosen.botFlag='';$('bot-ready-status').textContent='بدون بوت';}else $('bot-ready-status').textContent='اختر علم البوت';validate();});
+ function validate(){const bot=botEnabled.value==='no'||(botNum.value&&chosen.botFlag);const player=$('room-player-number').value&&$('room-money').value&&chosen.playerFlag; $('room-ready-btn').disabled=!(bot&&player);$('room-start-btn').disabled=!(chosen.ready&&bot&&player);}
  botNum.onchange=()=>{if(botNum.value){$('bot-swatches').style.opacity='1';}else{$('bot-ready-status').textContent='اختر رقم البوت';}validate();};$('room-player-number').onchange=validate;$('room-money').onchange=validate;
  window.openRoomSetup=function(){chosen.ready=false;$('room-setup-overlay').classList.add('show');$('room-setup-overlay').setAttribute('aria-hidden','false');$('room-main-status').textContent='أكمل الخيارات ثم اضغط جاهز';$('room-ready-btn').textContent='جاهز';$('room-start-btn').disabled=true;validate();};
  $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;chosen.ready=true;$('room-main-status').textContent='اللاعب جاهز — اضغط بدء اللعب للدخول';$('room-ready-btn').textContent='تم الاستعداد ✓';$('room-start-btn').disabled=false;};
@@ -15928,7 +15928,7 @@ window.updateCameraSensitivity=function(v){
  $('room-start-btn').onclick=()=>{
   if($('room-start-btn').disabled)return;
   const botOn=botEnabled.value==='yes';
-  if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerColorName=colors.find(c=>c[1]===chosen.playerColor)?.[0]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyColorName=colors.find(c=>c[1]===chosen.botColor)?.[0]||'BOT';battleConfig.bot=Number($('room-bot-number').value)||1;battleConfig.botNumber=Number($('room-bot-number').value)||1;battleConfig.botEnabled=true;}else{battleConfig.bot='none';battleConfig.botNumber=0;battleConfig.botEnabled=false;}}
+  if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerFlag=chosen.playerFlag;playerFlagType=chosen.playerFlag;battleConfig.playerColor=battleConfig.playerColor||'#168cff';battleConfig.playerColorName='PLAYER';if(botOn){battleConfig.enemyFlag=chosen.botFlag;enemyFlagType=chosen.botFlag;battleConfig.enemyColor=battleConfig.enemyColor||'#e53935';battleConfig.enemyColorName='BOT';battleConfig.bot=Number($('room-bot-number').value)||1;battleConfig.botNumber=Number($('room-bot-number').value)||1;battleConfig.botEnabled=true;}else{battleConfig.bot='none';battleConfig.botNumber=0;battleConfig.botEnabled=false;}}
   $('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');$('room-loading-overlay').classList.add('show');$('room-loading-overlay').setAttribute('aria-hidden','false');
   let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='جاري دخول القوات... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
  };
@@ -16673,3 +16673,125 @@ window.updateCameraSensitivity=function(v){
             #victory-screen .restart-btn{min-height:36px!important;padding:7px!important;}
         }
 </style>
+
+
+<style id="external-camp-flags-style">
+#battle-setup-modal .unified-color-field .color-target-switch,
+#battle-setup-modal .unified-color-field .unified-color-grid,
+#battle-setup-modal .unified-color-field .selected-color-readout{display:none!important}
+#camp-flag-picker{display:block;margin-top:5px;padding:6px;border:1px solid rgba(170,190,150,.22);border-radius:7px;background:rgba(3,10,6,.62)}
+#camp-flag-picker .flag-picker-title{display:flex;justify-content:space-between;align-items:center;color:#e7eadc;font-size:10px;font-weight:900;margin-bottom:6px}
+#camp-flag-picker .flag-picker-target{display:flex;gap:5px;margin-bottom:7px}
+#camp-flag-picker .flag-target-btn{flex:1;min-height:26px;border:1px solid #58634e;border-radius:4px;background:linear-gradient(#303b2d,#151c15);color:#dfe8d6;font-size:10px;font-weight:900}
+#camp-flag-picker .flag-target-btn.active{border-color:#f3d36a;background:linear-gradient(#56613a,#28321f);color:#fff6cf;box-shadow:0 0 0 1px rgba(243,211,106,.28)}
+#camp-flag-picker .flag-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;max-height:154px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
+#camp-flag-picker .flag-option{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:3px 2px;border:1px solid rgba(210,220,195,.25);border-radius:5px;background:rgba(24,32,24,.9);color:#e9eee4;font-size:8px;font-weight:800}
+#camp-flag-picker .flag-option img{display:block;width:100%;height:25px;object-fit:cover;border:1px solid rgba(255,255,255,.3);border-radius:2px}
+#camp-flag-picker .flag-option.active{border:2px solid #f5dc77;background:rgba(91,83,36,.42);box-shadow:0 0 8px rgba(245,220,119,.35)}
+#camp-flag-picker .flag-option:active{transform:scale(.96)}
+@media(max-width:600px){#camp-flag-picker{padding:4px}#camp-flag-picker .flag-options{grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;max-height:120px}#camp-flag-picker .flag-option{font-size:7px;padding:2px}#camp-flag-picker .flag-option img{height:19px}}
+</style>
+
+<style id="room-flag-image-picker-style">
+.room-flag-grid{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px!important;}
+.room-flag-option{height:auto!important;min-height:43px!important;padding:4px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;background:rgba(20,29,21,.92)!important;border:1px solid rgba(190,205,170,.28)!important;border-radius:5px!important;color:#f1f4e9!important;}
+.room-flag-option img{display:block!important;width:100%!important;height:23px!important;object-fit:cover!important;border:1px solid rgba(255,255,255,.35)!important;border-radius:2px!important;}
+.room-flag-option span{font-size:9px!important;line-height:1.1!important;font-weight:800!important;}
+.room-flag-option.active{border:2px solid #f5d66c!important;box-shadow:0 0 8px #f5d66c66!important;background:#4b492b!important;}
+@media(max-width:600px){.room-flag-grid{gap:3px!important}.room-flag-option{min-height:35px!important;padding:2px!important}.room-flag-option img{height:18px!important}.room-flag-option span{font-size:7px!important}}
+</style>
+
+<script id="external-camp-flags-runtime">
+(function(){
+  const FLAGS=[
+    ['tr','تركيا'],['sy','سوريا'],['iq','العراق'],['sa','السعودية'],['jo','الأردن'],['ps','فلسطين'],
+    ['eg','مصر'],['us','أمريكا'],['gb','بريطانيا'],['fr','فرنسا'],['de','ألمانيا'],['jp','اليابان']
+  ];
+  const BASE='assets/flags/';
+  battleConfig.playerFlag=battleConfig.playerFlag||'tr';battleConfig.enemyFlag=battleConfig.enemyFlag||'us';
+  playerFlagType=battleConfig.playerFlag;enemyFlagType=battleConfig.enemyFlag;
+  function addPicker(){
+    const field=document.querySelector('#battle-setup-modal .unified-color-field');
+    if(!field||document.getElementById('camp-flag-picker'))return;
+    const heading=field.querySelector('.battle-label span');if(heading)heading.textContent='علم المعسكر';
+    const targetLabel=document.getElementById('battle-color-target-value');if(targetLabel)targetLabel.textContent='معسكري';
+    const panel=document.createElement('div');panel.id='camp-flag-picker';
+    panel.innerHTML='<div class="flag-picker-title"><span>اختيار علم المعسكر</span><span id="camp-flag-current">تركيا</span></div><div class="flag-picker-target"><button type="button" class="flag-target-btn active" data-target="player">معسكري</button><button type="button" class="flag-target-btn" data-target="enemy">معسكر العدو</button></div><div class="flag-options" id="camp-flag-options"></div>';
+    field.appendChild(panel);
+    panel.querySelectorAll('.flag-target-btn').forEach(btn=>btn.addEventListener('click',()=>{
+      battleColorTarget=btn.dataset.target==='enemy'?'enemy':'player';
+      const t=document.getElementById('battle-color-target-value');if(t)t.textContent=battleColorTarget==='enemy'?'معسكر العدو':'معسكري';
+      panel.querySelectorAll('.flag-target-btn').forEach(b=>b.classList.toggle('active',b===btn));
+      updatePickerSelection();
+    }));
+    const grid=panel.querySelector('#camp-flag-options');
+    FLAGS.forEach(([id,label])=>{
+      const b=document.createElement('button');b.type='button';b.className='flag-option';b.dataset.flag=id;
+      const img=document.createElement('img');img.src=BASE+id+'.svg';img.alt='علم '+label;
+      const span=document.createElement('span');span.textContent=label;
+      b.append(img,span);b.addEventListener('click',()=>window.selectBattleFlag(id,b));grid.appendChild(b);
+    });
+    updatePickerSelection();
+  }
+  function updatePickerSelection(){
+    const grid=document.getElementById('camp-flag-options');if(!grid)return;
+    const id=battleColorTarget==='enemy'?(battleConfig.enemyFlag||'us'):(battleConfig.playerFlag||'tr');
+    grid.querySelectorAll('.flag-option').forEach(b=>b.classList.toggle('active',b.dataset.flag===id));
+    const f=FLAGS.find(x=>x[0]===id);const label=document.getElementById('camp-flag-current');if(label)label.textContent=f?f[1]:id;
+    const targetLabel=document.getElementById('battle-color-target-value');if(targetLabel)targetLabel.textContent=battleColorTarget==='enemy'?'معسكر العدو':'معسكري';
+  }
+  window.selectBattleFlag=function(id){
+    if(!FLAGS.some(x=>x[0]===id))return;
+    if(battleColorTarget==='enemy'){battleConfig.enemyFlag=id;enemyFlagType=id;}
+    else{battleConfig.playerFlag=id;playerFlagType=id;}
+    if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();
+    updatePickerSelection();
+  };
+  // Canvas flag textures are used on the waving 3D cloth; the matching SVGs are the external picker images.
+  createFlagTexture=function(type){
+    const c=document.createElement('canvas');c.width=256;c.height=144;const x=c.getContext('2d');
+    const id=String(type||'tr');
+    const fill=(color,xx,yy,w,h)=>{x.fillStyle=color;x.fillRect(xx,yy,w,h)};
+    if(id==='#168cff'||id==='#f43f5e'||id==='#00a8ff'||id==='#ffd21f'){
+      fill(id,0,0,256,144);
+    }else if(id==='white'||id==='none'){fill('#f5f7f2',0,0,256,144);
+    }else if(id==='tr'){
+      fill('#e30a17',0,0,256,144);x.fillStyle='#fff';x.beginPath();x.arc(105,72,39,0,Math.PI*2);x.fill();x.fillStyle='#e30a17';x.beginPath();x.arc(117,72,31,0,Math.PI*2);x.fill();star(x,153,72,15,'#fff');
+    }else if(id==='sy'){
+      fill('#ce1126',0,0,256,48);fill('#fff',0,48,256,48);fill('#007a3d',0,96,256,48);star(x,76,72,13,'#007a3d');star(x,128,72,13,'#007a3d');star(x,180,72,13,'#007a3d');
+    }else if(id==='iq'){
+      fill('#ce1126',0,0,256,48);fill('#fff',0,48,256,48);fill('#000',0,96,256,48);x.fillStyle='#007a3d';x.font='bold 25px Arial';x.textAlign='center';x.fillText('الله أكبر',128,81);
+    }else if(id==='sa'){
+      fill('#006c35',0,0,256,144);x.fillStyle='#fff';x.font='bold 21px Arial';x.textAlign='center';x.fillText('لا إله إلا الله',128,67);fill('#fff',66,91,124,6);fill('#fff',176,86,18,10);
+    }else if(id==='jo'){
+      fill('#000',0,0,256,48);fill('#fff',0,48,256,48);fill('#007a3d',0,96,256,48);x.fillStyle='#ce1126';x.beginPath();x.moveTo(0,0);x.lineTo(105,72);x.lineTo(0,144);x.closePath();x.fill();star(x,34,72,12,'#fff');
+    }else if(id==='ps'){
+      fill('#000',0,0,256,48);fill('#fff',0,48,256,48);fill('#007a3d',0,96,256,48);x.fillStyle='#ce1126';x.beginPath();x.moveTo(0,0);x.lineTo(105,72);x.lineTo(0,144);x.closePath();x.fill();
+    }else if(id==='eg'){
+      fill('#ce1126',0,0,256,48);fill('#fff',0,48,256,48);fill('#000',0,96,256,48);x.fillStyle='#c9a33a';x.font='bold 27px Arial';x.textAlign='center';x.fillText('★',128,91);
+    }else if(id==='us'){
+      fill('#fff',0,0,256,144);for(let i=0;i<7;i++)fill('#b22234',0,i*22,256,11);fill('#3c3b6e',0,0,106,78);for(let yy=8;yy<74;yy+=17)for(let xx=8;xx<100;xx+=18){x.fillStyle='#fff';x.fillRect(xx,yy,5,5);}
+    }else if(id==='gb'){
+      fill('#012169',0,0,256,144);x.strokeStyle='#fff';x.lineWidth=29;x.beginPath();x.moveTo(0,0);x.lineTo(256,144);x.moveTo(256,0);x.lineTo(0,144);x.stroke();x.strokeStyle='#c8102e';x.lineWidth=12;x.beginPath();x.moveTo(0,0);x.lineTo(256,144);x.moveTo(256,0);x.lineTo(0,144);x.stroke();fill('#fff',105,0,46,144);fill('#fff',0,52,256,40);fill('#c8102e',116,0,24,144);fill('#c8102e',0,60,256,24);
+    }else if(id==='fr'){
+      fill('#0055a4',0,0,85,144);fill('#fff',85,0,86,144);fill('#ef4135',171,0,85,144);
+    }else if(id==='de'){
+      fill('#000',0,0,256,48);fill('#dd0000',0,48,256,48);fill('#ffce00',0,96,256,48);
+    }else if(id==='jp'){
+      fill('#fff',0,0,256,144);x.fillStyle='#bc002d';x.beginPath();x.arc(128,72,39,0,Math.PI*2);x.fill();
+    }else{fill('#168cff',0,0,256,144);}
+    const grad=x.createLinearGradient(0,0,0,144);grad.addColorStop(0,'rgba(255,255,255,.16)');grad.addColorStop(1,'rgba(0,0,0,.18)');x.fillStyle=grad;x.fillRect(0,0,256,144);x.strokeStyle='rgba(255,255,255,.42)';x.lineWidth=2;x.strokeRect(1,1,254,142);
+    return new THREE.CanvasTexture(c);
+  };
+  function star(ctx,cx,cy,r,color){let a=-Math.PI/2;ctx.beginPath();for(let i=0;i<10;i++){const rr=i%2?r*.43:r;const px=cx+Math.cos(a)*rr,py=cy+Math.sin(a)*rr;if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);a+=Math.PI/5;}ctx.closePath();ctx.fillStyle=color;ctx.fill();}
+  const originalBegin=window.beginConfiguredGame;
+  if(typeof originalBegin==='function')window.beginConfiguredGame=function(){
+    battleConfig.playerFlag=battleConfig.playerFlag||'tr';battleConfig.enemyFlag=battleConfig.enemyFlag||'tr';
+    originalBegin();
+    playerFlagType=battleConfig.playerFlag;enemyFlagType=battleConfig.enemyFlag;
+    if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addPicker,{once:true});else addPicker();
+  window.addEventListener('load',()=>{addPicker();updatePickerSelection();});
+})();
+</script>
