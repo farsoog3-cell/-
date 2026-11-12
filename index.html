@@ -5073,13 +5073,27 @@ img { max-width: 100%; }
         </div>
 
         <div class="battle-field unified-color-field">
-          <div class="battle-label"><span>علم المعسكر</span><b id="battle-color-target-value">معسكري</b></div>
+          <div class="battle-label"><span>TEAM COLOR</span><b id="battle-color-target-value">PLAYER</b></div>
           <div class="color-target-switch" role="tablist" aria-label="Choose team">
-            <button type="button" class="color-target-btn active" data-target="player" onclick="selectBattleColorTarget('player',this)">معسكري</button>
-            <button type="button" class="color-target-btn" data-target="enemy" onclick="selectBattleColorTarget('enemy',this)">معسكر العدو</button>
+            <button type="button" class="color-target-btn active" data-target="player" onclick="selectBattleColorTarget('player',this)">PLAYER BASE</button>
+            <button type="button" class="color-target-btn" data-target="enemy" onclick="selectBattleColorTarget('enemy',this)">ENEMY BASE</button>
           </div>
-          <div class="unified-color-grid flag-image-grid" id="unified-color-grid" aria-label="اختيار علم المعسكر"></div>
-          <div class="selected-color-readout"><span id="selected-color-dot"></span><b id="selected-color-name">تركيا</b></div>
+          <div class="unified-color-grid" id="unified-color-grid" aria-label="Team color selection">
+            <button type="button" class="unified-color-option active" data-color="#168cff" data-name="BLUE" style="--swatch:#168cff" onclick="selectUnifiedBattleColor('#168cff','BLUE',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#00a8ff" data-name="CYAN" style="--swatch:#00a8ff" onclick="selectUnifiedBattleColor('#00a8ff','CYAN',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#00d9ff" data-name="ICE" style="--swatch:#00d9ff" onclick="selectUnifiedBattleColor('#00d9ff','ICE',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#ffd21f" data-name="GOLD" style="--swatch:#ffd21f" onclick="selectUnifiedBattleColor('#ffd21f','GOLD',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#f59e0b" data-name="AMBER" style="--swatch:#f59e0b" onclick="selectUnifiedBattleColor('#f59e0b','AMBER',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#ff7a00" data-name="ORANGE" style="--swatch:#ff7a00" onclick="selectUnifiedBattleColor('#ff7a00','ORANGE',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#ff3b5c" data-name="ROSE" style="--swatch:#ff3b5c" onclick="selectUnifiedBattleColor('#ff3b5c','ROSE',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#e11d48" data-name="CRIMSON" style="--swatch:#e11d48" onclick="selectUnifiedBattleColor('#e11d48','CRIMSON',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#a855f7" data-name="VIOLET" style="--swatch:#a855f7" onclick="selectUnifiedBattleColor('#a855f7','VIOLET',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#7c3aed" data-name="PURPLE" style="--swatch:#7c3aed" onclick="selectUnifiedBattleColor('#7c3aed','PURPLE',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#ec4899" data-name="PINK" style="--swatch:#ec4899" onclick="selectUnifiedBattleColor('#ec4899','PINK',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#06b6d4" data-name="AQUA" style="--swatch:#06b6d4" onclick="selectUnifiedBattleColor('#06b6d4','AQUA',this)"></button>
+            <button type="button" class="unified-color-option" data-color="#f43f5e" data-name="RED" style="--swatch:#f43f5e" onclick="selectUnifiedBattleColor('#f43f5e','RED',this)"></button>
+          </div>
+          <div class="selected-color-readout"><span id="selected-color-dot"></span><b id="selected-color-name">BLUE</b></div>
         </div>
 
         <div class="battle-summary">
@@ -15860,43 +15874,24 @@ window.updateCameraSensitivity=function(v){
 
 <div id="room-setup-overlay" aria-hidden="true">
  <div id="room-setup-bg" aria-hidden="true"><img id="room-setup-bg-image" alt="خلفية الغرفة"></div>
- <div class="room-panel generals-room-panel">
-  <div class="room-title"><span>⚔</span> تجهيز المعركة <small>CONTROL BATTLE</small></div>
-  <div class="room-matchup">
-   <section class="room-slot room-enemy-slot">
-    <div class="room-slot-head"><b>العدو</b><span class="room-side-tag">الفريق الثاني</span></div>
-    <div class="room-slot-main">
-     <button type="button" class="room-choice-btn" id="room-bot-choice">🤖 اختيار بوت</button>
-     <div class="room-slot-meta"><span id="room-enemy-name">لم يتم الاختيار</span><b id="room-enemy-number">—</b></div>
-     <button type="button" class="room-flag-button" id="room-enemy-flag-btn" aria-label="اختيار علم العدو"><span>اختيار العلم</span><img id="room-enemy-flag-img" alt="علم العدو" hidden></button>
-    </div>
-   </section>
-   <div class="room-vs-mark">VS</div>
-   <section class="room-slot room-player-slot">
-    <div class="room-slot-head"><b>اللاعب</b><span class="room-side-tag">الفريق الأول</span></div>
-    <div class="room-slot-main">
-     <button type="button" class="room-choice-btn" id="room-player-choice">👤 اختيار لاعب</button>
-     <div class="room-slot-meta"><span id="room-player-name">لم يتم الاختيار</span><b id="room-player-number-view">—</b></div>
-     <button type="button" class="room-flag-button" id="room-player-flag-btn" aria-label="اختيار علم اللاعب"><span>اختيار العلم</span><img id="room-player-flag-img" alt="علم اللاعب" hidden></button>
-    </div>
-   </section>
+ <div class="room-panel">
+  <div class="room-title">إعداد الغرفة العسكرية</div>
+  <div class="room-row">
+   <div class="room-field"><label for="room-bot-enabled">خيار البوت</label><select id="room-bot-enabled"><option value="yes">اختيار بوت</option><option value="no">بدون بوت</option></select></div>
+   <div class="room-field" id="bot-number-field"><label for="room-bot-number">رقم البوت</label><select id="room-bot-number"><option value="">اختر الرقم</option><option value="1">بوت 1</option><option value="2">بوت 2</option></select></div>
   </div>
-  <div class="room-money-panel">
-   <div class="room-money-heading"><b>المال الابتدائي</b><span>نفس الرصيد للاعب والبوت</span></div>
-   <div class="room-money-options">
-    <button type="button" data-money="1000">1,000$</button><button type="button" data-money="2000">2,000$</button><button type="button" data-money="3000" class="active">3,000$</button><button type="button" data-money="4000">4,000$</button>
-   </div>
-   <div class="room-money-distribution"><span>اللاعب <b id="room-player-money">3,000$</b></span><span>البوت <b id="room-bot-money">3,000$</b></span></div>
+  <div class="room-field"><span class="field-label">لون علم البوت</span><div class="room-swatches" id="bot-swatches"></div><div class="room-status" id="bot-ready-status">اختر لون العلم</div></div>
+  <div class="room-row">
+   <div class="room-field"><label for="room-player-number">رقم اللاعب</label><select id="room-player-number"><option value="">اختر الرقم</option><option value="1">لاعب 1</option><option value="2">لاعب 2</option></select></div>
+   <div class="room-field"><label for="room-money">المال الابتدائي</label><select id="room-money"><option value="">اختر المال</option><option value="100">100</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
   </div>
-  <div class="room-status" id="room-main-status">اختر اللاعب والعدو ثم حدد العلم واضغط مستعد</div>
+  <div class="room-field"><span class="field-label">لون علم اللاعب</span><div class="room-swatches" id="player-swatches"></div><div class="room-status" id="player-ready-status">اختر لون العلم</div></div>
+  <div class="room-status" id="room-main-status">أكمل الخيارات ثم اضغط جاهز</div>
   <div class="room-actions">
-   <button class="room-button room-cancel-action" id="room-cancel-btn">رجوع</button>
-   <button class="room-button room-ready-action" id="room-ready-btn" disabled>مستعد</button>
-   <button class="room-button room-start-action" id="room-start-btn" disabled>بدء المعركة</button>
+   <button class="room-button room-ready-action" id="room-ready-btn">جاهز</button>
+   <button class="room-button room-start-action" id="room-start-btn" disabled>بدء اللعب</button>
+   <button class="room-button room-cancel-action" id="room-cancel-btn">رجوع للقائمة</button>
   </div>
-  <div class="room-number-picker" id="room-number-picker" aria-hidden="true"><div class="room-number-picker-card"><div class="room-flag-picker-head"><b id="room-number-picker-title">اختر الرقم</b><button type="button" id="room-number-picker-close">×</button></div><div class="room-number-options"><button type="button" data-number="1">لاعب 1</button><button type="button" data-number="2">لاعب 2</button></div></div></div>
-  <div class="room-flag-picker" id="room-flag-picker" aria-hidden="true"><div class="room-flag-picker-card"><div class="room-flag-picker-head"><b id="room-flag-picker-title">اختر العلم</b><button type="button" id="room-flag-picker-close">×</button></div><div class="room-flag-grid" id="room-flag-grid"></div></div></div>
-  <div class="room-legacy-fields" aria-hidden="true"><select id="room-bot-enabled"><option value="yes">اختيار بوت</option></select><select id="room-bot-number"><option value="1">بوت 1</option><option value="2">بوت 2</option></select><select id="room-player-number"><option value="1">لاعب 1</option><option value="2">لاعب 2</option></select><select id="room-money"><option value="3000">3000</option></select><div id="bot-number-field"></div><div id="bot-swatches"></div><div id="player-swatches"></div><div id="bot-ready-status"></div><div id="player-ready-status"></div></div>
  </div>
 </div>
 <div id="room-loading-overlay" aria-hidden="true">
@@ -15905,71 +15900,63 @@ window.updateCameraSensitivity=function(v){
  <div class="room-load-label" id="room-load-label">جاري دخول القوات... 0%</div><div class="room-loading-track"><div class="room-loading-fill" id="room-loading-fill"></div></div>
  <div style="color:#d8deca;font-size:11px">يرجى الانتظار حتى اكتمال الدخول</div>
 </div>
-<script src="assets/flags/flags.js"></script>
 <script id="classic-green-room-runtime">
 (function(){
  const $=id=>document.getElementById(id);
- const FLAG_IMAGES=Object.fromEntries(window.BATTLE_FLAGS.map(f=>[f.id,'assets/flags/'+f.file]));
- const FLAGS=window.BATTLE_FLAGS.map(f=>[f.id,f.name]);
- const state={player:null,bot:null,playerFlag:'',botFlag:'',money:3000,ready:false,flagTarget:'player'};
- const moneyButtons=[...document.querySelectorAll('.room-money-options button')];
- function setChoice(kind,num){
-  const n=Number(num);if(![1,2].includes(n))return;
-  if(kind==='player'){state.player=n;state.bot=3-n;$('room-player-number').value=String(n);$('room-bot-number').value=String(3-n);}
-  else{state.bot=n;state.player=3-n;$('room-bot-number').value=String(n);$('room-player-number').value=String(3-n);}
-  render();
- }
- function render(){
-  $('room-player-name').textContent=state.player?'اللاعب':'لم يتم الاختيار';$('room-enemy-name').textContent=state.bot?'بوت':'لم يتم الاختيار';
-  $('room-player-number-view').textContent=state.player?'#'+state.player:'—';$('room-enemy-number').textContent=state.bot?'#'+state.bot:'—';
-  $('room-player-choice').classList.toggle('chosen',!!state.player);$('room-bot-choice').classList.toggle('chosen',!!state.bot);
-  const pf=$('room-player-flag-img'),ef=$('room-enemy-flag-img');
-  pf.hidden=!state.playerFlag;ef.hidden=!state.botFlag;
-  if(state.playerFlag){pf.src=FLAG_IMAGES[state.playerFlag];$('room-player-flag-btn').classList.add('has-flag');$('room-player-flag-btn').querySelector('span').textContent=FLAGS.find(x=>x[0]===state.playerFlag)?.[1]||'العلم';}else{$('room-player-flag-btn').classList.remove('has-flag');$('room-player-flag-btn').querySelector('span').textContent='اختيار العلم';}
-  if(state.botFlag){ef.src=FLAG_IMAGES[state.botFlag];$('room-enemy-flag-btn').classList.add('has-flag');$('room-enemy-flag-btn').querySelector('span').textContent=FLAGS.find(x=>x[0]===state.botFlag)?.[1]||'العلم';}else{$('room-enemy-flag-btn').classList.remove('has-flag');$('room-enemy-flag-btn').querySelector('span').textContent='اختيار العلم';}
-  $('room-player-money').textContent=state.money.toLocaleString('en-US')+'$';$('room-bot-money').textContent=state.money.toLocaleString('en-US')+'$';
-  moneyButtons.forEach(b=>b.classList.toggle('active',Number(b.dataset.money)===state.money));
-  const valid=!!(state.player&&state.bot&&state.playerFlag&&state.botFlag);
-  $('room-ready-btn').disabled=!valid||state.ready;
-  $('room-start-btn').disabled=!valid||!state.ready;
-  $('room-ready-btn').textContent=state.ready?'تم الاستعداد ✓':'مستعد';
- }
- function openFlagPicker(target){state.flagTarget=target;$('room-flag-picker-title').textContent=target==='player'?'اختر علم اللاعب':'اختر علم العدو';const root=$('room-flag-grid');root.innerHTML='';FLAGS.forEach(([code,name])=>{const b=document.createElement('button');b.type='button';b.className='room-flag-tile'+((target==='player'?state.playerFlag:state.botFlag)===code?' active':'');b.innerHTML='<img alt="" src="'+FLAG_IMAGES[code]+'"><span>'+name+'</span>';b.onclick=()=>{if(target==='player')state.playerFlag=code;else state.botFlag=code;closeFlagPicker();render();};root.appendChild(b);});$('room-flag-picker').classList.add('open');$('room-flag-picker').setAttribute('aria-hidden','false');}
- function closeFlagPicker(){$('room-flag-picker').classList.remove('open');$('room-flag-picker').setAttribute('aria-hidden','true');}
- let numberTarget='player';
- function openNumberPicker(kind){numberTarget=kind;$('room-number-picker-title').textContent=kind==='player'?'اختر رقم اللاعب':'اختر رقم البوت';$('room-number-picker').classList.add('open');$('room-number-picker').setAttribute('aria-hidden','false');$('room-number-picker').querySelectorAll('[data-number]').forEach(b=>b.textContent=(kind==='player'?'لاعب ':'بوت ')+b.dataset.number);}
- function closeNumberPicker(){$('room-number-picker').classList.remove('open');$('room-number-picker').setAttribute('aria-hidden','true');}
- $('room-number-picker').querySelectorAll('[data-number]').forEach(b=>b.onclick=()=>{setChoice(numberTarget,b.dataset.number);closeNumberPicker();});
- $('room-number-picker-close').onclick=closeNumberPicker;$('room-number-picker').addEventListener('click',e=>{if(e.target===$('room-number-picker'))closeNumberPicker();});
- $('room-player-choice').onclick=()=>openNumberPicker('player');
- $('room-bot-choice').onclick=()=>openNumberPicker('bot');
- $('room-player-flag-btn').onclick=()=>openFlagPicker('player');$('room-enemy-flag-btn').onclick=()=>openFlagPicker('bot');$('room-flag-picker-close').onclick=closeFlagPicker;
- $('room-flag-picker').addEventListener('click',e=>{if(e.target===$('room-flag-picker'))closeFlagPicker();});
- moneyButtons.forEach(b=>b.addEventListener('click',()=>{state.money=Number(b.dataset.money);$('room-money').value=String(state.money);render();}));
- window.openRoomSetup=function(){state.player=null;state.bot=null;state.playerFlag='';state.botFlag='';state.money=3000;state.ready=false;$('room-main-status').textContent='اختر اللاعب والعدو ثم حدد العلم واضغط مستعد';$('room-setup-overlay').classList.add('show');$('room-setup-overlay').setAttribute('aria-hidden','false');render();};
- $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;state.ready=true;$('room-main-status').textContent='تم تسجيل الاستعداد. اضغط بدء المعركة عندما تكون جاهزاً.';render();};
+ const colors=[['أزرق','#168cff'],['أحمر','#e53935'],['أصفر','#f2c230'],['أبيض','#f2f2e8'],['بنفسجي','#a855f7'],['برتقالي','#f97316']];
+ const chosen={botColor:'',playerColor:'',ready:false};
+ function buildSwatches(id,key){const root=$(id);colors.forEach(([name,color])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch';b.style.background=color;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{chosen[key]=color;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const st=$(key==='botColor'?'bot-ready-status':'player-ready-status');st.textContent=key==='botColor'?'البوت جاهز':'اللاعب جاهز';};root.appendChild(b);});}
+ buildSwatches('bot-swatches','botColor');buildSwatches('player-swatches','playerColor');$('bot-swatches').style.opacity='.45';
+ const botEnabled=$('room-bot-enabled'),botNum=$('room-bot-number');
+ botNum.disabled=true;$('bot-number-field').style.opacity='.5';
+ botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';$('bot-swatches').style.opacity=on?'1':'.4';if(!on){botNum.value='';chosen.botColor='';$('bot-ready-status').textContent='بدون بوت';}else $('bot-ready-status').textContent='اختر لون العلم';validate();});
+ function validate(){const bot=botEnabled.value==='no'||(botNum.value&&chosen.botColor);const player=$('room-player-number').value&&$('room-money').value&&chosen.playerColor; $('room-ready-btn').disabled=!(bot&&player);$('room-start-btn').disabled=!(chosen.ready&&bot&&player);}
+ botNum.onchange=()=>{if(botNum.value){$('bot-swatches').style.opacity='1';}else{$('bot-ready-status').textContent='اختر رقم البوت';}validate();};$('room-player-number').onchange=validate;$('room-money').onchange=validate;
+ window.openRoomSetup=function(){chosen.ready=false;$('room-setup-overlay').classList.add('show');$('room-setup-overlay').setAttribute('aria-hidden','false');$('room-main-status').textContent='أكمل الخيارات ثم اضغط جاهز';$('room-ready-btn').textContent='جاهز';$('room-start-btn').disabled=true;validate();};
+ $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;chosen.ready=true;$('room-main-status').textContent='اللاعب جاهز — اضغط بدء اللعب للدخول';$('room-ready-btn').textContent='تم الاستعداد ✓';$('room-start-btn').disabled=false;};
  $('room-cancel-btn').onclick=()=>{$('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');};
+ // Load the three default slideshow images automatically from ./images/.
  const imageUrls=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let slideIndex=0;
- [1,2,3].forEach((n)=>{const img=$('room-slide-'+n);if(!img)return;img.onload=()=>{$('room-slide-placeholder').style.display='none';showSlide();};img.onerror=()=>{imageUrls[n-1]=null;img.style.display='none';showSlide();};img.src=imageUrls[n-1];});
- function showSlide(){const imgs=[1,2,3].map(n=>$('room-slide-'+n)).filter(Boolean);if(!imageUrls.some(Boolean)){const ph=$('room-slide-placeholder');if(ph)ph.style.display='';return;}imgs.forEach((im,i)=>im.classList.toggle('active',Boolean(imageUrls[i])&&i===slideIndex));do{slideIndex=(slideIndex+1)%3;}while(!imageUrls[slideIndex]&&imageUrls.some(Boolean));}
+ [1,2,3].forEach(n=>{
+  const img=$('room-slide-'+n), idx=n-1;
+  img.style.display='';
+  img.onload=()=>{$('room-slide-placeholder').style.display='none';showSlide();};
+  img.onerror=()=>{imageUrls[idx]=null;img.classList.remove('active');img.style.display='none';showSlide();};
+  img.src=imageUrls[idx];
+ });
+ function showSlide(){const imgs=[1,2,3].map(n=>$('room-slide-'+n));if(!imageUrls.some(Boolean)){imgs.forEach(im=>im.classList.remove('active'));$('room-slide-placeholder').style.display='';return;}$('room-slide-placeholder').style.display='none';imgs.forEach((im,i)=>im.classList.toggle('active',Boolean(imageUrls[i])&&i===slideIndex));let tries=0;do{slideIndex=(slideIndex+1)%3;tries++;}while(tries<3&&!imageUrls[slideIndex]);}
  $('room-start-btn').onclick=()=>{
   if($('room-start-btn').disabled)return;
-  if(typeof battleConfig!=='undefined'){
-   battleConfig.money=state.money;battleConfig.playerFlag=state.playerFlag;battleConfig.enemyFlag=state.botFlag;
-   battleConfig.playerColor=battleConfig.playerColor||'#168cff';battleConfig.enemyColor=battleConfig.enemyColor||'#f43f5e';
-   battleConfig.playerColorName='PLAYER';battleConfig.enemyColorName='BOT';battleConfig.bot='medium';battleConfig.botNumber=state.bot;battleConfig.botEnabled=true;
-   playerFlagType=state.playerFlag;enemyFlagType=state.botFlag;
-  }
+  const botOn=botEnabled.value==='yes';
+  if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerColorName=colors.find(c=>c[1]===chosen.playerColor)?.[0]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyColorName=colors.find(c=>c[1]===chosen.botColor)?.[0]||'BOT';battleConfig.bot=Number($('room-bot-number').value)||1;battleConfig.botNumber=Number($('room-bot-number').value)||1;battleConfig.botEnabled=true;}else{battleConfig.bot='none';battleConfig.botNumber=0;battleConfig.botEnabled=false;}}
   $('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');$('room-loading-overlay').classList.add('show');$('room-loading-overlay').setAttribute('aria-hidden','false');
-  let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='جاري دخول القوات... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();}catch(err){console.error(err);}}},150);
+  let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='جاري دخول القوات... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
  };
- const start=$('start-btn'),sound=$('sound-settings-btn');if(start){start.textContent='إنشاء غرفة';start.onclick=()=>{if(typeof playClickSound==='function')playClickSound();openRoomSetup();};}if(sound)sound.textContent='إعدادات الصوت';
+ // Replace the two legacy buttons and remove the old globe intro permanently.
+ const start=$('start-btn'),sound=$('sound-settings-btn');
+ if(start){start.textContent='إنشاء غرفة';start.onclick=()=>{if(typeof playClickSound==='function')playClickSound();openRoomSetup();};}
+ if(sound){sound.textContent='إعدادات الصوت';}
  const title=document.querySelector('#settings-modal .menu-card h1');if(title)title.textContent='مركز القيادة';
+ document.addEventListener('DOMContentLoaded',()=>{});
+ // The game initialization no longer calls the old intro. Show menu after a real compact loading bar.
  const intro=$('start-menu');if(intro)intro.style.display='none';
- const load=document.createElement('div');load.id='boot-loading-overlay';load.innerHTML='<img id="boot-loading-image" alt="صورة التحميل"><div class="boot-loading-shade"></div><div class="boot-loading-title">تجهيز القيادة العسكرية</div><div class="boot-loading-bottom"><div class="boot-loading-track"><div id="boot-loading-fill"></div></div></div>';document.body.appendChild(load);
- const bootImages=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let bootIndex=0;const bootImg=document.getElementById('boot-loading-image');function setBootImage(){if(!bootImg)return;bootImg.src=bootImages[bootIndex];bootIndex=(bootIndex+1)%bootImages.length;}bootImg.onerror=()=>{bootImg.style.display='none';};setBootImage();const bootSlideTimer=setInterval(()=>{if(!document.getElementById('boot-loading-overlay')){clearInterval(bootSlideTimer);return;}setBootImage();},3500);
- try{if(typeof startPreGameMusic==='function')startPreGameMusic();}catch(e){}const unlock=()=>{try{if(typeof unlockGameAudio==='function')unlockGameAudio();if(typeof startPreGameMusic==='function')startPreGameMusic();}catch(e){}};load.addEventListener('pointerdown',unlock,{passive:true});document.addEventListener('pointerdown',unlock,{once:true,passive:true});document.addEventListener('touchstart',unlock,{once:true,passive:true});document.addEventListener('click',unlock,{once:true});
- let p=0;const boot=setInterval(()=>{p=Math.min(100,p+4);const f=$('boot-loading-fill');if(f)f.style.width=p+'%';if(p>=100){clearInterval(boot);load.remove();$('settings-modal').style.display='flex';document.body.classList.remove('waiting-menu-active');try{if(typeof startPreGameMusic==='function')startPreGameMusic();}catch(e){}}},45);
+ const load=document.createElement('div');load.id='boot-loading-overlay';
+ load.innerHTML='<img id="boot-loading-image" alt="صورة التحميل"><div class="boot-loading-shade"></div><div class="boot-loading-title">تجهيز القيادة العسكرية</div><div class="boot-loading-bottom"><div class="boot-loading-track"><div id="boot-loading-fill"></div></div></div>';
+ document.body.appendChild(load);
+ const bootImages=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let bootIndex=0;const bootImg=document.getElementById('boot-loading-image');
+ function setBootImage(){if(!bootImg)return;let tries=0;while(tries<bootImages.length){bootImg.src=bootImages[bootIndex];bootImg.dataset.failed='';bootIndex=(bootIndex+1)%bootImages.length;tries++;break;}}
+ bootImg.onerror=()=>{bootImg.style.display='none';};setBootImage();const bootSlideTimer=setInterval(()=>{if(!document.getElementById('boot-loading-overlay')){clearInterval(bootSlideTimer);return;}setBootImage();},3500);
+ // Try to begin the loading music immediately. Mobile browsers may block autoplay;
+ // the first user touch/click retries playback inside the browser's allowed gesture.
+ try { if (typeof startPreGameMusic === 'function') startPreGameMusic(); } catch(e) {}
+ const startLoadingMusicFromGesture = () => {
+   try { if (typeof unlockGameAudio === 'function') unlockGameAudio(); if (typeof startPreGameMusic === 'function') startPreGameMusic(); } catch(e) {}
+ };
+ load.addEventListener('pointerdown', startLoadingMusicFromGesture, {passive:true});
+ document.addEventListener('pointerdown', startLoadingMusicFromGesture, {once:true, passive:true});
+ document.addEventListener('touchstart', startLoadingMusicFromGesture, {once:true, passive:true});
+ document.addEventListener('click', startLoadingMusicFromGesture, {once:true});
+ let p=0;const boot=setInterval(()=>{p=Math.min(100,p+4);const f=$('boot-loading-fill');if(f)f.style.width=p+'%';if(p>=100){clearInterval(boot);load.remove();$('settings-modal').style.display='flex';document.body.classList.remove('waiting-menu-active');try{if(typeof startPreGameMusic==='function')startPreGameMusic();}catch(e){} }},45);
 })();
 </script>
 
@@ -16290,148 +16277,6 @@ window.updateCameraSensitivity=function(v){
 </script>
 
 <script src="assets/oil/oil_pumpjack.js"></script>
-
-<style id="compact-flag-picker-css">
-#battle-setup-modal .flag-image-grid{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:4px!important;max-height:116px;overflow-y:auto;padding:2px!important}
-#battle-setup-modal .flag-image-option{height:39px!important;min-height:39px!important;padding:2px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:2px!important;background:rgba(17,27,20,.94)!important;border:1px solid rgba(220,230,205,.25)!important;border-radius:4px!important;color:#f4f5ec!important;box-shadow:none!important;min-width:0!important}
-#battle-setup-modal .flag-image-option img{display:block!important;width:100%!important;height:22px!important;object-fit:cover!important;border:1px solid rgba(255,255,255,.28)!important;border-radius:2px!important}
-#battle-setup-modal .flag-image-option span{font-size:8px!important;line-height:1!important;white-space:nowrap!important}
-#battle-setup-modal .flag-image-option.active{border:2px solid #f2d66e!important;box-shadow:0 0 6px #f2d66e77!important}
-#battle-setup-modal .unified-color-field .selected-color-readout{margin-top:3px!important}
-@media(max-width:600px){#battle-setup-modal .flag-image-grid{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:3px!important;max-height:94px!important}#battle-setup-modal .flag-image-option{height:32px!important;min-height:32px!important}#battle-setup-modal .flag-image-option img{height:17px!important}#battle-setup-modal .flag-image-option span{font-size:7px!important}}
-/* شاشة إعداد الغرفة القديمة تعرض أعلاماً مصغرة أيضاً */
-.room-flag-grid{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px!important}
-.room-flag-option{height:auto!important;min-height:36px!important;padding:3px!important;display:flex!important;flex-direction:column!important;align-items:center!important;gap:2px!important;background:#172219!important;color:#fff!important;border:1px solid #64705a!important}
-.room-flag-option img{width:100%!important;height:19px!important;object-fit:cover!important}.room-flag-option span{font-size:7px!important}
-</style>
-<script id="compact-flag-picker-runtime">
-(function(){
- const FLAGS=window.BATTLE_FLAGS.map(f=>[f.id,f.name]);
- const flagNames=Object.fromEntries(FLAGS);
- function makeGrid(){const grid=document.getElementById('unified-color-grid');if(!grid)return;grid.innerHTML='';FLAGS.forEach(([id,name])=>{const b=document.createElement('button');b.type='button';b.className='flag-image-option';b.dataset.flag=id;const img=document.createElement('img');img.src='assets/flags/'+(window.BATTLE_FLAGS.find(f=>f.id===id)?.file||id+'.png');img.alt='';const t=document.createElement('span');t.textContent=name;b.append(img,t);b.addEventListener('click',()=>window.selectUnifiedBattleColor(id,name,b));grid.appendChild(b);});sync();}
- function current(){return battleColorTarget==='enemy'?(battleConfig.enemyFlag||'us'):(battleConfig.playerFlag||'tr');}
- function sync(){const id=current();document.querySelectorAll('.flag-image-option').forEach(b=>b.classList.toggle('active',b.dataset.flag===id));const n=document.getElementById('selected-color-name');if(n)n.textContent=flagNames[id]||id;const d=document.getElementById('selected-color-dot');if(d){d.style.backgroundImage='url(assets/flags/'+id+'.svg)';d.style.backgroundSize='cover';d.style.backgroundColor='transparent';}const v=document.getElementById('battle-color-target-value');if(v)v.textContent=battleColorTarget==='enemy'?'معسكر العدو':'معسكري';}
- window.selectUnifiedBattleColor=function(id,name){if(!flagNames[id])return;name=name||flagNames[id];if(battleColorTarget==='enemy'){battleConfig.enemyFlag=id;enemyFlagType=id;battleConfig.enemyColor=battleConfig.enemyColor||'#f43f5e';battleConfig.enemyColorName=name;}else{battleConfig.playerFlag=id;playerFlagType=id;battleConfig.playerColor=battleConfig.playerColor||'#168cff';battleConfig.playerColorName=name;}if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();sync();if(typeof drawRealBattleMap==='function')drawRealBattleMap();};
- window.selectBattleColorTarget=function(target){battleColorTarget=target==='enemy'?'enemy':'player';document.querySelectorAll('.color-target-btn').forEach(b=>b.classList.toggle('active',b.dataset.target===battleColorTarget));sync();};
- const oldBegin=window.beginConfiguredGame;window.beginConfiguredGame=function(){battleConfig.playerFlag=battleConfig.playerFlag||'tr';battleConfig.enemyFlag=battleConfig.enemyFlag||'us';const result=oldBegin.apply(this,arguments);playerFlagType=battleConfig.playerFlag;enemyFlagType=battleConfig.enemyFlag;if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();return result;};
- // Room setup (legacy start route) also stores flag IDs, not team colors.
- const roomFlags=FLAGS;
- const oldRoomInit=()=>{const colors=roomFlags;const build=(id,key)=>{const root=document.getElementById(id);if(!root||root.dataset.flagsBuilt)return;root.dataset.flagsBuilt='1';colors.forEach(([code,label])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch room-flag-option';b.innerHTML='<img src="assets/flags/'+code+'.svg" alt=""><span>'+label+'</span>';b.onclick=()=>{roomChosen[key]=code;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const status=document.getElementById(key==='playerFlag'?'player-ready-status':'bot-ready-status');if(status)status.textContent='تم اختيار علم '+label;const ev=new Event('change');document.getElementById('room-player-number')?.dispatchEvent(ev);};root.appendChild(b);});};build('player-swatches','playerFlag');build('bot-swatches','botFlag');};
- const roomChosen={playerFlag:'',botFlag:''};
- // Replace the legacy room script's color UI at load by a separate image grid; its validation is bridged below.
- function init(){makeGrid();oldRoomInit();}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-</script>
-
-
-<style id="flag-popup-fit-fix">
-#battle-setup-modal{padding:4px!important;overflow:hidden!important}
-#battle-setup-modal .battle-setup-card{width:min(96vw,760px)!important;max-width:96vw!important;max-height:94dvh!important;overflow-x:hidden!important;overflow-y:auto!important}
-#battle-setup-modal .battle-setup-grid{min-width:0!important}
-#battle-setup-modal .unified-color-field{min-width:0!important}
-#battle-setup-modal .flag-popup-trigger{width:100%;min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px;border:1px solid rgba(115,190,235,.5);border-radius:7px;background:linear-gradient(145deg,#1c3447,#0b1722);color:#f4f8fc;font-size:11px;font-weight:900}
-#battle-setup-modal .flag-popup-trigger img{width:42px;height:27px;object-fit:cover;border:1px solid #ffffff70;border-radius:3px}
-#battle-setup-modal .flag-popup-layer{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,.76);backdrop-filter:blur(5px)}
-#battle-setup-modal .flag-popup-layer.open{display:flex}
-#battle-setup-modal .flag-popup-card{width:min(92vw,420px);max-height: min(78dvh,520px);display:flex;flex-direction:column;gap:8px;padding:11px;border:1px solid #5b9bc1;border-radius:12px;background:linear-gradient(155deg,#172b3a,#080f17);box-shadow:0 18px 55px #000c;overflow:hidden}
-#battle-setup-modal .flag-popup-head{display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:13px;font-weight:900}
-#battle-setup-modal .flag-popup-close{width:30px;height:30px;border:1px solid #7894a8;border-radius:6px;background:#273c4c;color:#fff;font-size:18px}
-#battle-setup-modal .flag-popup-card .flag-image-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;max-height:none!important;overflow-y:auto!important;padding:2px!important}
-#battle-setup-modal .flag-popup-card .flag-image-option{height:62px!important;min-height:62px!important;border-radius:7px!important;background:#142535!important}
-#battle-setup-modal .flag-popup-card .flag-image-option img{height:35px!important}
-#battle-setup-modal .flag-popup-card .flag-image-option span{font-size:10px!important}
-#battle-setup-modal .selected-color-readout{margin-top:5px!important}
-@media(max-width:700px){
- #battle-setup-modal .battle-setup-card{width:98vw!important;max-height:96dvh!important;padding:6px!important}
- #battle-setup-modal .battle-setup-grid{grid-template-columns:minmax(0, .72fr) minmax(0,1fr)!important;gap:4px!important}
- #battle-setup-modal .battle-map-preview{height:clamp(105px,23dvh,145px)!important}
- #battle-setup-modal .battle-panel{padding:4px!important}
- #battle-setup-modal .battle-field{padding:4px!important}
- #battle-setup-modal .flag-popup-card .flag-image-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
-}
-@media(max-width:420px){
- #battle-setup-modal .battle-setup-grid{grid-template-columns:minmax(0,1fr)!important}
- #battle-setup-modal .battle-map-preview{height:125px!important}
-}
-</style>
-<script id="flag-popup-runtime">
-(function(){
- function install(){
-  const modal=document.getElementById('battle-setup-modal');
-  const grid=document.getElementById('unified-color-grid');
-  if(!modal||!grid||grid.dataset.popupReady)return;
-  grid.dataset.popupReady='1';
-  const field=grid.closest('.unified-color-field');
-  if(!field)return;
-  const trigger=document.createElement('button');
-  trigger.type='button';trigger.className='flag-popup-trigger';
-  trigger.innerHTML='<span>فتح قائمة الأعلام</span><img id="flag-popup-current" alt="العلم المختار"><span>⌄</span>';
-  const layer=document.createElement('div');layer.className='flag-popup-layer';
-  layer.innerHTML='<div class="flag-popup-card" role="dialog" aria-modal="true"><div class="flag-popup-head"><span>اختر علم المعسكر</span><button type="button" class="flag-popup-close" aria-label="إغلاق">×</button></div></div>';
-  const card=layer.querySelector('.flag-popup-card');
-  card.appendChild(grid);
-  field.insertBefore(trigger,field.querySelector('.selected-color-readout'));
-  modal.appendChild(layer);
-  function update(){
-   const id=(typeof battleColorTarget!=='undefined'&&battleColorTarget==='enemy')
-      ? ((typeof battleConfig!=='undefined'&&battleConfig.enemyFlag)||'us')
-      : ((typeof battleConfig!=='undefined'&&battleConfig.playerFlag)||'tr');
-   const img=trigger.querySelector('img');img.src='assets/flags/'+(window.BATTLE_FLAGS.find(f=>f.id===id)?.file||id+'.png');
-   const name=grid.querySelector('[data-flag="'+id+'"] span');
-   trigger.querySelector('span').textContent='اختيار العلم: '+(name?name.textContent:id.toUpperCase());
-  }
-  function close(){layer.classList.remove('open');}
-  trigger.addEventListener('click',()=>{update();layer.classList.add('open');});
-  layer.querySelector('.flag-popup-close').addEventListener('click',close);
-  layer.addEventListener('click',e=>{if(e.target===layer)close();});
-  grid.addEventListener('click',e=>{if(e.target.closest('.flag-image-option')){setTimeout(()=>{update();close();},0);}});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
-  const oldSelect=window.selectUnifiedBattleColor;
-  if(typeof oldSelect==='function'){
-   window.selectUnifiedBattleColor=function(){const r=oldSelect.apply(this,arguments);update();return r;};
-  }
-  const observer=new MutationObserver(update);observer.observe(grid,{childList:true,subtree:true});
-  update();
- }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
-})();
-</script>
-
-
-<style id="generals-room-final-style">
-#room-setup-overlay .generals-room-panel{width:min(94vw,820px)!important;max-width:820px!important;max-height:94dvh!important;overflow:auto!important;padding:clamp(10px,2vw,20px)!important;gap:12px!important;border:2px solid #77836d!important;border-radius:8px!important;background:linear-gradient(145deg,rgba(35,43,35,.97),rgba(8,13,10,.97))!important;box-shadow:0 22px 70px #000,inset 0 0 0 2px #141a14!important;}
-#room-setup-overlay .room-title{display:flex;align-items:center;justify-content:center;gap:10px;background:linear-gradient(#56634d,#20291f)!important;border:1px solid #87927a!important;color:#f4f5e9!important;font-size:clamp(17px,2.3vw,23px)!important;letter-spacing:.5px}
-#room-setup-overlay .room-title small{font-size:9px;color:#b7c1a8;letter-spacing:2px}
-.room-matchup{display:grid;grid-template-columns:1fr 48px 1fr;gap:10px;align-items:center;direction:ltr}
-.room-slot{direction:rtl;min-width:0;padding:12px;border:1px solid #596651;background:linear-gradient(145deg,#333d31,#151c16);box-shadow:inset 0 1px #ffffff12,0 5px 14px #0008}
-.room-enemy-slot{border-top:3px solid #a64c43}.room-player-slot{border-top:3px solid #4384a8}
-.room-slot-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:#f3f5ec;font-size:15px}.room-side-tag{font-size:9px;color:#aab5a5}
-.room-slot-main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
-.room-choice-btn{grid-column:1/-1;min-height:42px;border:1px solid #829078;background:linear-gradient(#586653,#293528);color:#fff;font-weight:900;font-size:14px;cursor:pointer;box-shadow:inset 0 1px #ffffff25,0 3px 5px #0008}
-.room-choice-btn.chosen{border-color:#d6dfbd;background:linear-gradient(#71845d,#3d5031)}
-.room-slot-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;color:#dce5d8;font-size:12px}.room-slot-meta b{font-size:16px;color:#f2d77a;background:#111810;border:1px solid #606c55;padding:3px 8px;min-width:38px;text-align:center}
-.room-flag-button{display:flex;align-items:center;justify-content:center;gap:7px;min-width:110px;min-height:42px;padding:4px 7px;border:1px solid #67745e;background:#151d16;color:#e8eee4;font-size:10px;font-weight:800;cursor:pointer}
-.room-flag-button img{width:46px;height:29px;object-fit:cover;border:1px solid #d2d8c8;box-shadow:0 1px 4px #000}
-.room-flag-button.has-flag{border-color:#c6d7a8}.room-vs-mark{font-size:20px;font-weight:1000;color:#e4d69b;text-shadow:0 2px 5px #000;text-align:center;direction:ltr}
-.room-money-panel{padding:10px;border:1px solid #5b6655;background:linear-gradient(180deg,#252e24,#111711)}
-.room-money-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#f0f2e8;font-size:13px;margin-bottom:8px}.room-money-heading span{font-size:9px;color:#aab6a3}
-.room-money-options{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.room-money-options button{min-height:38px;border:1px solid #626e59;background:linear-gradient(#475342,#20291e);color:#e9eee2;font-weight:900;font-size:13px;cursor:pointer}.room-money-options button.active{border-color:#e1d38a;background:linear-gradient(#758452,#46552f);box-shadow:0 0 0 1px #d8d18a66}
-.room-money-distribution{display:flex;justify-content:space-around;gap:12px;margin-top:8px;color:#cbd5c6;font-size:11px}.room-money-distribution b{color:#f4d76b;margin-right:5px}
-#room-setup-overlay .room-status{background:rgba(0,0,0,.28);border:1px solid #424d3e;color:#dce8d4;font-size:11px;padding:8px}
-#room-setup-overlay .room-actions{grid-template-columns:.8fr 1fr 1.25fr!important;gap:8px!important;background:transparent!important;padding-top:4px!important}
-#room-setup-overlay .room-actions .room-button{min-height:43px!important;font-size:13px!important;border-radius:3px!important}
-#room-setup-overlay .room-ready-action{background:linear-gradient(#718b53,#3e552e)!important}.room-start-action{background:linear-gradient(#b48f45,#70531f)!important}.room-start-action:disabled{filter:grayscale(1)!important}
-.room-number-picker{display:none;position:absolute;inset:0;z-index:31;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,.82)}.room-number-picker.open{display:flex}.room-number-picker-card{width:min(92%,360px);padding:12px;background:linear-gradient(145deg,#3d493a,#101610);border:2px solid #879276;box-shadow:0 12px 40px #000}.room-number-options{display:grid;grid-template-columns:1fr 1fr;gap:9px}.room-number-options button{min-height:48px;background:linear-gradient(#59694d,#273526);border:1px solid #829174;color:white;font-size:14px;font-weight:900}
-.room-flag-picker{display:none;position:absolute;inset:0;z-index:30;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,.82)}.room-flag-picker.open{display:flex}
-.room-flag-picker-card{width:min(96%,570px);max-height:88%;overflow:auto;padding:12px;background:linear-gradient(145deg,#3d493a,#101610);border:2px solid #879276;box-shadow:0 12px 40px #000}
-.room-flag-picker-head{display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:15px;margin-bottom:12px}.room-flag-picker-head button{width:32px;height:32px;background:#252d24;border:1px solid #7c8970;color:white;font-size:22px}
-.room-flag-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.room-flag-tile{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;padding:7px 4px;background:#172017;border:1px solid #56644e;color:#e7eee1;font-size:10px;font-weight:800}.room-flag-tile img{width:100%;max-width:105px;height:48px;object-fit:cover;border:1px solid #c8d0c0;box-shadow:0 2px 5px #000}.room-flag-tile.active{border:2px solid #e8dc9a;background:#3d4c32}
-.room-legacy-fields{display:none!important}
-@media(max-width:600px){.room-matchup{grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);gap:4px}.room-slot{padding:7px 5px}.room-slot-head{font-size:12px}.room-side-tag{font-size:7px}.room-choice-btn{font-size:11px;min-height:38px}.room-slot-meta{font-size:9px}.room-slot-meta b{font-size:12px;min-width:29px;padding:3px}.room-flag-button{min-width:0;width:100%;min-height:38px;font-size:8px;gap:3px}.room-flag-button img{width:35px;height:23px}.room-vs-mark{font-size:14px}.room-money-options{gap:4px}.room-money-options button{font-size:10px;min-height:34px}.room-money-distribution{font-size:9px}.room-flag-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.room-flag-tile img{height:39px}#room-setup-overlay .room-actions{grid-template-columns:.8fr 1fr 1.15fr!important}}
-@media(max-height:460px) and (orientation:landscape){#room-setup-overlay .generals-room-panel{gap:6px!important;padding:7px!important}.room-slot{padding:6px}.room-slot-head{margin-bottom:4px}.room-choice-btn{min-height:30px}.room-flag-button{min-height:30px}.room-flag-button img{height:21px}.room-money-panel{padding:6px}.room-money-options button{min-height:29px}.room-money-distribution{margin-top:4px}}
-</style>
-
 </body>
 
 
