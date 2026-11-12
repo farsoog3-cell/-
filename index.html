@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CONTROL BATTLE الاستراتيجية - عربات سكود الحقيقية</title>
+    <title>CONTROL BATTLE - REALISTIC SCUD RTS</title>
     <style id="embedded-game-styles">
 /* Extracted style block 1 */
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -1406,7 +1406,7 @@
 }
 .settings-card-overlay #start-btn{font-size:0!important}
 .settings-card-overlay #start-btn::after{
-  content:"البدء لعب";
+  content:"START GAME";
   position:absolute;right:18px;left:auto;width:auto;
   background:#789366;color:#eaf4e3;
   height:6px;top:0;bottom:auto;
@@ -1418,7 +1418,7 @@
   font-size:0!important;
 }
 .settings-card-overlay #sound-settings-btn::before{
-  content:"⚙  إعدادات الصوت";
+  content:"⚙  SOUND SETTINGS";
   margin:0!important;
   color:#dbe5d7!important;
   font-size:12px!important;
@@ -5068,7 +5068,7 @@ img { max-width: 100%; }
           <div class="battle-label"><span>AI BATTLE RULES</span><b>STANDARD</b></div>
           <div class="ai-rules-card">
             <span class="ai-rule-icon">⚙</span>
-            <div><strong>FAIR RTS AI</strong><small>نفس قوانين الشراء والإنتاج والوقت والاقتصاد للاعب</small></div>
+            <div><strong>FAIR RTS AI</strong><small>Same purchase, production, timing, and economy rules for both sides</small></div>
           </div>
         </div>
 
@@ -5117,7 +5117,7 @@ img { max-width: 100%; }
     <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
 
     <div class="top-capture-box">
-        <div id="capture-status-text">النفط: 0 / 4 — السيطرة بالمشاة فقط</div>
+        <div id="capture-status-text">OIL: 0 / 4 — INFANTRY CAPTURE ONLY</div>
         <div class="capture-bar-bg">
             <div id="capture-bar-fill" class="capture-bar-fill"></div>
         </div>
@@ -5129,10 +5129,10 @@ img { max-width: 100%; }
 
 
     <div id="construction-bar" aria-label="Base construction workshop">
-        <button id="sell-building-btn" type="button" onclick="playClickSound(); sellSelectedBuilding()" style="display:none" title="بيع المبنى واسترداد نصف قيمته">💰 بيع المبنى · استرداد 50٪</button>
+        <button id="sell-building-btn" type="button" onclick="playClickSound(); sellSelectedBuilding()" style="display:none" title="Sell building and recover half its cost">💰 SELL BUILDING · 50% REFUND</button>
         <div class="build-title"><span class="build-title-icon">⚙</span><b>COMMAND</b><small>PRODUCTION</small></div>
         <div class="build-card" id="construction-truck-card" onclick="playClickSound(); buyConstructionTruck()">
-            <div class="build-preview modern-builder-preview" aria-label="تركس بناء حديث"><img class="external-bar-image" src="images/units/construction-truck.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="build-preview modern-builder-preview" aria-label="Construction vehicle"><img class="external-bar-image" src="images/units/construction-truck.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="mb-shadow"></div><div class="mb-chassis"></div><div class="mb-cab"></div><div class="mb-glass"></div><div class="mb-bed"></div><div class="mb-crane"></div><div class="mb-hook"></div>
                 <i class="mb-wheel a"></i><i class="mb-wheel b"></i><i class="mb-wheel c"></i>
             </div>
@@ -5144,7 +5144,7 @@ img { max-width: 100%; }
             <div class="build-price">300$</div>
         </div>
         <div class="factory-build-card" id="factory-build-card" onclick="playClickSound(); armFactoryBuild()">
-            <div class="factory-preview" aria-label="مصنع جيش"><img class="external-bar-image" src="images/units/factory.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="factory-preview" aria-label="Army factory"><img class="external-bar-image" src="images/units/factory.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="f-tower"></div><div class="f-roof"></div><div class="f-base"></div><div class="f-door"></div><div class="f-light"></div>
             </div>
             <div class="build-info">
@@ -5156,7 +5156,7 @@ img { max-width: 100%; }
         </div>
 
         <div class="barracks-build-card" id="barracks-build-card" onclick="playClickSound(); armBarracksBuild()">
-            <div class="barracks-preview" aria-label="سكنة عسكرية"><img class="external-bar-image" src="images/units/barracks.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="barracks-preview" aria-label="Barracks"><img class="external-bar-image" src="images/units/barracks.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="b-base"></div><div class="b-roof"></div><div class="b-door"></div><div class="b-window"></div><div class="b-flagpole"></div><div class="b-flag"></div>
             </div>
             <div class="build-info">
@@ -5178,8 +5178,8 @@ img { max-width: 100%; }
             <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-infantry"></div><div class="infantry-preview-rifle"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🪖 RIFLEMAN</div><div class="factory-unit-price">250$</div><div class="factory-unit-time">Ready in 6 sec</div></div>
         </div>
-        <div class="barracks-unit-card" id="barracks-infantry-card" onclick="playClickSound(); queueBarracksUnit('infantry')" title="تدريب جندي مشاة">
-            <div class="barracks-unit-preview pro-soldier-icon" aria-label="جندي مشاة"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+        <div class="barracks-unit-card" id="barracks-infantry-card" onclick="playClickSound(); queueBarracksUnit('infantry')" title="Train infantry soldier">
+            <div class="barracks-unit-preview pro-soldier-icon" aria-label="Infantry soldier"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <span class="soldier-shadow"></span><span class="soldier-helmet"></span><span class="soldier-head"></span>
                 <span class="soldier-vest"></span><span class="soldier-arm a"></span><span class="soldier-arm b"></span>
                 <span class="soldier-rifle"></span><span class="soldier-leg a"></span><span class="soldier-leg b"></span>
@@ -5194,23 +5194,23 @@ img { max-width: 100%; }
             <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scout.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scout"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">📡 SCOUT</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Reveals the area and activates minimap</div></div>
         </div>
-        <div class="bar-unit-controls" id="bar-unit-controls" aria-label="أوامر الوحدة">
-            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="حماية الوحدة: المس الأرض لتحديد منطقة الحماية">
-                <span class="bar-icon shield-icon">🛡</span><small>حماية</small>
+        <div class="bar-unit-controls" id="bar-unit-controls" aria-label="Unit commands">
+            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="Defend unit: tap the ground to set a guard area">
+                <span class="bar-icon shield-icon">🛡</span><small>DEFEND</small>
             </button>
-            <button class="bar-control-btn" id="temporary-scout-scan" onclick="playClickSound()" title="كشف عن بُعد: اختر منطقة على الخريطة لكشفها لمدة 25 ثانية">
-                <span class="bar-icon">⌖</span><small>كشف</small>
+            <button class="bar-control-btn" id="temporary-scout-scan" onclick="playClickSound()" title="Recon scan: select an area to reveal it for 25 seconds">
+                <span class="bar-icon">⌖</span><small>SCAN</small>
             </button>
-            <button class="bar-control-btn" id="bar-cancel-btn" onclick="playClickSound(); cancelUnitSelection()" title="إلغاء التحديد">
-                <span class="bar-icon">✕</span><small>إلغاء</small>
+            <button class="bar-control-btn" id="bar-cancel-btn" onclick="playClickSound(); cancelUnitSelection()" title="Cancel selection">
+                <span class="bar-icon">✕</span><small>CANCEL</small>
             </button>
-            <button class="bar-control-btn" id="bar-all-btn" onclick="playClickSound(); setSelectionMode('all')" title="تحديد كل الوحدات من النوع نفسه">
-                <span class="bar-icon">▦</span><small>تحديد الكل</small>
+            <button class="bar-control-btn" id="bar-all-btn" onclick="playClickSound(); setSelectionMode('all')" title="Select all units of this type">
+                <span class="bar-icon">▦</span><small>SELECT ALL</small>
             </button>
-            <button class="bar-control-btn" id="bar-single-btn" onclick="playClickSound(); setSelectionMode('single')" title="تحديد وحدة واحدة فقط">
-                <span class="bar-icon">▣</span><small>فردي</small>
+            <button class="bar-control-btn" id="bar-single-btn" onclick="playClickSound(); setSelectionMode('single')" title="Select one unit only">
+                <span class="bar-icon">▣</span><small>SINGLE</small>
             </button>
-            <button class="bar-control-btn fire-stop-btn" id="bar-stop-fire-btn" onclick="playClickSound(); toggleSelectedFire()" title="توقف عن القصف">
+            <button class="bar-control-btn fire-stop-btn" id="bar-stop-fire-btn" onclick="playClickSound(); toggleSelectedFire()" title="Cease fire">
                 <span class="bar-icon">⛔</span><small>CEASE FIRE</small>
             </button>
         </div>
@@ -5222,8 +5222,8 @@ img { max-width: 100%; }
 
     <div id="minimap-tools">
         <div id="mini-money" class="mini-money"><span id="money-display">2000</span>$</div>
-        <button class="defend-btn" id="defend-btn" onclick="playClickSound(); armDefenseCommand()" disabled>◎ قصف المنطقة</button>
-        <button class="cancel-select-btn" id="cancel-select-btn" onclick="playClickSound(); selectWholeArmy()" disabled>🪖 الجيش بالكامل</button>
+        <button class="defend-btn" id="defend-btn" onclick="playClickSound(); armDefenseCommand()" disabled>◎ DEFEND AREA</button>
+        <button class="cancel-select-btn" id="cancel-select-btn" onclick="playClickSound(); selectWholeArmy()" disabled>🪖 ALL UNITS</button>
         <button class="sel-btn active" id="sel-all-btn" onclick="playClickSound(); setSelectionMode('all')">ALL</button>
         <button class="sel-btn" id="sel-single-btn" onclick="playClickSound(); setSelectionMode('single')">SINGLE</button>
     </div>
@@ -5262,25 +5262,25 @@ img { max-width: 100%; }
             </div>
             <div class="purchase-option">
                 <div>
-                    <div class="purchase-name">🚑 سيارة إسعاف حديثة</div>
-                    <div class="purchase-desc">تعالج الوحدات الصديقة القريبة تلقائيًا</div>
+                    <div class="purchase-name">🚑 MODERN AMBULANCE</div>
+                    <div class="purchase-desc">Automatically heals nearby allied units</div>
                 </div>
                 <button class="purchase-buy" id="buy-ambulance-btn" onclick="playClickSound(); buyPlayerAmbulance()">250$ BUY</button>
             </div>
         </div>
-        <button class="purchase-close" onclick="playClickSound(); closePurchaseMenu()">CLOSE القائمة ✕</button>
+        <button class="purchase-close" onclick="playClickSound(); closePurchaseMenu()">CLOSE ✕</button>
     </div>
 </div>
 
 <div id="victory-screen">
     <div class="result-panel">
-        <div class="result-kicker" id="result-kicker">اكتمل الانتصار</div>
+        <div class="result-kicker" id="result-kicker">MISSION COMPLETE</div>
         <div class="result-line"></div>
-        <h1 id="victory-title">النصر</h1>
-        <div class="result-subtitle" id="result-subtitle">تم تدمير معسكر قيادة العدو</div>
+        <h1 id="victory-title">VICTORY</h1>
+        <div class="result-subtitle" id="result-subtitle">Enemy command base destroyed</div>
         <canvas id="victory-flag-canvas"></canvas>
         <div class="stats-box" id="stats-content"></div>
-        <button id="restart-after-result" class="restart-btn" type="button" onclick="playClickSound(); window.location.reload()">العب مرة أخرى</button>
+        <button id="restart-after-result" class="restart-btn" type="button" onclick="playClickSound(); window.location.reload()">PLAY AGAIN</button>
     </div>
 </div>
 
@@ -6240,57 +6240,80 @@ img { max-width: 100%; }
 
     // تحميل الخريطة والخامات من ملفات مستقلة داخل assets/؛ يبقى سطح اللعبة الحالي احتياطياً إذا فشل التحميل.
     function loadExternalTerrainMap() {
-        if (!THREE.GLTFLoader) { console.error('تعذر تحميل GLTFLoader'); return; }
-        const gltfLoader = new THREE.GLTFLoader();
-        gltfLoader.load('assets/terrain_map.glb', function(gltf) {
-            const root = gltf.scene || gltf.scenes[0];
-            let mesh = null;
-            root.traverse(o => { if (o.isMesh && !mesh) mesh = o; });
-            if (!mesh || !mesh.geometry || !mesh.geometry.attributes.position) {
-                console.error('ملف الخريطة لا يحتوي على سطح صالح'); return;
+        // Load the complete terrain package before allowing a match to begin.
+        // The procedural terrain remains visible as a stable fallback if any file is missing.
+        return new Promise(resolve => {
+            if (!THREE.GLTFLoader) {
+                console.warn('GLTFLoader unavailable; using the built-in battlefield.');
+                resolve(false); return;
             }
-            const geo = mesh.geometry;
-            const pos = geo.attributes.position;
-            const side = Math.round(Math.sqrt(pos.count));
-            const box = new THREE.Box3().setFromBufferAttribute(pos);
-            if (side * side !== pos.count || side < 2) {
-                console.error('شبكة ارتفاعات الخريطة ليست شبكة مربعة؛ تم الإبقاء على الأرض الاحتياطية'); return;
-            }
-            const heights = new Float32Array(pos.count);
-            for (let i=0; i<pos.count; i++) heights[i] = pos.getY(i);
-            const minX=box.min.x, maxX=box.max.x, minZ=box.min.z, maxZ=box.max.z;
-            window.__externalTerrainHeightSampler = function(x,z) {
-                const fx=THREE.MathUtils.clamp((x-minX)/(maxX-minX)*(side-1),0,side-1);
-                const fz=THREE.MathUtils.clamp((z-minZ)/(maxZ-minZ)*(side-1),0,side-1);
-                const x0=Math.floor(fx), z0=Math.floor(fz), x1=Math.min(side-1,x0+1), z1=Math.min(side-1,z0+1);
-                const tx=fx-x0, tz=fz-z0;
-                const a=heights[z0*side+x0], b=heights[z0*side+x1], c=heights[z1*side+x0], d=heights[z1*side+x1];
-                return (a+(b-a)*tx)*(1-tz)+(c+(d-c)*tx)*tz;
-            };
-            // إنشاء UV متكررة على المساحة كاملة لتفادي تمدد الخامة.
-            const uv=[];
-            for(let i=0;i<pos.count;i++) uv.push((pos.getX(i)-minX)/(maxX-minX)*5, (pos.getZ(i)-minZ)/(maxZ-minZ)*5);
-            geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
-            geo.computeVertexNormals();
-            const tl=new THREE.TextureLoader();
-            const albedo=tl.load('assets/terrain_albedo.jpg', t=>{t.encoding=THREE.sRGBEncoding;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.needsUpdate=true;});
-            const rough=tl.load('assets/terrain_roughness.jpg', t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.needsUpdate=true;});
-            const normal=tl.load('assets/terrain_normal.jpg', t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.needsUpdate=true;});
-            const mat=new THREE.MeshStandardMaterial({map:albedo,roughnessMap:rough,normalMap:normal,roughness:.96,metalness:0,normalScale:new THREE.Vector2(.55,.55)});
-            mesh.material=mat; mesh.castShadow=false; mesh.receiveShadow=true;
-            // يضمن توحيد وضع المجسم مع إحداثيات العالم التي تستخدمها الوحدات.
-            root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
-            const oldTerrain=terrainMesh;
-            if(oldTerrain && oldTerrain.parent) oldTerrain.parent.remove(oldTerrain);
-            scene.add(root); terrainMesh=mesh;
-            window.__externalTerrainModel=root;
-            // بعد تثبيت خريطة GLB وخامة الارتفاع الخارجية، نعيد بناء ارتفاعات الضباب
-            // فوق الأرض نفسها، بدلاً من الاعتماد على التضاريس الإجرائية التي أزيلت.
-            if (!warFogMesh) initWarFogOfWar();
-            refreshWarFogSurface();
-            if (warFogTexture) warFogTexture.needsUpdate = true;
-            console.log('تم تحميل الخريطة الخارجية وتحديث سطح ضباب الحرب ليتبعها');
-        }, undefined, function(err) { console.error('فشل تحميل الخريطة الخارجية؛ ستبقى الأرض الاحتياطية ظاهرة.',err); });
+            const gltfLoader = new THREE.GLTFLoader();
+            const textureLoader = new THREE.TextureLoader();
+            const loadTexture = url => new Promise((res, rej) =>
+                textureLoader.load(url, tex => res(tex), undefined, rej));
+            gltfLoader.load('assets/terrain_map.glb', async gltf => {
+                try {
+                    const root = gltf.scene || gltf.scenes[0];
+                    let mesh = null;
+                    root.traverse(o => { if (o.isMesh && !mesh) mesh = o; });
+                    if (!mesh || !mesh.geometry || !mesh.geometry.attributes.position) {
+                        throw new Error('Terrain model has no valid mesh.');
+                    }
+                    const geo = mesh.geometry, pos = geo.attributes.position;
+                    const side = Math.round(Math.sqrt(pos.count));
+                    const box = new THREE.Box3().setFromBufferAttribute(pos);
+                    if (side * side !== pos.count || side < 2) {
+                        throw new Error('Terrain height mesh must be a square grid.');
+                    }
+                    const [albedo, rough, normal] = await Promise.all([
+                        loadTexture('assets/terrain_albedo.jpg'),
+                        loadTexture('assets/terrain_roughness.jpg'),
+                        loadTexture('assets/terrain_normal.jpg')
+                    ]);
+                    [albedo, rough, normal].forEach(t => {
+                        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+                        t.needsUpdate = true;
+                    });
+                    if (THREE.SRGBColorSpace) albedo.colorSpace = THREE.SRGBColorSpace;
+                    else albedo.encoding = THREE.sRGBEncoding;
+                    const heights = new Float32Array(pos.count);
+                    for (let i=0; i<pos.count; i++) heights[i] = pos.getY(i);
+                    const minX=box.min.x, maxX=box.max.x, minZ=box.min.z, maxZ=box.max.z;
+                    window.__externalTerrainHeightSampler = function(x,z) {
+                        const fx=THREE.MathUtils.clamp((x-minX)/(maxX-minX)*(side-1),0,side-1);
+                        const fz=THREE.MathUtils.clamp((z-minZ)/(maxZ-minZ)*(side-1),0,side-1);
+                        const x0=Math.floor(fx), z0=Math.floor(fz), x1=Math.min(side-1,x0+1), z1=Math.min(side-1,z0+1);
+                        const tx=fx-x0, tz=fz-z0;
+                        const a=heights[z0*side+x0], b=heights[z0*side+x1], c=heights[z1*side+x0], d=heights[z1*side+x1];
+                        return (a+(b-a)*tx)*(1-tz)+(c+(d-c)*tx)*tz;
+                    };
+                    const uv=[];
+                    for(let i=0;i<pos.count;i++) uv.push((pos.getX(i)-minX)/(maxX-minX)*5, (pos.getZ(i)-minZ)/(maxZ-minZ)*5);
+                    geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+                    geo.computeVertexNormals();
+                    mesh.material = new THREE.MeshStandardMaterial({
+                        map:albedo, roughnessMap:rough, normalMap:normal,
+                        roughness:.96, metalness:0, normalScale:new THREE.Vector2(.55,.55)
+                    });
+                    mesh.castShadow=false; mesh.receiveShadow=true;
+                    root.position.set(0,0,0); root.rotation.set(0,0,0); root.scale.set(1,1,1);
+                    const oldTerrain=terrainMesh;
+                    if(oldTerrain && oldTerrain.parent) oldTerrain.parent.remove(oldTerrain);
+                    scene.add(root); terrainMesh=mesh; window.__externalTerrainModel=root;
+                    if (!warFogMesh) initWarFogOfWar();
+                    refreshWarFogSurface();
+                    if (warFogTexture) warFogTexture.needsUpdate = true;
+                    console.log('Complete external terrain and texture package is ready.');
+                    resolve(true);
+                } catch(err) {
+                    console.error('Terrain package incomplete; keeping the built-in battlefield.', err);
+                    resolve(false);
+                }
+            }, undefined, err => {
+                console.error('External terrain model unavailable; keeping the built-in battlefield.', err);
+                resolve(false);
+            });
+        });
     }
 
     function init() {
@@ -6313,7 +6336,7 @@ img { max-width: 100%; }
 
         setupLighting();
         createRealisticTerrainWithBlendedColors();
-        loadExternalTerrainMap();
+        window.__terrainMapReady = loadExternalTerrainMap();
         createBattlefieldGroundSpecks();
         createSun();
         createMovingCloudShadows();
@@ -6402,7 +6425,7 @@ img { max-width: 100%; }
         if (btn) {
             btn.disabled = !hasSelection;
             btn.classList.toggle('armed', defenseCommandArmed);
-            btn.innerText = defenseCommandArmed ? '🛡 اختر منطقة الحماية' : '🛡 حماية';
+            btn.innerText = defenseCommandArmed ? '🛡 SELECT DEFEND AREA' : '🛡 DEFEND';
         }
         if (cancelBtn) {
             cancelBtn.disabled = !hasSelection;
@@ -6770,14 +6793,14 @@ function refreshAllTeamFlags(){
       let team = obj.userData.team;
       let parent = obj.parent;
       while(!team && parent){ team = parent.userData && parent.userData.team; parent = parent.parent; }
-      if(team==='enemy') obj.material.map=createFlagTexture(enemyFlagType);
-      else if(team==='player') obj.material.map=createFlagTexture(playerFlagType);
-      else if(obj.material.map && obj.userData.flagOwner==='enemy') obj.material.map=createFlagTexture(enemyFlagType);
-      else if(obj.material.map && obj.userData.flagOwner==='player') obj.material.map=createFlagTexture(playerFlagType);
+      if(team==='enemy') obj.material.map=createFlagTexture(window.__selectedEnemyCountryFlag || enemyFlagType);
+      else if(team==='player') obj.material.map=createFlagTexture(window.__selectedPlayerCountryFlag || playerFlagType);
+      else if(obj.material.map && obj.userData.flagOwner==='enemy') obj.material.map=createFlagTexture(window.__selectedEnemyCountryFlag || enemyFlagType);
+      else if(obj.material.map && obj.userData.flagOwner==='player') obj.material.map=createFlagTexture(window.__selectedPlayerCountryFlag || playerFlagType);
       if(obj.material.map) obj.material.needsUpdate=true;
     });
-    if(enemyFlagDataRef && enemyFlagDataRef.mesh && enemyFlagDataRef.mesh.material){ enemyFlagDataRef.mesh.material.map=createFlagTexture(enemyFlagType); enemyFlagDataRef.mesh.material.needsUpdate=true; }
-    if(playerFlagDataRef && playerFlagDataRef.mesh && playerFlagDataRef.mesh.material){ playerFlagDataRef.mesh.material.map=createFlagTexture(playerFlagType); playerFlagDataRef.mesh.material.needsUpdate=true; }
+    if(enemyFlagDataRef && enemyFlagDataRef.mesh && enemyFlagDataRef.mesh.material){ enemyFlagDataRef.mesh.material.map=createFlagTexture(window.__selectedEnemyCountryFlag || enemyFlagType); enemyFlagDataRef.mesh.material.needsUpdate=true; }
+    if(playerFlagDataRef && playerFlagDataRef.mesh && playerFlagDataRef.mesh.material){ playerFlagDataRef.mesh.material.map=createFlagTexture(window.__selectedPlayerCountryFlag || playerFlagType); playerFlagDataRef.mesh.material.needsUpdate=true; }
   }catch(e){}
 }
 
@@ -6788,7 +6811,7 @@ function refreshEnemyFlagMeshes(){
     if(typeof scene!=='undefined' && scene && typeof createFlagTexture==='function'){
       scene.traverse(obj=>{
         if(obj && obj.userData && (obj.userData.team==='enemy' || obj.userData.teamFlag==='enemy')){
-          if(obj.material && obj.material.map){obj.material.map=createFlagTexture(enemyFlagType);obj.material.needsUpdate=true;}
+          if(obj.material && obj.material.map){obj.material.map=createFlagTexture(window.__selectedEnemyCountryFlag || enemyFlagType);obj.material.needsUpdate=true;}
         }
       });
     }
@@ -9502,7 +9525,7 @@ function startGame(){openBattleSetup();}
             const barrelGroup=new THREE.Group();
             barrelGroup.name='oilBarrels';
             // Keep barrels outside the refinery footprint so they never intersect the model.
-            barrelGroup.position.set(7.4,0,5.2);
+            barrelGroup.position.set(10.2,0,5.2);
 
             [-2.0,0,2.0].forEach(x=>{
                 const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.58,.58,1.65,20),barrelMat);
@@ -11585,7 +11608,7 @@ function createArmyFactory(x,z,ghost=false){
         if(selectedFactory){
             const barracksSoldierCard=document.getElementById('barracks-infantry-card'); if(barracksSoldierCard) barracksSoldierCard.style.removeProperty('display');
             bar.classList.add('open');
-            const title=bar.querySelector('.build-title'); if(title) title.innerHTML='مصنع<br>الجيش';
+            const title=bar.querySelector('.build-title'); if(title) title.innerHTML='ARMY<br>FACTORY';
             const bc=document.getElementById('barracks-build-card'); if(bc) bc.style.display='none';
             const fi=document.getElementById('factory-infantry-card'); if(fi) fi.style.display='none';
         }
@@ -11925,6 +11948,24 @@ function createArmyFactory(x,z,ghost=false){
     function createFlagTexture(type) {
         const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 64;
         const ctx = canvas.getContext('2d');
+        // Country flags are supplied by the project in assets/flags/<country-code>.png.
+        const countryCode = (typeof type === 'string' && /^[a-z]{2,3}$/.test(type)) ? type : null;
+        if (countryCode) {
+            ctx.fillStyle = '#26332b'; ctx.fillRect(0,0,128,64);
+            const tex = new THREE.CanvasTexture(canvas);
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0,0,128,64);
+                const scale = Math.max(128/img.width,64/img.height);
+                const w=img.width*scale,h=img.height*scale;
+                ctx.drawImage(img,(128-w)/2,(64-h)/2,w,h);
+                ctx.strokeStyle='rgba(255,255,255,.65)';ctx.lineWidth=2;ctx.strokeRect(1,1,126,62);
+                tex.needsUpdate=true;
+            };
+            img.onerror = () => console.warn('Country flag missing: assets/flags/'+countryCode+'.png');
+            img.src = 'assets/flags/'+countryCode+'.png';
+            return tex;
+        }
         if (typeof type === 'string' && /^#[0-9a-fA-F]{6}$/.test(type)) {
             ctx.fillStyle = type; ctx.fillRect(0, 0, 128, 64);
             const grad=ctx.createLinearGradient(0,0,0,64);
@@ -14705,16 +14746,16 @@ function createArmyFactory(x,z,ghost=false){
 
         if (playerBuildCooldown > 0) {
             let secs = Math.ceil(playerBuildCooldown / 60);
-            buyBtn.innerText = `انتظار (${secs}ث)`;
-            rocketBtn.innerText = `انتظار (${secs}ث)`;
-            if (purchaseTankBtn) purchaseTankBtn.innerText = `انتظار (${secs}ث)`;
-            if (purchaseRocketBtn) purchaseRocketBtn.innerText = `انتظار (${secs}ث)`;
+            buyBtn.innerText = `WAIT (${secs}s)`;
+            rocketBtn.innerText = `WAIT (${secs}s)`;
+            if (purchaseTankBtn) purchaseTankBtn.innerText = `WAIT (${secs}s)`;
+            if (purchaseRocketBtn) purchaseRocketBtn.innerText = `WAIT (${secs}s)`;
             buyBtn.disabled = true;
             rocketBtn.disabled = true;
             if (purchaseTankBtn) purchaseTankBtn.disabled = true;
             if (purchaseRocketBtn) purchaseRocketBtn.disabled = true;
         } else {
-            buyBtn.innerText = `عادية (150$)`;
+            buyBtn.innerText = `NORMAL (150$)`;
             rocketBtn.innerText = `SCUD VEHICLE (300$)`;
             if (purchaseTankBtn) purchaseTankBtn.innerText = `150$ BUY`;
             if (purchaseRocketBtn) purchaseRocketBtn.innerText = `300$ BUY`;
@@ -14767,7 +14808,7 @@ function createArmyFactory(x,z,ghost=false){
         const totalOil=oilRigs.filter(r=>!r.isDestroyed).length||4;
         const captureText=document.getElementById('capture-status-text');
         const captureFill=document.getElementById('capture-bar-fill');
-        if(captureText) captureText.innerText=`النفط: ${ownedOil} / ${totalOil} — المشاة فقط | العدو: ${enemyOwnedOil}`;
+        if(captureText) captureText.innerText=`OIL: ${ownedOil} / ${totalOil} — INFANTRY ONLY | ENEMY: ${enemyOwnedOil}`;
         if(captureFill){
             captureFill.style.width=(ownedOil/Math.max(1,totalOil)*100)+'%';
             captureFill.style.backgroundColor=ownedOil>0?'#22c55e':'#64748b';
@@ -14855,7 +14896,7 @@ function createArmyFactory(x,z,ghost=false){
         const restartButton = document.getElementById('restart-after-result');
         screen.style.display = 'flex';
         if(restartButton){
-            restartButton.textContent='العب مرة أخرى';
+            restartButton.textContent='PLAY AGAIN';
             restartButton.style.setProperty('display','block','important');
             restartButton.style.setProperty('visibility','visible','important');
             restartButton.style.setProperty('opacity','1','important');
@@ -14867,22 +14908,22 @@ function createArmyFactory(x,z,ghost=false){
         const subtitle=document.getElementById('result-subtitle');
         const flagCanvas=document.getElementById('victory-flag-canvas');
         if(playerSurrenderedBySellingAllBuildings){
-            if(restartButton) restartButton.textContent='العب مرة أخرى';
-            kicker.innerText='انتهت المعركة';
-            title.innerText='لقد استسلمت';
+            if(restartButton) restartButton.textContent='PLAY AGAIN';
+            kicker.innerText='BATTLE ENDED';
+            title.innerText='SURRENDERED';
             title.style.color='#e0b85a';
-            subtitle.innerText='لقد استسلمت بعد بيع جميع مبانيك؛ تم تفجير جيشك واختفى علمك وانتصر العدو';
+            subtitle.innerText='You sold all buildings and surrendered. Your army was destroyed and the enemy won.';
             if(flagCanvas)flagCanvas.style.display='none';
         } else if (isPlayerWinner) {
             if(flagCanvas)flagCanvas.style.display='';
-            kicker.innerText="اكتملت المهمة";
-            title.innerText="النصر"; title.style.color="#d7b65a";
-            subtitle.innerText="تم تدمير معسكر قيادة العدو";
+            kicker.innerText="MISSION COMPLETE";
+            title.innerText="VICTORY"; title.style.color="#d7b65a";
+            subtitle.innerText="Enemy command base destroyed";
         } else {
             if(flagCanvas)flagCanvas.style.display='';
-            kicker.innerText="انتهت المعركة";
-            title.innerText="الهزيمة"; title.style.color="#d66a5d";
-            subtitle.innerText="تم تدمير معسكر قيادتك أو استسلام قواتك";
+            kicker.innerText="BATTLE ENDED";
+            title.innerText="DEFEAT"; title.style.color="#d66a5d";
+            subtitle.innerText="Your command base was destroyed or your forces surrendered.";
         }
 
         let activePlayerTanks = playerTanks.filter(t => !t.isDestroyed).length;
@@ -15177,6 +15218,11 @@ function createArmyFactory(x,z,ghost=false){
         now = now || performance.now();
         const realDt = Math.min(100, Math.max(0, now - simLastTime));
         simLastTime = now;
+        if (window.__networkPaused) {
+            simAccumulator = 0;
+            if (renderer && scene && camera) renderer.render(scene, camera);
+            return;
+        }
         simAccumulator += realDt;
 
         // الكاميرا تبقى سلسة وسريعة الاستجابة، بينما منطق اللعبة كله يعمل على ساعة ثابتة.
@@ -15873,47 +15919,47 @@ window.updateCameraSensitivity=function(v){
 
 
 <div id="room-setup-overlay" aria-hidden="true">
- <div id="room-setup-bg" aria-hidden="true"><img id="room-setup-bg-image" alt="خلفية الغرفة"></div>
+ <div id="room-setup-bg" aria-hidden="true"><img id="room-setup-bg-image" alt="Room background"></div>
  <div class="room-panel">
-  <div class="room-title">إعداد الغرفة العسكرية</div>
+  <div class="room-title">ROOM SETUP</div>
   <div class="room-row">
-   <div class="room-field"><label for="room-bot-enabled">خيار البوت</label><select id="room-bot-enabled"><option value="yes">اختيار بوت</option><option value="no">بدون بوت</option></select></div>
-   <div class="room-field" id="bot-number-field"><label for="room-bot-number">رقم البوت</label><select id="room-bot-number"><option value="">اختر الرقم</option><option value="1">بوت 1</option><option value="2">بوت 2</option></select></div>
+   <div class="room-field"><label for="room-bot-enabled">BOT OPTION</label><select id="room-bot-enabled"><option value="yes">SELECT BOT</option><option value="no">NO BOT</option></select></div>
+   <div class="room-field" id="bot-number-field"><label for="room-bot-number">BOT NUMBER</label><select id="room-bot-number"><option value="">SELECT NUMBER</option><option value="1">BOT 1</option><option value="2">BOT 2</option></select></div>
   </div>
-  <div class="room-field"><span class="field-label">لون علم البوت</span><div class="room-swatches" id="bot-swatches"></div><div class="room-status" id="bot-ready-status">اختر لون العلم</div></div>
+  <div class="room-field"><span class="field-label">BOT FLAG COLOR</span><div class="room-swatches" id="bot-swatches"></div><div class="room-status" id="bot-ready-status">SELECT FLAG COLOR</div></div>
   <div class="room-row">
-   <div class="room-field"><label for="room-player-number">رقم اللاعب</label><select id="room-player-number"><option value="">اختر الرقم</option><option value="1">لاعب 1</option><option value="2">لاعب 2</option></select></div>
-   <div class="room-field"><label for="room-money">المال الابتدائي</label><select id="room-money"><option value="">اختر المال</option><option value="100">100</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
+   <div class="room-field"><label for="room-player-number">PLAYER NUMBER</label><select id="room-player-number"><option value="">SELECT NUMBER</option><option value="1">PLAYER 1</option><option value="2">PLAYER 2</option></select></div>
+   <div class="room-field"><label for="room-money">STARTING MONEY</label><select id="room-money"><option value="">SELECT MONEY</option><option value="100">100</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
   </div>
-  <div class="room-field"><span class="field-label">لون علم اللاعب</span><div class="room-swatches" id="player-swatches"></div><div class="room-status" id="player-ready-status">اختر لون العلم</div></div>
-  <div class="room-status" id="room-main-status">أكمل الخيارات ثم اضغط جاهز</div>
+  <div class="room-field"><span class="field-label">PLAYER FLAG COLOR</span><div class="room-swatches" id="player-swatches"></div><div class="room-status" id="player-ready-status">SELECT FLAG COLOR</div></div>
+  <div class="room-status" id="room-main-status">Complete the options, then select READY</div>
   <div class="room-actions">
-   <button class="room-button room-ready-action" id="room-ready-btn">جاهز</button>
-   <button class="room-button room-start-action" id="room-start-btn" disabled>بدء اللعب</button>
-   <button class="room-button room-cancel-action" id="room-cancel-btn">رجوع للقائمة</button>
+   <button class="room-button room-ready-action" id="room-ready-btn">READY</button>
+   <button class="room-button room-start-action" id="room-start-btn" disabled>START GAME</button>
+   <button class="room-button room-cancel-action" id="room-cancel-btn">BACK TO MENU</button>
   </div>
  </div>
 </div>
 <div id="room-loading-overlay" aria-hidden="true">
- <div class="room-slideshow" id="room-slideshow"><div id="room-slide-placeholder" style="font-weight:900;color:#e5e8d8">جاري تجهيز ساحة المعركة</div>
+ <div class="room-slideshow" id="room-slideshow"><div id="room-slide-placeholder" style="font-weight:900;color:#e5e8d8">Preparing battlefield</div>
   <img id="room-slide-1" alt="صورة التحميل الأولى"><img id="room-slide-2" alt="صورة التحميل الثانية"><img id="room-slide-3" alt="صورة التحميل الثالثة"></div>
- <div class="room-load-label" id="room-load-label">جاري دخول القوات... 0%</div><div class="room-loading-track"><div class="room-loading-fill" id="room-loading-fill"></div></div>
- <div style="color:#d8deca;font-size:11px">يرجى الانتظار حتى اكتمال الدخول</div>
+ <div class="room-load-label" id="room-load-label">Deploying forces... 0%</div><div class="room-loading-track"><div class="room-loading-fill" id="room-loading-fill"></div></div>
+ <div style="color:#d8deca;font-size:11px">Please wait for deployment to complete</div>
 </div>
 <script id="classic-green-room-runtime">
 (function(){
  const $=id=>document.getElementById(id);
  const colors=[['أزرق','#168cff'],['أحمر','#e53935'],['أصفر','#f2c230'],['أبيض','#f2f2e8'],['بنفسجي','#a855f7'],['برتقالي','#f97316']];
  const chosen={botColor:'',playerColor:'',ready:false};
- function buildSwatches(id,key){const root=$(id);colors.forEach(([name,color])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch';b.style.background=color;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{chosen[key]=color;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const st=$(key==='botColor'?'bot-ready-status':'player-ready-status');st.textContent=key==='botColor'?'البوت جاهز':'اللاعب جاهز';};root.appendChild(b);});}
+ function buildSwatches(id,key){const root=$(id);colors.forEach(([name,color])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch';b.style.background=color;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{chosen[key]=color;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const st=$(key==='botColor'?'bot-ready-status':'player-ready-status');st.textContent=key==='botColor'?'البوت READY':'اللاعب READY';};root.appendChild(b);});}
  buildSwatches('bot-swatches','botColor');buildSwatches('player-swatches','playerColor');$('bot-swatches').style.opacity='.45';
  const botEnabled=$('room-bot-enabled'),botNum=$('room-bot-number');
  botNum.disabled=true;$('bot-number-field').style.opacity='.5';
- botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';$('bot-swatches').style.opacity=on?'1':'.4';if(!on){botNum.value='';chosen.botColor='';$('bot-ready-status').textContent='بدون بوت';}else $('bot-ready-status').textContent='اختر لون العلم';validate();});
+ botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';$('bot-swatches').style.opacity=on?'1':'.4';if(!on){botNum.value='';chosen.botColor='';$('bot-ready-status').textContent='NO BOT';}else $('bot-ready-status').textContent='SELECT FLAG COLOR';validate();});
  function validate(){const bot=botEnabled.value==='no'||(botNum.value&&chosen.botColor);const player=$('room-player-number').value&&$('room-money').value&&chosen.playerColor; $('room-ready-btn').disabled=!(bot&&player);$('room-start-btn').disabled=!(chosen.ready&&bot&&player);}
- botNum.onchange=()=>{if(botNum.value){$('bot-swatches').style.opacity='1';}else{$('bot-ready-status').textContent='اختر رقم البوت';}validate();};$('room-player-number').onchange=validate;$('room-money').onchange=validate;
- window.openRoomSetup=function(){chosen.ready=false;$('room-setup-overlay').classList.add('show');$('room-setup-overlay').setAttribute('aria-hidden','false');$('room-main-status').textContent='أكمل الخيارات ثم اضغط جاهز';$('room-ready-btn').textContent='جاهز';$('room-start-btn').disabled=true;validate();};
- $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;chosen.ready=true;$('room-main-status').textContent='اللاعب جاهز — اضغط بدء اللعب للدخول';$('room-ready-btn').textContent='تم الاستعداد ✓';$('room-start-btn').disabled=false;};
+ botNum.onchange=()=>{if(botNum.value){$('bot-swatches').style.opacity='1';}else{$('bot-ready-status').textContent='اختر BOT NUMBER';}validate();};$('room-player-number').onchange=validate;$('room-money').onchange=validate;
+ window.openRoomSetup=function(){chosen.ready=false;$('room-setup-overlay').classList.add('show');$('room-setup-overlay').setAttribute('aria-hidden','false');$('room-main-status').textContent='Complete the options, then select READY';$('room-ready-btn').textContent='READY';$('room-start-btn').disabled=true;validate();};
+ $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;chosen.ready=true;$('room-main-status').textContent='اللاعب READY — اضغط START GAME للدخول';$('room-ready-btn').textContent='تم الاستعداد ✓';$('room-start-btn').disabled=false;};
  $('room-cancel-btn').onclick=()=>{$('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');};
  // Load the three default slideshow images automatically from ./images/.
  const imageUrls=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let slideIndex=0;
@@ -15930,18 +15976,18 @@ window.updateCameraSensitivity=function(v){
   const botOn=botEnabled.value==='yes';
   if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerColorName=colors.find(c=>c[1]===chosen.playerColor)?.[0]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyColorName=colors.find(c=>c[1]===chosen.botColor)?.[0]||'BOT';battleConfig.bot=Number($('room-bot-number').value)||1;battleConfig.botNumber=Number($('room-bot-number').value)||1;battleConfig.botEnabled=true;}else{battleConfig.bot='none';battleConfig.botNumber=0;battleConfig.botEnabled=false;}}
   $('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');$('room-loading-overlay').classList.add('show');$('room-loading-overlay').setAttribute('aria-hidden','false');
-  let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='جاري دخول القوات... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
+  let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='Deploying forces... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
  };
  // Replace the two legacy buttons and remove the old globe intro permanently.
  const start=$('start-btn'),sound=$('sound-settings-btn');
- if(start){start.textContent='إنشاء غرفة';start.onclick=()=>{if(typeof playClickSound==='function')playClickSound();openRoomSetup();};}
- if(sound){sound.textContent='إعدادات الصوت';}
- const title=document.querySelector('#settings-modal .menu-card h1');if(title)title.textContent='مركز القيادة';
+ if(start){start.textContent='CREATE ROOM';start.onclick=()=>{if(typeof playClickSound==='function')playClickSound();openRoomSetup();};}
+ if(sound){sound.textContent='SOUND SETTINGS';}
+ const title=document.querySelector('#settings-modal .menu-card h1');if(title)title.textContent='COMMAND CENTER';
  document.addEventListener('DOMContentLoaded',()=>{});
  // The game initialization no longer calls the old intro. Show menu after a real compact loading bar.
  const intro=$('start-menu');if(intro)intro.style.display='none';
  const load=document.createElement('div');load.id='boot-loading-overlay';
- load.innerHTML='<img id="boot-loading-image" alt="صورة التحميل"><div class="boot-loading-shade"></div><div class="boot-loading-title">تجهيز القيادة العسكرية</div><div class="boot-loading-bottom"><div class="boot-loading-track"><div id="boot-loading-fill"></div></div></div>';
+ load.innerHTML='<img id="boot-loading-image" alt="صورة التحميل"><div class="boot-loading-shade"></div><div class="boot-loading-title">Preparing command center</div><div class="boot-loading-bottom"><div class="boot-loading-track"><div id="boot-loading-fill"></div></div></div>';
  document.body.appendChild(load);
  const bootImages=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let bootIndex=0;const bootImg=document.getElementById('boot-loading-image');
  function setBootImage(){if(!bootImg)return;let tries=0;while(tries<bootImages.length){bootImg.src=bootImages[bootIndex];bootImg.dataset.failed='';bootIndex=(bootIndex+1)%bootImages.length;tries++;break;}}
@@ -15981,7 +16027,7 @@ window.updateCameraSensitivity=function(v){
 
 <!-- بوابة تدوير الشاشة بتصميم زيتي بسيط -->
 
-<div id="rotate-screen-gate" role="dialog" aria-modal="true" aria-label="رجاءً اقلب الشاشة">
+<div id="rotate-screen-gate" role="dialog" aria-modal="true" aria-label="PLEASE ROTATE YOUR DEVICE">
  <div class="rotate-inner">
   <svg class="rotate-icon" viewBox="0 0 200 165" role="img" aria-label="هاتف وسهم دائري لتدوير الشاشة" xmlns="http://www.w3.org/2000/svg">
    <defs><linearGradient id="olivePhone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#aab88a"/><stop offset="1" stop-color="#647548"/></linearGradient></defs>
@@ -15994,8 +16040,8 @@ window.updateCameraSensitivity=function(v){
     <circle cx="100" cy="122" r="3" fill="#d3ddba"/>
    </g>
   </svg>
-  <div class="rotate-title">رجاءً اقلب الشاشة</div>
-  <button id="rotate-screen-button" class="rotate-button" type="button">موافق</button>
+  <div class="rotate-title">PLEASE ROTATE YOUR DEVICE</div>
+  <button id="rotate-screen-button" class="rotate-button" type="button">OK</button>
   <div id="rotate-screen-status" class="rotate-status" aria-live="polite"></div>
  </div>
 </div>
@@ -16105,7 +16151,7 @@ window.updateCameraSensitivity=function(v){
    }else{
     btn.disabled=false;
     btn.classList.remove('scan-cooldown');
-    if(!armed)btn.innerHTML='<span class="bar-icon" aria-hidden="true">⌖</span><small>كشف</small>';
+    if(!armed)btn.innerHTML='<span class="bar-icon" aria-hidden="true">⌖</span><small>SCAN</small>';
     if(scanCooldownTimer){clearInterval(scanCooldownTimer);scanCooldownTimer=null;}
    }
   };
@@ -16135,7 +16181,7 @@ window.updateCameraSensitivity=function(v){
   const setArmed=v=>{
    armed=!!v;
    btn.classList.toggle('armed',armed);
-   btn.innerHTML=armed?'<span class="bar-icon" aria-hidden="true">◎</span><small>حرّك الدائرة</small>':'<span class="bar-icon" aria-hidden="true">⌖</span><small>كشف</small>';
+   btn.innerHTML=armed?'<span class="bar-icon" aria-hidden="true">◎</span><small>حرّك الدائرة</small>':'<span class="bar-icon" aria-hidden="true">⌖</span><small>SCAN</small>';
    if(worldMarker)worldMarker.visible=armed&&!!lastPoint;
    if(!armed)refreshScanCooldown();
    if(canvas)canvas.style.cursor=armed?'crosshair':'';
@@ -16617,6 +16663,138 @@ window.updateCameraSensitivity=function(v){
   #construction-bar{left:113px!important;right:4px!important;bottom:4px!important;padding-left:4px!important;}
 }
 </style>
+
+
+<style id="stable-map-network-and-image-layout">
+html,body{direction:ltr!important}
+#boot-loading-overlay,#room-setup-overlay,#room-loading-overlay,#settings-modal:not(.battle-active){
+  background-size:100% 100%!important;background-position:center center!important;background-repeat:no-repeat!important;
+}
+#boot-loading-image,#room-setup-bg-image,.room-slideshow img{
+  width:100%!important;height:100%!important;object-fit:fill!important;object-position:center!important;
+}
+#construction-bar .build-preview,#construction-bar .factory-preview,
+#construction-bar .factory-unit-preview,#construction-bar .barracks-preview,
+#construction-bar .barracks-unit-preview{
+  width:104px!important;min-width:104px!important;max-width:104px!important;
+  height:82px!important;flex:0 0 104px!important;background-size:contain!important;
+}
+#construction-bar .build-card,#construction-bar .factory-build-card,
+#construction-bar .factory-unit-card,#construction-bar .barracks-build-card,
+#construction-bar .barracks-unit-card{min-height:90px!important}
+@media(max-width:700px){
+ #construction-bar .build-preview,#construction-bar .factory-preview,
+ #construction-bar .factory-unit-preview,#construction-bar .barracks-preview,
+ #construction-bar .barracks-unit-preview{
+  width:76px!important;min-width:76px!important;max-width:76px!important;
+  height:72px!important;flex-basis:76px!important;
+ }
+}
+#network-status-panel{
+ position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:100000;
+ min-width:150px;padding:7px 13px;border:1px solid #64748b;border-radius:8px;
+ background:rgba(5,10,8,.94);color:#fff;font:800 12px Arial,sans-serif;
+ text-align:center;direction:ltr;box-shadow:0 3px 14px #0008;pointer-events:none
+}
+#network-pause-overlay{
+ position:fixed;inset:0;z-index:99998;display:none;align-items:center;justify-content:center;
+ background:rgba(0,0,0,.76);backdrop-filter:blur(5px);color:#fff;
+ font:900 clamp(18px,4vw,30px) Arial,sans-serif;text-align:center;direction:ltr
+}
+#network-pause-overlay.show{display:flex}
+#network-pause-overlay .network-pause-card{
+ padding:22px 28px;border:1px solid #94a3b8;border-radius:12px;
+ background:rgba(10,18,14,.96);max-width:88vw
+}
+#country-flag-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+#country-flag-controls label{display:flex;flex-direction:column;gap:5px;color:#e8eee9;font:700 11px Arial,sans-serif}
+#country-flag-controls select{min-width:0;padding:9px;background:#101a14;color:#fff;border:1px solid #647568;border-radius:6px}
+</style>
+<script id="stable-map-network-and-country-flags">
+(function(){
+ 'use strict';
+ const countryOptions=[
+  ['none','Team Color'],['us','United States'],['tr','Türkiye'],['gb','United Kingdom'],
+  ['de','Germany'],['fr','France'],['it','Italy'],['es','Spain'],['ru','Russia'],
+  ['ua','Ukraine'],['sa','Saudi Arabia'],['ae','United Arab Emirates'],['qa','Qatar'],
+  ['eg','Egypt'],['jo','Jordan'],['iq','Iraq'],['sy','Syria'],['lb','Lebanon'],
+  ['ps','Palestine'],['ma','Morocco'],['dz','Algeria'],['tn','Tunisia'],
+  ['cn','China'],['jp','Japan'],['kr','South Korea'],['in','India'],['br','Brazil'],
+  ['ca','Canada'],['au','Australia']
+ ];
+ function addFlagSelectors(){
+  document.documentElement.lang='en';document.documentElement.dir='ltr';
+  const modal=document.querySelector('#battle-setup-modal .battle-setup-card');
+  if(!modal||document.getElementById('country-flag-controls'))return;
+  const wrap=document.createElement('div');wrap.id='country-flag-controls';
+  wrap.innerHTML='<label>PLAYER COUNTRY FLAG<select id="player-country-flag"></select></label><label>ENEMY / BOT COUNTRY FLAG<select id="enemy-country-flag"></select></label>';
+  modal.appendChild(wrap);
+  for(const id of ['player-country-flag','enemy-country-flag']){
+   const sel=wrap.querySelector('#'+id);
+   countryOptions.forEach(([code,name])=>{const o=document.createElement('option');o.value=code;o.textContent=name;sel.appendChild(o)});
+   sel.addEventListener('change',()=>{
+    const team=id.startsWith('player')?'player':'enemy';
+    const code=sel.value;
+    if(team==='player')window.__selectedPlayerCountryFlag=code==='none'?null:code;
+    else window.__selectedEnemyCountryFlag=code==='none'?null:code;
+    if(typeof window.refreshAllTeamFlags==='function')window.refreshAllTeamFlags();
+   });
+  }
+ }
+ // Keep the whole terrain package stable before opening the battle.
+ const originalStart=window.beginConfiguredGame;
+ if(typeof originalStart==='function'){
+  window.beginConfiguredGame=function(){
+   const ready=window.__terrainMapReady||Promise.resolve(false);
+   const button=document.querySelector('#battle-setup-modal .battle-action.start');
+   if(button){button.disabled=true;button.textContent='LOADING MAP...';}
+   Promise.resolve(ready).finally(()=>{
+    if(button){button.disabled=false;button.textContent='START BATTLE';}
+    originalStart();
+   });
+  };
+ }
+ // Country flag texture IDs are used by the core renderer; expose the state to it.
+ Object.defineProperty(window,'__countryFlagsEnabled',{value:true});
+ // Network quality monitor: active latency probe plus browser online/offline state.
+ let panel,overlay,lastGood=0,failures=0;
+ function setupNetworkUI(){
+  if(panel)return;
+  panel=document.createElement('div');panel.id='network-status-panel';panel.textContent='NETWORK: CHECKING';
+  overlay=document.createElement('div');overlay.id='network-pause-overlay';
+  overlay.innerHTML='<div class="network-pause-card"><div id="network-pause-title">CONNECTION LOST</div><div style="font-size:13px;font-weight:500;margin-top:10px">The match is paused until the connection is restored.</div></div>';
+  document.body.append(panel,overlay);
+ }
+ async function probe(){
+  setupNetworkUI();
+  if(!navigator.onLine){failures++;setState('OFFLINE',0);return}
+  const started=performance.now();
+  try{
+   const url=location.href.split('#')[0]+(location.search?'&':'?')+'network_probe='+(Date.now());
+   const response=await fetch(url,{method:'HEAD',cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout?AbortSignal.timeout(4500):undefined});
+   if(!response.ok)throw new Error('HTTP '+response.status);
+   const ms=Math.round(performance.now()-started);lastGood=Date.now();failures=0;setState(ms<180?'GOOD':ms<450?'MEDIUM':'WEAK',ms);
+  }catch(e){failures++;setState(failures>=2?'OFFLINE':'WEAK',0)}
+ }
+ function setState(state,ms){
+  if(!panel)return;
+  const labels={GOOD:'NETWORK: STRONG',MEDIUM:'NETWORK: MEDIUM',WEAK:'NETWORK: WEAK',OFFLINE:'NETWORK: OFFLINE'};
+  panel.textContent=labels[state]+(ms?' · '+ms+' ms':'');
+  panel.style.borderColor=state==='GOOD'?'#22c55e':state==='MEDIUM'?'#eab308':state==='WEAK'?'#f97316':'#ef4444';
+  // Briefly pause on poor/offline connections to prevent state divergence or missing remote updates.
+  window.__networkPaused=state==='OFFLINE'||state==='WEAK';
+  if(overlay)overlay.classList.toggle('show',!!window.__networkPaused);
+ }
+ window.addEventListener('online',()=>{failures=0;probe()});
+ window.addEventListener('offline',()=>{failures=2;setState('OFFLINE',0)});
+ document.addEventListener('DOMContentLoaded',()=>{
+  addFlagSelectors();setupNetworkUI();probe();setInterval(probe,5000);
+  const modal=document.getElementById('battle-setup-modal');
+  if(modal)new MutationObserver(addFlagSelectors).observe(modal,{childList:true,subtree:true});
+ });
+ if(document.readyState!=='loading'){addFlagSelectors();setupNetworkUI();probe();setInterval(probe,5000)}
+})();
+</script>
 
 </html>
 
