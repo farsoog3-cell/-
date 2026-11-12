@@ -4983,6 +4983,15 @@ img { max-width: 100%; }
 #victory-flag-canvas{width:min(42vw,220px)!important;height:auto!important;aspect-ratio:1.8!important;}
 #victory-screen .restart-btn{font-family:Tahoma,Arial,sans-serif!important;font-size:clamp(14px,2.5vw,18px)!important;letter-spacing:0!important;padding:14px 20px!important;}
 </style>
+
+<style id="country-flag-picker-style">
+#room-setup-overlay .room-swatches{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:8px;max-height:190px;overflow-y:auto;padding:5px;overscroll-behavior:contain}
+#room-setup-overlay .room-swatch.flag-choice{width:100%!important;height:55px!important;min-width:0;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:3px!important;background:#182019!important;border:1px solid #77816d!important;box-shadow:none!important;cursor:pointer}
+#room-setup-overlay .room-swatch.flag-choice img{width:55px;height:32px;object-fit:cover;border:1px solid #ddd;display:block}
+#room-setup-overlay .room-swatch.flag-choice span{font-size:10px;line-height:1;color:#fff;font-weight:bold}
+#room-setup-overlay .room-swatch.flag-choice.active{outline:2px solid #ffe17a!important;outline-offset:1px;border-color:#ffe17a!important}
+@media(max-width:520px){#room-setup-overlay .room-swatches{grid-template-columns:repeat(4,minmax(0,1fr));max-height:175px}#room-setup-overlay .room-swatch.flag-choice img{width:48px;height:28px}}
+</style>
 </head>
 <body>
 
@@ -15903,9 +15912,9 @@ window.updateCameraSensitivity=function(v){
 <script id="classic-green-room-runtime">
 (function(){
  const $=id=>document.getElementById(id);
- const colors=[['أزرق','#168cff'],['أحمر','#e53935'],['أصفر','#f2c230'],['أبيض','#f2f2e8'],['بنفسجي','#a855f7'],['برتقالي','#f97316']];
+ const colors=[["سوريا", "flag:syria", "#168cff"], ["تركيا", "flag:turkey", "#e53935"], ["فلسطين", "flag:palestine", "#111111"], ["الأردن", "flag:jordan", "#168cff"], ["العراق", "flag:iraq", "#e53935"], ["السعودية", "flag:saudi", "#168cff"], ["مصر", "flag:egypt", "#e53935"], ["لبنان", "flag:lebanon", "#e53935"], ["الإمارات", "flag:uae", "#168cff"], ["الكويت", "flag:kuwait", "#168cff"], ["قطر", "flag:qatar", "#a855f7"], ["ألمانيا", "flag:germany", "#111111"], ["فرنسا", "flag:france", "#168cff"], ["روسيا", "flag:russia", "#f2f2e8"], ["أمريكا", "flag:usa", "#3c3b6e"], ["بريطانيا", "flag:uk", "#012169"]];
  const chosen={botColor:'',playerColor:'',ready:false};
- function buildSwatches(id,key){const root=$(id);colors.forEach(([name,color])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch';b.style.background=color;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{chosen[key]=color;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const st=$(key==='botColor'?'bot-ready-status':'player-ready-status');st.textContent=key==='botColor'?'البوت جاهز':'اللاعب جاهز';};root.appendChild(b);});}
+ function buildSwatches(id,key){const root=$(id);colors.forEach(([name,flagId,color])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch flag-choice';b.title=name;b.setAttribute('aria-label',name);b.dataset.flag=flagId;b.innerHTML='<img src="assets/flags/'+flagId+'.svg" alt=""><span>'+name+'</span>';b.onclick=()=>{chosen[key]=color;chosen[key+'Flag']=flagId;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const st=$(key==='botColor'?'bot-ready-status':'player-ready-status');st.textContent='العلم المختار: '+name;validate();};root.appendChild(b);});}
  buildSwatches('bot-swatches','botColor');buildSwatches('player-swatches','playerColor');$('bot-swatches').style.opacity='.45';
  const botEnabled=$('room-bot-enabled'),botNum=$('room-bot-number');
  botNum.disabled=true;$('bot-number-field').style.opacity='.5';
@@ -15928,7 +15937,7 @@ window.updateCameraSensitivity=function(v){
  $('room-start-btn').onclick=()=>{
   if($('room-start-btn').disabled)return;
   const botOn=botEnabled.value==='yes';
-  if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerColorName=colors.find(c=>c[1]===chosen.playerColor)?.[0]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyColorName=colors.find(c=>c[1]===chosen.botColor)?.[0]||'BOT';battleConfig.bot=Number($('room-bot-number').value)||1;battleConfig.botNumber=Number($('room-bot-number').value)||1;battleConfig.botEnabled=true;}else{battleConfig.bot='none';battleConfig.botNumber=0;battleConfig.botEnabled=false;}}
+  if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerFlagCode=chosen.playerColorFlag||'syria';battleConfig.playerColorName=colors.find(c=>c[2]===chosen.playerColor)?.[0]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyFlagCode=chosen.botColorFlag||'turkey';battleConfig.enemyColorName=colors.find(c=>c[2]===chosen.botColor)?.[0]||'BOT';battleConfig.bot=Number($('room-bot-number').value)||1;battleConfig.botNumber=Number($('room-bot-number').value)||1;battleConfig.botEnabled=true;}else{battleConfig.bot='none';battleConfig.botNumber=0;battleConfig.botEnabled=false;}}
   $('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');$('room-loading-overlay').classList.add('show');$('room-loading-overlay').setAttribute('aria-hidden','false');
   let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='جاري دخول القوات... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
  };
