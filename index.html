@@ -16297,6 +16297,80 @@ window.updateCameraSensitivity=function(v){
 })();
 </script>
 
+
+<style id="flag-popup-fit-fix">
+#battle-setup-modal{padding:4px!important;overflow:hidden!important}
+#battle-setup-modal .battle-setup-card{width:min(96vw,760px)!important;max-width:96vw!important;max-height:94dvh!important;overflow-x:hidden!important;overflow-y:auto!important}
+#battle-setup-modal .battle-setup-grid{min-width:0!important}
+#battle-setup-modal .unified-color-field{min-width:0!important}
+#battle-setup-modal .flag-popup-trigger{width:100%;min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px;border:1px solid rgba(115,190,235,.5);border-radius:7px;background:linear-gradient(145deg,#1c3447,#0b1722);color:#f4f8fc;font-size:11px;font-weight:900}
+#battle-setup-modal .flag-popup-trigger img{width:42px;height:27px;object-fit:cover;border:1px solid #ffffff70;border-radius:3px}
+#battle-setup-modal .flag-popup-layer{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,.76);backdrop-filter:blur(5px)}
+#battle-setup-modal .flag-popup-layer.open{display:flex}
+#battle-setup-modal .flag-popup-card{width:min(92vw,420px);max-height: min(78dvh,520px);display:flex;flex-direction:column;gap:8px;padding:11px;border:1px solid #5b9bc1;border-radius:12px;background:linear-gradient(155deg,#172b3a,#080f17);box-shadow:0 18px 55px #000c;overflow:hidden}
+#battle-setup-modal .flag-popup-head{display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:13px;font-weight:900}
+#battle-setup-modal .flag-popup-close{width:30px;height:30px;border:1px solid #7894a8;border-radius:6px;background:#273c4c;color:#fff;font-size:18px}
+#battle-setup-modal .flag-popup-card .flag-image-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;max-height:none!important;overflow-y:auto!important;padding:2px!important}
+#battle-setup-modal .flag-popup-card .flag-image-option{height:62px!important;min-height:62px!important;border-radius:7px!important;background:#142535!important}
+#battle-setup-modal .flag-popup-card .flag-image-option img{height:35px!important}
+#battle-setup-modal .flag-popup-card .flag-image-option span{font-size:10px!important}
+#battle-setup-modal .selected-color-readout{margin-top:5px!important}
+@media(max-width:700px){
+ #battle-setup-modal .battle-setup-card{width:98vw!important;max-height:96dvh!important;padding:6px!important}
+ #battle-setup-modal .battle-setup-grid{grid-template-columns:minmax(0, .72fr) minmax(0,1fr)!important;gap:4px!important}
+ #battle-setup-modal .battle-map-preview{height:clamp(105px,23dvh,145px)!important}
+ #battle-setup-modal .battle-panel{padding:4px!important}
+ #battle-setup-modal .battle-field{padding:4px!important}
+ #battle-setup-modal .flag-popup-card .flag-image-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:420px){
+ #battle-setup-modal .battle-setup-grid{grid-template-columns:minmax(0,1fr)!important}
+ #battle-setup-modal .battle-map-preview{height:125px!important}
+}
+</style>
+<script id="flag-popup-runtime">
+(function(){
+ function install(){
+  const modal=document.getElementById('battle-setup-modal');
+  const grid=document.getElementById('unified-color-grid');
+  if(!modal||!grid||grid.dataset.popupReady)return;
+  grid.dataset.popupReady='1';
+  const field=grid.closest('.unified-color-field');
+  if(!field)return;
+  const trigger=document.createElement('button');
+  trigger.type='button';trigger.className='flag-popup-trigger';
+  trigger.innerHTML='<span>فتح قائمة الأعلام</span><img id="flag-popup-current" alt="العلم المختار"><span>⌄</span>';
+  const layer=document.createElement('div');layer.className='flag-popup-layer';
+  layer.innerHTML='<div class="flag-popup-card" role="dialog" aria-modal="true"><div class="flag-popup-head"><span>اختر علم المعسكر</span><button type="button" class="flag-popup-close" aria-label="إغلاق">×</button></div></div>';
+  const card=layer.querySelector('.flag-popup-card');
+  card.appendChild(grid);
+  field.insertBefore(trigger,field.querySelector('.selected-color-readout'));
+  modal.appendChild(layer);
+  function update(){
+   const id=(typeof battleColorTarget!=='undefined'&&battleColorTarget==='enemy')
+      ? ((typeof battleConfig!=='undefined'&&battleConfig.enemyFlag)||'us')
+      : ((typeof battleConfig!=='undefined'&&battleConfig.playerFlag)||'tr');
+   const img=trigger.querySelector('img');img.src='assets/flags/'+id+'.svg';
+   const name=grid.querySelector('[data-flag="'+id+'"] span');
+   trigger.querySelector('span').textContent='اختيار العلم: '+(name?name.textContent:id.toUpperCase());
+  }
+  function close(){layer.classList.remove('open');}
+  trigger.addEventListener('click',()=>{update();layer.classList.add('open');});
+  layer.querySelector('.flag-popup-close').addEventListener('click',close);
+  layer.addEventListener('click',e=>{if(e.target===layer)close();});
+  grid.addEventListener('click',e=>{if(e.target.closest('.flag-image-option')){setTimeout(()=>{update();close();},0);}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+  const oldSelect=window.selectUnifiedBattleColor;
+  if(typeof oldSelect==='function'){
+   window.selectUnifiedBattleColor=function(){const r=oldSelect.apply(this,arguments);update();return r;};
+  }
+  const observer=new MutationObserver(update);observer.observe(grid,{childList:true,subtree:true});
+  update();
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+</script>
+
 </body>
 
 
