@@ -15218,6 +15218,11 @@ function createArmyFactory(x,z,ghost=false){
         now = now || performance.now();
         const realDt = Math.min(100, Math.max(0, now - simLastTime));
         simLastTime = now;
+        if (window.__networkPaused) {
+            simAccumulator = 0;
+            if (renderer && scene && camera) renderer.render(scene, camera);
+            return;
+        }
         simAccumulator += realDt;
 
         // الكاميرا تبقى سلسة وسريعة الاستجابة، بينما منطق اللعبة كله يعمل على ساعة ثابتة.
@@ -15921,12 +15926,12 @@ window.updateCameraSensitivity=function(v){
    <div class="room-field"><label for="room-bot-enabled">BOT OPTION</label><select id="room-bot-enabled"><option value="yes">SELECT BOT</option><option value="no">NO BOT</option></select></div>
    <div class="room-field" id="bot-number-field"><label for="room-bot-number">BOT NUMBER</label><select id="room-bot-number"><option value="">SELECT NUMBER</option><option value="1">BOT 1</option><option value="2">BOT 2</option></select></div>
   </div>
-  <div class="room-field"><span class="field-label">BOT COUNTRY FLAG</span><div class="room-swatches" id="bot-swatches"></div><div class="room-status" id="bot-ready-status">SELECT FLAG COLOR</div></div>
+  <div class="room-field"><span class="field-label">BOT FLAG COLOR</span><div class="room-swatches" id="bot-swatches"></div><div class="room-status" id="bot-ready-status">SELECT FLAG COLOR</div></div>
   <div class="room-row">
    <div class="room-field"><label for="room-player-number">PLAYER NUMBER</label><select id="room-player-number"><option value="">SELECT NUMBER</option><option value="1">PLAYER 1</option><option value="2">PLAYER 2</option></select></div>
    <div class="room-field"><label for="room-money">STARTING MONEY</label><select id="room-money"><option value="">SELECT MONEY</option><option value="100">100</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
   </div>
-  <div class="room-field"><span class="field-label">PLAYER COUNTRY FLAG</span><div class="room-swatches" id="player-swatches"></div><div class="room-status" id="player-ready-status">SELECT FLAG COLOR</div></div>
+  <div class="room-field"><span class="field-label">PLAYER FLAG COLOR</span><div class="room-swatches" id="player-swatches"></div><div class="room-status" id="player-ready-status">SELECT FLAG COLOR</div></div>
   <div class="room-status" id="room-main-status">Complete the options, then select READY</div>
   <div class="room-actions">
    <button class="room-button room-ready-action" id="room-ready-btn">READY</button>
@@ -15944,56 +15949,60 @@ window.updateCameraSensitivity=function(v){
 <script id="classic-green-room-runtime">
 (function(){
  const $=id=>document.getElementById(id);
- const countries=[
-  ['us','United States','#168cff'],['tr','Türkiye','#e53935'],['gb','United Kingdom','#f2c230'],['de','Germany','#202020'],['fr','France','#168cff'],['it','Italy','#16a34a'],['es','Spain','#e53935'],['ru','Russia','#f2f2e8'],['ua','Ukraine','#168cff'],['sa','Saudi Arabia','#16a34a'],['ae','United Arab Emirates','#e53935'],['qa','Qatar','#a855f7'],['eg','Egypt','#e53935'],['jo','Jordan','#202020'],['iq','Iraq','#e53935'],['sy','Syria','#16a34a'],['lb','Lebanon','#e53935'],['ps','Palestine','#202020'],['ma','Morocco','#e53935'],['dz','Algeria','#16a34a'],['tn','Tunisia','#e53935'],['cn','China','#e53935'],['jp','Japan','#f2f2e8'],['kr','South Korea','#202020'],['in','India','#f97316'],['br','Brazil','#16a34a'],['ca','Canada','#e53935'],['au','Australia','#168cff']
- ];
- const chosen={botColor:'',playerColor:'',botFlag:'',playerFlag:'',ready:false};
- function renderFlags(rootId,key){
-  const root=$(rootId); if(!root)return; root.innerHTML='';root.classList.add('country-flag-grid');
-  countries.forEach(([code,name,color])=>{
-   const b=document.createElement('button');b.type='button';b.className='country-flag-option';b.dataset.code=code;b.title=name;b.setAttribute('aria-label',name);
-   const img=document.createElement('img');img.src='assets/flags/'+code+'.png';img.alt='';img.loading='lazy';
-   const cap=document.createElement('span');cap.textContent=name;
-   b.append(img,cap);
-   b.onclick=()=>{
-    const other=key==='playerFlag'?'botFlag':'playerFlag';
-    if(chosen[other]===code){const status=$(key==='playerFlag'?'player-ready-status':'bot-ready-status');if(status)status.textContent='THIS FLAG IS ALREADY SELECTED';return;}
-    chosen[key]=code;chosen[key==='playerFlag'?'playerColor':'botColor']=color;
-    root.querySelectorAll('.country-flag-option').forEach(x=>x.classList.toggle('active',x===b));
-    const status=$(key==='playerFlag'?'player-ready-status':'bot-ready-status');if(status)status.textContent=name+' FLAG SELECTED';
-    validate();
-   };
-   root.appendChild(b);
-  });
- }
- function validate(){
-  const bot=botEnabled.value==='no'||(botNum.value&&chosen.botFlag&&chosen.botFlag!==chosen.playerFlag);
-  const player=$('room-player-number').value&&$('room-money').value&&chosen.playerFlag;
-  $('room-ready-btn').disabled=!(bot&&player);
-  $('room-start-btn').disabled=!(chosen.ready&&bot&&player);
- }
- renderFlags('bot-swatches','botFlag');renderFlags('player-swatches','playerFlag');
+ const colors=[['أزرق','#168cff'],['أحمر','#e53935'],['أصفر','#f2c230'],['أبيض','#f2f2e8'],['بنفسجي','#a855f7'],['برتقالي','#f97316']];
+ const chosen={botColor:'',playerColor:'',ready:false};
+ function buildSwatches(id,key){const root=$(id);colors.forEach(([name,color])=>{const b=document.createElement('button');b.type='button';b.className='room-swatch';b.style.background=color;b.title=name;b.setAttribute('aria-label',name);b.onclick=()=>{chosen[key]=color;root.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));const st=$(key==='botColor'?'bot-ready-status':'player-ready-status');st.textContent=key==='botColor'?'البوت READY':'اللاعب READY';};root.appendChild(b);});}
+ buildSwatches('bot-swatches','botColor');buildSwatches('player-swatches','playerColor');$('bot-swatches').style.opacity='.45';
  const botEnabled=$('room-bot-enabled'),botNum=$('room-bot-number');
  botNum.disabled=true;$('bot-number-field').style.opacity='.5';
- botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';$('bot-swatches').style.opacity=on?'1':'.4';if(!on){chosen.botFlag='';chosen.botColor='';window.__selectedEnemyCountryFlag=null;$('bot-ready-status').textContent='NO BOT';$('bot-swatches').querySelectorAll('.active').forEach(x=>x.classList.remove('active'));}else $('bot-ready-status').textContent='SELECT BOT FLAG';validate();});
- botNum.onchange=()=>{if(botNum.value){$('bot-swatches').style.opacity='1';}else{$('bot-ready-status').textContent='SELECT BOT NUMBER';}validate();};
- $('room-player-number').onchange=validate;$('room-money').onchange=validate;
+ botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';$('bot-swatches').style.opacity=on?'1':'.4';if(!on){botNum.value='';chosen.botColor='';$('bot-ready-status').textContent='NO BOT';}else $('bot-ready-status').textContent='SELECT FLAG COLOR';validate();});
+ function validate(){const bot=botEnabled.value==='no'||(botNum.value&&chosen.botColor);const player=$('room-player-number').value&&$('room-money').value&&chosen.playerColor; $('room-ready-btn').disabled=!(bot&&player);$('room-start-btn').disabled=!(chosen.ready&&bot&&player);}
+ botNum.onchange=()=>{if(botNum.value){$('bot-swatches').style.opacity='1';}else{$('bot-ready-status').textContent='اختر BOT NUMBER';}validate();};$('room-player-number').onchange=validate;$('room-money').onchange=validate;
  window.openRoomSetup=function(){chosen.ready=false;$('room-setup-overlay').classList.add('show');$('room-setup-overlay').setAttribute('aria-hidden','false');$('room-main-status').textContent='Complete the options, then select READY';$('room-ready-btn').textContent='READY';$('room-start-btn').disabled=true;validate();};
- $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;chosen.ready=true;$('room-main-status').textContent='PLAYER READY — PRESS START GAME';$('room-ready-btn').textContent='READY ✓';$('room-start-btn').disabled=false;};
+ $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;chosen.ready=true;$('room-main-status').textContent='اللاعب READY — اضغط START GAME للدخول';$('room-ready-btn').textContent='تم الاستعداد ✓';$('room-start-btn').disabled=false;};
  $('room-cancel-btn').onclick=()=>{$('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');};
+ // Load the three default slideshow images automatically from ./images/.
  const imageUrls=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let slideIndex=0;
- [1,2,3].forEach(n=>{const img=$('room-slide-'+n),idx=n-1;img.style.display='';img.onload=()=>{$('room-slide-placeholder').style.display='none';showSlide();};img.onerror=()=>{imageUrls[idx]=null;img.classList.remove('active');img.style.display='none';showSlide();};img.src=imageUrls[idx];});
+ [1,2,3].forEach(n=>{
+  const img=$('room-slide-'+n), idx=n-1;
+  img.style.display='';
+  img.onload=()=>{$('room-slide-placeholder').style.display='none';showSlide();};
+  img.onerror=()=>{imageUrls[idx]=null;img.classList.remove('active');img.style.display='none';showSlide();};
+  img.src=imageUrls[idx];
+ });
  function showSlide(){const imgs=[1,2,3].map(n=>$('room-slide-'+n));if(!imageUrls.some(Boolean)){imgs.forEach(im=>im.classList.remove('active'));$('room-slide-placeholder').style.display='';return;}$('room-slide-placeholder').style.display='none';imgs.forEach((im,i)=>im.classList.toggle('active',Boolean(imageUrls[i])&&i===slideIndex));let tries=0;do{slideIndex=(slideIndex+1)%3;tries++;}while(tries<3&&!imageUrls[slideIndex]);}
  $('room-start-btn').onclick=()=>{
   if($('room-start-btn').disabled)return;
   const botOn=botEnabled.value==='yes';
-  window.__selectedPlayerCountryFlag=chosen.playerFlag||null;
-  window.__selectedEnemyCountryFlag=botOn?(chosen.botFlag||null):null;
-  if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerColorName=countries.find(c=>c[0]===chosen.playerFlag)?.[1]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyColorName=countries.find(c=>c[0]===chosen.botFlag)?.[1]||'BOT';battleConfig.bot=Number(botNum.value)||1;battleConfig.botNumber=Number(botNum.value)||1;battleConfig.botEnabled=true;}else{battleConfig.bot='none';battleConfig.botNumber=0;battleConfig.botEnabled=false;}}
-  if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();
+  if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerColorName=colors.find(c=>c[1]===chosen.playerColor)?.[0]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyColorName=colors.find(c=>c[1]===chosen.botColor)?.[0]||'BOT';battleConfig.bot=Number($('room-bot-number').value)||1;battleConfig.botNumber=Number($('room-bot-number').value)||1;battleConfig.botEnabled=true;}else{battleConfig.bot='none';battleConfig.botNumber=0;battleConfig.botEnabled=false;}}
   $('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');$('room-loading-overlay').classList.add('show');$('room-loading-overlay').setAttribute('aria-hidden','false');
-  let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='Deploying forces... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='Deploying forces... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
+  let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='Deploying forces... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
  };
+ // Replace the two legacy buttons and remove the old globe intro permanently.
+ const start=$('start-btn'),sound=$('sound-settings-btn');
+ if(start){start.textContent='CREATE ROOM';start.onclick=()=>{if(typeof playClickSound==='function')playClickSound();openRoomSetup();};}
+ if(sound){sound.textContent='SOUND SETTINGS';}
+ const title=document.querySelector('#settings-modal .menu-card h1');if(title)title.textContent='COMMAND CENTER';
+ document.addEventListener('DOMContentLoaded',()=>{});
+ // The game initialization no longer calls the old intro. Show menu after a real compact loading bar.
+ const intro=$('start-menu');if(intro)intro.style.display='none';
+ const load=document.createElement('div');load.id='boot-loading-overlay';
+ load.innerHTML='<img id="boot-loading-image" alt="صورة التحميل"><div class="boot-loading-shade"></div><div class="boot-loading-title">Preparing command center</div><div class="boot-loading-bottom"><div class="boot-loading-track"><div id="boot-loading-fill"></div></div></div>';
+ document.body.appendChild(load);
+ const bootImages=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let bootIndex=0;const bootImg=document.getElementById('boot-loading-image');
+ function setBootImage(){if(!bootImg)return;let tries=0;while(tries<bootImages.length){bootImg.src=bootImages[bootIndex];bootImg.dataset.failed='';bootIndex=(bootIndex+1)%bootImages.length;tries++;break;}}
+ bootImg.onerror=()=>{bootImg.style.display='none';};setBootImage();const bootSlideTimer=setInterval(()=>{if(!document.getElementById('boot-loading-overlay')){clearInterval(bootSlideTimer);return;}setBootImage();},3500);
+ // Try to begin the loading music immediately. Mobile browsers may block autoplay;
+ // the first user touch/click retries playback inside the browser's allowed gesture.
+ try { if (typeof startPreGameMusic === 'function') startPreGameMusic(); } catch(e) {}
+ const startLoadingMusicFromGesture = () => {
+   try { if (typeof unlockGameAudio === 'function') unlockGameAudio(); if (typeof startPreGameMusic === 'function') startPreGameMusic(); } catch(e) {}
+ };
+ load.addEventListener('pointerdown', startLoadingMusicFromGesture, {passive:true});
+ document.addEventListener('pointerdown', startLoadingMusicFromGesture, {once:true, passive:true});
+ document.addEventListener('touchstart', startLoadingMusicFromGesture, {once:true, passive:true});
+ document.addEventListener('click', startLoadingMusicFromGesture, {once:true});
+ let p=0;const boot=setInterval(()=>{p=Math.min(100,p+4);const f=$('boot-loading-fill');if(f)f.style.width=p+'%';if(p>=100){clearInterval(boot);load.remove();$('settings-modal').style.display='flex';document.body.classList.remove('waiting-menu-active');try{if(typeof startPreGameMusic==='function')startPreGameMusic();}catch(e){} }},45);
 })();
 </script>
 
@@ -16719,23 +16728,18 @@ html,body{direction:ltr!important}
   if(!modal||document.getElementById('country-flag-controls'))return;
   const wrap=document.createElement('div');wrap.id='country-flag-controls';
   wrap.innerHTML='<label>PLAYER COUNTRY FLAG<select id="player-country-flag"></select></label><label>ENEMY / BOT COUNTRY FLAG<select id="enemy-country-flag"></select></label>';
-  const syncDuplicateOptions=()=>{const p=wrap.querySelector('#player-country-flag'),e=wrap.querySelector('#enemy-country-flag');if(!p||!e)return;[...p.options].forEach(o=>{if(o.value!=='none')o.disabled=o.value===e.value});[...e.options].forEach(o=>{if(o.value!=='none')o.disabled=o.value===p.value});};
   modal.appendChild(wrap);
   for(const id of ['player-country-flag','enemy-country-flag']){
    const sel=wrap.querySelector('#'+id);
    countryOptions.forEach(([code,name])=>{const o=document.createElement('option');o.value=code;o.textContent=name;sel.appendChild(o)});
    sel.addEventListener('change',()=>{
     const team=id.startsWith('player')?'player':'enemy';
-    const other=wrap.querySelector(team==='player'?'#enemy-country-flag':'#player-country-flag');
-    if(other&&sel.value!=='none'&&sel.value===other.value){sel.value='none';return;}
     const code=sel.value;
     if(team==='player')window.__selectedPlayerCountryFlag=code==='none'?null:code;
     else window.__selectedEnemyCountryFlag=code==='none'?null:code;
-    syncDuplicateOptions();
     if(typeof window.refreshAllTeamFlags==='function')window.refreshAllTeamFlags();
    });
   }
-  syncDuplicateOptions();
  }
  // Keep the whole terrain package stable before opening the battle.
  const originalStart=window.beginConfiguredGame;
@@ -16753,11 +16757,13 @@ html,body{direction:ltr!important}
  // Country flag texture IDs are used by the core renderer; expose the state to it.
  Object.defineProperty(window,'__countryFlagsEnabled',{value:true});
  // Network quality monitor: active latency probe plus browser online/offline state.
- let panel,lastGood=0,failures=0;
+ let panel,overlay,lastGood=0,failures=0;
  function setupNetworkUI(){
   if(panel)return;
   panel=document.createElement('div');panel.id='network-status-panel';panel.textContent='NETWORK: CHECKING';
-  document.body.append(panel);
+  overlay=document.createElement('div');overlay.id='network-pause-overlay';
+  overlay.innerHTML='<div class="network-pause-card"><div id="network-pause-title">CONNECTION LOST</div><div style="font-size:13px;font-weight:500;margin-top:10px">The match is paused until the connection is restored.</div></div>';
+  document.body.append(panel,overlay);
  }
  async function probe(){
   setupNetworkUI();
@@ -16775,8 +16781,9 @@ html,body{direction:ltr!important}
   const labels={GOOD:'NETWORK: STRONG',MEDIUM:'NETWORK: MEDIUM',WEAK:'NETWORK: WEAK',OFFLINE:'NETWORK: OFFLINE'};
   panel.textContent=labels[state]+(ms?' · '+ms+' ms':'');
   panel.style.borderColor=state==='GOOD'?'#22c55e':state==='MEDIUM'?'#eab308':state==='WEAK'?'#f97316':'#ef4444';
-  // Network quality is informational only; never pause or freeze the local match.
-  window.__networkPaused=false;
+  // Briefly pause on poor/offline connections to prevent state divergence or missing remote updates.
+  window.__networkPaused=state==='OFFLINE'||state==='WEAK';
+  if(overlay)overlay.classList.toggle('show',!!window.__networkPaused);
  }
  window.addEventListener('online',()=>{failures=0;probe()});
  window.addEventListener('offline',()=>{failures=2;setState('OFFLINE',0)});
@@ -16843,25 +16850,4 @@ html,body{direction:ltr!important}
             #victory-screen .stats-box{padding:5px 8px!important;margin:5px 0!important;}
             #victory-screen .restart-btn{min-height:36px!important;padding:7px!important;}
         }
-</style>
-
-
-<style id="country-flags-and-commandbar-final-fix">
-.country-flag-grid{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:7px;max-height:210px;overflow-y:auto;padding:4px;}
-.country-flag-option{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:62px;padding:5px 3px;border:1px solid #536456;border-radius:7px;background:#111b15;color:#f4f7f4;cursor:pointer;font:700 9px Arial,sans-serif;}
-.country-flag-option img{display:block;width:42px;height:27px;object-fit:cover;border:1px solid #aab5aa;border-radius:2px;}
-.country-flag-option span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.country-flag-option.active{border:2px solid #facc15;background:#253526;box-shadow:0 0 9px #eab30888;}
-#room-setup-overlay .room-field .field-label{font-size:11px!important;}
-#construction-bar .build-preview,#construction-bar .factory-preview,#construction-bar .factory-unit-preview,#construction-bar .barracks-preview,#construction-bar .barracks-unit-preview{width:112px!important;min-width:112px!important;max-width:112px!important;height:86px!important;flex:0 0 112px!important;background-size:contain!important;}
-#construction-bar .factory-unit-preview .mini-scud,#construction-bar .factory-unit-preview .mini-tank,#construction-bar .factory-unit-preview .mini-ambulance{transform:scale(.92)!important;transform-origin:center center!important;}
-#construction-bar .barracks-unit-preview .bu-body,#construction-bar .barracks-unit-preview .bu-head,#construction-bar .barracks-unit-preview .bu-gun{transform:scale(1.12);transform-origin:center center;}
-#construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .factory-unit-card,#construction-bar .barracks-build-card,#construction-bar .barracks-unit-card{min-height:96px!important;}
-@media(max-width:700px){
- #country-flag-controls{grid-template-columns:1fr 1fr!important;}
- .country-flag-grid{grid-template-columns:repeat(3,minmax(0,1fr));max-height:170px;}
- .country-flag-option img{width:34px;height:22px;}
- #construction-bar .build-preview,#construction-bar .factory-preview,#construction-bar .factory-unit-preview,#construction-bar .barracks-preview,#construction-bar .barracks-unit-preview{width:70px!important;min-width:70px!important;max-width:70px!important;height:62px!important;flex-basis:70px!important;}
- #construction-bar .factory-unit-preview .mini-scud,#construction-bar .factory-unit-preview .mini-tank,#construction-bar .factory-unit-preview .mini-ambulance{transform:scale(.82)!important;}
-}
 </style>
