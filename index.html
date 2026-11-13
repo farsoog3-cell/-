@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CONTROL BATTLE الاستراتيجية - عربات سكود الحقيقية</title>
+    <title>CONTROL BATTLE STRATEGY - REAL SCUD VEHICLES</title>
     <style id="embedded-game-styles">
 /* Extracted style block 1 */
 * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -582,7 +582,7 @@
         }
         #construction-bar .build-card:hover,#construction-bar .factory-build-card:hover,#construction-bar .factory-unit-card:hover{border-color:rgba(74,222,128,.6);transform:translateY(-1px)}
         #construction-bar .build-preview,#construction-bar .factory-preview,#construction-bar .factory-unit-preview{width:82px;height:58px;flex:0 0 82px;border-radius:9px;background:linear-gradient(180deg,#263a2c 0 62%,#101612 63%);border:1px solid rgba(134,239,172,.28);box-shadow:inset 0 0 16px rgba(0,0,0,.3);}
-        /* تركس بناء حديث داخل الصورة */
+        /* MODERN CONSTRUCTION DOZER داخل الصورة */
         .modern-builder-preview{position:relative!important}.modern-builder-preview>*{position:absolute;display:block}
         .mb-shadow{left:10px;bottom:9px;width:65px;height:7px;border-radius:50%;background:#050805}
         .mb-chassis{left:10px;top:31px;width:61px;height:15px;border-radius:5px;background:#344c3a;border:2px solid #172219}
@@ -851,7 +851,7 @@
 #construction-bar .bar-control-btn small{font-size:6px!important;line-height:7px!important;font-weight:900!important;color:#cfd5c4!important}
 #construction-bar .shield-icon{filter:drop-shadow(0 0 3px rgba(120,220,140,.3))}
 
-/* عند فتح المعسكر: صورة التركس فقط. عند فتح المصنع: صور الوحدات فقط. */
+/* عند فتح BASE: صورة التركس فقط. عند فتح المصنع: صور الوحدات فقط. */
 #construction-bar.base-mode .factory-build-card,
 #construction-bar.base-mode .factory-unit-card{display:none!important}
 #construction-bar.base-mode .build-card{display:flex!important}
@@ -1406,7 +1406,7 @@
 }
 .settings-card-overlay #start-btn{font-size:0!important}
 .settings-card-overlay #start-btn::after{
-  content:"البدء لعب";
+  content:"START GAME";
   position:absolute;right:18px;left:auto;width:auto;
   background:#789366;color:#eaf4e3;
   height:6px;top:0;bottom:auto;
@@ -1418,7 +1418,7 @@
   font-size:0!important;
 }
 .settings-card-overlay #sound-settings-btn::before{
-  content:"⚙  إعدادات الصوت";
+  content:"⚙  SOUND SETTINGS";
   margin:0!important;
   color:#dbe5d7!important;
   font-size:12px!important;
@@ -1463,7 +1463,7 @@
     z-index:20 !important;
 }
 
-/* "أهلاً بك في القيادة" — أولاً */
+/* "WELCOME TO COMMAND" — أولاً */
 .intro-typing{
     order:1 !important;
     width:100% !important;
@@ -1471,7 +1471,7 @@
     margin:0 !important;
 }
 
-/* "الثورة السورية" — مباشرة تحته */
+/* "SYRIAN REVOLUTION" — مباشرة تحته */
 .intro-revolution{
     order:2 !important;
     margin-top:16px !important;
@@ -2613,7 +2613,7 @@
 #construction-bar.barracks-selected .bar-unit-controls{display:none!important}
 #construction-bar.barracks-selected .barracks-unit-card{display:flex!important;pointer-events:auto!important}
 
-/* المعسكر الرئيسي: تركس البناء فقط */
+/* BASE الرئيسي: تركس البناء فقط */
 #construction-bar.base-mode .build-card{display:flex!important;pointer-events:auto!important}
 #construction-bar.base-mode .factory-build-card,
 #construction-bar.base-mode .barracks-build-card,
@@ -2656,7 +2656,7 @@
 @media(max-width:430px){#battle-setup-modal .battle-setup-grid{grid-template-columns:112px minmax(0,1fr)!important}#battle-setup-modal .unified-color-grid{grid-template-columns:repeat(4,1fr)!important}}
 
 /* Extracted style block 27 */
-/* سكنة عسكرية: نفس مقاس ونظام بطاقات الشريط السفلي، وليست بطاقة كبيرة منفصلة. */
+/* BARRACKS: نفس مقاس ونظام بطاقات الشريط السفلي، وليست بطاقة كبيرة منفصلة. */
 #construction-bar .barracks-build-card,
 #construction-bar .barracks-unit-card{
   position:relative!important;width:58px!important;min-width:58px!important;max-width:58px!important;
@@ -2818,7 +2818,7 @@
 #construction-bar.unit-selected.builder-selected .build-title{font-size:11px!important}
 #construction-bar.unit-selected{justify-content:flex-start!important;overflow:hidden!important}
 
-/* عند لمس المعسكر: تركس البناء فقط */
+/* عند لمس BASE: تركس البناء فقط */
 #construction-bar.base-mode .build-card{display:flex!important}
 #construction-bar.base-mode .factory-build-card,
 #construction-bar.base-mode .factory-unit-card,
@@ -2875,7 +2875,7 @@
 }
 
 /* Extracted style block 30 */
-/* تركس البناء: مصنع البناء + أوامر الوحدة الأربعة معًا */
+/* تركس البناء: مصنع البناء + UNIT ORDERS الأربعة معًا */
 #construction-bar.unit-selected.builder-selected .factory-build-card{
   display:flex!important;
 }
@@ -4450,7 +4450,7 @@ body.battle-active #start-menu {
 }
 
 /* Extracted style block 67 */
-/* أظهر أزرار إلغاء التحديد والحماية وتحديد الكل والفردي عند تحديد أي وحدة أو جندي */
+/* أظهر أزرار DESELECT والGUARD وSELECT ALL والSINGLE عند تحديد أي وحدة أو جندي */
 #construction-bar.unit-selected .bar-unit-controls,
 #construction-bar.unit-selected.builder-selected .bar-unit-controls,
 #construction-bar.unit-selected.ambulance-selected .bar-unit-controls{display:flex!important;visibility:visible!important;opacity:1!important}
@@ -4991,12 +4991,12 @@ img { max-width: 100%; }
 #room-setup-overlay .flag-trigger-arrow{margin-right:auto;font-size:20px}
 #country-flag-picker{display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.8);align-items:center;justify-content:center;padding:12px;box-sizing:border-box}
 #country-flag-picker.show{display:flex}
-.flag-picker-panel{width:min(94vw,560px);max-height:82dvh;overflow:auto;background:linear-gradient(145deg,#111b1b,#26302a);border:1px solid #788273;border-radius:12px;padding:12px;box-shadow:0 15px 50px #000;box-sizing:border-box}
+.flag-picker-panel{width:min(94vw,560px);max-height:82dvh;overflow:hidden;background:linear-gradient(145deg,#111b1b,#26302a);border:1px solid #788273;border-radius:12px;padding:12px;box-shadow:0 15px 50px #000;box-sizing:border-box}
 .flag-picker-head{display:flex;justify-content:space-between;align-items:center;color:white;font-size:17px;margin-bottom:10px}
 .flag-picker-head button,.flag-picker-target button{background:#1b241e;border:1px solid #70796c;color:#eee;border-radius:6px;padding:8px 12px}
 .flag-picker-target{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .flag-picker-target button.active{background:#58634e;border-color:#e5d18b}
-.flag-picker-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.flag-picker-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-height:56dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;padding:3px 5px 8px;scrollbar-width:thin;scrollbar-color:#8c9a7d #17211d}
 .flag-country{min-width:0;min-height:65px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:#17211d;border:1px solid #566254;border-radius:7px;color:white;font:inherit;font-size:12px;padding:6px 3px;cursor:pointer}
 .flag-country img{width:min(100%,66px);height:34px;object-fit:cover;border:1px solid #aeb4a8;display:block}
 .flag-country.active{border:2px solid #f3d77d;background:#35402f}
@@ -5087,7 +5087,7 @@ img { max-width: 100%; }
           <div class="battle-label"><span>AI BATTLE RULES</span><b>STANDARD</b></div>
           <div class="ai-rules-card">
             <span class="ai-rule-icon">⚙</span>
-            <div><strong>FAIR RTS AI</strong><small>نفس قوانين الشراء والإنتاج والوقت والاقتصاد للاعب</small></div>
+            <div><strong>FAIR RTS AI</strong><small>Same purchase, production, timing, and economy rules as the player</small></div>
           </div>
         </div>
 
@@ -5136,22 +5136,22 @@ img { max-width: 100%; }
     <div id="hp-labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden;"></div>
 
     <div class="top-capture-box">
-        <div id="capture-status-text">النفط: 0 / 4 — السيطرة بالمشاة فقط</div>
+        <div id="capture-status-text">Oil: 0 / 4 — Capture with infantry only</div>
         <div class="capture-bar-bg">
             <div id="capture-bar-fill" class="capture-bar-fill"></div>
         </div>
     </div>
 
     <div class="left-controls-group">
-        <!-- تم نقل جميع أزرار التحكم بجانب MAP المصغرة -->
+        <!-- All controls have been moved beside the minimap -->
     </div>
 
 
     <div id="construction-bar" aria-label="Base construction workshop">
-        <button id="sell-building-btn" type="button" onclick="playClickSound(); sellSelectedBuilding()" style="display:none" title="بيع المبنى واسترداد نصف قيمته">💰 بيع المبنى · استرداد 50٪</button>
+        <button id="sell-building-btn" type="button" onclick="playClickSound(); sellSelectedBuilding()" style="display:none" title="Sell the building and receive a 50% refund">💰 SELL BUILDING · REFUND 50%</button>
         <div class="build-title"><span class="build-title-icon">⚙</span><b>COMMAND</b><small>PRODUCTION</small></div>
         <div class="build-card" id="construction-truck-card" onclick="playClickSound(); buyConstructionTruck()">
-            <div class="build-preview modern-builder-preview" aria-label="تركس بناء حديث"><img class="external-bar-image" src="images/units/construction-truck.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="build-preview modern-builder-preview" aria-label="MODERN CONSTRUCTION DOZER"><img class="external-bar-image" src="images/units/construction-truck.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="mb-shadow"></div><div class="mb-chassis"></div><div class="mb-cab"></div><div class="mb-glass"></div><div class="mb-bed"></div><div class="mb-crane"></div><div class="mb-hook"></div>
                 <i class="mb-wheel a"></i><i class="mb-wheel b"></i><i class="mb-wheel c"></i>
             </div>
@@ -5163,7 +5163,7 @@ img { max-width: 100%; }
             <div class="build-price">300$</div>
         </div>
         <div class="factory-build-card" id="factory-build-card" onclick="playClickSound(); armFactoryBuild()">
-            <div class="factory-preview" aria-label="مصنع جيش"><img class="external-bar-image" src="images/units/factory.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="factory-preview" aria-label="ARMY FACTORY"><img class="external-bar-image" src="images/units/factory.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="f-tower"></div><div class="f-roof"></div><div class="f-base"></div><div class="f-door"></div><div class="f-light"></div>
             </div>
             <div class="build-info">
@@ -5175,7 +5175,7 @@ img { max-width: 100%; }
         </div>
 
         <div class="barracks-build-card" id="barracks-build-card" onclick="playClickSound(); armBarracksBuild()">
-            <div class="barracks-preview" aria-label="سكنة عسكرية"><img class="external-bar-image" src="images/units/barracks.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+            <div class="barracks-preview" aria-label="BARRACKS"><img class="external-bar-image" src="images/units/barracks.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <div class="b-base"></div><div class="b-roof"></div><div class="b-door"></div><div class="b-window"></div><div class="b-flagpole"></div><div class="b-flag"></div>
             </div>
             <div class="build-info">
@@ -5197,8 +5197,8 @@ img { max-width: 100%; }
             <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-infantry"></div><div class="infantry-preview-rifle"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🪖 RIFLEMAN</div><div class="factory-unit-price">250$</div><div class="factory-unit-time">Ready in 6 sec</div></div>
         </div>
-        <div class="barracks-unit-card" id="barracks-infantry-card" onclick="playClickSound(); queueBarracksUnit('infantry')" title="تدريب جندي مشاة">
-            <div class="barracks-unit-preview pro-soldier-icon" aria-label="جندي مشاة"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
+        <div class="barracks-unit-card" id="barracks-infantry-card" onclick="playClickSound(); queueBarracksUnit('infantry')" title="TRAIN INFANTRY">
+            <div class="barracks-unit-preview pro-soldier-icon" aria-label="INFANTRY SOLDIER"><img class="external-bar-image" src="images/units/soldier.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()">
                 <span class="soldier-shadow"></span><span class="soldier-helmet"></span><span class="soldier-head"></span>
                 <span class="soldier-vest"></span><span class="soldier-arm a"></span><span class="soldier-arm b"></span>
                 <span class="soldier-rifle"></span><span class="soldier-leg a"></span><span class="soldier-leg b"></span>
@@ -5213,40 +5213,40 @@ img { max-width: 100%; }
             <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scout.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scout"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">📡 SCOUT</div><div class="factory-unit-price">500$</div><div class="factory-unit-time">Reveals the area and activates minimap</div></div>
         </div>
-        <div class="bar-unit-controls" id="bar-unit-controls" aria-label="أوامر الوحدة">
-            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="حماية الوحدة: المس الأرض لتحديد منطقة الحماية">
-                <span class="bar-icon shield-icon">🛡</span><small>حماية</small>
+        <div class="bar-unit-controls" id="bar-unit-controls" aria-label="UNIT ORDERS">
+            <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="Guard unit: tap the ground to set a guard area">
+                <span class="bar-icon shield-icon">🛡</span><small>GUARD</small>
             </button>
-            <button class="bar-control-btn" id="temporary-scout-scan" onclick="playClickSound()" title="كشف عن بُعد: اختر منطقة على الخريطة لكشفها لمدة 25 ثانية">
-                <span class="bar-icon">⌖</span><small>كشف</small>
+            <button class="bar-control-btn" id="temporary-scout-scan" onclick="playClickSound()" title="Remote scan: select an area on the map to reveal it for 25 seconds">
+                <span class="bar-icon">⌖</span><small>SCAN</small>
             </button>
-            <button class="bar-control-btn" id="bar-cancel-btn" onclick="playClickSound(); cancelUnitSelection()" title="إلغاء التحديد">
-                <span class="bar-icon">✕</span><small>إلغاء</small>
+            <button class="bar-control-btn" id="bar-cancel-btn" onclick="playClickSound(); cancelUnitSelection()" title="DESELECT">
+                <span class="bar-icon">✕</span><small>CANCEL</small>
             </button>
-            <button class="bar-control-btn" id="bar-all-btn" onclick="playClickSound(); setSelectionMode('all')" title="تحديد كل الوحدات من النوع نفسه">
-                <span class="bar-icon">▦</span><small>تحديد الكل</small>
+            <button class="bar-control-btn" id="bar-all-btn" onclick="playClickSound(); setSelectionMode('all')" title="Select all units of the same type">
+                <span class="bar-icon">▦</span><small>SELECT ALL</small>
             </button>
-            <button class="bar-control-btn" id="bar-single-btn" onclick="playClickSound(); setSelectionMode('single')" title="تحديد وحدة واحدة فقط">
-                <span class="bar-icon">▣</span><small>فردي</small>
+            <button class="bar-control-btn" id="bar-single-btn" onclick="playClickSound(); setSelectionMode('single')" title="Select one unit only">
+                <span class="bar-icon">▣</span><small>SINGLE</small>
             </button>
-            <button class="bar-control-btn fire-stop-btn" id="bar-stop-fire-btn" onclick="playClickSound(); toggleSelectedFire()" title="توقف عن القصف">
+            <button class="bar-control-btn fire-stop-btn" id="bar-stop-fire-btn" onclick="playClickSound(); toggleSelectedFire()" title="STOP BOMBARDMENT">
                 <span class="bar-icon">⛔</span><small>CEASE FIRE</small>
             </button>
         </div>
     </div>
-    <div id="attack-alert" aria-label="إنذار هجوم"><span>⚠</span></div>
+    <div id="attack-alert" aria-label="ATTACK WARNING"><span>⚠</span></div>
     <div id="factory-production-progress"><div id="factory-production-progress-fill"></div></div>
 
     <div id="factory-world-progress"><span class="factory-world-label">🏭 PRODUCTION</span><div class="factory-world-bg"><div class="factory-world-fill"></div></div></div>
 
     <div id="minimap-tools">
         <div id="mini-money" class="mini-money"><span id="money-display">2000</span>$</div>
-        <button class="defend-btn" id="defend-btn" onclick="playClickSound(); armDefenseCommand()" disabled>◎ قصف المنطقة</button>
-        <button class="cancel-select-btn" id="cancel-select-btn" onclick="playClickSound(); selectWholeArmy()" disabled>🪖 الجيش بالكامل</button>
+        <button class="defend-btn" id="defend-btn" onclick="playClickSound(); armDefenseCommand()" disabled>◎ AREA BOMBARDMENT</button>
+        <button class="cancel-select-btn" id="cancel-select-btn" onclick="playClickSound(); selectWholeArmy()" disabled>🪖 ALL ARMY</button>
         <button class="sel-btn active" id="sel-all-btn" onclick="playClickSound(); setSelectionMode('all')">ALL</button>
         <button class="sel-btn" id="sel-single-btn" onclick="playClickSound(); setSelectionMode('single')">SINGLE</button>
     </div>
-    <div id="minimap-container" style="display:none;" aria-label="الخريطة التكتيكية المصغرة">
+    <div id="minimap-container" style="display:none;" aria-label="TACTICAL MINIMAP">
         <canvas id="minimap-canvas" width="240" height="240"></canvas>
     </div>
 
@@ -5275,31 +5275,31 @@ img { max-width: 100%; }
             <div class="purchase-option">
                 <div>
                     <div class="purchase-name">📡 SCOUT</div>
-                    <div class="purchase-desc">تكشف المنطقة حولها وتفعّل MAP المصغرة — صحن استطلاع دوّار</div>
+                    <div class="purchase-desc">Reveals the surrounding area and activates the minimap — rotating scout dish</div>
                 </div>
                 <button class="purchase-buy" id="buy-scout-btn" onclick="playClickSound(); buyReconVehicle()">500$ BUY</button>
             </div>
             <div class="purchase-option">
                 <div>
-                    <div class="purchase-name">🚑 سيارة إسعاف حديثة</div>
-                    <div class="purchase-desc">تعالج الوحدات الصديقة القريبة تلقائيًا</div>
+                    <div class="purchase-name">🚑 MODERN AMBULANCE</div>
+                    <div class="purchase-desc">Automatically heals nearby friendly units</div>
                 </div>
                 <button class="purchase-buy" id="buy-ambulance-btn" onclick="playClickSound(); buyPlayerAmbulance()">250$ BUY</button>
             </div>
         </div>
-        <button class="purchase-close" onclick="playClickSound(); closePurchaseMenu()">CLOSE القائمة ✕</button>
+        <button class="purchase-close" onclick="playClickSound(); closePurchaseMenu()">CLOSE MENU ✕</button>
     </div>
 </div>
 
 <div id="victory-screen">
     <div class="result-panel">
-        <div class="result-kicker" id="result-kicker">اكتمل الانتصار</div>
+        <div class="result-kicker" id="result-kicker">VICTORY COMPLETE</div>
         <div class="result-line"></div>
-        <h1 id="victory-title">النصر</h1>
-        <div class="result-subtitle" id="result-subtitle">تم تدمير معسكر قيادة العدو</div>
+        <h1 id="victory-title">VICTORY</h1>
+        <div class="result-subtitle" id="result-subtitle">Enemy command center destroyed</div>
         <canvas id="victory-flag-canvas"></canvas>
         <div class="stats-box" id="stats-content"></div>
-        <button id="restart-after-result" class="restart-btn" type="button" onclick="playClickSound(); window.location.reload()">العب مرة أخرى</button>
+        <button id="restart-after-result" class="restart-btn" type="button" onclick="playClickSound(); window.location.reload()">PLAY AGAIN</button>
     </div>
 </div>
 
@@ -5374,7 +5374,7 @@ img { max-width: 100%; }
         audio.loop = loop;
         audio.setAttribute('playsinline', '');
         audio.addEventListener('error', () => {
-            console.warn('[GAME AUDIO] تعذر تحميل الصوت:', type, url);
+            console.warn('[GAME AUDIO] Failed to load audio:', type, url);
         }, { once: true });
         return audio;
     }
@@ -5576,7 +5576,7 @@ img { max-width: 100%; }
     let preGameBgmAudio = createManagedAudio('preGameBgm', true);
     let battleBgmAudio = createManagedAudio('battleBgm', true);
     // موسيقى المعركة: هدوء افتراضي، موسيقى battle_bgm الحالية عند هجوم العدو،
-    // وموسيقى مستقلة عندما يهاجم اللاعب.
+    // وموسيقى مستقلة عندما يهاجم PLAYER.
     soundFiles.neutralBgm = 'sounds/battle_ambient.mp3';
     soundFiles.playerAttackBgm = 'sounds/player_attack_bgm.mp3';
     let neutralBgmAudio = createManagedAudio('neutralBgm', true);
@@ -5762,7 +5762,7 @@ img { max-width: 100%; }
             }
         });
 
-        // صوت واحد فقط عند دخول عدو جديد إلى مجال الكشف.
+        // صوت واحد فقط عند دخول عدو جديد إلى مجال الSCAN.
         if (newlyDetected) playMinimapEventSound();
         reconEnemiesInRange = current;
     }
@@ -6014,7 +6014,7 @@ img { max-width: 100%; }
             const revolution=document.getElementById('intro-revolution');
             const syriaWrap=document.getElementById('intro-syria-wrap');
             const terminal=document.getElementById('intro-terminal');
-            const hackerText='أهلاً بك في القيادة';
+            const hackerText='WELCOME TO COMMAND';
             let typedCount=0;
             let revolutionShown=false, flagShown=false;
             const interval=setInterval(()=>{
@@ -6026,7 +6026,7 @@ img { max-width: 100%; }
                     const target=Math.min(hackerText.length,Math.floor(introProgress/3));
                     if(target>typedCount){ typedCount=target; typed.textContent=hackerText.slice(0,typedCount); }
                 }
-                // 46-68%: ظهور عبارة الثورة السورية بشكل منبثق.
+                // 46-68%: ظهور عبارة SYRIAN REVOLUTION بشكل منبثق.
                 if(introProgress>=46 && !revolutionShown){
                     revolutionShown=true; revolution.classList.add('show');
                 }
@@ -6145,20 +6145,20 @@ img { max-width: 100%; }
         const passB = Math.exp(-Math.pow((x + 0.42 * z - 80) / 92, 2)) * 1.0;
         h -= passA + passB;
 
-        // تسوية تدريجية حول المعسكرين: المركز مستوٍ والساحة تتصل بالأرض بمنحدر ناعم.
+        // تسوية تدريجية حول BASEين: المركز مستوٍ والساحة تتصل بالأرض بمنحدر ناعم.
         const baseZones=[[CORNER_OFFSET,CORNER_OFFSET],[-CORNER_OFFSET,-CORNER_OFFSET]];
         for(const [bx,bz] of baseZones){
             const d=Math.hypot(x-bx,z-bz);
             const blend=1-smooth01(THREE.MathUtils.clamp((d-26)/38,0,1));
             if(blend>0){
-                // مستوى الساحة قريب من مستوى مركز المعسكر.
+                // مستوى الساحة قريب من مستوى مركز BASE.
                 h *= (1-blend);
             }
         }
         // حدود الخريطة مستقيمة ومربعة، من دون جبال أو حواف مرتفعة.
         // نترك ارتفاع الأرض طبيعياً ومنخفضاً عند الأطراف حتى لا تحاصر التلال ساحة اللعب.
 
-        // منطقة المعسكرين: أرض مستوية واسعة صالحة للبناء والحركة، مع انتقال ناعم إلى التضاريس الطبيعية.
+        // منطقة BASEين: أرض مستوية واسعة صالحة للبناء والحركة، مع انتقال ناعم إلى التضاريس الطبيعية.
         const baseFlattenRadius=78, baseBlendRadius=112;
         for(const base of [{x:CORNER_OFFSET,z:CORNER_OFFSET},{x:-CORNER_OFFSET,z:-CORNER_OFFSET}]){
             const d=Math.hypot(x-base.x,z-base.z);
@@ -6220,7 +6220,7 @@ img { max-width: 100%; }
 
     // ===== حدود الخريطة: تلال طبيعية + شمس واضحة =====
     function createSun() {
-        // شمس مرئية في السماء + ضوء دافئ، بدون تغيير ألوان الجيش أو المعسكرات.
+        // شمس مرئية في السماء + ضوء دافئ، بدون تغيير ألوان الجيش أو BASEات.
         const sunGroup = new THREE.Group();
         sunGroup.name = 'battlefieldSun';
 
@@ -6259,21 +6259,21 @@ img { max-width: 100%; }
 
     // تحميل الخريطة والخامات من ملفات مستقلة داخل assets/؛ يبقى سطح اللعبة الحالي احتياطياً إذا فشل التحميل.
     function loadExternalTerrainMap() {
-        if (!THREE.GLTFLoader) { console.error('تعذر تحميل GLTFLoader'); return; }
+        if (!THREE.GLTFLoader) { console.error('Failed to load GLTFLoader'); return; }
         const gltfLoader = new THREE.GLTFLoader();
         gltfLoader.load('assets/terrain_map.glb', function(gltf) {
             const root = gltf.scene || gltf.scenes[0];
             let mesh = null;
             root.traverse(o => { if (o.isMesh && !mesh) mesh = o; });
             if (!mesh || !mesh.geometry || !mesh.geometry.attributes.position) {
-                console.error('ملف الخريطة لا يحتوي على سطح صالح'); return;
+                console.error('The map file does not contain a valid terrain surface'); return;
             }
             const geo = mesh.geometry;
             const pos = geo.attributes.position;
             const side = Math.round(Math.sqrt(pos.count));
             const box = new THREE.Box3().setFromBufferAttribute(pos);
             if (side * side !== pos.count || side < 2) {
-                console.error('شبكة ارتفاعات الخريطة ليست شبكة مربعة؛ تم الإبقاء على الأرض الاحتياطية'); return;
+                console.error('The map height grid is not square; fallback terrain will remain'); return;
             }
             const heights = new Float32Array(pos.count);
             for (let i=0; i<pos.count; i++) heights[i] = pos.getY(i);
@@ -6308,8 +6308,8 @@ img { max-width: 100%; }
             if (!warFogMesh) initWarFogOfWar();
             refreshWarFogSurface();
             if (warFogTexture) warFogTexture.needsUpdate = true;
-            console.log('تم تحميل الخريطة الخارجية وتحديث سطح ضباب الحرب ليتبعها');
-        }, undefined, function(err) { console.error('فشل تحميل الخريطة الخارجية؛ ستبقى الأرض الاحتياطية ظاهرة.',err); });
+            console.log('External map loaded; the fog-of-war surface has been updated to follow it');
+        }, undefined, function(err) { console.error('Failed to load the external map; fallback terrain will remain visible.',err); });
     }
 
     function init() {
@@ -6377,7 +6377,7 @@ img { max-width: 100%; }
     }
 
     function getPlayerUnitsOfKind(kind) {
-        // وضع "الجيش بالكامل": يشمل كل الوحدات القابلة للتحكم مهما كان نوعها.
+        // وضع "FULL ARMY": يشمل كل الوحدات القابلة للتحكم مهما كان نوعها.
         if (kind === 'army') {
             return [...new Set([
                 ...playerTanks.filter(u => u && u.team === 'player' && !u.isDestroyed),
@@ -6404,7 +6404,7 @@ img { max-width: 100%; }
         const hasSelection = !!(selectedTank && !selectedTank.isDestroyed && selectedUnitKind && selectedUnitKind !== 'factory');
         const scoutSelected = hasSelection && selectedUnitKind === 'scout';
 
-        // سيارة الاستطلاع تستخدم الكشف عن بُعد فقط؛ لا نعرض لها أمر الحماية.
+        // سيارة الاستطلاع تستخدم الSCAN عن بُعد فقط؛ لا نعرض لها أمر الGUARD.
         [btn, cancelBtn, allBtn, singleBtn].forEach(el => {
             if (el) el.style.display = hasSelection && (el !== btn || !scoutSelected) ? 'flex' : 'none';
         });
@@ -6421,7 +6421,7 @@ img { max-width: 100%; }
         if (btn) {
             btn.disabled = !hasSelection;
             btn.classList.toggle('armed', defenseCommandArmed);
-            btn.innerText = defenseCommandArmed ? '🛡 اختر منطقة الحماية' : '🛡 حماية';
+            btn.innerText = defenseCommandArmed ? '🛡 SELECT GUARD AREA' : '🛡 GUARD';
         }
         if (cancelBtn) {
             cancelBtn.disabled = !hasSelection;
@@ -6460,7 +6460,7 @@ img { max-width: 100%; }
     }
 
     function selectWholeArmy() {
-        // زر "الجيش بالكامل" يحدد كل قوات اللاعب.
+        // زر "FULL ARMY" يحدد كل قوات PLAYER.
         defenseCommandArmed = false;
         factoryBuildArmed = false;
         selectedFactory = null;
@@ -6550,14 +6550,14 @@ img { max-width: 100%; }
 
         if (message) {
             const label = selectedUnitKind === 'ambulance'
-                ? '🚑 تم تحديد سيارة الإسعاف'
+                ? '🚑 AMBULANCE SELECTED'
                 : selectedUnitKind === 'rocket'
-                    ? '🚀 تم تحديد SCUD VEHICLE'
+                    ? '🚀 SCUD VEHICLE SELECTED'
                     : selectedUnitKind === 'builder'
-                        ? '🚧 تم تحديد تركس البناء'
+                        ? '🚧 CONSTRUCTION DOZER SELECTED'
                         : selectedUnitKind === 'scout'
-                            ? '📡 تم تحديد سيارة الاستطلاع'
-                            : '🪖 تم تحديد الدبابة';
+                            ? '📡 RECON VEHICLE SELECTED'
+                            : '🪖 TANK SELECTED';
             showFloatingMsg(label + ' — tap ALL to select this type');
         }
     }
@@ -6593,10 +6593,10 @@ img { max-width: 100%; }
             updateDefenseButton();
             updateConstructionBarForSelection();
 
-            const label = kind === 'army' ? '🪖 الجيش بالكامل' :
-                          kind === 'ambulance' ? '🚑 كل سيارات الإسعاف' :
-                          kind === 'rocket' ? '🚀 كل عربات السكود' :
-                          kind === 'scout' ? '📡 كل سيارات الاستطلاع' : '🪖 كل الدبابات العادية';
+            const label = kind === 'army' ? '🪖 ALL ARMY' :
+                          kind === 'ambulance' ? '🚑 ALL AMBULANCES' :
+                          kind === 'rocket' ? '🚀 ALL SCUD VEHICLES' :
+                          kind === 'scout' ? '📡 ALL RECON VEHICLES' : '🪖 ALL STANDARD TANKS';
             showFloatingMsg(units.length ? `${label} — selected` : `No units of this type`);
         } else {
             clearSelectionVisuals();
@@ -6645,9 +6645,9 @@ img { max-width: 100%; }
         defenseCommandArmed = !defenseCommandArmed;
         updateDefenseButton();
         if (defenseCommandArmed) {
-            showFloatingMsg('🛡 المس الأرض لتحديد منطقة الحماية');
+            showFloatingMsg('🛡 Tap the ground to set a guard area');
         } else {
-            showFloatingMsg('تم إلغاء أمر الحماية');
+            showFloatingMsg('Guard order cancelled');
         }
     }
 
@@ -6696,7 +6696,7 @@ img { max-width: 100%; }
         if(defenseMarkerMesh) defenseMarkerMesh.visible=false;
         updateDefenseButton();
 
-        const label = units.length > 1 ? '◎ تم تحديد منطقة القصف للوحدات' : '◎ تم تحديد منطقة القصف للوحدة';
+        const label = units.length > 1 ? '◎ Bombardment area set for units' : '◎ Bombardment area set for unit';
         showFloatingMsg(label);
         return true;
     }
@@ -6784,23 +6784,34 @@ function selectEnemyColor(color,name,el){
 function refreshAllTeamFlags(){
   try{
     if(typeof scene==='undefined' || !scene || typeof createFlagTexture!=='function') return;
-    scene.traverse(obj=>{
-      if(!obj || !obj.userData || !obj.userData.teamFlag || !obj.material) return;
-      let team = obj.userData.team;
-      let parent = obj.parent;
-      while(!team && parent){ team = parent.userData && parent.userData.team; parent = parent.parent; }
-      if(team==='enemy') obj.material.map=createFlagTexture(enemyFlagType);
-      else if(team==='player') obj.material.map=createFlagTexture(playerFlagType);
-      else if(obj.material.map && obj.userData.flagOwner==='enemy') obj.material.map=createFlagTexture(enemyFlagType);
-      else if(obj.material.map && obj.userData.flagOwner==='player') obj.material.map=createFlagTexture(playerFlagType);
-      if(obj.material.map) obj.material.needsUpdate=true;
+    const apply=(record,team)=>{
+      if(!record || !record.mesh || !record.mesh.material) return;
+      const type=window.__teamFlagType?window.__teamFlagType(team):(team==='enemy'?enemyFlagType:playerFlagType);
+      record.type=type;
+      record.owner=team;
+      record.mesh.material.map=createFlagTexture(type);
+      if(record.mesh.material.color) record.mesh.material.color.set(0xffffff);
+      record.mesh.material.needsUpdate=true;
+    };
+    if(playerFlagDataRef) apply(playerFlagDataRef,'player');
+    if(enemyFlagDataRef) apply(enemyFlagDataRef,'enemy');
+    if(Array.isArray(activeFlagMeshes)) activeFlagMeshes.forEach(record=>{
+      if(!record || record.mainBaseFlag || record.isOil) return;
+      const owner=record.owner || (record.mesh && record.mesh.parent && record.mesh.parent.userData && record.mesh.parent.userData.factoryOwner) || 'player';
+      apply(record,owner==='enemy'?'enemy':'player');
     });
-    if(enemyFlagDataRef && enemyFlagDataRef.mesh && enemyFlagDataRef.mesh.material){ enemyFlagDataRef.mesh.material.map=createFlagTexture(enemyFlagType); enemyFlagDataRef.mesh.material.needsUpdate=true; }
-    if(playerFlagDataRef && playerFlagDataRef.mesh && playerFlagDataRef.mesh.material){ playerFlagDataRef.mesh.material.map=createFlagTexture(playerFlagType); playerFlagDataRef.mesh.material.needsUpdate=true; }
-    if(typeof constructedFactories!=='undefined' && Array.isArray(constructedFactories)) constructedFactories.forEach(f=>{if(f&&f.mesh&&typeof updateFactoryFlagOwner==='function')updateFactoryFlagOwner(f,f.owner==='enemy'?'enemy':'player');});
-    if(typeof enemyFactories!=='undefined' && Array.isArray(enemyFactories)) enemyFactories.forEach(f=>{if(f&&f.mesh&&typeof updateFactoryFlagOwner==='function')updateFactoryFlagOwner(f,'enemy');});
-    scene.traverse(obj=>{if(obj&&obj.userData&&obj.userData.barracksFlagData){const d=obj.userData.barracksFlagData;const team=d.owner==='enemy'?'enemy':'player';d.type=team==='enemy'?enemyFlagType:playerFlagType;if(d.mesh&&d.mesh.material){d.mesh.material.map=createFlagTexture(d.type);d.mesh.material.needsUpdate=true;}}});
-  }catch(e){}
+    scene.traverse(obj=>{
+      if(!obj || !obj.userData || !obj.material || !obj.userData.teamFlag) return;
+      let team=obj.userData.team;
+      let parent=obj.parent;
+      while(!team && parent){team=parent.userData&&parent.userData.team;parent=parent.parent;}
+      if(team==='player'||team==='enemy'){
+        obj.material.map=createFlagTexture(window.__teamFlagType?window.__teamFlagType(team):(team==='enemy'?enemyFlagType:playerFlagType));
+        if(obj.material.color)obj.material.color.set(0xffffff);
+        obj.material.needsUpdate=true;
+      }
+    });
+  }catch(e){console.warn('Flag refresh failed',e);}
 }
 
 function refreshEnemyFlagMeshes(){
@@ -7168,7 +7179,7 @@ function startGame(){openBattleSetup();}
             tuft.castShadow = true;
             grassGroup.add(tuft);
         }
-        // تم إلغاء الحشيش من أرض المعركة بناءً على الطلب.
+        // تم CANCEL الحشيش من أرض المعركة بناءً على الطلب.
         grassGroup.visible = false;
         // لا نضيف grassGroup إلى detailGroup.
 
@@ -7300,7 +7311,7 @@ function startGame(){openBattleSetup();}
             // ============================================================
             // USA COMMAND CENTER — REBUILT FROM ZERO
             // مرجع التصميم: الصورة التي أرسلها المستخدم.
-            // لا يتم إعادة استخدام أي شكل من المعسكر القديم.
+            // لا يتم إعادة استخدام أي شكل من BASE القديم.
             // ============================================================
             while (parentGroup.children.length) parentGroup.remove(parentGroup.children[0]);
 
@@ -7471,8 +7482,8 @@ function startGame(){openBattleSetup();}
                 const pole=new THREE.Mesh(new THREE.CylinderGeometry(.075*scale,.11*scale,h,10),metalDark); pole.position.y=h/2; g.add(pole);
                 const tex=createFlagTexture(isEnemy?enemyFlagType:playerFlagType);
                 const fm=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true,depthWrite:false});
-                const cloth=new THREE.Mesh(new THREE.PlaneGeometry(2.0*scale,1.18*scale,8,4),fm);
-                cloth.position.set(1.0*scale,h-.59*scale,0); cloth.userData.teamFlag=true; cloth.userData.flagOwner=isEnemy?'enemy':'player'; g.add(cloth);
+                const cloth=new THREE.Mesh(new THREE.PlaneGeometry(3.2*scale,1.9*scale,8,4),fm);
+                cloth.position.set(1.6*scale,h-.92*scale,0); cloth.userData.teamFlag=true; cloth.userData.flagOwner=isEnemy?'enemy':'player'; g.add(cloth);
             };
             makeFlag(0,-8.8,7.0,1.12);
             makeFlag(-13.0,-7.4,4.8,.72);
@@ -7527,7 +7538,7 @@ function startGame(){openBattleSetup();}
         ash.position.copy(pos);
         ash.rotation.y=rotation;
 
-        // رماد وحطام داكن يبقى مكان المعسكر بعد تدميره، بنفس فكرة حطام المصنع.
+        // رماد وحطام داكن يبقى مكان BASE بعد تدميره، بنفس فكرة حطام المصنع.
         const mats=[0x202423,0x303332,0x41413d,0x51483d,0x171918];
         for(let i=0;i<28;i++){
             const w=.55+Math.random()*3.8, h=.12+Math.random()*.75, d=.45+Math.random()*3.0;
@@ -7580,7 +7591,7 @@ function startGame(){openBattleSetup();}
     function dropDestroyedBaseFlags(base){
         if(!base || !base.mesh) return;
 
-        // أعلام المعسكر الصغيرة المثبتة على المبنى.
+        // أعلام BASE الصغيرة المثبتة على المبنى.
         const fallingFlags=[];
         base.mesh.traverse(obj=>{
             if(obj.userData && obj.userData.commandFlag) fallingFlags.push(obj);
@@ -7622,7 +7633,7 @@ function startGame(){openBattleSetup();}
             requestAnimationFrame(fallFlag);
         });
 
-        // العلم الرئيسي الكبير الموجود على سارية المعسكر.
+        // العلم الرئيسي الكبير الموجود على سارية BASE.
         const mainData = base.isEnemy ? enemyFlagDataRef : playerFlagDataRef;
         if(mainData && mainData.mesh && mainData.mesh.parent){
             const flag=mainData.mesh;
@@ -7669,7 +7680,7 @@ function startGame(){openBattleSetup();}
         createCommandBaseDamageFX(base);
         playSound('explosion');
 
-        // العلم يسقط من السارية إلى الأرض ويبقى مشوهاً بعد تدمير المعسكر.
+        // العلم يسقط من السارية إلى الأرض ويبقى مشوهاً بعد تدمير BASE.
         dropDestroyedBaseFlags(base);
 
         const ash=createCommandBaseAsh(pos,base.mesh.rotation.y);
@@ -8656,7 +8667,7 @@ function startGame(){openBattleSetup();}
             // حركة الذراعين عكس الرجلين، مع إبقاء السلاح على الظهر أثناء الركض.
             if(!combat&&!aiming){
                 // السلاح محمول بكلتا اليدين أثناء المشي/الركض، لذلك لا نسمح لدورة الجري
-                // بإلغاء وضع الذراعين. نضيف فقط اهتزازاً صغيراً طبيعياً مع الخطوة.
+                // بCANCEL وضع الذراعين. نضيف فقط اهتزازاً صغيراً طبيعياً مع الخطوة.
                 const sway=Math.sin(p)*.025;
                 if(soldier.infantryArmL) soldier.infantryArmL.rotation.z+=sway;
                 if(soldier.infantryArmR) soldier.infantryArmR.rotation.z-=sway;
@@ -8777,7 +8788,7 @@ function startGame(){openBattleSetup();}
             rig.flagData.owner=soldier.team;
             if(flag){flag.visible=true;flag.position.y=rig.flagData.baseHeight||9.15;flag.material.map=createFlagTexture(soldier.team==='enemy'?enemyFlagType:playerFlagType);flag.material.needsUpdate=true;}
             soldier.oilCaptureAnim=null;
-            showFloatingMsg(soldier.team==='player'?'⛽ تم رفع علمك والسيطرة على النفط':'⛽ Enemy infantry captured the oil field');
+            showFloatingMsg(soldier.team==='player'?'⛽ Your flag is raised; oil field captured':'⛽ Enemy infantry captured the oil field');
         }
         return true;
     }
@@ -8807,7 +8818,7 @@ function startGame(){openBattleSetup();}
             let moving=false;
 
             // خروج الجندي من المصنع له أولوية مطلقة: لا نسمح للبحث عن عدو
-            // أو أوامر اللاعب بأن تجعله يعود إلى داخل المصنع قبل أن يبتعد عنه.
+            // أو أوامر PLAYER بأن تجعله يعود إلى داخل المصنع قبل أن يبتعد عنه.
             if(u.factoryExiting){
                 const exitTarget=u.factoryExitTarget;
                 if(exitTarget){
@@ -8868,7 +8879,7 @@ function startGame(){openBattleSetup();}
                 const bd=u.mesh.position.distanceTo(enemyCommandBase.mesh.position);
                 if(bd<120){target=enemyCommandBase;best=bd*bd;}
             }
-            // المشاة يواصلون الهجوم على المباني والمعسكر عندما يصلون إلى نطاق الاشتباك.
+            // المشاة يواصلون الهجوم على المباني وBASE عندما يصلون إلى نطاق الاشتباك.
             const hostileStructures=[
                 ...(constructedFactories||[]).filter(f=>f&&f.done&&!f.isDestroyed&&f.owner!==u.team),
                 ...(enemyFactories||[]).filter(f=>f&&!f.isDestroyed&&f.done&&u.team==='player'),
@@ -9229,8 +9240,8 @@ function startGame(){openBattleSetup();}
         ambulances.forEach(ambulance => {
             if(ambulance.factoryExitLock) return;
             let ambulanceIsMoving = false;
-            // الإسعاف الذي اشتراه اللاعب لا يتحرك من تلقاء نفسه.
-            // اللاعب يحدد هدفه من خلال النقر/الضغط على الأرض مثل باقي الوحدات.
+            // الإسعاف الذي اشتراه PLAYER لا يتحرك من تلقاء نفسه.
+            // PLAYER يحدد هدفه من خلال النقر/الضغط على الأرض مثل باقي الوحدات.
             if (ambulance.team === 'player' && ambulance.manualControl) {
                 if (ambulance.target) {
                     const dir = new THREE.Vector3().subVectors(
@@ -9400,7 +9411,7 @@ function startGame(){openBattleSetup();}
         obstacles.push({ x: CORNER_OFFSET, z: CORNER_OFFSET, radius: 14 });
         obstacles.push({ x: -CORNER_OFFSET, z: -CORNER_OFFSET, radius: 14 });
 
-        // عند START BATTLE: كل معسكر يبدأ بتركس بناء فقط، ولا تبدأ أي دبابة أو سكود من المعسكر.
+        // عند START BATTLE: كل معسكر يبدأ بتركس بناء فقط، ولا تبدأ أي دبابة أو سكود من BASE.
         let pBuilderX = CORNER_OFFSET - 35;
         let pBuilderZ = CORNER_OFFSET - 35;
         let eBuilderX = -CORNER_OFFSET + 35;
@@ -9430,7 +9441,7 @@ function startGame(){openBattleSetup();}
     function beginOilBuildingModelLoad(){
         if(oilBuildingGLTFSource || oilBuildingGLTFLoading || oilBuildingGLTFFailed) return;
         if(!THREE.GLTFLoader){
-            console.warn('GLTFLoader غير متاح؛ سيتم إبقاء موقع النفط بدون نموذج المبنى الجديد.');
+            console.warn('GLTFLoader unavailable; the oil site will remain without the new building model.');
             oilBuildingGLTFFailed=true;
             return;
         }
@@ -9449,7 +9460,7 @@ function startGame(){openBattleSetup();}
             err=>{
                 oilBuildingGLTFLoading=false;
                 oilBuildingGLTFFailed=true;
-                console.warn('تعذر تحميل مبنى النفط الجديد:',err);
+                console.warn('Failed to load the new oil building:',err);
                 oilBuildingModelPending.clear();
             }
         );
@@ -9506,7 +9517,7 @@ function startGame(){openBattleSetup();}
 
             rig.buildingModelSlot.add(model);
         }catch(err){
-            console.warn('تعذر تجهيز نموذج مبنى النفط:',err);
+            console.warn('Failed to prepare the oil building model:',err);
         }
     }
 
@@ -9556,14 +9567,14 @@ function startGame(){openBattleSetup();}
             rigGroup.add(valve);
 
             const flagGroup=new THREE.Group();
-            flagGroup.position.set(4.2,0,0);
+            flagGroup.position.set(-9.5,0,-6.5);
 
             const pole=new THREE.Mesh(new THREE.CylinderGeometry(.11,.15,10.5,12),rimMat);
             pole.position.y=5.25;
             pole.castShadow=true;
             flagGroup.add(pole);
 
-            const flagGeo=new THREE.PlaneGeometry(4.4,2.45,12,4);
+            const flagGeo=new THREE.PlaneGeometry(5.2,2.9,12,4);
             const flagMat=new THREE.MeshBasicMaterial({
                 map:createFlagTexture('white'),
                 side:THREE.DoubleSide,
@@ -9571,7 +9582,7 @@ function startGame(){openBattleSetup();}
                 depthWrite:false
             });
             const flagMesh=new THREE.Mesh(flagGeo,flagMat);
-            flagMesh.position.set(2.2,9.15,0);
+            flagMesh.position.set(2.6,9.15,0);
             flagGroup.add(flagMesh);
             rigGroup.add(flagGroup);
             flagMesh.visible=true;
@@ -10396,7 +10407,7 @@ function startGame(){openBattleSetup();}
             if(bc) bc.style.removeProperty('display'); if(bu) bu.style.removeProperty('display'); if(fi) fi.style.removeProperty('display');
             bar.classList.add('open','base-mode');
             const title = bar.querySelector('.build-title');
-            if (title) title.innerHTML = 'المعسكر';
+            if (title) title.innerHTML = 'BASE';
         }
         updateDefenseButton();
         showFloatingMsg('🏗️ Base — construction dozer only');
@@ -10468,9 +10479,9 @@ function startGame(){openBattleSetup();}
 
     function confirmFactoryPlacement() {
         if (!factoryPlacementMode || !factoryPlacementGhost) return;
-        if (!factoryPlacementPoint) { showFloatingMsg('📍 اختر مكان المصنع أولاً'); return; }
+        if (!factoryPlacementPoint) { showFloatingMsg('📍 Select the factory location first'); return; }
         const placementCheck=isBuildingPlacementValid(factoryPlacementPoint,'factory',factoryPlacementRotation,'player');
-        if(!placementCheck.valid){ showFloatingMsg('🚫 لا يمكن بناء المصنع هنا: الأرض غير مستوية أو المكان مشغول'); return; }
+        if(!placementCheck.valid){ showFloatingMsg('🚫 Cannot build the factory here: terrain is uneven or the area is occupied'); return; }
         const builder = selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed ? selectedTank : null;
         if (!builder) { hideFactoryPlacement(); showFloatingMsg('Select the construction dozer first'); return; }
         startFactoryConstruction(builder, factoryPlacementPoint.clone(), factoryPlacementRotation);
@@ -10550,7 +10561,7 @@ function startGame(){openBattleSetup();}
         if(playerMoney<150){showFloatingMsg('Insufficient funds — barracks costs $150');return;}
         hideFactoryPlacement();playerMoney-=150;totalMoneySpent+=150;updateEconomyUI();
         point.y=getBuildingGroundLevel(point.x,point.z,'barracks',rotation);
-        if(!isBuildingPlacementValid(point,'barracks',rotation,'player').valid){showFloatingMsg('🚫 موقع الثكنة غير صالح للبناء');return;}
+        if(!isBuildingPlacementValid(point,'barracks',rotation,'player').valid){showFloatingMsg('🚫 Invalid barracks placement');return;}
         const build=createMilitaryBarracks(point.x,point.z,true);build.owner='player';
         build.mesh.position.y=point.y+.03;build.mesh.userData.barracksOwner='player';build.mesh.visible=true;build.mesh.scale.setScalar(.06);build.mesh.rotation.y=rotation;build.rotation=rotation;build.mesh.position.y=getTerrainHeight(point.x,point.z)-8;
         // تأكيد أن مبنى البناء موجود في المشهد، وليس مجرد بيانات منطقية.
@@ -10637,7 +10648,7 @@ function startGame(){openBattleSetup();}
         showFloatingMsg('🪖 Soldier exiting military barracks');
     }
 function createMilitaryBarracks(x,z,ghost=false,owner='player'){
-        // ثكنة جنود جديدة: مبنى أفراد عسكري، مختلف بصرياً عن المصنع لكنه من نفس لغة المعسكر.
+        // ثكنة جنود جديدة: مبنى أفراد عسكري، مختلف بصرياً عن المصنع لكنه من نفس لغة BASE.
         const g=new THREE.Group(); g.name='militaryBarracks';
         const M=(c,r=.72,m=.12)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
         const concrete=new THREE.MeshStandardMaterial({color:0xc7c8c1,map:getMilitaryConcreteTexture(),roughness:.9,metalness:.05});
@@ -10692,7 +10703,7 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
         for(const px of [-4.8,-2.4,2.4,4.8]) box(1.25,.72,.72,panel,px,1.02,4.85);
         box(7.0,.12,.12,accent,0,3.70,4.55);
 
-        // منطقة تدريب صغيرة ومعدات فردية.
+        // منطقة تدريب صغيرة ومعدات SINGLEة.
         for(let px=-5.5;px<=5.5;px+=2.75){
             box(1.75,.18,.70,sand,px,.66,7.25);
             box(.20,1.0,.20,steel,px,.98,7.25);
@@ -10715,10 +10726,10 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
         // علم واضح فوق الثكنة.
         const pole=new THREE.Mesh(new THREE.CylinderGeometry(.08,.12,8.0,10),steel);
         pole.position.set(6.0,7.9,1.2); pole.name='barracksFlagPole'; g.add(pole);
-        const flagColor=owner==='enemy'?enemyFlagType:playerFlagType;
-        const flagMat=new THREE.MeshStandardMaterial({map:createFlagTexture(flagColor),side:THREE.DoubleSide,transparent:true,roughness:.62,metalness:.03});
+        const flagColor=window.__teamFlagType?window.__teamFlagType(owner==='enemy'?'enemy':'player'):(owner==='enemy'?enemyFlagType:playerFlagType);
+        const flagMat=new THREE.MeshStandardMaterial({map:createFlagTexture(flagColor),color:0xffffff,side:THREE.DoubleSide,transparent:true,roughness:.62,metalness:.03});
         const flag=new THREE.Mesh(new THREE.PlaneGeometry(2.8,1.45,12,5),flagMat);
-        flag.position.set(7.35,11.1,1.2); flag.name='barracksFlag'; flag.userData.teamFlag=true; flag.userData.team=owner; flag.userData.flagOwner=owner; g.add(flag);
+        flag.position.set(7.35,11.45,1.2); flag.name='barracksFlag'; g.add(flag);
         const flagData={mesh:flag,baseHeight:11.1,type:flagColor,barracksFlag:true,owner};
         activeFlagMeshes.push(flagData); g.userData.barracksFlagData=flagData;
 
@@ -10741,7 +10752,7 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
     }
 
 function createArmyFactory(x,z,ghost=false){
-        // مصنع جيش جديد: حظيرة إنتاج كبيرة وباب شحن مرتفع، من نفس معسكر القيادة لكن بوظيفة مصنع واضحة.
+        // ARMY FACTORY جديد: حظيرة إنتاج كبيرة وباب شحن مرتفع، من نفس معسكر القيادة لكن بوظيفة مصنع واضحة.
         const group=new THREE.Group(); group.name='armyFactory_USAReference';
         const M=(c,r=.78,m=.12)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
         const concrete=M(0xb9bab3,.94,.04), wall=M(0xd0d2cc,.84,.08), panel=M(0xaeb3b0,.68,.30);
@@ -10791,7 +10802,7 @@ function createArmyFactory(x,z,ghost=false){
             box(1.55,.10,.14,accent,px,2.88,-5.50);
         }
 
-        // جناح صيانة جانبي — يميز المصنع عن المعسكر.
+        // جناح صيانة جانبي — يميز المصنع عن BASE.
         for(const px of [-12.0,12.0]){
             box(4.6,3.15,7.0,wall,px,2.12,-.3);
             box(4.8,.28,7.3,roof,px,3.86,-.3);
@@ -10846,11 +10857,11 @@ function createArmyFactory(x,z,ghost=false){
         for(let i=0;i<4;i++) box(1.0,.9,1.0,panel,5.2+i*.95,1.05,8.5);
 
         // أعلام المصنع.
-        const factoryFlagTeam=ghost?playerFlagType:((group.userData.factoryOwner==='enemy')?enemyFlagType:playerFlagType);
+        const factoryFlagTeam=ghost?(window.__teamFlagType?window.__teamFlagType('player'):playerFlagType):((group.userData.factoryOwner==='enemy')?(window.__teamFlagType?window.__teamFlagType('enemy'):enemyFlagType):(window.__teamFlagType?window.__teamFlagType('player'):playerFlagType));
         const makeFlag=(px,pz,h,scale=1)=>{
             const pole=new THREE.Mesh(new THREE.CylinderGeometry(.08,.12,h,10),steel);pole.position.set(px,h/2,pz);group.add(pole);
-            const fm=new THREE.MeshStandardMaterial({map:createFlagTexture(factoryFlagTeam),side:THREE.DoubleSide,transparent:true,roughness:.68,metalness:.02});
-            const cloth=new THREE.Mesh(new THREE.PlaneGeometry(2.2*scale,1.25*scale,10,4),fm);cloth.position.set(px+1.05*scale,h-.62*scale,pz);cloth.name='factoryFlag';group.add(cloth);return cloth;
+            const fm=new THREE.MeshStandardMaterial({map:createFlagTexture(factoryFlagTeam),color:0xffffff,side:THREE.DoubleSide,transparent:true,roughness:.68,metalness:.02});
+            const cloth=new THREE.Mesh(new THREE.PlaneGeometry(4.0*scale,2.3*scale,10,4),fm);cloth.position.set(px+1.55*scale,h-.88*scale,pz);cloth.name='factoryFlag';group.add(cloth);return cloth;
         };
         const factoryFlagMesh=makeFlag(-6.8,8.2,6.6,.9);
         const factoryFlagData={mesh:factoryFlagMesh,baseHeight:6.6,type:factoryFlagTeam,factoryFlag:true,owner:(group.userData.factoryOwner||'player')};
@@ -10892,8 +10903,10 @@ function createArmyFactory(x,z,ghost=false){
 
     function updateFactoryFlagOwner(factory, owner){
         if(!factory || !factory.mesh) return;
+        const team = owner==='enemy' ? 'enemy' : 'player';
+        const type = (window.__teamFlagType ? window.__teamFlagType(team) : (team==='enemy'?enemyFlagType:playerFlagType));
         const d=factory.mesh.userData && factory.mesh.userData.factoryFlagData;
-        const teamColor=new THREE.Color(owner==='enemy' ? (battleConfig.enemyColor||'#f43f5e') : (battleConfig.playerColor||'#168cff'));
+        const teamColor=new THREE.Color(team==='enemy' ? (battleConfig.enemyColor||'#f43f5e') : (battleConfig.playerColor||'#168cff'));
         factory.mesh.traverse(o=>{
             if(!o.isMesh || !o.material) return;
             const mats=Array.isArray(o.material)?o.material:[o.material];
@@ -10906,8 +10919,8 @@ function createArmyFactory(x,z,ghost=false){
             });
         });
         if(d){
-            d.owner=owner; d.type=owner==='enemy'?enemyFlagType:playerFlagType;
-            if(d.mesh && d.mesh.material){ d.mesh.material.map=createFlagTexture(d.type); d.mesh.material.needsUpdate=true; }
+            d.owner=team; d.type=type;
+            if(d.mesh && d.mesh.material){ d.mesh.material.map=createFlagTexture(type); d.mesh.material.color.set(0xffffff); d.mesh.material.needsUpdate=true; }
         }
     }
 
@@ -11015,8 +11028,8 @@ function createArmyFactory(x,z,ghost=false){
         const r=factory.mesh.rotation.y, forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));
         const spawn=factory.mesh.position.clone().add(forward.clone().multiplyScalar(1.0)); spawn.y=getTerrainHeight(spawn.x,spawn.z);
         let unit=type==='ambulance'?createModernAmbulance(spawn.x,spawn.z,'enemy'):type==='infantry'?createInfantrySoldier(spawn.x,spawn.z,'enemy'):type==='scout'?createReconVehicle(spawn.x,spawn.z,'enemy'):createTank(spawn.x,spawn.z,(battleConfig.enemyColor || '#f43f5e'),'enemy',type);
-        // توازن عادل: وحدات العدو تستخدم نفس سرعة وحيوية وحدات اللاعب.
-        // مستوى البوت يغيّر قراراته وتكتيكه فقط، وليس زمن الإنتاج أو سرعة الحركة.
+        // توازن عادل: وحدات العدو تستخدم نفس سرعة وحيوية وحدات PLAYER.
+        // مستوى BOT يغيّر قراراته وتكتيكه فقط، وليس زمن الإنتاج أو سرعة الحركة.
         if(unit){ unit.enemyElite=false; }
         unit.mesh.rotation.y=r;
         unit.factoryExiting=true; unit.factoryExitLock=true;
@@ -11107,7 +11120,7 @@ function createArmyFactory(x,z,ghost=false){
             if(!rig||rig.isDestroyed) continue;
             if(Math.hypot(point.x-rig.x,point.z-rig.z)<fp.radius+13) return {valid:false,reason:'oil'};
         }
-        // المنطقة المحيطة بالمعسكرين أصبحت أرضاً مستوية ومخصصة للبناء؛ لا نمنع البناء لمجرد قربه من المعسكر.
+        // المنطقة المحيطة بBASEين أصبحت أرضاً مستوية ومخصصة للبناء؛ لا نمنع البناء لمجرد قربه من BASE.
         return {valid:true,reason:'ok',groundY:maxY};
     }
     function showInvalidBuildGhost(ghost, valid){
@@ -11199,7 +11212,7 @@ function createArmyFactory(x,z,ghost=false){
             const ownedEnemyOil=oilRigs.filter(r=>r.owner==='enemy'&&!r.isDestroyed);
             if(u.isInfantry && oil.length){
                 // مشاة العدو هم قوة الاستيلاء الوحيدة على النفط.
-                // الأولوية للنفط المحايد أو الذي يسيطر عليه اللاعب، وليس للبقاء في القاعدة.
+                // الأولوية للنفط المحايد أو الذي يسيطر عليه PLAYER، وليس للبقاء في القاعدة.
                 const rig=nearestOil(u);
                 if(rig) target=enemyOilPoint(rig);
             }else if(enemyStrategy==='defense'){
@@ -11214,7 +11227,7 @@ function createArmyFactory(x,z,ghost=false){
                     else target=enemyBase.clone().add(new THREE.Vector3(Math.sin(i)*52,0,Math.cos(i)*52));
                 }
             }else if(enemyStrategy==='attack'){
-                // حصار مستمر مع إبقاء جزء من القوة لحماية النفط.
+                // حصار مستمر مع إبقاء جزء من القوة لGUARD النفط.
                 const threat=nearestPlayer(u,340);
                 if(ownedEnemyOil.length && i%4===0){
                     target=enemyOilPoint(ownedEnemyOil[i%ownedEnemyOil.length]);
@@ -11257,9 +11270,9 @@ function createArmyFactory(x,z,ghost=false){
         const builder=liveEnemy.find(t=>t.isBuilder), factory=enemyFactories.find(f=>f.done&&!f.isDestroyed);
 
         // العدو القوي: يفضل الهجوم المستمر، ويحوّل الدفاع إلى هجوم مضاد سريع.
-        if(info.playerNearBase) enemySetStrategy('attack','⚔️ اختراق محيط قاعدة اللاعب');
-        else if(info.enemyNearBase) enemySetStrategy('attack','⚔️ قوات العدو وصلت إلى قاعدة اللاعب');
-        else if(Date.now()>enemyStrategyUntil) enemySetStrategy('attack','⚔️ هجوم مستمر');
+        if(info.playerNearBase) enemySetStrategy('attack','⚔️ Enemy breached the player base perimeter');
+        else if(info.enemyNearBase) enemySetStrategy('attack','⚔️ Enemy forces have reached the player base');
+        else if(Date.now()>enemyStrategyUntil) enemySetStrategy('attack','⚔️ ATTACK IN PROGRESS');
 
         // إنشاء مصنع العدو مرة واحدة، ثم ترك الشاحنة تنفذ البناء فعلياً.
         if(!factory&&!enemyFactoryConstruction){
@@ -11279,7 +11292,7 @@ function createArmyFactory(x,z,ghost=false){
             }
         }
 
-        // بعد بناء مصنع الجيش، يبني العدو معسكر جنود مستقلًا بنفس قواعد اللاعب.
+        // بعد بناء مصنع الجيش، يبني العدو معسكر جنود مستقلًا بنفس قواعد PLAYER.
         const enemyBarracks=constructedBarracks.find(b=>b&&b.owner==='enemy'&&b.done&&!b.isDestroyed);
         if(factory&&!enemyBarracks&&!enemyBarracksConstruction){
             const enemyBuilder=liveEnemy.find(t=>t.isBuilder&&!t.isBuilding);
@@ -11293,8 +11306,8 @@ function createArmyFactory(x,z,ghost=false){
             }
         }
 
-        // بعد المصنع والمعسكر: ينتج العدو المشاة فقط عندما يحتاجهم للنفط،
-        // وبعد تأمين النفط يترك المعسكر هادئاً ويحوّل المال للآليات المطلوبة.
+        // بعد المصنع وBASE: ينتج العدو المشاة فقط عندما يحتاجهم للنفط،
+        // وبعد تأمين النفط يترك BASE هادئاً ويحوّل المال للآليات المطلوبة.
         const activeEnemyBarracks=constructedBarracks.find(b=>b&&b.owner==='enemy'&&b.done&&!b.isDestroyed);
         const activeOilCount=oilRigs.filter(r=>r&&!r.isDestroyed).length;
         const neutralOrPlayerOilCount=oilRigs.filter(r=>r&&!r.isDestroyed&&r.owner!=='enemy').length;
@@ -11304,7 +11317,7 @@ function createArmyFactory(x,z,ghost=false){
         // إذا كان هناك نفط غير تابع للعدو، يخصص العدو مشاة تلقائياً للاستيلاء عليه.
         const needOilInfantry=neutralOrPlayerOilCount>0 && enemyInfantryCount<Math.max(4,neutralOrPlayerOilCount*2);
         // لا يبدأ العدو تدريب جندي جديد حتى ينتهي السابق من الخروج من الثكنة،
-        // مع الالتزام بزمن تدريب اللاعب نفسه (8 ثوانٍ).
+        // مع الالتزام بزمن تدريب PLAYER نفسه (8 ثوانٍ).
         const enemyInfantryStillExiting=enemyTanks.some(u=>u&&!u.isDestroyed&&u.team==='enemy'&&u.isInfantry&&u.barracksExitBarracks===activeEnemyBarracks&&(u.barracksExiting||u.barracksExitLock));
         if(activeEnemyBarracks&&!activeEnemyBarracks.productionJob&&enemyMoney>=250&&needOilInfantry&&!enemyInfantryStillExiting){
             enemyMoney-=250;
@@ -11396,7 +11409,7 @@ function createArmyFactory(x,z,ghost=false){
         const title=bar.querySelector('.build-title');
         bar.classList.remove('base-mode','factory-mode','factory-selected','unit-selected','builder-selected');
         bar.classList.add('open','barracks-selected');
-        if(title) title.innerHTML='السكنة<br>العسكرية';
+        if(title) title.innerHTML='BARRACKS';
         const soldier=document.getElementById('barracks-infantry-card');
         if(soldier){
             soldier.style.display='flex';
@@ -11459,11 +11472,11 @@ function createArmyFactory(x,z,ghost=false){
         }else if(selectedCommandBase && !selectedCommandBase.isDestroyed && selectedCommandBase.owner!=='enemy'){
             building=selectedCommandBase; kind='commandBase'; refund=Math.floor((Number(building.buildCost)||2000)/2);
         }
-        if(!building){showFloatingMsg('حدد مبنى أو معسكر القيادة التابع لك لبيعه');return;}
+        if(!building){showFloatingMsg('Select one of your buildings or command centers to sell');return;}
         // معسكر القيادة هو مجموعة THREE.Group نفسها، بينما بقية المباني تملك mesh منفصلاً.
         const mesh=building.mesh || (kind==='commandBase' ? building : null);
-        if(!mesh){showFloatingMsg('تعذر بيع المبنى المحدد');return;}
-        if(building._saleInProgress){showFloatingMsg('بدأ تفكيك المبنى بالفعل');return;}
+        if(!mesh){showFloatingMsg('Unable to sell the selected building');return;}
+        if(building._saleInProgress){showFloatingMsg('Building dismantling is already in progress');return;}
         building._saleInProgress=true;
 
         // Stop production and detach any older construction animation, but keep the building visible for its sell animation.
@@ -11508,8 +11521,8 @@ function createArmyFactory(x,z,ghost=false){
         const sellBtn=document.getElementById('sell-building-btn');if(sellBtn)sellBtn.style.display='none';
         clearSelectionVisuals(); updateConstructionBarForSelection(); updateDefenseButton();
         showFloatingMsg(kind==='commandBase'
-            ? `بدأ تفكيك معسكر القيادة؛ استرددت ${refund}$ وستستسلم قواتك بعد اكتمال التفكيك`
-            : `بدأ تفكيك المبنى؛ ستسترد ${refund}$ (نصف القيمة)`);
+            ? `Command center dismantling started; ${refund}$ refunded. Your forces will surrender when dismantling is complete`
+            : `Building dismantling started; you will receive ${refund}$ (50% refund)`);
 
         const startY=mesh.position.y;
         const groundY=getTerrainHeight(mesh.position.x,mesh.position.z);
@@ -11560,12 +11573,12 @@ function createArmyFactory(x,z,ghost=false){
                 // علّم معسكر القيادة كمدمّر حتى لا يُحسب ضمن المباني المتبقية.
                 if(playerBaseGroup && (kind==='commandBase' || building===playerBaseGroup)){playerBaseGroup.isDestroyed=true;playerBaseGroup.visible=false;}
                 performPlayerSurrenderSequence();
-                // انتظر انتهاء سلسلة تفجيرات الجيش بالكامل قبل عرض شاشة الاستسلام.
+                // انتظر انتهاء سلسلة تفجيرات FULL ARMY قبل عرض شاشة الاستسلام.
                 const surrenderUnitsCount=[...new Set([...(Array.isArray(playerTanks)?playerTanks:[]),...(Array.isArray(ambulances)?ambulances:[]),...(Array.isArray(reconVehicles)?reconVehicles:[])])].filter(u=>u&&!u.isDestroyed&&u.team!=='enemy'&&u.owner!=='enemy'&&u.mesh).length;
                 const explosionSequenceMs=Math.max(2600, Math.max(0,surrenderUnitsCount-1)*115+1700);
                 setTimeout(()=>startCinematicEnding(false),explosionSequenceMs);
             } else if(kind==='commandBase') {
-                showFloatingMsg('تم تفكيك معسكر القيادة واسترداد نصف قيمته؛ ما زالت لديك مبانٍ ويمكنك مواصلة القتال');
+                showFloatingMsg('Command center dismantled and half its value refunded; you still have buildings and can continue fighting');
             }
         };
         const animateSale=(now)=>{
@@ -11607,7 +11620,7 @@ function createArmyFactory(x,z,ghost=false){
         if(selectedFactory){
             const barracksSoldierCard=document.getElementById('barracks-infantry-card'); if(barracksSoldierCard) barracksSoldierCard.style.removeProperty('display');
             bar.classList.add('open');
-            const title=bar.querySelector('.build-title'); if(title) title.innerHTML='مصنع<br>الجيش';
+            const title=bar.querySelector('.build-title'); if(title) title.innerHTML='ARMY<br>FACTORY';
             const bc=document.getElementById('barracks-build-card'); if(bc) bc.style.display='none';
             const fi=document.getElementById('factory-infantry-card'); if(fi) fi.style.display='none';
         }
@@ -11930,7 +11943,6 @@ function createArmyFactory(x,z,ghost=false){
         const flagMat = new THREE.MeshStandardMaterial({ map: createFlagTexture(flagType), side: THREE.DoubleSide, transparent:true, roughness:.50, metalness:.04, emissive:0xffffff, emissiveIntensity:.085 });
         const flagMesh = new THREE.Mesh(flagGeo, flagMat);
         flagMesh.position.set(19.1, 15.3, 0);
-        flagMesh.userData.teamFlag=true; flagMesh.userData.team=role; flagMesh.userData.flagOwner=role;
         flagMesh.scale.set(0.62, 0.62, 1);
         flagMesh.rotation.z = 0.055;
         group.add(flagMesh);
@@ -11946,34 +11958,45 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function createFlagTexture(type) {
-        const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 160;
-        const ctx = canvas.getContext('2d');
+        const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 64;
         const texture = new THREE.CanvasTexture(canvas);
-        const paintFinish = () => {
-            const grad=ctx.createLinearGradient(0,0,0,160);
-            grad.addColorStop(0,'rgba(255,255,255,.15)');
-            grad.addColorStop(.52,'rgba(255,255,255,.01)');
-            grad.addColorStop(1,'rgba(0,0,0,.20)');
-            ctx.fillStyle=grad; ctx.fillRect(0,0,256,160);
-            ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=3; ctx.strokeRect(1.5,1.5,253,157);
-            texture.needsUpdate=true;
-        };
-        if (typeof type === 'string' && type.startsWith('flag:')) {
-            const code=type.slice(5);
-            const getData=window.__countryFlagData;
-            if(typeof getData==='function'){
-                const img=new Image();
-                img.onload=()=>{ctx.clearRect(0,0,256,160);ctx.drawImage(img,0,0,256,160);paintFinish();};
-                img.onerror=()=>{ctx.fillStyle='#777';ctx.fillRect(0,0,256,160);texture.needsUpdate=true;};
-                img.src=getData(code);
-            }
+        const ctx = canvas.getContext('2d');
+        if (typeof type === 'string' && type.indexOf('flag:') === 0 && typeof window.__countryFlagData === 'function') {
+            // رسم العلم الحقيقي داخل خامة Three.js بدلاً من استبداله بمربع بلون PLAYER.
+            const code = type.slice(5);
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0,0,128,64);
+                ctx.drawImage(img,0,0,128,64);
+                const shade=ctx.createLinearGradient(0,0,0,64);
+                shade.addColorStop(0,'rgba(255,255,255,.13)');
+                shade.addColorStop(.55,'rgba(255,255,255,0)');
+                shade.addColorStop(1,'rgba(0,0,0,.18)');
+                ctx.fillStyle=shade;ctx.fillRect(0,0,128,64);
+                ctx.strokeStyle='rgba(255,255,255,.65)';ctx.lineWidth=2;ctx.strokeRect(1,1,126,62);
+                texture.needsUpdate=true;
+            };
+            img.src=window.__countryFlagData(code);
         } else if (typeof type === 'string' && /^#[0-9a-fA-F]{6}$/.test(type)) {
-            ctx.fillStyle = type; ctx.fillRect(0, 0, 256, 160); paintFinish();
-        } else if(type === 'green' || type === 'red') {
-            const c=type==='green'?(battleConfig.playerColor||'#168cff'):(battleConfig.enemyColor||'#f43f5e');
-            ctx.fillStyle=c;ctx.fillRect(0,0,256,160);paintFinish();
+            ctx.fillStyle = type; ctx.fillRect(0, 0, 128, 64);
+            const grad=ctx.createLinearGradient(0,0,0,64);
+            grad.addColorStop(0,'rgba(255,255,255,.20)');
+            grad.addColorStop(.48,'rgba(255,255,255,.02)');
+            grad.addColorStop(1,'rgba(0,0,0,.22)');
+            ctx.fillStyle=grad; ctx.fillRect(0,0,128,64);
+            ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=2; ctx.strokeRect(1,1,126,62);
+        } else if(type === 'green') {
+            const playerColor = (typeof battleConfig !== 'undefined' && battleConfig.playerColor) ? battleConfig.playerColor : '#168cff';
+            ctx.fillStyle = playerColor; ctx.fillRect(0, 0, 128, 64);
+        } else if(type === 'red') {
+            const enemyColor = (typeof battleConfig !== 'undefined' && battleConfig.enemyColor) ? battleConfig.enemyColor : '#f43f5e';
+            ctx.fillStyle = enemyColor; ctx.fillRect(0, 0, 128, 64);
         } else if(type === 'none' || type === 'white') {
-            ctx.fillStyle='#f5f7f2';ctx.fillRect(0,0,256,160);paintFinish();
+            ctx.fillStyle = '#f5f7f2'; ctx.fillRect(0, 0, 128, 64);
+            const grad=ctx.createLinearGradient(0,0,0,64); grad.addColorStop(0,'rgba(255,255,255,.28)'); grad.addColorStop(1,'rgba(0,0,0,.10)');
+            ctx.fillStyle=grad; ctx.fillRect(0,0,128,64); ctx.strokeStyle='rgba(35,40,35,.28)'; ctx.lineWidth=1.5; ctx.strokeRect(1,1,126,62);
+        } else {
+            ctx.clearRect(0, 0, 128, 64);
         }
         return texture;
     }
@@ -12037,7 +12060,7 @@ function createArmyFactory(x,z,ghost=false){
     // مؤشر DEFEND تكتيكي مستقل: دائرة كبيرة مثل مؤشرات ألعاب الـRTS،
     // تتبع مكان المؤشر قبل تثبيت أمر الDEFEND.
     function createDefenseMarker(){
-        // نطاق الحماية: دائرة أرضية زيتونية رفيعة ونقطة مركزية، واضحة دون زحمة علامات.
+        // نطاق الGUARD: دائرة أرضية زيتونية رفيعة ونقطة مركزية، واضحة دون زحمة علامات.
         const g=new THREE.Group();
         g.name='defenseCommandMarker';
         const fillMat=new THREE.MeshBasicMaterial({color:0xf04438,transparent:true,opacity:.09,side:THREE.DoubleSide,depthWrite:false});
@@ -12197,7 +12220,7 @@ function createArmyFactory(x,z,ghost=false){
                     const p = placementHits[0].point.clone(); p.y=getTerrainHeight(p.x,p.z);
                     barracksPlacementPoint=p;barracksPlacementGhost.mesh.position.set(p.x,getBuildingGroundLevel(p.x,p.z,'barracks',barracksPlacementRotation)+.03,p.z);barracksPlacementGhost.mesh.rotation.y=barracksPlacementRotation;
                     const builder=selectedTank&&getUnitKind(selectedTank)==='builder'&&!selectedTank.isDestroyed?selectedTank:null;
-                    if(builder){ const chk=isBuildingPlacementValid(p,'barracks',barracksPlacementRotation,'player'); if(!chk.valid){showFloatingMsg('🚫 لا يمكن بناء الثكنة هنا: الأرض غير مستوية أو المكان مشغول'); showInvalidBuildGhost(barracksPlacementGhost,false); return;} startBarracksConstruction(builder,p,barracksPlacementRotation); } else {hideFactoryPlacement();showFloatingMsg('Select the construction dozer first');}
+                    if(builder){ const chk=isBuildingPlacementValid(p,'barracks',barracksPlacementRotation,'player'); if(!chk.valid){showFloatingMsg('🚫 Cannot build barracks here: terrain is uneven or the area is occupied'); showInvalidBuildGhost(barracksPlacementGhost,false); return;} startBarracksConstruction(builder,p,barracksPlacementRotation); } else {hideFactoryPlacement();showFloatingMsg('Select the construction dozer first');}
                 }
                 return;
             }
@@ -12213,7 +12236,7 @@ function createArmyFactory(x,z,ghost=false){
                     const builder = selectedTank && getUnitKind(selectedTank) === 'builder' && !selectedTank.isDestroyed ? selectedTank : null;
                     if (builder) {
                         const chk=isBuildingPlacementValid(p,'factory',factoryPlacementRotation,'player');
-                        if(!chk.valid){ showFloatingMsg('🚫 لا يمكن بناء المصنع هنا: الأرض غير مستوية أو المكان مشغول'); showInvalidBuildGhost(factoryPlacementGhost,false); return; }
+                        if(!chk.valid){ showFloatingMsg('🚫 Cannot build the factory here: terrain is uneven or the area is occupied'); showInvalidBuildGhost(factoryPlacementGhost,false); return; }
                         startFactoryConstruction(builder, p, factoryPlacementRotation);
                     } else {
                         hideFactoryPlacement();
@@ -12249,7 +12272,7 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
 
-            // الضغط على معسكر اللاعب يفتح شريط البناء السفلي.
+            // الضغط على معسكر PLAYER يفتح شريط البناء السفلي.
             if (playerBaseGroup) {
                 const baseHits = raycaster.intersectObject(playerBaseGroup, true);
                 if (baseHits.length) {
@@ -12273,7 +12296,7 @@ function createArmyFactory(x,z,ghost=false){
             if (factoryBuildArmed && selectedTank && getUnitKind(selectedTank) === 'builder' && terrainHits.length) {
                 const buildPoint = terrainHits[0].point.clone();
                 buildPoint.y = getTerrainHeight(buildPoint.x, buildPoint.z);
-                if(!isBuildingPlacementValid(buildPoint,'factory',factoryPlacementRotation,'player').valid){ showFloatingMsg('🚫 لا يمكن بناء المصنع هنا: الأرض غير مستوية أو المكان مشغول'); return; }
+                if(!isBuildingPlacementValid(buildPoint,'factory',factoryPlacementRotation,'player').valid){ showFloatingMsg('🚫 Cannot build the factory here: terrain is uneven or the area is occupied'); return; }
                 startFactoryConstruction(selectedTank, buildPoint, factoryPlacementRotation);
                 return;
             }
@@ -12599,7 +12622,7 @@ function createArmyFactory(x,z,ghost=false){
             ctx.fillStyle = 'rgba(5,9,12,.68)'; ctx.fillRect(pad, pad, mapW, mapH);
         }
 
-        // دائرة الكشف المؤقتة تظهر على الخريطة المصغرة أثناء تحريكها قبل التأكيد.
+        // دائرة الSCAN المؤقتة تظهر على الخريطة المصغرة أثناء تحريكها قبل التأكيد.
         const scanPreview = window.__remoteScoutScanPreview;
         if (scanPreview && scanPreview.armed && Number.isFinite(scanPreview.x) && Number.isFinite(scanPreview.z)) {
             const q = toMap(scanPreview.x, scanPreview.z);
@@ -13579,7 +13602,7 @@ function createArmyFactory(x,z,ghost=false){
                 }
             }
         });
-        // المعسكرات أيضاً تتلقى ضرر القصف والانفجارات القريبة.
+        // BASEات أيضاً تتلقى ضرر القصف والانفجارات القريبة.
         [playerBaseGroup, enemyBaseGroup].forEach(base=>{
             if(!base || base.isDestroyed) return;
             if ((base === playerBaseGroup && fromTeam === 'player') || (base === enemyBaseGroup && fromTeam === 'enemy')) return;
@@ -13668,8 +13691,8 @@ function createArmyFactory(x,z,ghost=false){
 
     function isUnitSelectedForHp(unit) {
         if (!unit || unit.isDestroyed) return false;
-        // عند تحديد أي وحدة من جيش اللاعب، أظهر شريط الدم لكل وحدات جيش اللاعب.
-        // وعند CANCEL تختفي أشرطة الدم بالكامل عن وحدات اللاعب.
+        // عند تحديد أي وحدة من جيش PLAYER، أظهر شريط الدم لكل وحدات جيش PLAYER.
+        // وعند CANCEL تختفي أشرطة الدم بالكامل عن وحدات PLAYER.
         if (selectedTank === unit) return true;
         if (selectedFactory && unit === selectedFactory) return true;
         if (selectedBarracks && unit === selectedBarracks) return true;
@@ -14107,9 +14130,9 @@ function createArmyFactory(x,z,ghost=false){
                 [...playerTanks,...enemyTanks,...reconVehicles,...ambulances].forEach(u=>{ if(u&&!u.isDestroyed&&u!==scudTarget&&u.mesh.position.distanceTo(hitPos)<32) nearbyTargets++; });
                 // عزل مؤثرات الاصطدام: إذا تعذر رسم مؤثر واحد فلا يتكرر الاصطدام كل إطار ولا تتوقف اللعبة.
                 try { createShockwaveAndExplosion(hitPos, m.fromTeam, true); }
-                catch (impactError) { console.warn('تعذر إكمال مؤثر انفجار السكود:', impactError); }
+                catch (impactError) { console.warn('Failed to complete the SCUD explosion effect:', impactError); }
                 try { createScudMixedHitEffect(hitPos, nearbyTargets+1, scudTarget, m.tankOwner); }
-                catch (smokeError) { console.warn('تعذر إكمال دخان اصطدام السكود:', smokeError); }
+                catch (smokeError) { console.warn('Failed to complete the SCUD impact smoke effect:', smokeError); }
                 // لا نهز الكاميرا؛ الارتداد يكون على الدبابة فقط.
                 try {
                     m.mesh.traverse(child => {
@@ -14308,7 +14331,7 @@ function createArmyFactory(x,z,ghost=false){
                 else tankData.combatHoldTarget=null;
             }
 
-            // تركس البناء وحدة غير قتالية: تتحرك فقط بأوامر اللاعب ولا تطلق النار.
+            // تركس البناء وحدة غير قتالية: تتحرك فقط بأوامر PLAYER ولا تطلق النار.
             if (tankData.isBuilder) {
                 if (tankData.target) {
                     const dist = tankData.mesh.position.distanceTo(tankData.target);
@@ -14734,16 +14757,16 @@ function createArmyFactory(x,z,ghost=false){
 
         if (playerBuildCooldown > 0) {
             let secs = Math.ceil(playerBuildCooldown / 60);
-            buyBtn.innerText = `انتظار (${secs}ث)`;
-            rocketBtn.innerText = `انتظار (${secs}ث)`;
-            if (purchaseTankBtn) purchaseTankBtn.innerText = `انتظار (${secs}ث)`;
-            if (purchaseRocketBtn) purchaseRocketBtn.innerText = `انتظار (${secs}ث)`;
+            buyBtn.innerText = `WAITING (${secs}s)`;
+            rocketBtn.innerText = `WAITING (${secs}s)`;
+            if (purchaseTankBtn) purchaseTankBtn.innerText = `WAITING (${secs}s)`;
+            if (purchaseRocketBtn) purchaseRocketBtn.innerText = `WAITING (${secs}s)`;
             buyBtn.disabled = true;
             rocketBtn.disabled = true;
             if (purchaseTankBtn) purchaseTankBtn.disabled = true;
             if (purchaseRocketBtn) purchaseRocketBtn.disabled = true;
         } else {
-            buyBtn.innerText = `عادية (150$)`;
+            buyBtn.innerText = `NORMAL ($150)`;
             rocketBtn.innerText = `SCUD VEHICLE (300$)`;
             if (purchaseTankBtn) purchaseTankBtn.innerText = `150$ BUY`;
             if (purchaseRocketBtn) purchaseRocketBtn.innerText = `300$ BUY`;
@@ -14796,7 +14819,7 @@ function createArmyFactory(x,z,ghost=false){
         const totalOil=oilRigs.filter(r=>!r.isDestroyed).length||4;
         const captureText=document.getElementById('capture-status-text');
         const captureFill=document.getElementById('capture-bar-fill');
-        if(captureText) captureText.innerText=`النفط: ${ownedOil} / ${totalOil} — المشاة فقط | العدو: ${enemyOwnedOil}`;
+        if(captureText) captureText.innerText=`OIL: ${ownedOil} / ${totalOil} — INFANTRY ONLY | ENEMY: ${enemyOwnedOil}`;
         if(captureFill){
             captureFill.style.width=(ownedOil/Math.max(1,totalOil)*100)+'%';
             captureFill.style.backgroundColor=ownedOil>0?'#22c55e':'#64748b';
@@ -14807,7 +14830,7 @@ function createArmyFactory(x,z,ghost=false){
 
     let playerSurrenderedBySellingAllBuildings = false;
 
-    // استسلام كامل: تنفجر جميع وحدات اللاعب ويسقط علمه ويختفي نهائياً.
+    // استسلام كامل: تنفجر جميع وحدات PLAYER ويسقط علمه ويختفي نهائياً.
     function performPlayerSurrenderSequence(){
         if(window.__playerSurrenderSequenceDone) return;
         window.__playerSurrenderSequenceDone=true;
@@ -14818,7 +14841,7 @@ function createArmyFactory(x,z,ghost=false){
             ...(Array.isArray(reconVehicles)?reconVehicles:[])
         ];
         const uniqueUnits=[...new Set(playerUnits)].filter(u=>u&&!u.isDestroyed&&u.team!=='enemy'&&u.owner!=='enemy'&&u.mesh);
-        // إخفاء جميع أعلام اللاعب، بما فيها العلم الرئيسي وأعلام الوحدات والمباني.
+        // إخفاء جميع أعلام PLAYER، بما فيها العلم الرئيسي وأعلام الوحدات والمباني.
         try{
             if(playerFlagDataRef&&playerFlagDataRef.mesh){playerFlagDataRef.mesh.visible=false;if(playerFlagDataRef.mesh.parent)playerFlagDataRef.mesh.parent.remove(playerFlagDataRef.mesh);}
             if(playerPoleFlagMesh){playerPoleFlagMesh.visible=false;if(playerPoleFlagMesh.parent)playerPoleFlagMesh.parent.remove(playerPoleFlagMesh);}
@@ -14829,7 +14852,7 @@ function createArmyFactory(x,z,ghost=false){
                 return true;
             });
             if(playerBaseGroup&&playerBaseGroup.traverse){playerBaseGroup.traverse(o=>{if(o.userData&&(o.userData.commandFlag||o.userData.teamFlag)){o.visible=false;}});}
-        }catch(e){console.warn('تعذر إخفاء بعض أعلام اللاعب',e);}
+        }catch(e){console.warn('Could not hide some player flags',e);}
         // تفجير القوات تباعاً حتى تظهر انفجارات واضحة بدلاً من اختفاء مفاجئ.
         uniqueUnits.forEach((unit,index)=>{
             setTimeout(()=>{
@@ -14839,7 +14862,7 @@ function createArmyFactory(x,z,ghost=false){
                 try{playSound('explosion',.55);}catch(e){}
             },index*115);
         });
-        showFloatingMsg('🏳️ لقد استسلمت — تم تفجير جيشك ورفع علم الاستسلام');
+        showFloatingMsg('🏳️ YOU SURRENDERED — YOUR ARMY WAS DESTROYED AND A SURRENDER FLAG WAS RAISED');
     }
 
     function startCinematicEnding(isPlayerWinner) {
@@ -14884,7 +14907,7 @@ function createArmyFactory(x,z,ghost=false){
         const restartButton = document.getElementById('restart-after-result');
         screen.style.display = 'flex';
         if(restartButton){
-            restartButton.textContent='العب مرة أخرى';
+            restartButton.textContent='PLAY AGAIN';
             restartButton.style.setProperty('display','block','important');
             restartButton.style.setProperty('visibility','visible','important');
             restartButton.style.setProperty('opacity','1','important');
@@ -14896,22 +14919,22 @@ function createArmyFactory(x,z,ghost=false){
         const subtitle=document.getElementById('result-subtitle');
         const flagCanvas=document.getElementById('victory-flag-canvas');
         if(playerSurrenderedBySellingAllBuildings){
-            if(restartButton) restartButton.textContent='العب مرة أخرى';
-            kicker.innerText='انتهت المعركة';
-            title.innerText='لقد استسلمت';
+            if(restartButton) restartButton.textContent='PLAY AGAIN';
+            kicker.innerText='BATTLE OVER';
+            title.innerText='YOU SURRENDERED';
             title.style.color='#e0b85a';
-            subtitle.innerText='لقد استسلمت بعد بيع جميع مبانيك؛ تم تفجير جيشك واختفى علمك وانتصر العدو';
+            subtitle.innerText='You surrendered after selling all buildings; your army was destroyed, your flag disappeared, and the enemy won';
             if(flagCanvas)flagCanvas.style.display='none';
         } else if (isPlayerWinner) {
             if(flagCanvas)flagCanvas.style.display='';
-            kicker.innerText="اكتملت المهمة";
-            title.innerText="النصر"; title.style.color="#d7b65a";
-            subtitle.innerText="تم تدمير معسكر قيادة العدو";
+            kicker.innerText="MISSION COMPLETE";
+            title.innerText="VICTORY"; title.style.color="#d7b65a";
+            subtitle.innerText="Enemy command center destroyed";
         } else {
             if(flagCanvas)flagCanvas.style.display='';
-            kicker.innerText="انتهت المعركة";
-            title.innerText="الهزيمة"; title.style.color="#d66a5d";
-            subtitle.innerText="تم تدمير معسكر قيادتك أو استسلام قواتك";
+            kicker.innerText="BATTLE OVER";
+            title.innerText="DEFEAT"; title.style.color="#d66a5d";
+            subtitle.innerText="Your command center was destroyed or your forces surrendered";
         }
 
         let activePlayerTanks = playerTanks.filter(t => !t.isDestroyed).length;
@@ -14919,7 +14942,7 @@ function createArmyFactory(x,z,ghost=false){
             <b>تقرير المعركة</b><br>
             وحدات العدو المدمرة: ${enemyTanksLost}<br>
             خسائر قواتك: ${totalTanksLost}<br>
-            الأموال المصروفة: ${totalMoneySpent}$<br>
+            الأموال الEGYPTوفة: ${totalMoneySpent}$<br>
             الوحدات المتبقية: ${activePlayerTanks}
         `;
         if(!playerSurrenderedBySellingAllBuildings) renderVictoryFlagCanvas(winningFlag);
@@ -14984,7 +15007,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
 
-    // ===== ضباب الحرب: أرض معتمة بشفافية، والمسار ينكشف ويبقى مكتشفاً =====
+    // ===== ضباب الحرب: أرض معتمة بشفافية، والمسار ينSCAN ويبقى مكتشفاً =====
     let warFogMesh = null, warFogCanvas = null, warFogCtx = null, warFogTexture = null;
     let warFogExploredCanvas = null, warFogExploredCtx = null;
     let warFogLastUpdate = 0;
@@ -15070,10 +15093,10 @@ function createArmyFactory(x,z,ghost=false){
         const revealers = [];
         if (window.__temporaryReconScans) { window.__temporaryReconScans = window.__temporaryReconScans.filter(v => v.until > now); window.__temporaryReconScans.forEach(v => revealers.push({x:v.x,z:v.z,r:v.r})); }
 
-        // رؤية قصيرة للقوات العادية؛ مركبة الاستطلاع وحدها تكشف مساحة أكبر.
+        // رؤية قصيرة للقوات العادية؛ مركبة الاستطلاع وحدها تSCAN مساحة أكبر.
         const addUnits = (arr, kind) => (arr || []).forEach(u => {
             if (!u || u.isDestroyed || u.destroyed || !u.mesh || u.team === 'enemy' || u.owner === 'enemy') return;
-            // المباني والمنشآت لا تكشف أي جزء من الخريطة؛ الرؤية للمركبات والجنود المتحركين فقط.
+            // المباني والمنشآت لا تSCAN أي جزء من الخريطة؛ الرؤية للمركبات والجنود المتحركين فقط.
             const unitType = String(u.type || u.kind || u.mesh.userData?.type || '').toLowerCase();
             if (u.isBuilding || u.isStructure || u.isFactory || u.isBarracks || u.isBase ||
                 u.mesh.userData?.isBuilding || u.mesh.userData?.isStructure ||
@@ -15095,8 +15118,8 @@ function createArmyFactory(x,z,ghost=false){
         addUnits(reconVehicles, 'recon');
         addUnits(typeof soldiers !== 'undefined' ? soldiers : [], 'soldiers');
 
-        // المباني الصديقة تكشف محيطها ما دامت قائمة وسليمة؛ إذا دُمّرت أو أزيلت
-        // تتوقف عن الكشف، ثم يعود الضباب تدريجيًا إلى المنطقة التي كانت تكشفها.
+        // المباني الصديقة تSCAN محيطها ما دامت قائمة وسليمة؛ إذا دُمّرت أو أزيلت
+        // تتوقف عن الSCAN، ثم يعود الضباب تدريجيًا إلى المنطقة التي كانت تSCANها.
         const addStructureVision = (structure, radius) => {
             if (!structure || structure.isDestroyed || structure.destroyed || structure.done === false) return;
             if (structure.owner === 'enemy' || structure.team === 'enemy') return;
@@ -15104,11 +15127,11 @@ function createArmyFactory(x,z,ghost=false){
             if (!mesh || mesh.visible === false) return;
             const p = mesh.position || structure.position;
             if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)) return;
-            // لا تكشف المباني أثناء وضع شبح البناء أو قبل اكتمالها.
+            // لا تSCAN المباني أثناء وضع شبح البناء أو قبل اكتمالها.
             if (structure.isGhost || structure.isPlacementGhost || structure.underConstruction) return;
             revealers.push({ x: p.x, z: p.z, r: radius });
         };
-        // المعسكر الرئيسي، مصنع الآليات، ومعسكر الجنود جميعها تملك مجال كشف.
+        // BASE الرئيسي، مصنع الآليات، ومعسكر الجنود جميعها تملك مجال SCAN.
         addStructureVision(playerBaseGroup, 92);
         (constructedFactories || []).forEach(f => addStructureVision(f, 78));
         (constructedBarracks || []).forEach(b => addStructureVision(b, 72));
@@ -15118,11 +15141,13 @@ function createArmyFactory(x,z,ghost=false){
         });
 
         // تلاشي المناطق المكتشفة خلال بضع ثوانٍ، كي يعود الضباب بعد مغادرة القوات
-        // أو تدمير وحدة/مبنى كان يكشفها.
+        // أو تدمير وحدة/مبنى كان يSCANها.
         explored.globalCompositeOperation = 'destination-out';
         explored.fillStyle = 'rgba(0,0,0,' + Math.min(0.16, 0.035 * (elapsed / 140)) + ')';
         explored.fillRect(0, 0, w, h);
         explored.globalCompositeOperation = 'source-over';
+        // الSCAN يتراكم تدريجياً على عدة إطارات بدلاً من إزالة الضباب دفعة واحدة.
+        explored.globalAlpha = Math.min(0.24, Math.max(0.07, elapsed / 850));
         revealers.forEach(v => {
             const x = ((v.x + WAR_FOG_WORLD / 2) / WAR_FOG_WORLD) * w;
             const y = ((v.z + WAR_FOG_WORLD / 2) / WAR_FOG_WORLD) * h;
@@ -15134,6 +15159,7 @@ function createArmyFactory(x,z,ghost=false){
             explored.fillStyle = g;
             explored.beginPath(); explored.arc(x, y, r, 0, Math.PI * 2); explored.fill();
         });
+        explored.globalAlpha = 1;
 
         const ctx = warFogCtx;
         ctx.globalCompositeOperation = 'source-over';
@@ -15420,7 +15446,7 @@ function createArmyFactory(x,z,ghost=false){
         if(playerMoney<400){showFloatingMsg('Insufficient funds to build the factory');return;}
         hideFactoryPlacement();playerMoney-=400;totalMoneySpent+=400;updateEconomyUI();
         point.y=getTerrainHeight(point.x,point.z);
-        if(!isBuildingPlacementValid(point,'factory',rotation,'player').valid){showFloatingMsg('🚫 موقع المصنع غير صالح للبناء');return;}
+        if(!isBuildingPlacementValid(point,'factory',rotation,'player').valid){showFloatingMsg('🚫 Invalid factory placement');return;}
         const base=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);
         const away=new THREE.Vector3(point.x-base.x,0,point.z-base.z);
         if(away.lengthSq()>0.01)rotation=Math.atan2(away.x,away.z);
@@ -15676,9 +15702,12 @@ function createArmyFactory(x,z,ghost=false){
   window.beginConfiguredGame=function(){
     playerMoney=battleConfig.money;totalMoneySpent=0;
     battleAudioActive=true;
-    playerFlagType=battleConfig.playerFlagCode?('flag:'+battleConfig.playerFlagCode):battleConfig.playerColor;enemyFlagType=battleConfig.enemyFlagCode?('flag:'+battleConfig.enemyFlagCode):battleConfig.enemyColor;
+    playerFlagType=battleConfig.playerFlagCode ? ('flag:'+battleConfig.playerFlagCode) : battleConfig.playerColor;
+    enemyFlagType=battleConfig.enemyFlagCode ? ('flag:'+battleConfig.enemyFlagCode) : battleConfig.enemyColor;
     if(typeof applyBattleBotConfig==='function')applyBattleBotConfig();
     setTeamUI('player',battleConfig.playerColor);
+    playerFlagType=window.__teamFlagType?window.__teamFlagType('player'):playerFlagType;
+    enemyFlagType=window.__teamFlagType?window.__teamFlagType('enemy'):enemyFlagType;
     if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();
     if(typeof updateEconomyUI==='function')updateEconomyUI();
     closeBattleSetup();
@@ -15823,14 +15852,14 @@ window.updateCameraSensitivity=function(v){
   function applyTeamVisual(team,color){
     if(!HEX.test(color))return;
     if(team==='player'){
-      playerFlagType=color;
+      playerFlagType=(window.__teamFlagType?window.__teamFlagType('player'):color);
       setBarColor(color);
       if(typeof playerBaseGroup!=='undefined'&&playerBaseGroup)recolorMaterials(playerBaseGroup,color,true);
       if(typeof playerTanks!=='undefined')playerTanks.forEach(u=>recolorUnit(u,color));
       if(typeof ambulances!=='undefined')ambulances.filter(u=>u.team==='player').forEach(u=>recolorUnit(u,color));
       if(typeof constructedFactories!=='undefined')constructedFactories.filter(f=>f.owner!=='enemy').forEach(f=>recolorMaterials(f.mesh,color,true));
     }else{
-      enemyFlagType=color;
+      enemyFlagType=(window.__teamFlagType?window.__teamFlagType('enemy'):color);
       let eg=null;
       if(typeof scene!=='undefined'&&scene)eg=scene.getObjectByName('__ENEMY_BASE_GROUP__');
       if(eg)recolorMaterials(eg,color,true);
@@ -15878,11 +15907,15 @@ window.updateCameraSensitivity=function(v){
   window.beginConfiguredGame=function(){
     playerMoney=battleConfig.money;totalMoneySpent=0;
     battleAudioActive=true;
-    playerFlagType=battleConfig.playerFlagCode?('flag:'+battleConfig.playerFlagCode):battleConfig.playerColor;enemyFlagType=battleConfig.enemyFlagCode?('flag:'+battleConfig.enemyFlagCode):battleConfig.enemyColor;
+    playerFlagType=battleConfig.playerFlagCode ? ('flag:'+battleConfig.playerFlagCode) : battleConfig.playerColor;
+    enemyFlagType=battleConfig.enemyFlagCode ? ('flag:'+battleConfig.enemyFlagCode) : battleConfig.enemyColor;
     if(typeof applyBattleBotConfig==='function')applyBattleBotConfig();
     /* Apply both factions after the bases already exist. */
     applyTeamVisual('player',battleConfig.playerColor);
     applyTeamVisual('enemy',battleConfig.enemyColor);
+    playerFlagType=window.__teamFlagType?window.__teamFlagType('player'):playerFlagType;
+    enemyFlagType=window.__teamFlagType?window.__teamFlagType('enemy'):enemyFlagType;
+    if(typeof refreshAllTeamFlags==='function')refreshAllTeamFlags();
     if(typeof updateEconomyUI==='function')updateEconomyUI();
     closeBattleSetup();
     try{if(typeof stopPreGameMusic==='function')stopPreGameMusic();}catch(e){}
@@ -15902,56 +15935,57 @@ window.updateCameraSensitivity=function(v){
 
 
 <div id="room-setup-overlay" aria-hidden="true">
- <div id="room-setup-bg" aria-hidden="true"><img id="room-setup-bg-image" alt="خلفية الغرفة"></div>
+ <div id="room-setup-bg" aria-hidden="true"><img id="room-setup-bg-image" alt="ROOM BACKGROUND"></div>
  <div class="room-panel">
-  <div class="room-title">إعداد الغرفة العسكرية</div>
+  <div class="room-title">BATTLE ROOM SETUP</div>
   <div class="room-row">
-   <div class="room-field"><label for="room-bot-enabled">خيار البوت</label><select id="room-bot-enabled"><option value="yes">اختيار بوت</option><option value="no">بدون بوت</option></select></div>
-   <div class="room-field" id="bot-number-field"><label for="room-bot-number">رقم البوت</label><select id="room-bot-number"><option value="">اختر الرقم</option><option value="1">بوت 1</option><option value="2">بوت 2</option></select></div>
+   <div class="room-field"><label for="room-bot-enabled">BOT OPTION</label><select id="room-bot-enabled"><option value="yes">SELECT BOT</option><option value="no">NO BOT</option></select></div>
+   <div class="room-field" id="bot-number-field"><label for="room-bot-number">BOT NUMBER</label><select id="room-bot-number"><option value="">SELECT NUMBER</option><option value="1">BOT 1</option><option value="2">BOT 2</option></select></div>
   </div>
-  <div class="room-field"><span class="field-label">اختيار الأعلام</span><button type="button" class="room-flag-trigger" id="room-flag-trigger"><span class="flag-preview" id="player-flag-preview">🏳️</span><span class="flag-preview" id="bot-flag-preview">🏳️</span><span id="room-flag-trigger-label">اختيار علم اللاعب والبوت</span><span class="flag-trigger-arrow">⌄</span></button><div class="room-status" id="room-flag-status">اختر الأعلام من القائمة المنبثقة</div></div>
+  <div class="room-field"><span class="field-label">FLAG SELECTION</span><button type="button" class="room-flag-trigger" id="room-flag-trigger"><span class="flag-preview" id="player-flag-preview">🏳️</span><span class="flag-preview" id="bot-flag-preview">🏳️</span><span id="room-flag-trigger-label">SELECT PLAYER AND BOT FLAGS</span><span class="flag-trigger-arrow">⌄</span></button><div class="room-status" id="room-flag-status">Choose flags from the pop-up list</div></div>
   <div class="room-row">
-   <div class="room-field"><label for="room-player-number">رقم اللاعب</label><select id="room-player-number"><option value="">اختر الرقم</option><option value="1">لاعب 1</option><option value="2">لاعب 2</option></select></div>
-   <div class="room-field"><label for="room-money">المال الابتدائي</label><select id="room-money"><option value="">اختر المال</option><option value="100">100</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
+   <div class="room-field"><label for="room-player-number">PLAYER NUMBER</label><select id="room-player-number"><option value="">SELECT NUMBER</option><option value="1">PLAYER 1</option><option value="2">PLAYER 2</option></select></div>
+   <div class="room-field"><label for="room-money">STARTING MONEY</label><select id="room-money"><option value="">SELECT STARTING MONEY</option><option value="100">100</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
   </div>
 
-  <div class="room-status" id="room-main-status">أكمل الخيارات ثم اضغط جاهز</div>
+  <div class="room-status" id="room-main-status">Complete the settings, then press READY</div>
   <div class="room-actions">
-   <button class="room-button room-ready-action" id="room-ready-btn">جاهز</button>
-   <button class="room-button room-start-action" id="room-start-btn" disabled>بدء اللعب</button>
-   <button class="room-button room-cancel-action" id="room-cancel-btn">رجوع للقائمة</button>
+   <button class="room-button room-ready-action" id="room-ready-btn">READY</button>
+   <button class="room-button room-start-action" id="room-start-btn" disabled>START GAME</button>
+   <button class="room-button room-cancel-action" id="room-cancel-btn">BACK TO MENU</button>
   </div>
  </div>
 </div>
-<div id="country-flag-picker" aria-hidden="true"><div class="flag-picker-panel" role="dialog" aria-modal="true"><div class="flag-picker-head"><strong id="flag-picker-title">اختيار العلم</strong><button type="button" id="flag-picker-close">✕</button></div><div class="flag-picker-target"><button type="button" id="flag-target-player" class="active">علم اللاعب</button><button type="button" id="flag-target-bot">علم البوت</button></div><div class="flag-picker-grid" id="flag-picker-grid"></div></div></div>
+<div id="country-flag-picker" aria-hidden="true"><div class="flag-picker-panel" role="dialog" aria-modal="true"><div class="flag-picker-head"><strong id="flag-picker-title">SELECT FLAG</strong><button type="button" id="flag-picker-close">✕</button></div><div class="flag-picker-target"><button type="button" id="flag-target-player" class="active">PLAYER FLAG</button><button type="button" id="flag-target-bot">BOT FLAG</button></div><div class="flag-picker-grid" id="flag-picker-grid"></div></div></div>
 <div id="room-loading-overlay" aria-hidden="true">
- <div class="room-slideshow" id="room-slideshow"><div id="room-slide-placeholder" style="font-weight:900;color:#e5e8d8">جاري تجهيز ساحة المعركة</div>
-  <img id="room-slide-1" alt="صورة التحميل الأولى"><img id="room-slide-2" alt="صورة التحميل الثانية"><img id="room-slide-3" alt="صورة التحميل الثالثة"></div>
- <div class="room-load-label" id="room-load-label">جاري دخول القوات... 0%</div><div class="room-loading-track"><div class="room-loading-fill" id="room-loading-fill"></div></div>
- <div style="color:#d8deca;font-size:11px">يرجى الانتظار حتى اكتمال الدخول</div>
+ <div class="room-slideshow" id="room-slideshow"><div id="room-slide-placeholder" style="font-weight:900;color:#e5e8d8">PREPARING THE BATTLEFIELD</div>
+  <img id="room-slide-1" alt="LOADING IMAGE 1"><img id="room-slide-2" alt="LOADING IMAGE 2"><img id="room-slide-3" alt="LOADING IMAGE 3"></div>
+ <div class="room-load-label" id="room-load-label">DEPLOYING FORCES... 0%</div><div class="room-loading-track"><div class="room-loading-fill" id="room-loading-fill"></div></div>
+ <div style="color:#d8deca;font-size:11px">Please wait until deployment is complete</div>
 </div>
 <script id="classic-green-room-runtime">
 (function(){
  const $=id=>document.getElementById(id);
- const colors=[["سوريا", "flag:syria", "#168cff"], ["تركيا", "flag:turkey", "#e53935"], ["فلسطين", "flag:palestine", "#111111"], ["الأردن", "flag:jordan", "#168cff"], ["العراق", "flag:iraq", "#e53935"], ["السعودية", "flag:saudi", "#168cff"], ["مصر", "flag:egypt", "#e53935"], ["لبنان", "flag:lebanon", "#e53935"], ["الإمارات", "flag:uae", "#168cff"], ["الكويت", "flag:kuwait", "#168cff"], ["قطر", "flag:qatar", "#a855f7"], ["ألمانيا", "flag:germany", "#111111"], ["فرنسا", "flag:france", "#168cff"], ["روسيا", "flag:russia", "#f2f2e8"], ["أمريكا", "flag:usa", "#3c3b6e"], ["بريطانيا", "flag:uk", "#012169"]];
+ const colors=[["SYRIA", "flag:syria", "#168cff"], ["TURKEY", "flag:turkey", "#e53935"], ["PALESTINE", "flag:palestine", "#111111"], ["JORDAN", "flag:jordan", "#168cff"], ["IRAQ", "flag:iraq", "#e53935"], ["SAUDI ARABIA", "flag:saudi", "#168cff"], ["EGYPT", "flag:egypt", "#e53935"], ["LEBANON", "flag:lebanon", "#e53935"], ["UAE", "flag:uae", "#168cff"], ["KUWAIT", "flag:kuwait", "#168cff"], ["QATAR", "flag:qatar", "#a855f7"], ["GERMANY", "flag:germany", "#111111"], ["FRANCE", "flag:france", "#168cff"], ["RUSSIA", "flag:russia", "#f2f2e8"], ["USA", "flag:usa", "#3c3b6e"], ["UNITED KINGDOM", "flag:uk", "#012169"]];
  const chosen={botColor:'',playerColor:'',botColorFlag:'',playerColorFlag:'',ready:false};
- const flagArtwork={"syria": "<rect width=\"90\" height=\"20\" fill=\"#007a3d\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#000\"/><path d=\"M25 30l5-6 5 6-5 6zM55 30l5-6 5 6-5 6z\" fill=\"#ce1126\"/>", "turkey": "<rect width=\"90\" height=\"60\" fill=\"#e30a17\"/><circle cx=\"36\" cy=\"30\" r=\"17\" fill=\"#fff\"/><circle cx=\"42\" cy=\"30\" r=\"13\" fill=\"#e30a17\"/><path d=\"M61 18l4 10 11 1-9 7 3 11-9-7-9 7 3-11-9-7 11-1z\" fill=\"#fff\"/>", "palestine": "<rect width=\"90\" height=\"20\" fill=\"#000\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#007a3d\"/><path d=\"M0 0L32 30 0 60z\" fill=\"#ce1126\"/>", "jordan": "<rect width=\"90\" height=\"20\" fill=\"#000\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#007a3d\"/><path d=\"M0 0L38 30 0 60z\" fill=\"#ce1126\"/><path d=\"M12 22l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z\" fill=\"#fff\"/>", "iraq": "<rect width=\"90\" height=\"20\" fill=\"#ce1126\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#000\"/><text x=\"45\" y=\"34\" font-size=\"10\" text-anchor=\"middle\" fill=\"#007a3d\">الله أكبر</text>", "saudi": "<rect width=\"90\" height=\"60\" fill=\"#006c35\"/><text x=\"45\" y=\"27\" font-size=\"8\" text-anchor=\"middle\" fill=\"#fff\">لا إله إلا الله</text><path d=\"M20 40h50\" stroke=\"#fff\" stroke-width=\"3\"/>", "egypt": "<rect width=\"90\" height=\"20\" fill=\"#ce1126\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#000\"/><circle cx=\"45\" cy=\"30\" r=\"5\" fill=\"#c49a3a\"/>", "lebanon": "<rect width=\"90\" height=\"60\" fill=\"#fff\"/><rect width=\"90\" height=\"15\" fill=\"#ed1c24\"/><rect y=\"45\" width=\"90\" height=\"15\" fill=\"#ed1c24\"/><path d=\"M45 18l-9 24h18z\" fill=\"#007a3d\"/>", "uae": "<rect width=\"22\" height=\"60\" fill=\"#f00\"/><rect x=\"22\" width=\"68\" height=\"20\" fill=\"#00732f\"/><rect x=\"22\" y=\"20\" width=\"68\" height=\"20\" fill=\"#fff\"/><rect x=\"22\" y=\"40\" width=\"68\" height=\"20\" fill=\"#000\"/>", "kuwait": "<rect width=\"90\" height=\"20\" fill=\"#007a3d\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#ce1126\"/><path d=\"M0 0h23v60H0l10-30z\" fill=\"#000\"/>", "qatar": "<rect width=\"90\" height=\"60\" fill=\"#8a1538\"/><path d=\"M0 0h27l8 5-8 5 8 5-8 5 8 5-8 5 8 5-8 5 8 5-8 5 8 5H0z\" fill=\"#fff\"/>", "germany": "<rect width=\"90\" height=\"20\" fill=\"#000\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#dd0000\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#ffce00\"/>", "france": "<rect width=\"30\" height=\"60\" fill=\"#0055a4\"/><rect x=\"30\" width=\"30\" height=\"60\" fill=\"#fff\"/><rect x=\"60\" width=\"30\" height=\"60\" fill=\"#ef4135\"/>", "russia": "<rect width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#0039a6\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#d52b1e\"/>", "usa": "<rect width=\"90\" height=\"60\" fill=\"#fff\"/><g fill=\"#b22234\"><rect y=\"0.00\" width=\"90\" height=\"4.7\"/><rect y=\"9.23\" width=\"90\" height=\"4.7\"/><rect y=\"18.46\" width=\"90\" height=\"4.7\"/><rect y=\"27.69\" width=\"90\" height=\"4.7\"/><rect y=\"36.92\" width=\"90\" height=\"4.7\"/><rect y=\"46.15\" width=\"90\" height=\"4.7\"/><rect y=\"55.38\" width=\"90\" height=\"4.7\"/></g><rect width=\"39\" height=\"32\" fill=\"#3c3b6e\"/><g fill=\"#fff\"><circle cx=\"8\" cy=\"8\" r=\"2\"/><circle cx=\"20\" cy=\"8\" r=\"2\"/><circle cx=\"32\" cy=\"8\" r=\"2\"/><circle cx=\"14\" cy=\"20\" r=\"2\"/><circle cx=\"26\" cy=\"20\" r=\"2\"/></g>", "uk": "<rect width=\"90\" height=\"60\" fill=\"#012169\"/><path d=\"M0 0l90 60M90 0L0 60\" stroke=\"#fff\" stroke-width=\"13\"/><path d=\"M0 0l90 60M90 0L0 60\" stroke=\"#c8102e\" stroke-width=\"6\"/><path d=\"M45 0v60M0 30h90\" stroke=\"#fff\" stroke-width=\"19\"/><path d=\"M45 0v60M0 30h90\" stroke=\"#c8102e\" stroke-width=\"10\"/>"};
+ const flagArtwork={"syria": "<rect width=\"90\" height=\"20\" fill=\"#007a3d\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#000\"/><path d=\"M25 30l5-6 5 6-5 6zM55 30l5-6 5 6-5 6z\" fill=\"#ce1126\"/>", "turkey": "<rect width=\"90\" height=\"60\" fill=\"#e30a17\"/><circle cx=\"36\" cy=\"30\" r=\"17\" fill=\"#fff\"/><circle cx=\"42\" cy=\"30\" r=\"13\" fill=\"#e30a17\"/><path d=\"M61 18l4 10 11 1-9 7 3 11-9-7-9 7 3-11-9-7 11-1z\" fill=\"#fff\"/>", "palestine": "<rect width=\"90\" height=\"20\" fill=\"#000\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#007a3d\"/><path d=\"M0 0L32 30 0 60z\" fill=\"#ce1126\"/>", "jordan": "<rect width=\"90\" height=\"20\" fill=\"#000\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#007a3d\"/><path d=\"M0 0L38 30 0 60z\" fill=\"#ce1126\"/><path d=\"M12 22l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z\" fill=\"#fff\"/>", "iraq": "<rect width=\"90\" height=\"20\" fill=\"#ce1126\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#000\"/><text x=\"45\" y=\"34\" font-size=\"10\" text-anchor=\"middle\" fill=\"#007a3d\"></text>", "saudi": "<rect width=\"90\" height=\"60\" fill=\"#006c35\"/><text x=\"45\" y=\"27\" font-size=\"8\" text-anchor=\"middle\" fill=\"#fff\"></text><path d=\"M20 40h50\" stroke=\"#fff\" stroke-width=\"3\"/>", "egypt": "<rect width=\"90\" height=\"20\" fill=\"#ce1126\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#000\"/><circle cx=\"45\" cy=\"30\" r=\"5\" fill=\"#c49a3a\"/>", "lebanon": "<rect width=\"90\" height=\"60\" fill=\"#fff\"/><rect width=\"90\" height=\"15\" fill=\"#ed1c24\"/><rect y=\"45\" width=\"90\" height=\"15\" fill=\"#ed1c24\"/><path d=\"M45 18l-9 24h18z\" fill=\"#007a3d\"/>", "uae": "<rect width=\"22\" height=\"60\" fill=\"#f00\"/><rect x=\"22\" width=\"68\" height=\"20\" fill=\"#00732f\"/><rect x=\"22\" y=\"20\" width=\"68\" height=\"20\" fill=\"#fff\"/><rect x=\"22\" y=\"40\" width=\"68\" height=\"20\" fill=\"#000\"/>", "kuwait": "<rect width=\"90\" height=\"20\" fill=\"#007a3d\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#ce1126\"/><path d=\"M0 0h23v60H0l10-30z\" fill=\"#000\"/>", "qatar": "<rect width=\"90\" height=\"60\" fill=\"#8a1538\"/><path d=\"M0 0h27l8 5-8 5 8 5-8 5 8 5-8 5 8 5-8 5 8 5-8 5 8 5H0z\" fill=\"#fff\"/>", "germany": "<rect width=\"90\" height=\"20\" fill=\"#000\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#dd0000\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#ffce00\"/>", "france": "<rect width=\"30\" height=\"60\" fill=\"#0055a4\"/><rect x=\"30\" width=\"30\" height=\"60\" fill=\"#fff\"/><rect x=\"60\" width=\"30\" height=\"60\" fill=\"#ef4135\"/>", "russia": "<rect width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#0039a6\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#d52b1e\"/>", "usa": "<rect width=\"90\" height=\"60\" fill=\"#fff\"/><g fill=\"#b22234\"><rect y=\"0.00\" width=\"90\" height=\"4.7\"/><rect y=\"9.23\" width=\"90\" height=\"4.7\"/><rect y=\"18.46\" width=\"90\" height=\"4.7\"/><rect y=\"27.69\" width=\"90\" height=\"4.7\"/><rect y=\"36.92\" width=\"90\" height=\"4.7\"/><rect y=\"46.15\" width=\"90\" height=\"4.7\"/><rect y=\"55.38\" width=\"90\" height=\"4.7\"/></g><rect width=\"39\" height=\"32\" fill=\"#3c3b6e\"/><g fill=\"#fff\"><circle cx=\"8\" cy=\"8\" r=\"2\"/><circle cx=\"20\" cy=\"8\" r=\"2\"/><circle cx=\"32\" cy=\"8\" r=\"2\"/><circle cx=\"14\" cy=\"20\" r=\"2\"/><circle cx=\"26\" cy=\"20\" r=\"2\"/></g>", "uk": "<rect width=\"90\" height=\"60\" fill=\"#012169\"/><path d=\"M0 0l90 60M90 0L0 60\" stroke=\"#fff\" stroke-width=\"13\"/><path d=\"M0 0l90 60M90 0L0 60\" stroke=\"#c8102e\" stroke-width=\"6\"/><path d=\"M45 0v60M0 30h90\" stroke=\"#fff\" stroke-width=\"19\"/><path d=\"M45 0v60M0 30h90\" stroke=\"#c8102e\" stroke-width=\"10\"/>"};
  function flagSvg(code){return '<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 90 60\">'+(flagArtwork[code]||'')+'</svg>'; }
  function flagData(code){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(flagSvg(code));}
  window.__countryFlagData=flagData;
+ window.__teamFlagType=function(team){const cfg=(typeof battleConfig!=='undefined')?battleConfig:{};const code=team==='enemy'?cfg.enemyFlagCode:cfg.playerFlagCode;const color=team==='enemy'?cfg.enemyColor:cfg.playerColor;return code?'flag:'+code:(color|| (team==='enemy'?'#f43f5e':'#168cff'));};
  let flagTarget='playerColor';const picker=$('country-flag-picker'),grid=$('flag-picker-grid');
- function updateFlagTrigger(){['playerColor','botColor'].forEach(key=>{const el=$(key==='playerColor'?'player-flag-preview':'bot-flag-preview'),code=(chosen[key+'Flag']||'').replace('flag:','');if(code){el.innerHTML='<img alt=\"\" src=\"'+flagData(code)+'\">';}else el.textContent='🏳️';});const pn=colors.find(c=>c[1]===chosen.playerColorFlag)?.[0]||'اللاعب';const bn=colors.find(c=>c[1]===chosen.botColorFlag)?.[0]||'البوت';$('room-flag-trigger-label').textContent='اللاعب: '+pn+' | البوت: '+bn;}
- function setFlagTarget(key){flagTarget=key;$('flag-target-player').classList.toggle('active',key==='playerColor');$('flag-target-bot').classList.toggle('active',key==='botColor');$('flag-picker-title').textContent=key==='playerColor'?'اختيار علم اللاعب':'اختيار علم البوت';grid.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.code===chosen[key+'Flag']));}
- colors.forEach(([name,id,color])=>{const code=id.replace('flag:',''),b=document.createElement('button');b.type='button';b.className='flag-country';b.dataset.code=id;b.innerHTML='<img alt=\"\" src=\"'+flagData(code)+'\"><span>'+name+'</span>';b.onclick=()=>{chosen[flagTarget]=color;chosen[flagTarget+'Flag']=id;updateFlagTrigger();$('room-flag-status').textContent='تم اختيار علم '+(flagTarget==='playerColor'?'اللاعب':'البوت')+': '+name;picker.classList.remove('show');picker.setAttribute('aria-hidden','true');validate();};grid.appendChild(b);});
+ function updateFlagTrigger(){['playerColor','botColor'].forEach(key=>{const el=$(key==='playerColor'?'player-flag-preview':'bot-flag-preview'),code=(chosen[key+'Flag']||'').replace('flag:','');if(code){el.innerHTML='<img alt=\"\" src=\"'+flagData(code)+'\">';}else el.textContent='🏳️';});const pn=colors.find(c=>c[1]===chosen.playerColorFlag)?.[0]||'PLAYER';const bn=colors.find(c=>c[1]===chosen.botColorFlag)?.[0]||'BOT';$('room-flag-trigger-label').textContent='PLAYER: '+pn+' | BOT: '+bn;}
+ function setFlagTarget(key){flagTarget=key;$('flag-target-player').classList.toggle('active',key==='playerColor');$('flag-target-bot').classList.toggle('active',key==='botColor');$('flag-picker-title').textContent=key==='playerColor'?'SELECT PLAYER FLAG':'SELECT BOT FLAG';grid.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.code===chosen[key+'Flag']));}
+ colors.forEach(([name,id,color])=>{const code=id.replace('flag:',''),b=document.createElement('button');b.type='button';b.className='flag-country';b.dataset.code=id;b.innerHTML='<img alt=\"\" src=\"'+flagData(code)+'\"><span>'+name+'</span>';b.onclick=()=>{chosen[flagTarget]=color;chosen[flagTarget+'Flag']=id;updateFlagTrigger();$('room-flag-status').textContent='Selected flag: '+(flagTarget==='playerColor'?'PLAYER':'BOT')+': '+name;picker.classList.remove('show');picker.setAttribute('aria-hidden','true');validate();};grid.appendChild(b);});
  function openFlagPicker(){setFlagTarget('playerColor');picker.classList.add('show');picker.setAttribute('aria-hidden','false');}
  $('room-flag-trigger').onclick=openFlagPicker;$('flag-target-player').onclick=()=>setFlagTarget('playerColor');$('flag-target-bot').onclick=()=>setFlagTarget('botColor');$('flag-picker-close').onclick=()=>{picker.classList.remove('show');picker.setAttribute('aria-hidden','true');};picker.addEventListener('click',e=>{if(e.target===picker){picker.classList.remove('show');picker.setAttribute('aria-hidden','true');}});updateFlagTrigger();
  const botEnabled=$('room-bot-enabled'),botNum=$('room-bot-number');
  botNum.disabled=true;$('bot-number-field').style.opacity='.5';
- botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';if(!on){botNum.value='';chosen.botColor='';chosen.botColorFlag='';updateFlagTrigger();$('room-flag-status').textContent='تم إيقاف البوت';}else $('room-flag-status').textContent='اختر علم البوت من القائمة';validate();});
+ botEnabled.addEventListener('change',()=>{const on=botEnabled.value==='yes';botNum.disabled=!on;$('bot-number-field').style.opacity=on?'1':'.5';if(!on){botNum.value='';chosen.botColor='';chosen.botColorFlag='';updateFlagTrigger();$('room-flag-status').textContent='Bot disabled';}else $('room-flag-status').textContent='Select the bot flag from the list';validate();});
  function validate(){const bot=botEnabled.value==='no'||(botNum.value&&chosen.botColor);const player=$('room-player-number').value&&$('room-money').value&&chosen.playerColor; $('room-ready-btn').disabled=!(bot&&player);$('room-start-btn').disabled=!(chosen.ready&&bot&&player);}
- botNum.onchange=()=>{if(botNum.value){}else{$('room-flag-status').textContent='اختر رقم البوت';}validate();};$('room-player-number').onchange=validate;$('room-money').onchange=validate;
- window.openRoomSetup=function(){chosen.ready=false;$('room-setup-overlay').classList.add('show');$('room-setup-overlay').setAttribute('aria-hidden','false');$('room-main-status').textContent='أكمل الخيارات ثم اضغط جاهز';$('room-ready-btn').textContent='جاهز';$('room-start-btn').disabled=true;validate();};
- $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;chosen.ready=true;$('room-main-status').textContent='اللاعب جاهز — اضغط بدء اللعب للدخول';$('room-ready-btn').textContent='تم الاستعداد ✓';$('room-start-btn').disabled=false;};
+ botNum.onchange=()=>{if(botNum.value){}else{$('room-flag-status').textContent='Select bot number';}validate();};$('room-player-number').onchange=validate;$('room-money').onchange=validate;
+ window.openRoomSetup=function(){chosen.ready=false;$('room-setup-overlay').classList.add('show');$('room-setup-overlay').setAttribute('aria-hidden','false');$('room-main-status').textContent='Complete the settings, then press READY';$('room-ready-btn').textContent='READY';$('room-start-btn').disabled=true;validate();};
+ $('room-ready-btn').onclick=()=>{if($('room-ready-btn').disabled)return;chosen.ready=true;$('room-main-status').textContent='Player ready — press START GAME to enter';$('room-ready-btn').textContent='READY ✓';$('room-start-btn').disabled=false;};
  $('room-cancel-btn').onclick=()=>{$('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');};
  // Load the three default slideshow images automatically from ./images/.
  const imageUrls=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let slideIndex=0;
@@ -15968,18 +16002,18 @@ window.updateCameraSensitivity=function(v){
   const botOn=botEnabled.value==='yes';
   if(typeof battleConfig!=='undefined'){battleConfig.money=Number($('room-money').value);battleConfig.playerColor=chosen.playerColor;battleConfig.playerFlagCode=chosen.playerColorFlag.replace('flag:','');battleConfig.playerColorName=colors.find(c=>c[2]===chosen.playerColor)?.[0]||'PLAYER';if(botOn){battleConfig.enemyColor=chosen.botColor;battleConfig.enemyFlagCode=chosen.botColorFlag.replace('flag:','');battleConfig.enemyColorName=colors.find(c=>c[2]===chosen.botColor)?.[0]||'BOT';battleConfig.bot=Number($('room-bot-number').value)||1;battleConfig.botNumber=Number($('room-bot-number').value)||1;battleConfig.botEnabled=true;}else{battleConfig.bot='none';battleConfig.botNumber=0;battleConfig.botEnabled=false;}}
   $('room-setup-overlay').classList.remove('show');$('room-setup-overlay').setAttribute('aria-hidden','true');$('room-loading-overlay').classList.add('show');$('room-loading-overlay').setAttribute('aria-hidden','false');
-  let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='جاري دخول القوات... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='جاري دخول القوات... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
+  let progress=0;showSlide();$('room-loading-fill').style.width='0%';$('room-load-label').textContent='DEPLOYING FORCES... 0%';const timer=setInterval(()=>{progress=Math.min(100,progress+1);$('room-loading-fill').style.width=progress+'%';$('room-load-label').textContent='DEPLOYING FORCES... '+progress+'%';if(progress%20===0)showSlide();if(progress>=100){clearInterval(timer);$('room-loading-overlay').classList.remove('show');$('room-loading-overlay').setAttribute('aria-hidden','true');try{if(typeof beginConfiguredGame==='function')beginConfiguredGame();else{ $('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}catch(err){console.error(err);$('settings-modal').style.display='none';$('ui-overlay').style.display='block';}}},150);
  };
  // Replace the two legacy buttons and remove the old globe intro permanently.
  const start=$('start-btn'),sound=$('sound-settings-btn');
- if(start){start.textContent='إنشاء غرفة';start.onclick=()=>{if(typeof playClickSound==='function')playClickSound();openRoomSetup();};}
- if(sound){sound.textContent='إعدادات الصوت';}
- const title=document.querySelector('#settings-modal .menu-card h1');if(title)title.textContent='مركز القيادة';
+ if(start){start.textContent='CREATE ROOM';start.onclick=()=>{if(typeof playClickSound==='function')playClickSound();openRoomSetup();};}
+ if(sound){sound.textContent='SOUND SETTINGS';}
+ const title=document.querySelector('#settings-modal .menu-card h1');if(title)title.textContent='COMMAND CENTER';
  document.addEventListener('DOMContentLoaded',()=>{});
  // The game initialization no longer calls the old intro. Show menu after a real compact loading bar.
  const intro=$('start-menu');if(intro)intro.style.display='none';
  const load=document.createElement('div');load.id='boot-loading-overlay';
- load.innerHTML='<img id="boot-loading-image" alt="صورة التحميل"><div class="boot-loading-shade"></div><div class="boot-loading-title">تجهيز القيادة العسكرية</div><div class="boot-loading-bottom"><div class="boot-loading-track"><div id="boot-loading-fill"></div></div></div>';
+ load.innerHTML='<img id="boot-loading-image" alt="Loading image"><div class="boot-loading-shade"></div><div class="boot-loading-title">PREPARING COMMAND CENTER</div><div class="boot-loading-bottom"><div class="boot-loading-track"><div id="boot-loading-fill"></div></div></div>';
  document.body.appendChild(load);
  const bootImages=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let bootIndex=0;const bootImg=document.getElementById('boot-loading-image');
  function setBootImage(){if(!bootImg)return;let tries=0;while(tries<bootImages.length){bootImg.src=bootImages[bootIndex];bootImg.dataset.failed='';bootIndex=(bootIndex+1)%bootImages.length;tries++;break;}}
@@ -16004,7 +16038,7 @@ window.updateCameraSensitivity=function(v){
 
 
 
-<!-- صوت الترحيب الخارجي: ضع الملف في sounds/intro-voice.mp3 -->
+<!-- External intro voice: place the file in sounds/intro-voice.mp3 -->
 <audio id="intro-voice-audio" src="sounds/intro-voice.mp3" preload="auto" playsinline></audio>
 
 
@@ -16017,11 +16051,11 @@ window.updateCameraSensitivity=function(v){
 })();
 </script>
 
-<!-- بوابة تدوير الشاشة بتصميم زيتي بسيط -->
+<!-- Simple military-style screen rotation prompt -->
 
-<div id="rotate-screen-gate" role="dialog" aria-modal="true" aria-label="رجاءً اقلب الشاشة">
+<div id="rotate-screen-gate" role="dialog" aria-modal="true" aria-label="PLEASE ROTATE YOUR SCREEN">
  <div class="rotate-inner">
-  <svg class="rotate-icon" viewBox="0 0 200 165" role="img" aria-label="هاتف وسهم دائري لتدوير الشاشة" xmlns="http://www.w3.org/2000/svg">
+  <svg class="rotate-icon" viewBox="0 0 200 165" role="img" aria-label="Phone and circular arrow to rotate the screen" xmlns="http://www.w3.org/2000/svg">
    <defs><linearGradient id="olivePhone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#aab88a"/><stop offset="1" stop-color="#647548"/></linearGradient></defs>
    <path d="M53 38 A61 61 0 1 1 38 111" fill="none" stroke="#7f9258" stroke-width="7" stroke-linecap="round"/>
    <path d="M32 92 L38 113 L59 106" fill="none" stroke="#b6c791" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
@@ -16032,8 +16066,8 @@ window.updateCameraSensitivity=function(v){
     <circle cx="100" cy="122" r="3" fill="#d3ddba"/>
    </g>
   </svg>
-  <div class="rotate-title">رجاءً اقلب الشاشة</div>
-  <button id="rotate-screen-button" class="rotate-button" type="button">موافق</button>
+  <div class="rotate-title">PLEASE ROTATE YOUR SCREEN</div>
+  <button id="rotate-screen-button" class="rotate-button" type="button">OK</button>
   <div id="rotate-screen-status" class="rotate-status" aria-live="polite"></div>
  </div>
 </div>
@@ -16082,7 +16116,7 @@ window.updateCameraSensitivity=function(v){
 
 
 <style id="remote-scout-action-style">
-/* زر الكشف داخل شريط القيادة الثابت، ويظهر فقط عند تحديد سيارة الاستطلاع */
+/* زر الSCAN داخل شريط القيادة الثابت، ويظهر فقط عند تحديد سيارة الاستطلاع */
 #construction-bar #temporary-scout-scan{display:none!important;position:static!important;box-sizing:border-box!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:70px!important;min-height:70px!important;flex:0 0 42px!important;margin:0!important;padding:4px 2px!important;border:1px solid #58d8ff!important;border-radius:3px!important;background:linear-gradient(180deg,#124458,#08212d)!important;color:#e8faff!important}
 #construction-bar #temporary-scout-scan.scout-action-visible{display:flex!important}
 #construction-bar #temporary-scout-scan.scan-cooldown{opacity:.48!important;filter:grayscale(.85)!important;cursor:not-allowed!important;box-shadow:none!important}
@@ -16139,11 +16173,11 @@ window.updateCameraSensitivity=function(v){
    if(left>0){
     btn.disabled=true;
     btn.classList.add('scan-cooldown');
-    btn.innerHTML='<span class="bar-icon" aria-hidden="true">⌛</span><small>'+seconds+' ث</small>';
+    btn.innerHTML='<span class="bar-icon" aria-hidden="true">⌛</span><small>'+seconds+' sec</small>';
    }else{
     btn.disabled=false;
     btn.classList.remove('scan-cooldown');
-    if(!armed)btn.innerHTML='<span class="bar-icon" aria-hidden="true">⌖</span><small>كشف</small>';
+    if(!armed)btn.innerHTML='<span class="bar-icon" aria-hidden="true">⌖</span><small>SCAN</small>';
     if(scanCooldownTimer){clearInterval(scanCooldownTimer);scanCooldownTimer=null;}
    }
   };
@@ -16173,7 +16207,7 @@ window.updateCameraSensitivity=function(v){
   const setArmed=v=>{
    armed=!!v;
    btn.classList.toggle('armed',armed);
-   btn.innerHTML=armed?'<span class="bar-icon" aria-hidden="true">◎</span><small>حرّك الدائرة</small>':'<span class="bar-icon" aria-hidden="true">⌖</span><small>كشف</small>';
+   btn.innerHTML=armed?'<span class="bar-icon" aria-hidden="true">◎</span><small>MOVE CIRCLE</small>':'<span class="bar-icon" aria-hidden="true">⌖</span><small>SCAN</small>';
    if(worldMarker)worldMarker.visible=armed&&!!lastPoint;
    if(!armed)refreshScanCooldown();
    if(canvas)canvas.style.cursor=armed?'crosshair':'';
@@ -16204,9 +16238,9 @@ window.updateCameraSensitivity=function(v){
   };
   const confirmScan=(e,point)=>{
    if(!armed)return;
-   if(Date.now()<scanCooldownUntil){setArmed(false);msg('يمكن شراء كشف جديد بعد انتهاء العداد');return;}
-   if(!point){msg('حرّك الدائرة إلى داخل أرض الخريطة أولاً');return;}
-   if(typeof playerMoney!=='undefined'&&playerMoney<300){setArmed(false);msg('رصيدك لا يكفي للكشف');return;}
+   if(Date.now()<scanCooldownUntil){setArmed(false);msg('A new scan can be purchased when the timer ends');return;}
+   if(!point){msg('Move the circle inside the map first');return;}
+   if(typeof playerMoney!=='undefined'&&playerMoney<300){setArmed(false);msg('Not enough funds for a scan');return;}
    if(typeof playerMoney!=='undefined'){playerMoney-=300;if(typeof updateEconomyUI==='function')updateEconomyUI();}
    window.__temporaryReconScans=window.__temporaryReconScans||[];
    window.__temporaryReconScans.push({x:point.x,z:point.z,r:SCAN_RADIUS,until:performance.now()+25000});
@@ -16214,17 +16248,17 @@ window.updateCameraSensitivity=function(v){
    refreshScanCooldown();
    if(!scanCooldownTimer)scanCooldownTimer=setInterval(refreshScanCooldown,250);
    if(typeof updateWarFogOfWar==='function')updateWarFogOfWar(performance.now());
-   setArmed(false);refreshScanCooldown(); msg('تم كشف المنطقة المحددة لمدة 25 ثانية — الكشف التالي بعد دقيقة');
+   setArmed(false);refreshScanCooldown(); msg('Selected area revealed for 25 seconds — next scan available in one minute');
    if(e){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();}
   };
   btn.addEventListener('click',()=>{
-   if(Date.now()<scanCooldownUntil){refreshScanCooldown();msg('انتظر انتهاء عداد الكشف لشراء كشف جديد');return;}
-   if(armed){setArmed(false);msg('تم إلغاء تحديد منطقة الكشف');return;}
-   if(typeof selectedTank==='undefined'||!selectedTank||selectedTank.isDestroyed||typeof getUnitKind!=='function'||getUnitKind(selectedTank)!=='scout'){msg('زر الكشف متاح فقط عند تحديد سيارة الاستطلاع');return;}
-   if(typeof playerMoney!=='undefined'&&playerMoney<300){msg('تحتاج إلى 300$ للكشف');return;}
-   canvas=getCanvas(); if(!canvas){msg('تعذر تحديد شاشة المعركة');return;}
-   if(!ensureWorldMarker()){msg('تعذر إنشاء مؤشر الكشف على الأرض');return;}
-   setArmed(true); msg('اضغط واسحب دائرة الكشف فوق الأرض، وعند رفع إصبعك يتم الكشف — 300$');
+   if(Date.now()<scanCooldownUntil){refreshScanCooldown();msg('Wait for the scan timer to finish before buying another scan');return;}
+   if(armed){setArmed(false);msg('Scan area selection cancelled');return;}
+   if(typeof selectedTank==='undefined'||!selectedTank||selectedTank.isDestroyed||typeof getUnitKind!=='function'||getUnitKind(selectedTank)!=='scout'){msg('The scan button is available only when a recon vehicle is selected');return;}
+   if(typeof playerMoney!=='undefined'&&playerMoney<300){msg('You need $300 to scan');return;}
+   canvas=getCanvas(); if(!canvas){msg('Could not find the battle screen');return;}
+   if(!ensureWorldMarker()){msg('Could not create the scan marker on the ground');return;}
+   setArmed(true); msg('Press and drag the scan circle over the terrain. Release to scan — $300');
   });
   // Hold and drag the ground marker; releasing the finger confirms the scan.
   let dragging=false,dragPointerId=null,dragSurface=null;
@@ -16273,7 +16307,7 @@ window.updateCameraSensitivity=function(v){
    mini.addEventListener('pointercancel',cancelDrag,true);
   }
   bind(); const wait=setInterval(()=>{bind();if(typeof renderer!=='undefined'&&renderer&&renderer.domElement)clearInterval(wait)},250);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&armed){setArmed(false);msg('تم إلغاء تحديد منطقة الكشف');}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&armed){setArmed(false);msg('Scan area selection cancelled');}});
  };
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
