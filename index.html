@@ -4996,8 +4996,8 @@ img { max-width: 100%; }
 .flag-picker-head button,.flag-picker-target button{background:#1b241e;border:1px solid #70796c;color:#eee;border-radius:6px;padding:8px 12px}
 .flag-picker-target{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .flag-picker-target button.active{background:#58634e;border-color:#e5d18b}
-.flag-picker-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.flag-country{min-width:0;min-height:65px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:#17211d;border:1px solid #566254;border-radius:7px;color:white;font:inherit;font-size:12px;padding:6px 3px;cursor:pointer}
+.flag-picker-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-height:58dvh;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;align-content:start;padding:2px 4px 12px 2px;scrollbar-width:thin}
+.flag-country{min-width:0;min-height:65px;touch-action:pan-y;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:#17211d;border:1px solid #566254;border-radius:7px;color:white;font:inherit;font-size:12px;padding:6px 3px;cursor:pointer}
 .flag-country img{width:min(100%,66px);height:34px;object-fit:cover;border:1px solid #aeb4a8;display:block}
 .flag-country.active{border:2px solid #f3d77d;background:#35402f}
 @media(max-width:420px){.flag-picker-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -14993,6 +14993,7 @@ function createArmyFactory(x,z,ghost=false){
     let warFogMesh = null, warFogCanvas = null, warFogCtx = null, warFogTexture = null;
     let warFogExploredCanvas = null, warFogExploredCtx = null;
     let warFogLastUpdate = 0;
+    const warFogRevealRadiusBySource = new Map();
     const WAR_FOG_SIZE = 1024;
     const WAR_FOG_WORLD = 900; // يغطي كامل الأرض: -450 إلى +450
 
@@ -15073,7 +15074,15 @@ function createArmyFactory(x,z,ghost=false){
         const w = WAR_FOG_SIZE, h = WAR_FOG_SIZE;
         const explored = warFogExploredCtx;
         const revealers = [];
-        if (window.__temporaryReconScans) { window.__temporaryReconScans = window.__temporaryReconScans.filter(v => v.until > now); window.__temporaryReconScans.forEach(v => revealers.push({x:v.x,z:v.z,r:v.r})); }
+        const addGradualRevealer = (id, x, z, targetRadius) => {
+            const key = String(id || (Math.round(x)+':'+Math.round(z)+':'+targetRadius));
+            const previous = warFogRevealRadiusBySource.get(key) || 0;
+            const step = Math.max(1.8, targetRadius * 0.045) * (elapsed / 140);
+            const radius = Math.min(targetRadius, previous + step);
+            warFogRevealRadiusBySource.set(key, radius);
+            revealers.push({x, z, r:radius, key});
+        };
+        if (window.__temporaryReconScans) { window.__temporaryReconScans = window.__temporaryReconScans.filter(v => v.until > now); window.__temporaryReconScans.forEach((v,i) => addGradualRevealer('scan:'+String(v.id||v.startedAt||i),v.x,v.z,v.r)); }
 
         // رؤية قصيرة للقوات العادية؛ مركبة الاستطلاع وحدها تSCAN مساحة أكبر.
         const addUnits = (arr, kind) => (arr || []).forEach(u => {
@@ -15093,7 +15102,7 @@ function createArmyFactory(x,z,ghost=false){
             if (type === 'ambulance' || kind === 'ambulances') radius = 58;
             // الاستطلاع له الأفضلية دائمًا حتى لو كان نوعه مسجلًا بشكل عام.
             if (isScout) radius = 155;
-            revealers.push({ x: p.x, z: p.z, r: radius });
+            addGradualRevealer('unit:'+(u.id||u.uuid||u.mesh.uuid||kind+':'+(u.mesh.id||'')),p.x,p.z,radius);
         });
         addUnits(playerTanks, 'tanks');
         addUnits(ambulances, 'ambulances');
@@ -15111,7 +15120,7 @@ function createArmyFactory(x,z,ghost=false){
             if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.z)) return;
             // لا تSCAN المباني أثناء وضع شبح البناء أو قبل اكتمالها.
             if (structure.isGhost || structure.isPlacementGhost || structure.underConstruction) return;
-            revealers.push({ x: p.x, z: p.z, r: radius });
+            addGradualRevealer('structure:'+(structure.id||mesh.uuid||mesh.id||'structure'),p.x,p.z,radius);
         };
         // COMMAND CAMP الرئيسي، مصنع الآليات، ومعسكر الجنود جميعها تملك مجال SCAN.
         addStructureVision(playerBaseGroup, 92);
@@ -15121,6 +15130,8 @@ function createArmyFactory(x,z,ghost=false){
         (oilRigs || []).forEach(r => {
             if (r && !r.isDestroyed && r.owner === 'player') addStructureVision(r, 76);
         });
+
+        if (warFogRevealRadiusBySource.size > 1200) { const keep = new Set(revealers.map(v => v.key).filter(Boolean)); if (!keep.size) warFogRevealRadiusBySource.clear(); else for (const key of warFogRevealRadiusBySource.keys()) if (!keep.has(key)) warFogRevealRadiusBySource.delete(key); }
 
         // تلاشي المناطق المكتشفة خلال بضع ثوانٍ، كي يعود الضباب بعد مغادرة القوات
         // أو تدمير وحدة/مبنى كان يSCANها.
@@ -15946,6 +15957,7 @@ window.updateCameraSensitivity=function(v){
  const flagArtwork={"syria": "<rect width=\"90\" height=\"20\" fill=\"#007a3d\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#000\"/><path d=\"M25 30l5-6 5 6-5 6zM55 30l5-6 5 6-5 6z\" fill=\"#ce1126\"/>", "turkey": "<rect width=\"90\" height=\"60\" fill=\"#e30a17\"/><circle cx=\"36\" cy=\"30\" r=\"17\" fill=\"#fff\"/><circle cx=\"42\" cy=\"30\" r=\"13\" fill=\"#e30a17\"/><path d=\"M61 18l4 10 11 1-9 7 3 11-9-7-9 7 3-11-9-7 11-1z\" fill=\"#fff\"/>", "palestine": "<rect width=\"90\" height=\"20\" fill=\"#000\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#007a3d\"/><path d=\"M0 0L32 30 0 60z\" fill=\"#ce1126\"/>", "jordan": "<rect width=\"90\" height=\"20\" fill=\"#000\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#007a3d\"/><path d=\"M0 0L38 30 0 60z\" fill=\"#ce1126\"/><path d=\"M12 22l3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1z\" fill=\"#fff\"/>", "iraq": "<rect width=\"90\" height=\"20\" fill=\"#ce1126\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#000\"/><text x=\"45\" y=\"34\" font-size=\"10\" text-anchor=\"middle\" fill=\"#007a3d\">ALLAHU AKBAR</text>", "saudi": "<rect width=\"90\" height=\"60\" fill=\"#006c35\"/><text x=\"45\" y=\"27\" font-size=\"8\" text-anchor=\"middle\" fill=\"#fff\">SHAHADA</text><path d=\"M20 40h50\" stroke=\"#fff\" stroke-width=\"3\"/>", "egypt": "<rect width=\"90\" height=\"20\" fill=\"#ce1126\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#000\"/><circle cx=\"45\" cy=\"30\" r=\"5\" fill=\"#c49a3a\"/>", "lebanon": "<rect width=\"90\" height=\"60\" fill=\"#fff\"/><rect width=\"90\" height=\"15\" fill=\"#ed1c24\"/><rect y=\"45\" width=\"90\" height=\"15\" fill=\"#ed1c24\"/><path d=\"M45 18l-9 24h18z\" fill=\"#007a3d\"/>", "uae": "<rect width=\"22\" height=\"60\" fill=\"#f00\"/><rect x=\"22\" width=\"68\" height=\"20\" fill=\"#00732f\"/><rect x=\"22\" y=\"20\" width=\"68\" height=\"20\" fill=\"#fff\"/><rect x=\"22\" y=\"40\" width=\"68\" height=\"20\" fill=\"#000\"/>", "kuwait": "<rect width=\"90\" height=\"20\" fill=\"#007a3d\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#ce1126\"/><path d=\"M0 0h23v60H0l10-30z\" fill=\"#000\"/>", "qatar": "<rect width=\"90\" height=\"60\" fill=\"#8a1538\"/><path d=\"M0 0h27l8 5-8 5 8 5-8 5 8 5-8 5 8 5-8 5 8 5-8 5 8 5H0z\" fill=\"#fff\"/>", "germany": "<rect width=\"90\" height=\"20\" fill=\"#000\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#dd0000\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#ffce00\"/>", "france": "<rect width=\"30\" height=\"60\" fill=\"#0055a4\"/><rect x=\"30\" width=\"30\" height=\"60\" fill=\"#fff\"/><rect x=\"60\" width=\"30\" height=\"60\" fill=\"#ef4135\"/>", "russia": "<rect width=\"90\" height=\"20\" fill=\"#fff\"/><rect y=\"20\" width=\"90\" height=\"20\" fill=\"#0039a6\"/><rect y=\"40\" width=\"90\" height=\"20\" fill=\"#d52b1e\"/>", "usa": "<rect width=\"90\" height=\"60\" fill=\"#fff\"/><g fill=\"#b22234\"><rect y=\"0.00\" width=\"90\" height=\"4.7\"/><rect y=\"9.23\" width=\"90\" height=\"4.7\"/><rect y=\"18.46\" width=\"90\" height=\"4.7\"/><rect y=\"27.69\" width=\"90\" height=\"4.7\"/><rect y=\"36.92\" width=\"90\" height=\"4.7\"/><rect y=\"46.15\" width=\"90\" height=\"4.7\"/><rect y=\"55.38\" width=\"90\" height=\"4.7\"/></g><rect width=\"39\" height=\"32\" fill=\"#3c3b6e\"/><g fill=\"#fff\"><circle cx=\"8\" cy=\"8\" r=\"2\"/><circle cx=\"20\" cy=\"8\" r=\"2\"/><circle cx=\"32\" cy=\"8\" r=\"2\"/><circle cx=\"14\" cy=\"20\" r=\"2\"/><circle cx=\"26\" cy=\"20\" r=\"2\"/></g>", "uk": "<rect width=\"90\" height=\"60\" fill=\"#012169\"/><path d=\"M0 0l90 60M90 0L0 60\" stroke=\"#fff\" stroke-width=\"13\"/><path d=\"M0 0l90 60M90 0L0 60\" stroke=\"#c8102e\" stroke-width=\"6\"/><path d=\"M45 0v60M0 30h90\" stroke=\"#fff\" stroke-width=\"19\"/><path d=\"M45 0v60M0 30h90\" stroke=\"#c8102e\" stroke-width=\"10\"/>"};
  function flagSvg(code){return '<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 90 60\">'+(flagArtwork[code]||'')+'</svg>'; }
  function flagData(code){return 'flags/'+code+'.png';}
+ function flagPreviewData(code){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(flagSvg(code));}
  function flagFallbackData(code){return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(flagSvg(code));}
  window.countryFlagSvg=flagSvg; window.countryFlagData=flagData; window.countryFlagFallbackData=flagFallbackData;
  let flagTarget='playerColor';const picker=$('country-flag-picker'),grid=$('flag-picker-grid');
@@ -16332,6 +16344,8 @@ window.updateCameraSensitivity=function(v){
 #room-setup-overlay .room-flag-trigger{direction:ltr!important;text-align:left!important}
 #country-flag-picker .flag-picker-head,#country-flag-picker .flag-picker-target{direction:ltr!important}
 #country-flag-picker .flag-country{direction:ltr!important}
+#country-flag-picker .flag-picker-panel{overscroll-behavior:contain;touch-action:pan-y}
+#country-flag-picker .flag-picker-grid{touch-action:pan-y!important;user-select:none;-webkit-user-select:none}
 #country-flag-picker button:disabled{opacity:.35!important;filter:grayscale(1)!important;cursor:not-allowed!important}
 #victory-screen{direction:ltr!important;font-family:Arial,sans-serif!important}
 #victory-screen .stats-box{text-align:left!important;direction:ltr!important}
