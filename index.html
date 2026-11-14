@@ -5185,6 +5185,12 @@ img { max-width: 100%; }
             </div>
             <div class="build-price">150$</div>
         </div>
+        <div class="barracks-build-card" id="artillery-build-card" style="display:none" onclick="playClickSound(); armArtilleryBuild()">
+            <div class="barracks-preview" aria-label="FIELD ARTILLERY"><div class="b-base"></div><div class="b-roof"></div><div class="b-window"></div></div>
+            <div class="build-info"><div class="build-name">🎯 FIELD ARTILLERY</div><div class="build-desc">Long-range defensive cannon</div><div class="build-hint">Build time: 20 sec</div></div>
+            <div class="build-price">350$</div>
+        </div>
+
         <div class="factory-unit-card" id="factory-scud-card" onclick="playClickSound(); queueFactoryUnit('rocket')">
             <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scud.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scud"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🚀 SCUD</div><div class="factory-unit-price">800$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
@@ -5344,7 +5350,10 @@ img { max-width: 100%; }
         underAttack: 'sounds/under_attack.mp3',
         scudMove: 'sounds/scud_engine_loop.mp3',
         bulldozerMove: 'sounds/bulldozer_engine_loop.mp3',
-        constructionLoop: 'sounds/construction_work_loop.mp3'
+        constructionLoop: 'sounds/construction_work_loop.mp3',
+        artilleryTraverse: 'sounds/artillery_traverse.mp3',
+        artilleryFire: 'sounds/artillery_fire.mp3',
+        artilleryImpact: 'sounds/artillery_impact.mp3'
     };
 
     // إذا لم يوجد ملف صوت جديد، لا يختفي الصوت؛ يستخدم بديلاً مناسباً.
@@ -5784,7 +5793,7 @@ img { max-width: 100%; }
         maxBullets: 90,
         maxInfantryFX: 120,
         maxCombatEffects: 26,
-        maxSmokeParticles: 75,
+        maxSmokeParticles: 112,
         maxShockwaves: 18
     };
     function combatFXLoad(){
@@ -5839,6 +5848,26 @@ img { max-width: 100%; }
     let barracksPlacementMode = false;
     let barracksPlacementRotation = 0;
     let barracksPlacementPoint = null;
+    let constructedArtillery = [];
+    let artilleryPlacementMode = false;
+    let artilleryPlacementRotation = 0;
+    let placementRotateLastX = null;
+    function updatePlacementRotationFromDrag(clientX){
+        if(placementRotateLastX===null){placementRotateLastX=clientX;return;}
+        const dx=clientX-placementRotateLastX;
+        if(Math.abs(dx)>=58){
+            const step=dx>0?1:-1;
+            if(factoryPlacementMode&&factoryPlacementGhost){factoryPlacementRotation+=step*Math.PI/2;factoryPlacementGhost.mesh.rotation.y=factoryPlacementRotation;}
+            if(barracksPlacementMode&&barracksPlacementGhost){barracksPlacementRotation+=step*Math.PI/2;barracksPlacementGhost.mesh.rotation.y=barracksPlacementRotation;}
+            if(artilleryPlacementMode&&artilleryPlacementGhost){artilleryPlacementRotation+=step*Math.PI/2;artilleryPlacementGhost.mesh.rotation.y=artilleryPlacementRotation;}
+            placementRotateLastX=clientX;
+        }
+    }
+    let artilleryPlacementGhost = null;
+    let artilleryPlacementPoint = null;
+    let activeArtilleryConstructions = [];
+    let artilleryShells = [];
+    let artilleryFxParticles = [];
     let activeBarracksProduction = null;
     let enemyFlagDataRef, playerFlagDataRef;
     let enemyFlagHeight = 35.0;
@@ -5857,10 +5886,10 @@ img { max-width: 100%; }
     const GAME_MOVE_SPEED_SCALE = 1.0; // لا نبطئ المحاكاة؛ السرعة مستقلة لكل آلية
     // سرعة مستقلة لكل آلية: لا تعتمد أي وحدة على سرعة آلية أخرى.
     const UNIT_SPEEDS = Object.freeze({
-        tank: 0.105,      // دبابة القتال: حركة أهدأ وأكثر ثقلاً
-        scud: 0.058,      // قاذفة الصاروخ ثقيلة لكن أسرع قليلاً
+        tank: 0.168,      // دبابة أسرع مع الحفاظ على فرق واضح عن المشاة
+        scud: 0.132,      // قاذفة السكود أسرع من سرعتها السابقة
         ambulance: 0.16,  // الإسعاف أسرع نسبياً من الدبابة
-        scout: 0.145,     // الاستطلاع
+        scout: 0.168,     // سيارة الاستطلاع بسرعة الدبابة
         dozer: 0.085      // تركس البناء بطيء وثقيل
     });
     // أزمنة الإنتاج والبناء بالثواني الحقيقية، وتحويلها إلى خطوات المحاكاة الثابتة.
@@ -6225,22 +6254,23 @@ img { max-width: 100%; }
         sunGroup.name = 'battlefieldSun';
 
         const sunMat = new THREE.MeshBasicMaterial({
-            color: 0xffe8c0,
+            color: 0xffe6b8,
             transparent: true,
-            opacity: 0.78
+            opacity: 0.88,
+            depthWrite: false
         });
-        const sun = new THREE.Mesh(new THREE.SphereGeometry(28, 32, 32), sunMat);
-        sun.position.set(-360, 390, -500);
+        const sun = new THREE.Mesh(new THREE.SphereGeometry(17, 32, 32), sunMat);
+        sun.position.set(-285, 285, -390);
         sunGroup.add(sun);
 
         // هالة ناعمة حول الشمس.
         const glowMat = new THREE.MeshBasicMaterial({
             color: 0xffd8a5,
             transparent: true,
-            opacity: 0.10,
+            opacity: 0.055,
             depthWrite: false
         });
-        const glow = new THREE.Mesh(new THREE.SphereGeometry(52, 32, 32), glowMat);
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(38, 32, 32), glowMat);
         glow.position.copy(sun.position);
         sunGroup.add(glow);
 
@@ -6248,8 +6278,8 @@ img { max-width: 100%; }
         window.battlefieldSun = sunGroup;
 
         // ضوء شمسي إضافي خفيف؛ الإضاءة الأساسية الموجودة تبقى كما هي.
-        const sunLight = new THREE.DirectionalLight(0xffe6c8, 0.10);
-        sunLight.position.set(-380, 520, -460);
+        const sunLight = new THREE.DirectionalLight(0xffedcf, 0.04);
+        sunLight.position.set(-300, 460, -390);
         sunLight.target.position.set(0, 0, 0);
         sunLight.castShadow = false;
         scene.add(sunLight);
@@ -6315,10 +6345,9 @@ img { max-width: 100%; }
     function init() {
         const container = document.getElementById('canvas-container');
         scene = new THREE.Scene();
-        // سماء سوداء بالكامل، والنقاط الفاتحة أصبحت موزعة على سطح الأرض مع الرمل.
-        scene.background = new THREE.Color(0x000000);
-        // ضباب دافئ قريب من لون الرمل ليعطي عمقاً سينمائياً بدون تحويل الأرض إلى لون رمادي.
-        scene.fog = new THREE.FogExp2(0x75614d, 0.00128);
+        // سماء نهارية هادئة بدل الخلفية السوداء، مع ضباب رملي يندمج تدريجياً عند الأفق.
+        scene.background = new THREE.Color(0x9aafba);
+        scene.fog = new THREE.FogExp2(0x8d887b, 0.00105);
 
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1500);
         updateCameraPosition();
@@ -6442,7 +6471,7 @@ img { max-width: 100%; }
         selectionMode = 'single';
         const hpContainer = document.getElementById('hp-labels-container');
         if (hpContainer) hpContainer.querySelectorAll('.tank-hp-label').forEach(el => { el.style.display='none'; });
-        [...playerTanks, ...enemyTanks, ...ambulances, ...reconVehicles, ...constructedFactories, ...enemyFactories, ...oilRigs, ...constructedBarracks].forEach(u => { if (u) u.hpRevealUntil = 0; });
+        [...playerTanks, ...enemyTanks, ...ambulances, ...reconVehicles, ...constructedFactories, ...enemyFactories, ...oilRigs, ...constructedBarracks, ...constructedArtillery].forEach(u => { if (u) u.hpRevealUntil = 0; });
         hideFactoryPlacement();
         clearSelectionVisuals();
 
@@ -6900,23 +6929,51 @@ function beginConfiguredGame(){
 }
 function startGame(){openBattleSetup();}
 
+    // تفعيل ظلال حقيقية للمباني والمركبات والجنود، بما فيها المجسمات التي تضاف أثناء اللعب.
+    let lastShadowRefreshAt = 0;
+    function refreshBattlefieldShadows(force=false) {
+        if(!scene) return;
+        const now=performance.now();
+        if(!force && now-lastShadowRefreshAt<2200) return;
+        lastShadowRefreshAt=now;
+        scene.traverse(o=>{
+            if(!o.isMesh || !o.geometry || !o.material) return;
+            const n=String(o.name||'').toLowerCase();
+            // الأرض والضباب والجزيئات الشفافة لا ينبغي أن تصنع ظلالاً سوداء كبيرة.
+            if(o===terrainMesh || /fog|smoke|particle|dust|shockwave|sun|glow|muzzle|laser|projectiletrail/.test(n)) {
+                o.castShadow=false;
+                if(o===terrainMesh) o.receiveShadow=true;
+                return;
+            }
+            const mats=Array.isArray(o.material)?o.material:[o.material];
+            const transparentOnly=mats.length && mats.every(m=>m && (m.transparent || (typeof m.opacity==='number' && m.opacity<0.72)));
+            o.castShadow=!transparentOnly;
+            o.receiveShadow=true;
+        });
+        if(renderer && renderer.shadowMap) renderer.shadowMap.needsUpdate=true;
+    }
+
     function setupLighting() {
-        scene.add(new THREE.AmbientLight(0xf0e7d8, 0.64));
+        scene.add(new THREE.AmbientLight(0xf0e7d8, 0.56));
+        scene.add(new THREE.HemisphereLight(0xc7d9e5, 0x80664a, 0.20));
         
-        // ضوء شمسي خفيف من اتجاه واحد لإظهار تموّج الرمال والظلال الناعمة.
-        dirLight = new THREE.DirectionalLight(0xffe1bd, 0.70);
-        dirLight.position.set(-380, 520, -460);
+        // شمس دافئة متوازنة من اتجاه واحد؛ الإضاءة العامة ترفع الظلال دون إلغائها.
+        dirLight = new THREE.DirectionalLight(0xffedcf, 0.82);
+        dirLight.position.set(-300, 460, -390);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.radius = 2.2;
         dirLight.shadow.camera.near = 0.5;
         dirLight.shadow.camera.far = 1200;
-        let d = 450;
+        let d = 455;
         dirLight.shadow.camera.left = -d;
         dirLight.shadow.camera.right = d;
         dirLight.shadow.camera.top = d;
         dirLight.shadow.camera.bottom = -d;
-        dirLight.shadow.bias = -0.0005;
+        dirLight.shadow.bias = -0.00012;
+        dirLight.shadow.normalBias = 0.012;
+        dirLight.shadow.camera.updateProjectionMatrix();
         scene.add(dirLight);
     }
 
@@ -7684,6 +7741,7 @@ function startGame(){openBattleSetup();}
         dropDestroyedBaseFlags(base);
 
         const ash=createCommandBaseAsh(pos,base.mesh.rotation.y);
+        createDestroyedTargetAfterburn(pos, 1.55);
         base.rubble=ash;
         for(let i=0;i<24;i++) addSmokeParticle(
             pos.clone().add(new THREE.Vector3((Math.random()-.5)*10,1+Math.random()*6,(Math.random()-.5)*10)),
@@ -8064,7 +8122,7 @@ function startGame(){openBattleSetup();}
         const sph=(r,mat,p,x,y,z,s=[1,1,1])=>add(new THREE.SphereGeometry(r,20,14),mat,p,x,y,z,0,0,0,s);
         const cyl=(r1,r2,h,mat,p,x,y,z,rx=0,ry=0,rz=0,seg=16)=>add(new THREE.CylinderGeometry(r1,r2,h,seg),mat,p,x,y,z,rx,ry,rz);
     
-        const visualRoot=new THREE.Group(); visualRoot.name='infantryVisualRoot'; visualRoot.position.y=1.22; visualRoot.scale.set(1.68,1.68,1.68); g.add(visualRoot);
+        const visualRoot=new THREE.Group(); visualRoot.name='infantryVisualRoot'; visualRoot.position.y=1.22; visualRoot.scale.set(1.38,1.38,1.38); g.add(visualRoot);
     
         // Legs: articulated combat trousers, knees, gaiters and heavy boots.
         const makeLeg=(side)=>{
@@ -8169,7 +8227,7 @@ function startGame(){openBattleSetup();}
         const terrainY=getTerrainHeight(x,z); g.position.set(x,terrainY,z); g.rotation.y=team==='player'?-Math.PI/4:Math.PI*3/4; scene.add(g);
         const hpLabel=document.createElement('div'); hpLabel.className=`tank-hp-label ${team==='player'?'hp-player':'hp-enemy'}`; const hpFill=document.createElement('div'); hpFill.className='tank-hp-fill'; hpLabel.appendChild(hpFill); document.getElementById('hp-labels-container').appendChild(hpLabel);
     
-        const soldier={mesh:g,team,target:null,hpLabel,hpFill,hp:100,maxHp:100,hpRevealUntil:0,lastShot:0,reloadTime:0,speed:.105,isDestroyed:false,destructionTimer:0,type:'infantry',manualControl:team==='player',hasPlayerMoveOrder:false,ceaseFire:false,guardPoint:null,guardRadius:14,holdPosition:false,
+        const soldier={mesh:g,team,target:null,hpLabel,hpFill,hp:100,maxHp:100,hpRevealUntil:0,lastShot:0,reloadTime:0,speed:.145,isDestroyed:false,destructionTimer:0,type:'infantry',manualControl:team==='player',hasPlayerMoveOrder:false,ceaseFire:false,guardPoint:null,guardRadius:14,holdPosition:false,
             infantryLegL:L.root,infantryLegR:R.root,infantryArmL:armL,infantryArmR:armR,infantryThighL:L.thigh,infantryThighR:R.thigh,infantryShinL:L.shin,infantryShinR:R.shin,
             infantryRifle:rifle,infantryMuzzle:muzzle,infantryVisualRoot:visualRoot,infantryHead:head,infantryChestFlag:chestFlag,walkCycle:Math.random()*6.28,infantryAttackCycle:0,lastDustPos:new THREE.Vector3(x,terrainY,z),noInfantryTrail:true,isInfantry:true,isAiming:false,aimTarget:null,aimUntil:0,lastStepIndex:-1,infantryBurstLeft:0,infantryBurstTimer:0,deathStyle:null,deathStart:0,lastHitWasExplosion:false,
             breathPhase:Math.random()*Math.PI*2,breathAmount:.012,infantryIdleTime:0,injuryCount:0,combatState:'moving',combatSpeed:.108,weaponShake:0,smokeTimer:0,prone:false,runAudioCooldown:0,lastRunAudioAt:0};
@@ -8861,7 +8919,8 @@ function startGame(){openBattleSetup();}
             const enemies=[
                 ...(u.team==='player'?enemyTanks:playerTanks),
                 ...(ambulances||[]).filter(a=>a&&a.team===opposingTeam),
-                ...(reconVehicles||[]).filter(v=>v&&v.team===opposingTeam)
+                ...(reconVehicles||[]).filter(v=>v&&v.team===opposingTeam),
+                ...(constructedArtillery||[]).filter(a=>a&&a.done&&!a.isDestroyed&&a.owner===opposingTeam)
             ];
             let target=null,best=120*120;
             const enemyCommandBase=u.team==='player'?enemyBaseGroup:playerBaseGroup;
@@ -8872,7 +8931,7 @@ function startGame(){openBattleSetup();}
             }
 
             if(!target){
-                const structures=[...constructedFactories.filter(f=>f && f.done && !f.isDestroyed && f.owner!==(u.team)), ...constructedBarracks.filter(b=>b && b.done && !b.isDestroyed && b.owner!==(u.team))];
+                const structures=[...constructedFactories.filter(f=>f && f.done && !f.isDestroyed && f.owner!==(u.team)), ...constructedBarracks.filter(b=>b && b.done && !b.isDestroyed && b.owner!==(u.team)), ...(constructedArtillery||[]).filter(a=>a&&a.done&&!a.isDestroyed&&a.owner!==u.team)];
                 for(const st of structures){const d=u.mesh.position.distanceTo(st.mesh.position);if(d<120 && d*d<best){target=st;best=d*d;}}
             }
             if(!target && enemyCommandBase && !enemyCommandBase.isDestroyed){
@@ -8884,6 +8943,7 @@ function startGame(){openBattleSetup();}
                 ...(constructedFactories||[]).filter(f=>f&&f.done&&!f.isDestroyed&&f.owner!==u.team),
                 ...(enemyFactories||[]).filter(f=>f&&!f.isDestroyed&&f.done&&u.team==='player'),
                 ...(constructedBarracks||[]).filter(b=>b&&b.done&&!b.isDestroyed&&b.owner!==u.team),
+                ...(constructedArtillery||[]).filter(a=>a&&a.done&&!a.isDestroyed&&a.owner!==u.team),
                 (u.team==='player'?enemyBaseGroup:playerBaseGroup)
             ].filter(st=>st&&st.mesh&&!st.isDestroyed);
             let siegeTarget=null,siegeDist=Infinity;
@@ -9003,7 +9063,7 @@ function startGame(){openBattleSetup();}
             const antenna=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,1.1,8),panel); antenna.position.set(side*1.55,3.55,-2.55); antenna.rotation.z=side*.18; group.add(antenna);
         });
 
-        const terrainY=getTerrainHeight(x,z); group.position.set(x,terrainY,z); group.scale.setScalar(0.82); scene.add(group);
+        const terrainY=getTerrainHeight(x,z); group.position.set(x,terrainY,z); group.scale.setScalar(1.00); scene.add(group);
         const hpLabel=document.createElement('div'); hpLabel.className=`tank-hp-label ${team==='player'?'hp-player':'hp-enemy'}`;
         const hpFill=document.createElement('div'); hpFill.className='tank-hp-fill'; hpLabel.appendChild(hpFill); document.getElementById('hp-labels-container').appendChild(hpLabel);
 
@@ -9394,19 +9454,24 @@ function startGame(){openBattleSetup();}
         playerBaseGroup.name = '__PLAYER_BASE_GROUP__';
         playerBaseGroup.userData.team = 'player';
         playerBaseGroup.position.set(CORNER_OFFSET, getTerrainHeight(CORNER_OFFSET, CORNER_OFFSET), CORNER_OFFSET);
-        playerBaseGroup.rotation.y = -(3 * Math.PI) / 4; 
+        playerBaseGroup.rotation.y = -(3 * Math.PI) / 4; playerBaseGroup.scale.setScalar(1.12); 
 
         enemyBaseGroup = new THREE.Group();
         enemyBaseGroup.name = '__ENEMY_BASE_GROUP__';
         enemyBaseGroup.userData.team = 'enemy';
         enemyBaseGroup.position.set(-CORNER_OFFSET, getTerrainHeight(-CORNER_OFFSET, -CORNER_OFFSET), -CORNER_OFFSET);
-        enemyBaseGroup.rotation.y = Math.PI / 4; // اتجاه بوابة معسكر العدو نحو حقل النفط الأقرب 
+        enemyBaseGroup.rotation.y = Math.PI / 4; enemyBaseGroup.scale.setScalar(1.12); // تكبير القاعدة مع الحفاظ على موضعها 
 
         createBaseStructure(playerBaseGroup, false);
         createBaseStructure(enemyBaseGroup, true);
 
         scene.add(playerBaseGroup);
         scene.add(enemyBaseGroup);
+        // Recess both command bases into a shallow defensive earthwork.
+        lowerGroundForStructure(CORNER_OFFSET,CORNER_OFFSET,'commandBase');
+        lowerGroundForStructure(-CORNER_OFFSET,-CORNER_OFFSET,'commandBase');
+        playerBaseGroup.position.y=getTerrainHeight(CORNER_OFFSET,CORNER_OFFSET);
+        enemyBaseGroup.position.y=getTerrainHeight(-CORNER_OFFSET,-CORNER_OFFSET);
 
         obstacles.push({ x: CORNER_OFFSET, z: CORNER_OFFSET, radius: 14 });
         obstacles.push({ x: -CORNER_OFFSET, z: -CORNER_OFFSET, radius: 14 });
@@ -10061,7 +10126,7 @@ function startGame(){openBattleSetup();}
 
         // حجم ميداني أصغر وأكثر تناسباً مع MAP، مع الحفاظ على تفاصيل النموذج.
         // السكود والتركس أصغر بصرياً، والدبابة أصغر قليلاً لتجنب ازدحام الوحدات.
-        const visualScale = type === 'rocket' ? 0.80 : (type === 'normal' ? 0.87 : 0.81);
+        const visualScale = type === 'rocket' ? 1.08 : (type === 'normal' ? 1.16 : 1.10);
         tankGroup.scale.setScalar(visualScale);
         scene.add(tankGroup);
         tankGroup.traverse(o=>{ if(o.isMesh) o.castShadow=false; });
@@ -10286,23 +10351,76 @@ function startGame(){openBattleSetup();}
         }
     }
 
-    function addSmokeParticle(pos, customColor = 0x222222, scale = 1) {
+    function addSmokeParticle(pos, customColor = 0x222222, scale = 1, motion = null) {
         if (smokeParticles.length >= COMBAT_PERF.maxSmokeParticles) return;
-        // دخان حجمي ناعم بطبقتين خفيفتين، مع هندسة منخفضة التفاصيل لتقليل كلفة الرسم.
+        // دخان ناعم متعدد الطبقات، بحواف شفافة وانتشار جانبي طبيعي.
         const group = new THREE.Group();
-        const outerMat = new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: 0.25, depthWrite: false });
-        const innerMat = new THREE.MeshBasicMaterial({ color: 0x777b80, transparent: true, opacity: 0.10, depthWrite: false });
-        const outer = new THREE.Mesh(new THREE.SphereGeometry(0.9 * scale, 8, 6), outerMat);
-        const inner = new THREE.Mesh(new THREE.SphereGeometry(0.52 * scale, 7, 5), innerMat);
-        outer.scale.set(1.35, 0.82, 1.22);
-        inner.scale.set(1.2, 0.92, 1.1);
+        const isBlackSmoke = (Number(customColor) & 0xffffff) <= 0x303030;
+        const outerMat = new THREE.MeshBasicMaterial({ color: customColor, transparent: true, opacity: isBlackSmoke ? 0.58 : 0.25, depthWrite: false });
+        const innerMat = new THREE.MeshBasicMaterial({ color: isBlackSmoke ? 0x202020 : 0x777b80, transparent: true, opacity: isBlackSmoke ? 0.28 : 0.10, depthWrite: false });
+        const outer = new THREE.Mesh(new THREE.SphereGeometry(0.9 * scale, 10, 8), outerMat);
+        const inner = new THREE.Mesh(new THREE.SphereGeometry(0.52 * scale, 9, 7), innerMat);
+        outer.scale.set(1.42, 0.86, 1.30);
+        inner.scale.set(1.24, 0.96, 1.14);
         inner.position.set(0.08 * scale, 0.12 * scale, -0.04 * scale);
+        outerMat.userData.baseOpacity = outerMat.opacity;
+        innerMat.userData.baseOpacity = innerMat.opacity;
         group.add(outer, inner);
         const groundH = getTerrainHeight(pos.x, pos.z);
-        group.position.set(pos.x + (Math.random()-0.5)*1.15*scale, Math.max(pos.y, groundH + 0.75) + Math.random()*0.35*scale, pos.z + (Math.random()-0.5)*1.15*scale);
+        group.position.set(pos.x + (Math.random()-0.5)*0.55*scale, Math.max(pos.y, groundH + 0.48) + Math.random()*0.22*scale, pos.z + (Math.random()-0.5)*0.55*scale);
         group.rotation.y = Math.random() * Math.PI * 2;
         scene.add(group);
-        smokeParticles.push({ mesh: group, life: 58 + Math.random()*18, maxLife: 76, vy: 0.045 + Math.random()*0.035, driftX: (Math.random()-0.5)*0.014, driftZ: (Math.random()-0.5)*0.014, baseScale: scale, modernSmoke: true });
+        const life = motion?.life || (isBlackSmoke ? 112 + Math.random()*28 : 58 + Math.random()*18);
+        smokeParticles.push({ mesh: group, life, maxLife: life, age: 0,
+            vy: motion?.vy ?? (isBlackSmoke ? 0.075 + Math.random()*0.035 : 0.045 + Math.random()*0.035),
+            driftX: motion?.driftX ?? (Math.random()-0.5)*0.014,
+            driftZ: motion?.driftZ ?? (Math.random()-0.5)*0.014,
+            baseScale: scale, modernSmoke: true, mushroomSmoke: !!motion?.mushroom });
+    }
+
+    function createMushroomSmokeCloud(centerPos, power = 1) {
+        if (!centerPos || !scene) return;
+        // ساق عمودي من الدخان ثم قبعة عريضة تنتشر يميناً ويساراً كالفطر.
+        const count = 34;
+        for (let i = 0; i < count && smokeParticles.length < COMBAT_PERF.maxSmokeParticles; i++) {
+            const cap = i >= 17;
+            const a = Math.random() * Math.PI * 2;
+            const r = cap ? (2.0 + Math.random()*4.8) * power : (0.35 + Math.random()*1.7) * power;
+            const y = cap ? (5.2 + Math.random()*4.0) * power : (0.9 + Math.random()*5.0) * power;
+            const pos = centerPos.clone().add(new THREE.Vector3(Math.cos(a)*r, y, Math.sin(a)*r));
+            const spread = cap ? 0.060 : 0.026;
+            addSmokeParticle(pos, i%5===0 ? 0x202020 : 0x090a0a,
+                (cap ? 1.65 : 1.25) * power * (0.82 + Math.random()*0.42),
+                { mushroom:true, life:125+Math.random()*35, vy:0.045+Math.random()*0.035,
+                  driftX:Math.cos(a)*spread+(Math.random()-.5)*.018,
+                  driftZ:Math.sin(a)*spread+(Math.random()-.5)*.018 });
+        }
+    }
+
+    function createDestroyedTargetAfterburn(pos, size = 1) {
+        if (!pos || !scene) return;
+        const base = pos.clone();
+        base.y = getTerrainHeight(base.x, base.z) + 0.18;
+        const fire = new THREE.Group();
+        fire.name = 'destroyedTargetSmallFire';
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(1.05 * size, 10, 7), new THREE.MeshBasicMaterial({ color: 0xff5a0a, transparent: true, opacity: 0.20, blending: THREE.AdditiveBlending, depthWrite: false }));
+        glow.scale.set(1.25, 0.52, 1.05);
+        const flameA = new THREE.Mesh(new THREE.ConeGeometry(0.34 * size, 1.12 * size, 9), new THREE.MeshBasicMaterial({ color: 0xff6a12, transparent: true, opacity: 0.78, depthWrite: false }));
+        flameA.position.y = 0.82 * size;
+        const flameB = new THREE.Mesh(new THREE.ConeGeometry(0.20 * size, 0.76 * size, 8), new THREE.MeshBasicMaterial({ color: 0xffc04a, transparent: true, opacity: 0.72, depthWrite: false }));
+        flameB.position.set(0.16 * size, 0.62 * size, 0.08 * size);
+        fire.add(glow, flameA, flameB);
+        fire.position.copy(base);
+        scene.add(fire);
+        const life = 300;
+        combatEffects.push({ mesh: fire, life, maxLife: life, kind: 'wreckFire', glow, flameA, flameB, baseScale: size });
+        for (let i = 0; i < 9; i++) {
+            const puff = base.clone();
+            puff.x += (Math.random() - 0.5) * 1.2 * size;
+            puff.z += (Math.random() - 0.5) * 1.2 * size;
+            puff.y += 0.8 + Math.random() * 1.4 * size;
+            addSmokeParticle(puff, 0x101010, 1.0 + Math.random() * 0.55 * size);
+        }
     }
 
     function addRocketTrailParticle(pos, scale = 1) {
@@ -10374,6 +10492,7 @@ function startGame(){openBattleSetup();}
         nozzleGlow.position.y = -7.12;
         group.add(nozzleGlow);
 
+        group.traverse(part=>{ if(part.isMesh){ part.castShadow=true; part.receiveShadow=true; } });
         return group;
     }
 
@@ -10439,6 +10558,7 @@ function startGame(){openBattleSetup();}
         factoryBuildArmed = true;
         factoryPlacementMode = true;
         factoryPlacementRotation = builder.mesh.rotation.y;
+        placementRotateLastX=null;
         factoryPlacementPoint = null;
         showFactoryPlacementGhost();
         updateConstructionBarForSelection();
@@ -10466,6 +10586,7 @@ function startGame(){openBattleSetup();}
     function hideFactoryPlacement() {
         factoryBuildArmed=false; factoryPlacementMode=false; factoryPlacementPoint=null;
         barracksBuildArmed=false; barracksPlacementMode=false; barracksPlacementPoint=null;
+        artilleryPlacementMode=false;artilleryPlacementPoint=null;if(artilleryPlacementGhost){scene.remove(artilleryPlacementGhost.mesh);artilleryPlacementGhost=null;}
         if(factoryPlacementGhost){ scene.remove(factoryPlacementGhost.mesh); factoryPlacementGhost=null; }
         if(barracksPlacementGhost){ scene.remove(barracksPlacementGhost.mesh); barracksPlacementGhost=null; }
     }
@@ -10488,6 +10609,258 @@ function startGame(){openBattleSetup();}
     }
 
 
+    function updateConstructionProgressOverlay(c, progress, title='BUILDING'){
+        if(!c || !c.build || !c.build.mesh) return;
+        if(!c.progressEl){
+            const el=document.createElement('div');el.className='world-construction-progress';
+            el.style.cssText='position:absolute;z-index:1200;box-sizing:border-box;width:76px;min-width:76px;max-width:76px;height:17px;padding:2px 4px;border:1px solid rgba(190,215,195,.32);border-radius:5px;background:rgba(8,13,10,.34);box-shadow:0 1px 5px rgba(0,0,0,.22);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);color:#f1f5e9;font:800 7px/1 Arial,sans-serif;text-align:center;pointer-events:none;transform:translate(-50%,-50%);';
+            el.innerHTML='<div class="world-construction-title" style="font-size:6px;letter-spacing:.2px;margin-bottom:1px">BUILDING</div><div style="height:3px;background:#263329;border-radius:5px;overflow:hidden"><div class="world-construction-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#16a34a,#a3e635);box-shadow:0 0 7px #4ade80"></div></div><div class="world-construction-percent" style="font-size:6px;margin-top:1px;color:#d9e8d4">0%</div>';
+            document.getElementById('hp-labels-container').appendChild(el);c.progressEl=el;
+        }
+        const pct=Math.max(0,Math.min(100,Math.round((progress||0)*100)));
+        const fill=c.progressEl.querySelector('.world-construction-fill');if(fill)fill.style.width=pct+'%';
+        const label=c.progressEl.querySelector('.world-construction-percent');if(label)label.textContent=pct+'%';
+        const titleEl=c.progressEl.querySelector('.world-construction-title');if(titleEl)titleEl.textContent=title;
+        const v=c.build.mesh.position.clone();v.y+=10;v.project(camera);
+        if(v.z>1 || v.z< -1 || !Number.isFinite(v.x)){c.progressEl.style.display='none';return;}
+        c.progressEl.style.display='block';c.progressEl.style.left=((v.x*.5+.5)*window.innerWidth)+'px';c.progressEl.style.top=((-v.y*.5+.5)*window.innerHeight)+'px';c.progressEl.style.width='76px';c.progressEl.style.height='17px';c.progressEl.style.transform='translate(-50%,-50%)';
+    }
+    function removeConstructionProgressOverlay(c){if(c&&c.progressEl){c.progressEl.remove();c.progressEl=null;}}
+
+    function createFieldArtillery(x,z,ghost=false,owner='player'){
+        const g=new THREE.Group();g.name='fieldArtilleryEmplacement';
+        const mat=(c,m=.45,r=.58)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:r});
+        const olive=mat(0x555b43,.48,.66),oliveDark=mat(0x353d31,.55,.62),steel=mat(0x85877c,.82,.36),dark=mat(0x171b17,.72,.42),rubber=mat(0x111310,.12,.94),accent=mat(owner==='enemy'?(battleConfig.enemyColor||'#f43f5e'):(battleConfig.playerColor||'#168cff'),.3,.55);
+        const add=(parent,geo,m,px,py,pz)=>{const o=new THREE.Mesh(geo,m);o.position.set(px,py,pz);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;};
+        // Low, wheeled field-howitzer carriage — no bunker/pit, matching the reference silhouette.
+        const axle=add(g,new THREE.CylinderGeometry(.22,.22,5.35,16),steel,0,.95,.8);axle.rotation.z=Math.PI/2;
+        add(g,new THREE.BoxGeometry(1.55,.52,2.65),oliveDark,0,.88,.35);
+        add(g,new THREE.BoxGeometry(1.15,.28,1.75),olive,0,1.12,-.18);
+        // Central turntable and elevation cradle.
+        const turntable=add(g,new THREE.CylinderGeometry(1.05,1.18,.34,20),oliveDark,0,1.18,-.22);
+        const pivot=new THREE.Group();pivot.name='artilleryTurretPivot';pivot.position.set(0,1.35,-.28);g.add(pivot);
+        const cradle=add(pivot,new THREE.BoxGeometry(1.85,.72,3.2),olive,0,.15,-.1);
+        const breech=add(pivot,new THREE.BoxGeometry(1.65,1.45,1.45),oliveDark,0,.72,1.05);
+        // Breech ring, recoil cylinders and visible side trunnions.
+        for(const side of [-1,1]){
+            const trunnion=add(pivot,new THREE.CylinderGeometry(.38,.38,.42,16),steel,side*1.02,.2,.55);trunnion.rotation.z=Math.PI/2;
+            const recoilTube=add(pivot,new THREE.CylinderGeometry(.105,.105,2.2,12),steel,side*.58,.34,-.45);recoilTube.rotation.x=Math.PI/2;
+            const recoilRod=add(pivot,new THREE.CylinderGeometry(.055,.055,1.65,10),dark,side*.58,.34,-.72);recoilRod.rotation.x=Math.PI/2;
+        }
+        const breechRing=add(pivot,new THREE.CylinderGeometry(.82,.82,.38,20),steel,0,.72,.1);breechRing.rotation.x=Math.PI/2;
+        // Long tapered gun tube with a dark muzzle and a compact muzzle brake.
+        const recoil=new THREE.Group();recoil.name='artilleryRecoil';recoil.position.set(0,.62,.38);pivot.add(recoil);
+        const barrel=add(recoil,new THREE.CylinderGeometry(.27,.48,13.8,24),olive,0,.1,-7.15);barrel.rotation.x=-Math.PI/2+.25;
+        const barrelSleeve=add(recoil,new THREE.CylinderGeometry(.43,.43,1.05,20),oliveDark,0,.1,-1.65);barrelSleeve.rotation.x=-Math.PI/2+.25;
+        const muzzle=add(recoil,new THREE.CylinderGeometry(.36,.31,.68,20),dark,0,.1,-13.95);muzzle.rotation.x=-Math.PI/2+.25;
+        const muzzleBand=add(recoil,new THREE.CylinderGeometry(.43,.43,.16,20),steel,0,.1,-13.63);muzzleBand.rotation.x=-Math.PI/2+.25;
+        // Small gun shield around the breech, with a slight backward rake.
+        const shield=add(pivot,new THREE.BoxGeometry(2.55,1.72,.16),olive,0,.92,1.82);shield.rotation.x=-.12;
+        for(const side of [-1,1]){
+            const shieldRib=add(pivot,new THREE.BoxGeometry(.12,1.35,.18),oliveDark,side*1.12,.9,1.72);
+            const stripe=add(pivot,new THREE.BoxGeometry(.85,.09,.035),accent,side*.55,1.48,1.91);
+        }
+        // Two large rubber road wheels, steel hubs and radial spokes.
+        for(const side of [-1,1]){
+            const wheel=new THREE.Mesh(new THREE.CylinderGeometry(1.28,1.28,.62,32),rubber);wheel.rotation.z=Math.PI/2;wheel.position.set(side*2.32,.98,.85);wheel.castShadow=true;wheel.receiveShadow=true;g.add(wheel);
+            const sidewall=new THREE.Mesh(new THREE.TorusGeometry(1.12,.15,10,32),dark);sidewall.rotation.y=Math.PI/2;sidewall.position.copy(wheel.position);g.add(sidewall);
+            const hub=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,.72,20),steel);hub.rotation.z=Math.PI/2;hub.position.set(side*2.35,.98,.85);g.add(hub);
+            const cap=new THREE.Mesh(new THREE.CylinderGeometry(.24,.24,.76,16),oliveDark);cap.rotation.z=Math.PI/2;cap.position.set(side*2.37,.98,.85);g.add(cap);
+            for(let k=0;k<10;k++){const a=k*Math.PI/5;const spoke=add(g,new THREE.BoxGeometry(.12,.72,.13),steel,side*2.73,.98+Math.cos(a)*.42,.85+Math.sin(a)*.42);}
+            // Tread lugs around the tire circumference.
+            for(let k=0;k<20;k++){const a=k*Math.PI/10;const lug=add(g,new THREE.BoxGeometry(.13,.18,.72),dark,side*2.66,.98+Math.cos(a)*1.23,.85+Math.sin(a)*1.23);lug.rotation.x=a;}
+        }
+        // Split trails spread outward behind the axle like the reference field gun.
+        const trails=[];
+        for(const side of [-1,1]){
+            const trailGroup=new THREE.Group();trailGroup.position.set(side*.68,.58,2.05);trailGroup.rotation.y=side*.30;g.add(trailGroup);trails.push(trailGroup);
+            const beam=add(trailGroup,new THREE.BoxGeometry(.52,.42,8.5),oliveDark,0,0,3.9);beam.rotation.x=-.035;
+            const topPlate=add(trailGroup,new THREE.BoxGeometry(.58,.12,5.8),olive,0,.25,3.25);
+            const brace=add(trailGroup,new THREE.BoxGeometry(.22,.28,2.0),steel,0,-.05,1.3);brace.rotation.x=.12;
+            const spade=add(trailGroup,new THREE.BoxGeometry(1.08,.78,.34),oliveDark,0,-.18,8.05);spade.rotation.x=-.18;
+            const spadeEdge=add(trailGroup,new THREE.BoxGeometry(1.1,.12,.38),steel,0,-.53,8.08);
+            const handle=add(trailGroup,new THREE.CylinderGeometry(.055,.055,1.1,8),steel,0,.35,7.25);handle.rotation.x=.2;
+        }
+        // Elevation handwheels and a small sighting assembly add mechanical detail.
+        for(const side of [-1,1]){
+            const handwheel=new THREE.Mesh(new THREE.TorusGeometry(.34,.055,8,20),steel);handwheel.position.set(side*1.22,1.72,.45);handwheel.rotation.y=Math.PI/2;g.add(handwheel);
+            const sight=add(pivot,new THREE.BoxGeometry(.16,.22,.75),dark,side*.82,1.35,.35);sight.rotation.x=-.18;
+        }
+        // Defensive sandbag revetment around the field gun (open firing arc to the front).
+        const sandbagMat=mat(0x9a8965,.04,.98), sandbagSeam=mat(0x6f6249,.02,1);
+        const sandbagPositions=[
+            [-3.75,.42,-1.15,-.12],[ -3.95,.42,.05,.08],[-3.72,.42,1.25,.14],
+            [3.75,.42,-1.15,.12],[3.95,.42,.05,-.08],[3.72,.42,1.25,-.14],
+            [-2.65,.42,3.55,-.22],[-1.45,.42,4.05,-.08],[1.45,.42,4.05,.08],[2.65,.42,3.55,.22],
+            [-3.15,.88,2.55,-.18],[3.15,.88,2.55,.18]
+        ];
+        for(const [sx,sy,sz,ry] of sandbagPositions){
+            const bag=new THREE.Group();bag.position.set(sx,sy,sz);bag.rotation.y=ry;g.add(bag);
+            const body=add(bag,new THREE.BoxGeometry(1.28,.62,.72),sandbagMat,0,0,0);
+            body.scale.set(1,.88,1);
+            const seam=add(bag,new THREE.BoxGeometry(.035,.48,.74),sandbagSeam,.18,.015,.005);
+            seam.rotation.z=.05;
+            const tie=add(bag,new THREE.BoxGeometry(.07,.12,.75),sandbagSeam,-.36,.02,0);
+        }
+        g.scale.set(1.32,1.05,1.08);g.position.set(x,getTerrainHeight(x,z),z);scene.add(g);
+        const hpLabel=document.createElement('div');hpLabel.className='tank-hp-label '+(owner==='enemy'?'hp-enemy':'hp-player');const hpFill=document.createElement('div');hpFill.className='tank-hp-fill';hpLabel.appendChild(hpFill);document.getElementById('hp-labels-container').appendChild(hpLabel);hpLabel.style.display='none';
+        g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+        if(ghost)g.traverse(o=>{if(o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone();const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>{m.transparent=true;m.opacity=.34;m.depthWrite=false;});}});
+        return {mesh:g,x,z,owner,team:owner,done:!ghost,ghost,isArtillery:true,hp:125,maxHp:125,hpLabel,hpFill,hpRevealUntil:0,isDestroyed:false,pivot,barrel,recoil,reloadAt:0,collisionRadius:6,visionRadius:190,progress:0,duration:20*REAL_TICKS_PER_SECOND,scanPhase:(Math.random()*2-1)*.85,scanDirection:1,recoilOffset:0,crew:[],crewSpawned:false};
+    }
+    function createArtilleryCrew(art){
+        if(!art||art.crewSpawned||typeof createInfantrySoldier!=='function')return;
+        art.crewSpawned=true;
+        const gunner=createInfantrySoldier(art.x,art.z,art.owner);
+        const loader=createInfantrySoldier(art.x,art.z,art.owner);
+        const crew=[
+            {unit:gunner,role:'gunner',x:-1.45,z:1.55},
+            {unit:loader,role:'loader',x:1.55,z:2.05}
+        ];
+        for(const c of crew){
+            const s=c.unit;
+            if(s.hpLabel)s.hpLabel.style.display='none';
+            if(s.mesh.parent)s.mesh.parent.remove(s.mesh);
+            art.mesh.add(s.mesh);
+            s.mesh.position.set(c.x,.02,c.z);
+            s.mesh.scale.setScalar(.76);
+            s.mesh.rotation.y=c.role==='gunner'?-Math.PI*.22:Math.PI*.18;
+            s.mesh.userData.artilleryCrewRole=c.role;
+            s.mesh.userData.artilleryCrewBaseY=.02;
+        }
+        art.crew=crew;
+    }
+    function updateArtilleryCrew(art,now){
+        if(!art||!art.crew)return;
+        for(const c of art.crew){
+            const s=c.unit;if(!s||!s.mesh)continue;
+            const t=now*.003+(c.role==='loader'?1.4:0);
+            const arms=s.infantryArmL&&s.infantryArmR;
+            if(c.role==='gunner'&&arms){
+                s.infantryArmL.rotation.x=-.48+Math.sin(t)*.035;
+                s.infantryArmR.rotation.x=-.62+Math.sin(t+.4)*.035;
+            }else if(c.role==='loader'&&arms){
+                const loading=(now-(art.lastShotAt||0))<2200;
+                const blend=loading?1:0;
+                s.infantryArmL.rotation.x=THREE.MathUtils.lerp(s.infantryArmL.rotation.x,-1.05,blend*.12);
+                s.infantryArmR.rotation.x=THREE.MathUtils.lerp(s.infantryArmR.rotation.x,-.95,blend*.12);
+                if(loading)s.mesh.rotation.y=Math.PI*.18+Math.sin(t*1.5)*.07;
+            }
+            if(s.infantryVisualRoot)s.infantryVisualRoot.rotation.z=Math.sin(t*.65)*.012;
+        }
+    }
+
+    function armArtilleryBuild(){
+        const builder=selectedTank&&getUnitKind(selectedTank)==='builder'&&!selectedTank.isDestroyed?selectedTank:null;
+        if(!builder){showFloatingMsg('Select the construction dozer first');return;}
+        if(activeArtilleryConstructions.some(c=>c.builder===builder)){showFloatingMsg('This dozer is already building');return;}
+        if(playerMoney<350){showFloatingMsg('Insufficient funds — artillery costs $350');return;}
+        hideFactoryPlacement();artilleryPlacementMode=true;artilleryPlacementRotation=builder.mesh.rotation.y;placementRotateLastX=null;artilleryPlacementPoint=null;
+        if(artilleryPlacementGhost&&artilleryPlacementGhost.mesh)scene.remove(artilleryPlacementGhost.mesh);
+        artilleryPlacementGhost=createFieldArtillery(builder.mesh.position.x,builder.mesh.position.z,true,'player');
+        showFloatingMsg('Choose a position for the defensive artillery');updateConstructionBarForSelection();
+    }
+    function updateArtilleryGhostFromScreen(clientX,clientY){
+        if(artilleryPlacementMode)updatePlacementRotationFromDrag(clientX);
+        if(!artilleryPlacementMode||!artilleryPlacementGhost)return;
+        mouse.x=clientX/window.innerWidth*2-1;mouse.y=-(clientY/window.innerHeight)*2+1;raycaster.setFromCamera(mouse,camera);
+        const hits=raycaster.intersectObject(terrainMesh);if(!hits.length)return;
+        const p=hits[0].point;artilleryPlacementPoint=p.clone();
+        artilleryPlacementGhost.mesh.position.set(p.x,getBuildingGroundLevel(p.x,p.z,'barracks',artilleryPlacementRotation),p.z);
+        artilleryPlacementGhost.mesh.rotation.y=artilleryPlacementRotation;
+        const valid=isBuildingPlacementValid(p,'barracks',artilleryPlacementRotation,'player').valid;showInvalidBuildGhost(artilleryPlacementGhost,valid);
+    }
+    function startArtilleryConstruction(builder,point,rotation=0){
+        if(!builder||builder.isDestroyed||playerMoney<350)return;
+        playerMoney-=350;totalMoneySpent+=350;updateEconomyUI();
+        if(artilleryPlacementGhost){scene.remove(artilleryPlacementGhost.mesh);artilleryPlacementGhost=null;}artilleryPlacementMode=false;artilleryPlacementPoint=null;
+        const build=createFieldArtillery(point.x,point.z,true,'player');build.rotation=rotation;build.mesh.rotation.y=rotation;build.mesh.visible=true;build.mesh.scale.set(1,.18,1);build.mesh.position.y=getTerrainHeight(point.x,point.z)-4.5;
+        const workPoint=point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-9));workPoint.y=getTerrainHeight(workPoint.x,workPoint.z);
+        const cage=createBarracksConstructionCage(build);cage.mesh.scale.set(.62,.72,.62);
+        const lift=createBarracksConstructionLift(build);lift.mesh.scale.set(.72,.72,.72);
+        const foundation=new THREE.Mesh(new THREE.CylinderGeometry(5.0,5.4,.36,16),new THREE.MeshStandardMaterial({color:0x77796f,roughness:.92}));foundation.position.set(point.x,getTerrainHeight(point.x,point.z)+.18,point.z);foundation.receiveShadow=true;scene.add(foundation);build.mesh.userData.constructionFoundation=foundation;
+        const construction={builder,build,point:point.clone(),workPoint,cage,lift,started:false,startedAt:0,elapsed:0};activeArtilleryConstructions.push(construction);updateConstructionProgressOverlay(construction,0,'FIELD ARTILLERY');
+        builder.buildTarget=workPoint.clone();builder.target=workPoint.clone();builder.isBuilding=false;
+        showFloatingMsg('Construction dozer moving to artillery position');
+    }
+    function damageArtillery(art,amount,fromTeam){
+        if(!art||art.isDestroyed||!art.done)return;
+        art.hp=Math.max(0,art.hp-Math.max(1,amount));art.hpRevealUntil=Date.now()+5000;
+        if(art.hp>0)return;
+        art.isDestroyed=true;if(art.hpLabel)art.hpLabel.style.display='none';
+        const pos=art.mesh.position.clone();if(typeof createModernExplosion==='function')createModernExplosion(pos.x,pos.z);createBlackImpactCrater(pos,5.2,18000);createDestroyedTargetAfterburn(pos,1.0);
+        art.mesh.traverse(o=>{if(o.isMesh&&o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m.color)m.color.setHex(0x242522);});}});
+        setTimeout(()=>{if(art.mesh)art.mesh.visible=false;},4500);
+    }
+
+    function deltaTimeSafe(){const t=performance.now();const d=t-(window.__artilleryLastTick||t);window.__artilleryLastTick=t;return Math.max(8,Math.min(50,d));}
+    function spawnArtilleryPuff(position,scale=1,life=1.25){
+        const mesh=new THREE.Mesh(new THREE.SphereGeometry(1,8,7),new THREE.MeshBasicMaterial({color:0x4b4b45,transparent:true,opacity:.48,depthWrite:false}));
+        mesh.position.copy(position);mesh.scale.setScalar(.35*scale);scene.add(mesh);
+        artilleryFxParticles.push({mesh,age:0,life,base:.35*scale,drift:new THREE.Vector3((Math.random()-.5)*.055,.035+Math.random()*.035,(Math.random()-.5)*.055)});
+    }
+    function spawnArtilleryMuzzleBlast(origin,direction){
+        const flame=new THREE.Mesh(new THREE.SphereGeometry(1,10,8),new THREE.MeshBasicMaterial({color:0xff8a25,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false}));
+        flame.position.copy(origin).addScaledVector(direction,.8);flame.scale.set(.75,.75,1.45);scene.add(flame);
+        artilleryFxParticles.push({mesh:flame,age:0,life:.16,base:1.0,flash:true,drift:new THREE.Vector3()});
+        for(let n=0;n<14;n++){const p=origin.clone().addScaledVector(direction,.35+Math.random()*.9);p.x+=(Math.random()-.5)*.45;p.y+=(Math.random()-.5)*.35;p.z+=(Math.random()-.5)*.45;spawnArtilleryPuff(p,.85+Math.random()*.75,1.35+Math.random()*.9);}
+    }
+    function updateArtilleryFx(dt){
+        for(let i=artilleryFxParticles.length-1;i>=0;i--){const f=artilleryFxParticles[i];f.age+=dt;const t=Math.min(1,f.age/f.life);if(!f.mesh||!f.mesh.parent||t>=1){if(f.mesh?.parent)scene.remove(f.mesh);artilleryFxParticles.splice(i,1);continue;}if(f.flash){f.mesh.material.opacity=.95*(1-t);f.mesh.scale.multiplyScalar(1.08);}else{f.mesh.position.add(f.drift);f.mesh.scale.setScalar(f.base*(1+t*2.8));f.mesh.material.opacity=.48*(1-t);}}
+    }
+
+    function updateArtillerySystem(){
+        const now=performance.now();
+        for(const c of [...activeArtilleryConstructions]){
+            const b=c.builder;if(!b||b.isDestroyed){if(c.cage?.mesh)scene.remove(c.cage.mesh);if(c.lift?.mesh)scene.remove(c.lift.mesh);removeConstructionProgressOverlay(c);if(c.build.mesh.userData.constructionFoundation)scene.remove(c.build.mesh.userData.constructionFoundation);scene.remove(c.build.mesh);activeArtilleryConstructions=activeArtilleryConstructions.filter(x=>x!==c);continue;}
+            if(!c.started){updateConstructionProgressOverlay(c,0,'FIELD ARTILLERY');if(b.mesh.position.distanceTo(c.workPoint)<3){c.started=true;c.startedAt=now;b.isBuilding=true;b.target=null;playSound('constructionStart',1);}continue;}
+            const p=Math.min(1,(now-c.startedAt)/20000);c.elapsed=now-c.startedAt;
+            if(c.lift?.mesh){c.lift.t+=.025*c.lift.dir;if(c.lift.t>1){c.lift.t=1;c.lift.dir=-1;}if(c.lift.t< -1){c.lift.t=-1;c.lift.dir=1;}const xx=c.lift.t*5;if(c.lift.cable)c.lift.cable.position.x=xx;if(c.lift.hook)c.lift.hook.position.x=xx;if(c.lift.trolley)c.lift.trolley.position.x=xx;}
+            c.build.progress=p;
+            c.build.mesh.visible=true;c.build.mesh.scale.set(1.32,.18+.82*p,1.08);c.build.mesh.position.y=getTerrainHeight(c.point.x,c.point.z)-4.5*(1-p);
+            c.build.mesh.traverse(o=>{if(o.material){o.material.opacity=Math.min(1,.18+p*.82);o.material.transparent=p<1;o.material.depthWrite=p>=1;}});
+            updateConstructionProgressOverlay(c,p,'FIELD ARTILLERY');
+            if(p>=1){c.build.done=true;c.build.ghost=false;c.build.mesh.scale.set(1.32,1.05,1.08);c.build.mesh.position.y=getTerrainHeight(c.point.x,c.point.z);c.build.mesh.traverse(o=>{if(o.material){o.material.opacity=1;o.material.transparent=false;o.material.depthWrite=true;}});if(c.cage?.mesh)scene.remove(c.cage.mesh);if(c.lift?.mesh)scene.remove(c.lift.mesh);removeConstructionProgressOverlay(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}constructedArtillery.push(c.build);lowerGroundForStructure(c.point.x,c.point.z,'artillery');createArtilleryCrew(c.build);finishBuilderConstructionRetreat({builder:b,build:c.build,point:c.point});playSound('constructionComplete',.9);activeArtilleryConstructions=activeArtilleryConstructions.filter(x=>x!==c);showFloatingMsg('Field artillery completed — defensive range active');}
+        }
+        for(const art of constructedArtillery){
+            if(!art||!art.done||art.isDestroyed)continue;
+            art.recoilOffset=THREE.MathUtils.lerp(art.recoilOffset||0,0,.19);art.recoil.position.z=art.recoilOffset;art.recoil.rotation.x=THREE.MathUtils.lerp(art.recoil.rotation.x||0,0,.18);updateArtilleryCrew(art,now);
+            const enemies=[...playerTanks,...enemyTanks,...reconVehicles,...ambulances,...(constructedArtillery||[])].filter(u=>u&&!u.isDestroyed&&u.mesh&&u.team!==art.owner&&u.mesh.visible!==false&&(u.done!==false));
+            let target=null,best=190;
+            for(const u of enemies){const d=Math.hypot(u.mesh.position.x-art.mesh.position.x,u.mesh.position.z-art.mesh.position.z);if(d<best){best=d;target=u;}}
+            // The carriage never moves; only the barrel assembly slowly traverses. Scan when idle.
+            art.scanPhase+=(target?0:deltaTimeSafe()*.00022)*art.scanDirection;
+            if(Math.abs(art.scanPhase)>1.05)art.scanDirection*=-1;
+            // The complete field gun carriage traverses toward the target. Its barrel points along local -Z.
+            let desiredYaw=target?Math.atan2(-(target.mesh.position.x-art.mesh.position.x),-(target.mesh.position.z-art.mesh.position.z)):Math.sin(art.scanPhase)*.72;
+            let yawDelta=((desiredYaw-art.mesh.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
+            const previousYaw=art.mesh.rotation.y;
+            art.mesh.rotation.y+=yawDelta*Math.min(1,deltaTimeSafe()*.0038);
+            const yawStep=Math.abs(art.mesh.rotation.y-previousYaw);
+            if(yawStep>.012&&now-(art.lastTraverseSoundAt||0)>2200){playSound('artilleryTraverse',.38,art.mesh.position);art.lastTraverseSoundAt=now;}
+            art.pivot.rotation.y=0;
+            if(!target||now<(art.reloadAt||0))continue;
+            // Do not fire until the entire carriage is aligned with the detected target.
+            if(Math.abs(yawDelta)>.075)continue;
+            art.reloadAt=now+7600;
+            const aim=target.mesh.position.clone();const scatter=7+best*.11;aim.x+=(Math.random()-.5)*scatter*2;aim.z+=(Math.random()-.5)*scatter*2;aim.y=getTerrainHeight(aim.x,aim.z);
+            const origin=art.recoil.localToWorld(new THREE.Vector3(0,1.55,-15.55));const shell=new THREE.Group();const ball=new THREE.Mesh(new THREE.SphereGeometry(.48,16,12),new THREE.MeshStandardMaterial({color:0x252a27,metalness:.82,roughness:.3}));ball.scale.set(1,1,1.18);shell.add(ball);const band=new THREE.Mesh(new THREE.TorusGeometry(.43,.055,6,16),new THREE.MeshStandardMaterial({color:0x777d75,metalness:.9,roughness:.28}));band.rotation.x=Math.PI/2;shell.add(band);shell.position.copy(origin);shell.traverse(o=>{if(o.isMesh)o.castShadow=true;});scene.add(shell);
+            const direction=aim.clone().sub(origin).normalize();spawnArtilleryMuzzleBlast(origin,direction);art.recoilOffset=1.18;art.recoil.position.z=1.18;art.lastShotAt=now;art.recoil.rotation.x=-.075;for(let smoke=0;smoke<13;smoke++)spawnArtilleryPuff(origin.clone().addScaledVector(direction,.25+smoke*.34),1.0+Math.random()*.7,1.45+Math.random()*.9);triggerCameraShake(.095);
+            artilleryShells.push({mesh:shell,start:origin,target:aim,progress:0,duration:Math.max(1.25,best/105),owner:art.owner,damage:320,lastTrail:0});
+            playSound('artilleryFire',.95,origin);
+        }
+        for(let i=artilleryShells.length-1;i>=0;i--){const sh=artilleryShells[i];sh.progress+=1/60/sh.duration;const t=Math.min(1,sh.progress);const pos=sh.start.clone().lerp(sh.target,t);pos.y+=4*t*(1-t)*Math.min(58,Math.max(12,sh.start.distanceTo(sh.target)*.34));sh.mesh.position.copy(pos);sh.mesh.lookAt(sh.target);if(performance.now()-(sh.lastTrail||0)>75){spawnArtilleryPuff(pos.clone(),.34+Math.random()*.22,.75+Math.random()*.45);sh.lastTrail=performance.now();}
+            if(t>=1){const impact=sh.target.clone();if(sh.mesh.parent)scene.remove(sh.mesh);if(typeof createModernExplosion==='function')createModernExplosion(impact.x,impact.z);playSound('artilleryImpact',.9,impact);createModernImpactFlash(impact.clone(),sh.owner,{heavy:true});createBlackImpactCrater(impact,7.2,19000,false);triggerCameraShake(.075);for(const u of [...playerTanks,...enemyTanks,...reconVehicles,...ambulances]){if(!u||u.isDestroyed||!u.mesh||u.team===sh.owner)continue;const d=Math.hypot(u.mesh.position.x-impact.x,u.mesh.position.z-impact.z);if(d<24){const dmg=sh.damage*(1-d/27);u.hp=Math.max(0,u.hp-dmg);u.hpRevealUntil=Date.now()+3500;if(u.hp<=0&&!u.isDestroyed){if(typeof destroyCombatUnitSafely==='function')destroyCombatUnitSafely(u,sh.owner);}}}
+                for(const a of (constructedArtillery||[]))if(a&&a.done&&!a.isDestroyed&&a.owner!==sh.owner){const d=Math.hypot(a.mesh.position.x-impact.x,a.mesh.position.z-impact.z);if(d<24)damageArtillery(a,Math.floor(sh.damage*(1-d/27)),sh.owner);}
+                const enemyBase=sh.owner==='player'?enemyBaseGroup:playerBaseGroup;if(enemyBase&&!enemyBase.isDestroyed&&enemyBase.mesh.position.distanceTo(impact)<13)damageCommandBase(enemyBase,Math.floor(sh.damage*1.15),sh.owner);
+                for(const f of [...(constructedFactories||[]),...(enemyFactories||[])])if(f&&f.done&&!f.isDestroyed&&f.owner!==sh.owner&&f.mesh.position.distanceTo(impact)<13)damageFactory(f,Math.floor(sh.damage*1.05),sh.owner);
+                for(const b of (constructedBarracks||[]))if(b&&b.done&&!b.isDestroyed&&b.owner!==sh.owner&&b.mesh.position.distanceTo(impact)<13)damageBarracks(b,Math.floor(sh.damage*1.05),sh.owner);
+                for(const a of (constructedArtillery||[]))if(a&&a.done&&!a.isDestroyed&&a.owner!==sh.owner&&a.mesh.position.distanceTo(impact)<13)damageArtillery(a,Math.floor(sh.damage*1.05),sh.owner);
+                artilleryShells.splice(i,1);}
+        }
+        updateArtilleryFx(1/60);
+    }
+
     function getBuilderBarracksConstruction(builder){
         return activeBarracksConstruction && activeBarracksConstruction.builder===builder && !activeBarracksConstruction.build.done ? activeBarracksConstruction : null;
     }
@@ -10508,6 +10881,7 @@ function startGame(){openBattleSetup();}
         barracksBuildArmed=true;
         barracksPlacementMode=true;
         barracksPlacementRotation=builder.mesh.rotation.y;
+        placementRotateLastX=null;
         barracksPlacementPoint=null;
         barracksPlacementGhost=createMilitaryBarracks(builder.mesh.position.x,builder.mesh.position.z,true);
         barracksPlacementGhost.mesh.visible=true;
@@ -10520,6 +10894,7 @@ function startGame(){openBattleSetup();}
         showFloatingMsg('🪖 Choose a barracks location');
     }
     function updateBarracksGhostFromScreen(clientX,clientY){
+        if(barracksPlacementMode)updatePlacementRotationFromDrag(clientX);
         if(!barracksPlacementMode||!barracksPlacementGhost)return;
         mouse.x=(clientX/window.innerWidth)*2-1;mouse.y=-(clientY/window.innerHeight)*2+1;raycaster.setFromCamera(mouse,camera);
         const hits=raycaster.intersectObject(terrainMesh);if(!hits.length)return;
@@ -10570,29 +10945,30 @@ function startGame(){openBattleSetup();}
         activeBarracksConstruction.workPoint.y=getTerrainHeight(activeBarracksConstruction.workPoint.x,activeBarracksConstruction.workPoint.z);
         const foundationMat=new THREE.MeshStandardMaterial({color:0x747a70,roughness:.82,metalness:.12}); const foundation=new THREE.Mesh(new THREE.BoxGeometry(18.2,.42,12.8),foundationMat); foundation.position.set(point.x,getTerrainHeight(point.x,point.z)+.21,point.z); foundation.rotation.y=rotation; foundation.castShadow=true; foundation.receiveShadow=true; scene.add(foundation); build.mesh.userData.constructionFoundation=foundation;
         activeBarracksConstruction.cage=createBarracksConstructionCage(build);
-        activeBarracksConstruction.lift=createBarracksConstructionLift(build);
+        activeBarracksConstruction.lift=createBarracksConstructionLift(build);updateConstructionProgressOverlay(activeBarracksConstruction,0,'BARRACKS');
         barracksPlacementPoint=null;builder.buildTarget=activeBarracksConstruction.workPoint.clone();builder.target=builder.buildTarget.clone();builder.isBuilding=false;
         updateConstructionBarForSelection();showFloatingMsg('🏗️ Construction dozer and crane moving to the barracks');
     }
     function updateBarracksConstruction(){
         const c=activeBarracksConstruction;if(!c)return;const b=c.builder;
-        if(!b||b.isDestroyed){removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);activeBarracksConstruction=null;updateConstructionBarForSelection();return;}
+        if(!b||b.isDestroyed){removeConstructionProgressOverlay(c);removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);activeBarracksConstruction=null;updateConstructionBarForSelection();return;}
         if(!c.started){
+            updateConstructionProgressOverlay(c,0,'BARRACKS');
             if(b.mesh.position.distanceTo(c.workPoint)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();playSound('constructionStart',1.0);showFloatingMsg('🪖 Barracks construction started — crane operating');}
             return;
         }
         c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateBarracksConstructionLift(c.lift);
         if(b.buildBlade){const a=Math.sin(c.elapsed*.10)*.30;b.buildBlade.rotation.x=a;b.buildBlade.position.y=(b.buildBlade.userData.baseY||.10)+Math.max(0,Math.sin(c.elapsed*.10))*.55;}
-        const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;
+        const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;updateConstructionProgressOverlay(c,p,'BARRACKS');
         const groundY=getBuildingGroundLevel(c.point.x,c.point.z,'barracks',c.build.rotation||0);
         c.build.mesh.position.y=groundY-8+8*p+.03;
-        c.build.mesh.scale.setScalar(.06+p*.94);
+        c.build.mesh.scale.setScalar(.06+p*1.09);
         if(c.build.mesh.userData.constructionFoundation)c.build.mesh.userData.constructionFoundation.scale.set(1,.25+p*.75,1);
         c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.10+p*1.10);});
         if(c.elapsed%60===0&&c.elapsed<c.build.duration)showFloatingMsg(`🪖 Barracks construction: ${Math.floor(p*100)}%`);
         if(p>=1){
-            c.build.done=true;c.build.ghost=false;c.build.mesh.visible=true;c.build.mesh.position.y=getTerrainHeight(c.point.x,c.point.z);c.build.mesh.scale.setScalar(1);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
-            removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);
+            c.build.done=true;c.build.ghost=false;c.build.mesh.visible=true;c.build.mesh.position.y=getTerrainHeight(c.point.x,c.point.z);c.build.mesh.scale.setScalar(1.15);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
+            removeConstructionProgressOverlay(c);removeBarracksConstructionLift(c);removeBarracksConstructionCage(c);
             if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}
             const r=c.build.rotation||0,forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));const retreat=c.build.mesh.position.clone().sub(forward.multiplyScalar(9));retreat.y=getTerrainHeight(retreat.x,retreat.z);
             b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.factoryRetreating=true;
@@ -10745,7 +11121,7 @@ function createMilitaryBarracks(x,z,ghost=false,owner='player'){
 
         const groundY=getBuildingGroundLevel(x,z,'barracks',g.rotation.y); g.position.set(x,groundY+.03,z);
         g.rotation.y=(typeof barracksPlacementRotation==='number'?barracksPlacementRotation:0);
-        g.scale.setScalar(ghost?.1:1); scene.add(g);
+        g.scale.setScalar(ghost?.1:1.12); scene.add(g);
         if(ghost) g.traverse(o=>{if(o.material){o.material.transparent=true;o.material.opacity=Math.min(o.material.opacity||1,.30);o.material.depthWrite=false;}});
 
         return {mesh:g,x,z,rotation:g.rotation.y,progress:0,duration:REAL_BUILD_BARRACKS_SEC*REAL_TICKS_PER_SECOND,done:!ghost,ghost,hp:900,maxHp:900,isDestroyed:false,hpRevealUntil:0,owner,isBarracks:true,hpLabel,hpFill,collisionRadius:8,productionJob:null};
@@ -10868,7 +11244,7 @@ function createArmyFactory(x,z,ghost=false){
         activeFlagMeshes.push(factoryFlagData); group.userData.factoryFlagData=factoryFlagData;
 
         const groundY=getBuildingGroundLevel(x,z,'factory',factoryPlacementRotation); group.position.set(x,groundY+.03,z);
-        group.scale.setScalar(ghost?.95:.08); group.rotation.y=factoryPlacementRotation;
+        group.scale.setScalar(ghost?1.08:.08); group.rotation.y=factoryPlacementRotation;
         if(ghost) group.traverse(o=>{if(o.material){o.material.transparent=true;o.material.opacity=.30;o.material.depthWrite=false;o.material.emissive?.setHex(0x173b20);o.material.emissiveIntensity=.5;}});
         scene.add(group);
 
@@ -10957,8 +11333,8 @@ function createArmyFactory(x,z,ghost=false){
         const c=enemyFactoryConstruction;if(!c)return;const b=c.builder;
         if(!b||b.isDestroyed){removeConstructionLift(c);enemyFactoryConstruction=null;return;}
         if(!c.started){if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();}return;}
-        c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateConstructionLift(c.lift);updateFactoryConstructionCage(c,Math.min(1,c.elapsed/c.build.duration));const p=Math.min(1,c.elapsed/Math.max(1,c.build.duration||REAL_BUILD_FACTORY_SEC*REAL_TICKS_PER_SECOND));c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*.92);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.12+p*1.05);});
-        if(p>=1){c.build.done=true;c.build.mesh.scale.setScalar(1);removeFactoryConstructionCage(c);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});removeConstructionLift(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}b.isBuilding=false;b.buildTarget=null;const r=c.build.rotation||0;const retreat=c.build.mesh.position.clone().sub(new THREE.Vector3(Math.sin(r),0,Math.cos(r)).multiplyScalar(13));retreat.y=getTerrainHeight(retreat.x,retreat.z);b.target=retreat;b.factoryRetreating=true;enemyFactories.push(c.build);constructedFactories.push(c.build);enemyFactoryConstruction=null;}
+        c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateConstructionLift(c.lift);updateFactoryConstructionCage(c,Math.min(1,c.elapsed/c.build.duration));const p=Math.min(1,c.elapsed/Math.max(1,c.build.duration||REAL_BUILD_FACTORY_SEC*REAL_TICKS_PER_SECOND));c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*1.07);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.12+p*1.05);});
+        if(p>=1){c.build.done=true;c.build.mesh.scale.setScalar(1.15);removeFactoryConstructionCage(c);c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});removeConstructionLift(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}b.isBuilding=false;b.buildTarget=null;const r=c.build.rotation||0;const retreat=c.build.mesh.position.clone().sub(new THREE.Vector3(Math.sin(r),0,Math.cos(r)).multiplyScalar(13));retreat.y=getTerrainHeight(retreat.x,retreat.z);b.target=retreat;b.factoryRetreating=true;enemyFactories.push(c.build);constructedFactories.push(c.build);lowerGroundForStructure(c.point.x,c.point.z,'factory');enemyFactoryConstruction=null;}
     }
 
 
@@ -11017,7 +11393,7 @@ function createArmyFactory(x,z,ghost=false){
             const retreat=c.build.mesh.position.clone().sub(forward.multiplyScalar(9));
             retreat.y=getTerrainHeight(retreat.x,retreat.z);
             b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.factoryRetreating=true;
-            constructedBarracks.push(c.build);
+            constructedBarracks.push(c.build);lowerGroundForStructure(c.point.x,c.point.z,'barracks');
             obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});
             enemyBarracksConstruction=null;
         }
@@ -11105,7 +11481,7 @@ function createArmyFactory(x,z,ghost=false){
         // A building must sit on a genuinely flat/near-flat patch, never on a steep dune or hill.
         if(maxY-minY>0.55) return {valid:false,reason:'uneven'};
         if(Math.abs(point.x)>390||Math.abs(point.z)>390) return {valid:false,reason:'edge'};
-        const allBuildings=[...(constructedFactories||[]),...(enemyFactories||[]),...(constructedBarracks||[])];
+        const allBuildings=[...(constructedFactories||[]),...(enemyFactories||[]),...(constructedBarracks||[]),...(constructedArtillery||[])];
         for(const b of allBuildings){
             if(!b||!b.mesh||b.isDestroyed) continue;
             const r=(b.collisionRadius||12)+fp.radius;
@@ -11185,7 +11561,7 @@ function createArmyFactory(x,z,ghost=false){
         const enemyAll=getEnemyAllUnits();
         const enemyCombat=enemyAll.filter(u=>!u.isBuilder&&u.type!=='ambulance'&&!u.isRecon).length;
         const playerCombat=livePlayer.filter(u=>!u.isBuilder&&u.type!=='ambulance'&&!u.isRecon).length;
-        const playerNearBase=livePlayer.some(u=>u.mesh.position.distanceTo(enemyBase)<145);
+        const playerNearBase=livePlayer.some(u=>u.mesh.position.distanceTo(enemyBase)<145)||constructedArtillery.some(a=>a&&!a.isDestroyed&&a.owner==='player'&&a.mesh.position.distanceTo(enemyBase)<170);
         const enemyNearBase=enemyAll.some(u=>u.mesh.position.distanceTo(playerBase)<165);
         const enemyOil=oilRigs.filter(r=>r.owner==='enemy').length;
         const playerOil=oilRigs.filter(r=>r.owner==='player').length;
@@ -11200,7 +11576,7 @@ function createArmyFactory(x,z,ghost=false){
         const units=info.enemyAll.filter(u=>!u.isBuilder&&!u.isBuilding);
         if(!units.length)return;
         const oil=oilRigs.filter(r=>!r.isDestroyed&&r.owner!=='enemy');
-        const playerForces=playerTanks.filter(u=>!u.isDestroyed&&!u.isBuilder);
+        const playerForces=[...playerTanks,...constructedArtillery].filter(u=>u&&!u.isDestroyed&&u.owner!=='enemy'&&!u.isBuilder&&u.mesh);
         const enemyBase=info.enemyBase, playerBase=info.playerBase;
 
         // ترتيب أهداف العدو حسب الخطر والقيمة، وليس عشوائياً.
@@ -11260,9 +11636,27 @@ function createArmyFactory(x,z,ghost=false){
         });
     }
 
+    function startEnemyArtilleryConstruction(builder,point,rotation=0){
+        if(!builder||builder.isDestroyed||enemyMoney<350||activeArtilleryConstructions.some(c=>c&&c.builder===builder))return false;
+        point=findNearestValidEnemyBuildPoint(point,'barracks').clone();
+        enemyMoney-=350;point.y=getTerrainHeight(point.x,point.z);
+        const build=createFieldArtillery(point.x,point.z,true,'enemy');
+        build.rotation=rotation;build.mesh.rotation.y=rotation;build.mesh.visible=true;
+        build.mesh.scale.set(1,.18,1);build.mesh.position.y=point.y-4.5;
+        const forward=new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation));
+        const workPoint=point.clone().addScaledVector(forward,-9);workPoint.y=getTerrainHeight(workPoint.x,workPoint.z);
+        const cage=createBarracksConstructionCage(build);cage.mesh.scale.set(.62,.72,.62);
+        const lift=createBarracksConstructionLift(build);lift.mesh.scale.set(.72,.72,.72);
+        const foundation=new THREE.Mesh(new THREE.CylinderGeometry(5,5.4,.36,16),new THREE.MeshStandardMaterial({color:0x77796f,roughness:.92}));
+        foundation.position.set(point.x,point.y+.18,point.z);foundation.receiveShadow=true;scene.add(foundation);build.mesh.userData.constructionFoundation=foundation;
+        activeArtilleryConstructions.push({builder,build,point:point.clone(),workPoint,cage,lift,started:false,startedAt:0,elapsed:0});
+        builder.buildTarget=workPoint.clone();builder.target=workPoint.clone();builder.isBuilding=false;
+        return true;
+    }
+
     function updateEnemyAI(){
         enemyAIThink++; if(enemyAIThink%8!==0)return;
-        const liveEnemy=enemyTanks.filter(t=>!t.isDestroyed), livePlayer=playerTanks.filter(t=>!t.isDestroyed);
+        const liveEnemy=enemyTanks.filter(t=>!t.isDestroyed), livePlayer=[...playerTanks,...constructedArtillery.filter(a=>a&&a.done&&a.owner==='player'&&!a.isDestroyed)].filter(t=>!t.isDestroyed);
         const info=updateEnemyIntel(liveEnemy,livePlayer);
         // Trigger exactly once when hostile forces first enter the base perimeter.
         if(info.enemyNearBase && !enemyBaseAlarmActive) triggerAttackAlert();
@@ -11304,6 +11698,22 @@ function createArmyFactory(x,z,ghost=false){
                 point=findNearestValidEnemyBuildPoint(point,'barracks');
                 startEnemyBarracksConstruction(enemyBuilder,point,a);
             }
+        }
+
+        // Defensive doctrine: build a field gun near the base when hostile forces approach,
+        // and establish one permanent defensive battery once the enemy economy can afford it.
+        const enemyGunCount=constructedArtillery.filter(a=>a&&!a.isDestroyed&&a.owner==='enemy').length
+            +activeArtilleryConstructions.filter(c=>c&&c.build&&c.build.owner==='enemy').length;
+        const enemyArtilleryBuilder=liveEnemy.find(u=>u.isBuilder&&!u.isBuilding&&!activeArtilleryConstructions.some(c=>c&&c.builder===u));
+        const shouldBuildGun=enemyMoney>=350&&enemyArtilleryBuilder&&enemyGunCount<(info.playerNearBase?3:1)
+            &&(info.playerNearBase||enemyGunCount===0||enemyStrategy==='defense');
+        if(shouldBuildGun){
+            const base=info.enemyBase.clone();
+            const toward=info.playerBase.clone().sub(base);toward.y=0;if(toward.lengthSq()<.01)toward.set(1,0,1);toward.normalize();
+            const point=base.clone().addScaledVector(toward,enemyGunCount===0?24:30+enemyGunCount*9);
+            point.y=getTerrainHeight(point.x,point.z);
+            const rotation=Math.atan2(toward.x,toward.z);
+            startEnemyArtilleryConstruction(enemyArtilleryBuilder,point,rotation);
         }
 
         // بعد المصنع وBASE: ينتج العدو المشاة فقط عندما يحتاجهم للنفط،
@@ -11518,6 +11928,7 @@ function createArmyFactory(x,z,ghost=false){
 
         playerMoney+=refund; updateEconomyUI();
         selectedUnitKind=null; defenseCommandArmed=false;
+        const artilleryBuildCard=document.getElementById('artillery-build-card');if(artilleryBuildCard)artilleryBuildCard.style.display='none';
         const sellBtn=document.getElementById('sell-building-btn');if(sellBtn)sellBtn.style.display='none';
         clearSelectionVisuals(); updateConstructionBarForSelection(); updateDefenseButton();
         showFloatingMsg(kind==='commandBase'
@@ -12134,9 +12545,10 @@ function createArmyFactory(x,z,ghost=false){
         camera.lookAt(focus);
     }
 
-    function triggerCameraShake(){ /* camera shake intentionally disabled; recoil is applied to the firing tank */ }
+    function triggerCameraShake(strength=0.10){ shakeTimer=Math.max(shakeTimer,9); shakeIntensity=Math.max(shakeIntensity,Math.min(0.16,strength)); }
 
     function updateFactoryGhostFromScreen(clientX, clientY) {
+        if(factoryPlacementMode)updatePlacementRotationFromDrag(clientX);
         if (!factoryPlacementMode || !factoryPlacementGhost) return;
         raycastAtPlacement(clientX, clientY);
     }
@@ -12213,6 +12625,11 @@ function createArmyFactory(x,z,ghost=false){
             const barracks = findBarracksAtRay();
             const oilRig = findOilRigAtRay();
 
+            // أثناء وضع المدفع: اللمس يثبت الموقع ويبدأ التركس البناء.
+            if (artilleryPlacementMode && artilleryPlacementGhost) {
+                const hits=raycaster.intersectObject(terrainMesh);if(hits.length){const p=hits[0].point.clone();p.y=getTerrainHeight(p.x,p.z);const builder=selectedTank&&getUnitKind(selectedTank)==='builder'&&!selectedTank.isDestroyed?selectedTank:null;const valid=isBuildingPlacementValid(p,'barracks',artilleryPlacementRotation,'player').valid;if(!valid){showFloatingMsg('Cannot place artillery here');return;}if(builder)startArtilleryConstruction(builder,p,artilleryPlacementRotation);else{artilleryPlacementMode=false;scene.remove(artilleryPlacementGhost.mesh);artilleryPlacementGhost=null;}}
+                return;
+            }
             // أثناء وضع المصنع/السكنة: أول لمس للأرض يحدد الموقع ويبدأ البناء مباشرة.
             if (barracksPlacementMode && barracksPlacementGhost) {
                 const placementHits = raycaster.intersectObject(terrainMesh);
@@ -12427,8 +12844,8 @@ function createArmyFactory(x,z,ghost=false){
                 }
 
                 if (touchMode === 'pan') {
-                    if (factoryPlacementMode || barracksPlacementMode) {
-                        if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
+                    if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode) {
+                        if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                         lastX = e.clientX; lastY = e.clientY;
                         gestureMoved = true;
                         return;
@@ -12453,8 +12870,8 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
 
-            if (factoryPlacementMode || barracksPlacementMode) {
-                if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
+            if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode) {
+                if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                 return;
             }
             if (!isDragging) return;
@@ -12494,8 +12911,8 @@ function createArmyFactory(x,z,ghost=false){
                 pinchStartDistance = 0;
                 pinchStartRadius = targetCameraRadius;
 
-                if (factoryPlacementMode || barracksPlacementMode) {
-                    if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
+                if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode) {
+                    if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
                     handleTap(e.clientX, e.clientY);
                 } else if (!wasMoved) {
                     handleTap(e.clientX, e.clientY);
@@ -12504,8 +12921,8 @@ function createArmyFactory(x,z,ghost=false){
             }
 
             isDragging = false;
-            if (factoryPlacementMode || barracksPlacementMode) {
-                if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
+            if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode) {
+                if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                 handleTap(e.clientX, e.clientY);
             } else if (!hasMoved) handleTap(e.clientX, e.clientY);
         };
@@ -12661,6 +13078,7 @@ function createArmyFactory(x,z,ghost=false){
                 if (typeof ambulances !== 'undefined') list.push(...(ambulances || []).filter(u => u && u.team !== 'enemy' && u.owner !== 'enemy'));
                 if (typeof reconVehicles !== 'undefined') list.push(...(reconVehicles || []).filter(u => u && u.team !== 'enemy' && u.owner !== 'enemy'));
                 if (typeof soldiers !== 'undefined') list.push(...(soldiers || []));
+                if (typeof constructedArtillery !== 'undefined') list.push(...(constructedArtillery || []).filter(a => a && a.done && !a.isDestroyed && a.owner !== 'enemy'));
                 if (typeof window.__temporaryReconScans !== 'undefined') list.push(...(window.__temporaryReconScans || []).filter(v => v.until > performance.now()).map(v => ({mesh:{position:{x:v.x,z:v.z}}, visionRadius:v.r})));
             } catch (_) {}
             return list.some(u => {
@@ -12886,7 +13304,7 @@ function createArmyFactory(x,z,ghost=false){
         // انفجار أرضي فيزيائي متغير: شدة الضربة وحجمها وعدد الأهداف القريبة
         // تحدد كثافة الجمر وسرعته وانتشاره. كل الجمر في THREE.Points واحدة.
         const isScud = !!impactOptions.isScud;
-        const basePower = isScud ? 1.72 : (impactOptions.heavy ? 1.28 : 1.0);
+        const basePower = isScud ? 2.05 : (impactOptions.heavy ? 1.62 : 1.28);
         const nearbyUnits = [
             ...(playerTanks || []), ...(enemyTanks || []), ...(reconVehicles || []),
             ...(ambulances || [])
@@ -12950,17 +13368,17 @@ function createArmyFactory(x,z,ghost=false){
 
         // دخان متدرج ينطلق من الأرض، مع انحرافات مختلفة بدلاً من عمود ثابت.
         const smokeParts = [];
-        const smokeCount = Math.min(13, 7 + Math.round(power * 2));
+        const smokeCount = Math.min(30, 21 + Math.round(power * 4));
         for (let i = 0; i < smokeCount; i++) {
-            const dark = i < Math.ceil(smokeCount * 0.42);
+            const dark = i < Math.ceil(smokeCount * 0.84);
             const sm = new THREE.Mesh(
-                new THREE.SphereGeometry((0.48 + Math.random() * 0.48) * (0.8 + power * 0.12), 7, 5),
-                new THREE.MeshBasicMaterial({ color: dark ? 0x242322 : 0x77736e, transparent: true, opacity: dark ? 0.38 : 0.27, depthWrite: false })
+                new THREE.SphereGeometry((0.78 + Math.random() * 0.72) * (0.95 + power * 0.18), 8, 6),
+                new THREE.MeshBasicMaterial({ color: dark ? 0x090a0a : 0x292827, transparent: true, opacity: dark ? 0.78 : 0.48, depthWrite: false })
             );
             const a = Math.random() * Math.PI * 2;
-            const r = Math.random() * 0.72 * power;
-            sm.position.set(Math.cos(a) * r, 0.10 + Math.random() * 0.20, Math.sin(a) * r);
-            sm.scale.set(1.0 + Math.random() * 0.5, 0.48 + Math.random() * 0.25, 1.0 + Math.random() * 0.5);
+            const r = Math.random() * 1.65 * power;
+            sm.position.set(Math.cos(a) * r, 0.25 + Math.random() * 1.35, Math.sin(a) * r);
+            sm.scale.set(1.25 + Math.random() * 0.85, 0.85 + Math.random() * 0.65, 1.25 + Math.random() * 0.85);
             sm.userData.v = new THREE.Vector3((Math.random() - 0.5) * 0.055, 0.035 + Math.random() * 0.055, (Math.random() - 0.5) * 0.055);
             sm.userData.startOpacity = sm.material.opacity;
             sm.userData.wobble = Math.random() * Math.PI * 2;
@@ -12970,7 +13388,7 @@ function createArmyFactory(x,z,ghost=false){
 
         group.position.set(centerPos.x, groundH + 0.025, centerPos.z);
         scene.add(group);
-        const life = Math.round(54 + power * 15);
+        const life = Math.round(90 + power * 24);
         combatEffects.push({ mesh: group, life, maxLife: life, kind: 'impactGroundSoft', embers, emberVelocities: velocities, smokeParts, glow, power });
 
         const scorch = new THREE.Mesh(
@@ -13012,7 +13430,8 @@ function createArmyFactory(x,z,ghost=false){
         if(factory.mesh){
             const pos=factory.mesh.position.clone();
             createModernImpactFlash(pos, fromTeam); playSound('explosion',1.0);
-            for(let i=0;i<22;i++) addSmokeParticle(pos, i<8?0x171717:0x555555, 1.5+Math.random()*1.8);
+            for(let i=0;i<22;i++) addSmokeParticle(pos, i<8?0x101010:0x292929, 1.5+Math.random()*1.8);
+            createDestroyedTargetAfterburn(pos, 1.35);
             const rubble=createFactoryRubble(pos,factory.mesh.rotation.y);
             factory.rubble=rubble;
             factory.mesh.visible=false;
@@ -13242,6 +13661,7 @@ function createArmyFactory(x,z,ghost=false){
             unit.impactMotion=unit.impactMotion||{x:(Math.random()-.5)*1.8,z:(Math.random()-.5)*1.8,y:.25,spinX:(Math.random()-.5)*.8,spinY:(Math.random()-.5)*.8,spinZ:(Math.random()-.5)*.8,t:0,flip:Math.random()<.25,airborne:Math.random()<.18};
         }
         createUnitWreck(unit);
+        if (!unit.isInfantry && unit.mesh) createDestroyedTargetAfterburn(unit.mesh.position, unit.type === 'rocket' ? 1.18 : 0.88);
 
         if(unit.isInfantry){
             startInfantryDeath(unit);
@@ -13330,6 +13750,7 @@ function createArmyFactory(x,z,ghost=false){
         if(enemyBaseGroup!==targetUnit) addRoot(enemyBaseGroup);
         (constructedFactories||[]).forEach(f=>{if(f&&f!==targetUnit&&f.done&&!f.isDestroyed)addRoot(f.mesh);});
         (constructedBarracks||[]).forEach(b=>{if(b&&b!==targetUnit&&b.done&&!b.isDestroyed)addRoot(b.mesh);});
+        (constructedArtillery||[]).forEach(a=>{if(a&&a!==targetUnit&&a.done&&!a.isDestroyed)addRoot(a.mesh);});
         (oilRigs||[]).forEach(r=>{if(r&&r!==targetUnit&&!r.isDestroyed&&r.group)addRoot(r.group);});
         [...(playerTanks||[]),...(enemyTanks||[]),...(reconVehicles||[]),...(ambulances||[])].forEach(u=>{
             if(u && u!==fromUnit && u!==targetUnit && !u.isDestroyed && u.mesh) addRoot(u.mesh);
@@ -13411,8 +13832,9 @@ function createArmyFactory(x,z,ghost=false){
         if (missileMesh) scudBed.remove(missileMesh); 
 
         const flyingMissileGroup = createModernScudMissile();
-        // SCUD in flight is intentionally smaller for realistic scale.
-        flyingMissileGroup.scale.setScalar(0.56);
+        // Preserve the exact missile size used on the launcher while it is flying.
+        flyingMissileGroup.scale.setScalar(1.0);
+        flyingMissileGroup.traverse(part=>{ if(part.isMesh){part.castShadow=true;part.receiveShadow=true;} });
 
         // Dynamic multi-layer rocket flame: orange envelope + white-hot core + glow plume.
         const exhaustGroup = new THREE.Group();
@@ -13460,32 +13882,102 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     // كل قصف/انفجار يترك حفرة احتراق سوداء واضحة على الأرض.
-    function createBlackImpactCrater(pos, radius=3.8, duration=18000){
+    function deformBattleTerrainForCrater(worldPos, radius, depth) {
+        const terrain = terrainMesh;
+        if (!terrain || !terrain.geometry || !terrain.geometry.attributes?.position) return false;
+        try {
+            terrain.updateMatrixWorld(true);
+            const center = terrain.worldToLocal(worldPos.clone());
+            const attr = terrain.geometry.attributes.position;
+            let changed = 0;
+            // Smooth bowl + raised broken-earth lip. A slightly wider radius makes the
+            // deformation visible even on imported terrain with a relatively coarse grid.
+            const effectiveRadius=Math.max(radius,5.5);
+            const effectiveDepth=Math.max(depth,0.9);
+            for(let i=0;i<attr.count;i++) {
+                const x=attr.getX(i), z=attr.getZ(i);
+                const dx=x-center.x, dz=z-center.z;
+                const r=Math.hypot(dx,dz)/effectiveRadius;
+                if(r>=1.18) continue;
+                let delta=0;
+                if(r<0.70) {
+                    const t=1-r/0.70;
+                    // Rounded crater floor, steepening gently toward the center.
+                    delta=-effectiveDepth*(0.20+0.80*t*t);
+                } else if(r<0.94) {
+                    const t=(r-0.70)/0.24;
+                    // Crushed earth pushed outward around the impact.
+                    delta=effectiveDepth*0.13*Math.sin(Math.PI*t);
+                } else {
+                    const t=(r-0.94)/0.24;
+                    delta=effectiveDepth*0.025*(1-t)*(1-t);
+                }
+                // Tiny deterministic unevenness avoids a perfectly manufactured circle.
+                const rough=(Math.sin(x*2.13+z*1.71)*Math.cos(z*1.37-x*.83))*0.035*effectiveDepth;
+                attr.setY(i,attr.getY(i)+delta+rough*(r<1?1:0));
+                changed++;
+            }
+            if(changed) {
+                attr.needsUpdate=true;
+                terrain.geometry.computeVertexNormals();
+                terrain.geometry.computeBoundingSphere();
+                terrain.geometry.computeBoundingBox();
+                if(renderer && renderer.shadowMap) renderer.shadowMap.needsUpdate=true;
+                return true;
+            }
+        } catch(err) { console.warn('Terrain crater deformation skipped:',err); }
+        return false;
+    }
+
+    const loweredStructurePads=new Set();
+    function lowerGroundForStructure(x,z,type){
+        const key=`${type}:${Math.round(x/2)}:${Math.round(z/2)}`;
+        if(loweredStructurePads.has(key))return;
+        loweredStructurePads.add(key);
+        const radius=type==='commandBase'?23:type==='factory'?19:type==='artillery'?14:12;
+        // A broad, shallow earthwork creates a recessed emplacement rather than a deep impact crater.
+        deformBattleTerrainForCrater(new THREE.Vector3(x,getTerrainHeight(x,z),z),radius,1.15);
+    }
+    function createBlackImpactCrater(pos, radius=3.8, duration=18000, deformTerrain=true){
         if(!pos || typeof getTerrainHeight!=='function') return;
-        const y=getTerrainHeight(pos.x,pos.z)+0.035;
+        const groundY=getTerrainHeight(pos.x,pos.z);
+        const radiusFinal=Math.max(radius,5.5);
+        const depth=Math.max(1.0,radiusFinal*.22);
+        // نخفض رؤوس شبكة الأرض نفسها، وليس مجرد رسم دائرة سوداء فوقها.
+        // Artillery impacts use the lightweight 3D crater mesh; avoid rebuilding
+        // normals/bounds for the entire terrain geometry during the combat frame.
+        if(deformTerrain) deformBattleTerrainForCrater(pos,radiusFinal,depth);
         const g=new THREE.Group();
-        const outer=new THREE.Mesh(
-            new THREE.CircleGeometry(radius,40),
-            new THREE.MeshBasicMaterial({color:0x090a09,transparent:true,opacity:.78,depthWrite:false})
-        );
-        outer.rotation.x=-Math.PI/2; outer.scale.set(1,.72,1);
-        outer.position.set(pos.x,y,pos.z); g.add(outer);
-
-        const inner=new THREE.Mesh(
-            new THREE.CircleGeometry(radius*.52,32),
-            new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.82,depthWrite:false})
-        );
-        inner.rotation.x=-Math.PI/2; inner.position.set(pos.x,y+.008,pos.z); g.add(inner);
-
-        // حواف ترابية صغيرة حول الحفرة.
-        for(let i=0;i<7;i++){
-            const a=Math.random()*Math.PI*2, d=radius*(.72+Math.random()*.35);
-            const pebble=new THREE.Mesh(
-                new THREE.DodecahedronGeometry(.12+Math.random()*.28,0),
-                new THREE.MeshStandardMaterial({color:0x171817,roughness:1,metalness:0})
-            );
-            pebble.position.set(pos.x+Math.cos(a)*d,y+.06,pos.z+Math.sin(a)*d);
-            pebble.scale.y=.35; g.add(pebble);
+        g.name='physicallyDeformedImpactCrater';
+        g.position.set(pos.x,groundY,pos.z);
+        const verts=[], indices=[];
+        const rings=12, segments=56;
+        for(let ri=0;ri<=rings;ri++){
+            const r=ri/rings;
+            for(let j=0;j<segments;j++){
+                const a=j/segments*Math.PI*2;
+                const bowlY = r<.70 ? -depth*(.20+.80*Math.pow(1-r/.70,2)) : (r<.94 ? depth*.13*Math.sin(Math.PI*(r-.70)/.24) : 0);
+                verts.push(Math.cos(a)*radiusFinal*r,bowlY,Math.sin(a)*radiusFinal*r);
+            }
+        }
+        for(let ri=0;ri<rings;ri++) for(let j=0;j<segments;j++){
+            const a=ri*segments+j, b=ri*segments+(j+1)%segments;
+            const c=(ri+1)*segments+j, d=(ri+1)*segments+(j+1)%segments;
+            indices.push(a,c,b,b,c,d);
+        }
+        const bowlGeo=new THREE.BufferGeometry();
+        bowlGeo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));
+        bowlGeo.setIndex(indices); bowlGeo.computeVertexNormals();
+        const bowl=new THREE.Mesh(bowlGeo,new THREE.MeshStandardMaterial({color:0x29231b,roughness:1,metalness:0,side:THREE.DoubleSide}));
+        bowl.receiveShadow=true; bowl.castShadow=true; g.add(bowl);
+        const scorched=new THREE.Mesh(new THREE.CircleGeometry(radiusFinal*.62,48),new THREE.MeshBasicMaterial({color:0x090a09,transparent:true,opacity:.48,depthWrite:false,side:THREE.DoubleSide}));
+        scorched.rotation.x=-Math.PI/2; scorched.position.y=-depth*.30; g.add(scorched);
+        // قطع تراب صغيرة على حافة الحفرة تعطي عمقاً وظلاً مجسماً.
+        for(let i=0;i<12;i++){
+            const a=Math.random()*Math.PI*2, d=radiusFinal*(.76+Math.random()*.22);
+            const pebble=new THREE.Mesh(new THREE.DodecahedronGeometry(.16+Math.random()*.34,0),new THREE.MeshStandardMaterial({color:0x4b3d2c,roughness:1,metalness:0}));
+            pebble.position.set(Math.cos(a)*d,.05+Math.random()*.10,Math.sin(a)*d);
+            pebble.scale.y=.38; pebble.castShadow=true; pebble.receiveShadow=true; g.add(pebble);
         }
         scene.add(g);
         setTimeout(()=>{ if(g.parent) scene.remove(g); },duration);
@@ -13498,7 +13990,8 @@ function createArmyFactory(x,z,ghost=false){
         if(!barracks||barracks.isDestroyed)return;
         barracks.hp=Math.max(0,(barracks.hp||barracks.maxHp||900)-Math.max(1,amount));barracks.hpRevealUntil=Date.now()+5000;
         if(barracks.hp<=0){barracks.isDestroyed=true;barracks.hp=0;if(barracks.hpLabel)barracks.hpLabel.style.display='none';
-            const pos=barracks.mesh.position.clone();createModernImpactFlash(pos,fromTeam);createBlackImpactCrater(pos,3.2,16000);playSound('explosion',.8,pos);
+            const pos=barracks.mesh.position.clone();createModernImpactFlash(pos,fromTeam);createBlackImpactCrater(pos,7.2,20000);playSound('explosion',.8,pos);
+            createDestroyedTargetAfterburn(pos, 1.05);
             for(let i=0;i<8;i++)addSmokeParticle(pos.clone().add(new THREE.Vector3((Math.random()-.5)*3,2+Math.random()*3,(Math.random()-.5)*3)),0x2b2b2b,.65+Math.random()*.5);
             barracks.mesh.traverse(o=>{if(o.isMesh&&o.material){const mats=Array.isArray(o.material)?o.material:[o.material];mats.forEach(m=>{if(m.color)m.color.setHex(0x252525);m.roughness=.92;m.metalness=.08;});}});
             // Collapse and remove the destroyed structure from the battlefield.
@@ -13537,7 +14030,7 @@ function createArmyFactory(x,z,ghost=false){
         if(!rig||rig.isDestroyed)return; rig.isDestroyed=true; rig.hp=0; rig.owner='none'; rig.captureProgress=0; if(rig.flagData){rig.flagData.owner='none';rig.flagData.type='white';if(rig.flagData.mesh){rig.flagData.mesh.material.map=createFlagTexture('white');rig.flagData.mesh.material.needsUpdate=true;}} if(rig.hpLabel)rig.hpLabel.style.display='none'; if(rig.flagData&&rig.flagData.mesh)rig.flagData.mesh.visible=false;
         const pos=new THREE.Vector3(rig.x,getTerrainHeight(rig.x,rig.z),rig.z); if(rig.wreckBase)rig.wreckBase.visible=true;
         if(rig.towerAssembly){ const wreck=rig.towerAssembly,startRot=wreck.rotation.z,startY=wreck.position.y,t0=performance.now(); const collapse=()=>{ if(!wreck.parent)return; const t=Math.min(1,(performance.now()-t0)/900),e=t*t*(3-2*t); wreck.rotation.z=startRot+.22*e; wreck.rotation.x=-.16*e; wreck.position.y=startY-.9*e; if(t<1)requestAnimationFrame(collapse); else wreck.visible=false; }; requestAnimationFrame(collapse); }
-        createModernImpactFlash(pos,fromTeam); createBlackImpactCrater(pos,5.2,22000); playSound('explosion',1.0,pos); for(let i=0;i<9;i++){const p=pos.clone();p.x+=(Math.random()-.5)*3;p.z+=(Math.random()-.5)*3;p.y+=.4+Math.random()*1.4;addSmokeParticle(p,i<5?0x171717:0x555555,.8+Math.random()*.9);}
+        createModernImpactFlash(pos,fromTeam); createBlackImpactCrater(pos,8.2,24000); playSound('explosion',1.0,pos); createDestroyedTargetAfterburn(pos, 1.15); for(let i=0;i<9;i++){const p=pos.clone();p.x+=(Math.random()-.5)*3;p.z+=(Math.random()-.5)*3;p.y+=.4+Math.random()*1.4;addSmokeParticle(p,i<5?0x171717:0x555555,.8+Math.random()*.9);}
         const obstacle=obstacles.find(o=>Math.abs(o.x-rig.x)<.1&&Math.abs(o.z-rig.z)<.1); if(obstacle)obstacle.radius=0;
         // بعد الانفجار تختفي منشأة النفط كاملة بما فيها القاعدة والمضخة والأنابيب والعلم.
         if(rig.mesh){rig.mesh.visible=false;setTimeout(()=>{if(rig.mesh&&rig.mesh.parent)rig.mesh.parent.remove(rig.mesh);},1200);}
@@ -13554,8 +14047,10 @@ function createArmyFactory(x,z,ghost=false){
 
     function createShockwaveAndExplosion(centerPos, fromTeam, isScud=false) {
         playSound('explosion',1.0);
-        createModernImpactFlash(centerPos, fromTeam, { isScud });
-        createBlackImpactCrater(centerPos, (3.5 + Math.random()*2.8) * (isScud ? 1.35 : 1));
+        triggerCameraShake(isScud ? 0.15 : 0.095);
+        createModernImpactFlash(centerPos, fromTeam, { isScud, heavy:true });
+        createBlackImpactCrater(centerPos, (isScud ? 9.5 : 6.2) + Math.random()*1.8, isScud ? 28000 : 20000);
+        createMushroomSmokeCloud(centerPos, isScud ? 1.28 : 0.92);
 
         const groundY = getTerrainHeight(centerPos.x, centerPos.z);
         // نبضة غبار منخفضة جداً على الأرض؛ أزلنا العمود الناري والحلقات البيضاء/البرتقالية القديمة.
@@ -13630,6 +14125,8 @@ function createArmyFactory(x,z,ghost=false){
             const dist=b.mesh.position.distanceTo(centerPos);
             if(dist<(isScud?30:26)){const radius=isScud?30:26;const damage=Math.max(80,Math.floor((isScud?880:700)*(1-dist/radius)));damageBarracks(b,damage,fromTeam);}
         });
+
+        [...(constructedArtillery||[])].forEach(a=>{if(!a||a.isDestroyed||!a.done||a.owner===fromTeam)return;const dist=a.mesh.position.distanceTo(centerPos);if(dist<(isScud?27:23)){const radius=isScud?27:23;damageArtillery(a,Math.max(70,Math.floor((isScud?720:520)*(1-dist/radius))),fromTeam);}});
 
         // المصانع أيضاً أهداف قابلة للتدمير، وكذلك أي مصنع تابع لأي طرف.
         [...new Set([...(constructedFactories||[]), ...(enemyFactories||[])])].forEach(factory=>{
@@ -13765,6 +14262,7 @@ function createArmyFactory(x,z,ghost=false){
         updateStructureBar(enemyBaseGroup,12);
         [...(constructedFactories||[]),...(enemyFactories||[])].forEach(f=>updateStructureBar(f,18));
         [...(constructedBarracks||[])].forEach(b=>updateStructureBar(b,11));
+        [...(constructedArtillery||[])].forEach(a=>updateStructureBar(a,8));
         [...(oilRigs||[])].forEach(r=>updateStructureBar(r,8));
 
         const worldProgress = document.getElementById('factory-world-progress');
@@ -13856,6 +14354,7 @@ function createArmyFactory(x,z,ghost=false){
             add(f, inferredOwner === enemyTeam && f.done);
         });
         [...(constructedBarracks || [])].forEach(b => add(b, b.owner === enemyTeam && b.done));
+        [...(constructedArtillery || [])].forEach(a => add(a, a.owner === enemyTeam && a.done));
         add(team === 'player' ? enemyBaseGroup : playerBaseGroup, true);
         [...(oilRigs || [])].forEach(r => add(r, r.owner === enemyTeam));
         let best = null, bestD = radius * radius;
@@ -13889,15 +14388,21 @@ function createArmyFactory(x,z,ghost=false){
         for (let i = smokeParticles.length - 1; i >= 0; i--) {
             let p = smokeParticles[i];
             p.life--;
+            p.age=(p.age||0)+1;
             p.mesh.position.y += p.vy;
             p.mesh.position.x += p.driftX || 0;
             p.mesh.position.z += p.driftZ || 0;
-            p.mesh.scale.multiplyScalar(p.rocketTrail ? 1.035 : (p.groundDust ? 1.012 : (p.modernSmoke ? 1.018 : 1.025)));
-            p.mesh.rotation.y += 0.006;
-            const fade = p.rocketTrail ? 0.94 : (p.groundDust ? 0.94 : (p.modernSmoke ? 0.988 : 0.965));
+            p.mesh.scale.multiplyScalar(p.rocketTrail ? 1.035 : (p.groundDust ? 1.012 : (p.modernSmoke ? (p.mushroomSmoke?1.014:1.011) : 1.025)));
+            p.mesh.rotation.y += p.mushroomSmoke ? 0.0025 : 0.006;
+            const lifeT=Math.max(0,Math.min(1,p.life/(p.maxLife||1)));
+            const smoothFade=lifeT*lifeT*(3-2*lifeT);
+            const fade = p.rocketTrail ? 0.94 : (p.groundDust ? 0.94 : (p.modernSmoke ? smoothFade : 0.965));
             for (let c = 0; c < p.mesh.children.length; c++) {
                 const mat = p.mesh.children[c].material;
-                if (mat && mat.opacity !== undefined) mat.opacity *= fade;
+                if (mat && mat.opacity !== undefined) {
+                    if(p.modernSmoke && mat.userData && mat.userData.baseOpacity!==undefined) mat.opacity=mat.userData.baseOpacity*fade;
+                    else mat.opacity *= fade;
+                }
             }
             if (p.life <= 0) {
                 scene.remove(p.mesh);
@@ -13909,7 +14414,20 @@ function createArmyFactory(x,z,ghost=false){
         for (let i = combatEffects.length - 1; i >= 0; i--) {
             const fx = combatEffects[i];
             fx.life--;
-            if (fx.kind === 'muzzle') {
+            if (fx.kind === 'wreckFire') {
+                const t = fx.life / fx.maxLife;
+                const pulse = 0.88 + Math.sin((fx.maxLife - fx.life) * 0.34) * 0.16;
+                if (fx.flameA) { fx.flameA.scale.set(pulse, 0.72 + pulse * 0.42, pulse); fx.flameA.material.opacity = 0.72 * t; }
+                if (fx.flameB) { fx.flameB.scale.set(1.05 - pulse * 0.12, pulse, 1.05 - pulse * 0.12); fx.flameB.material.opacity = 0.66 * t; }
+                if (fx.glow) fx.glow.material.opacity = 0.19 * t;
+                if (fx.life % 18 === 0) {
+                    const puff = fx.mesh.position.clone();
+                    puff.x += (Math.random() - 0.5) * 0.75 * (fx.baseScale || 1);
+                    puff.z += (Math.random() - 0.5) * 0.75 * (fx.baseScale || 1);
+                    puff.y += 1.1 + Math.random() * 0.7;
+                    addSmokeParticle(puff, 0x101010, 0.85 + Math.random() * 0.55);
+                }
+            } else if (fx.kind === 'muzzle') {
                 const t = fx.life / 7;
                 fx.mesh.scale.setScalar(0.65 + t * 0.75);
                 fx.mesh.traverse(child => { if (child.material && child.material.opacity !== undefined) child.material.opacity = Math.max(0, t); });
@@ -13951,10 +14469,10 @@ function createArmyFactory(x,z,ghost=false){
                     sm.userData.wobble += 0.035;
                     sm.position.x += Math.sin(sm.userData.wobble) * 0.008;
                     sm.position.z += Math.cos(sm.userData.wobble * 0.83) * 0.008;
-                    sm.scale.x += 0.014;
-                    sm.scale.z += 0.014;
-                    sm.scale.y += 0.012;
-                    sm.material.opacity = Math.max(0, sm.userData.startOpacity * t);
+                    sm.scale.x += 0.020;
+                    sm.scale.z += 0.020;
+                    sm.scale.y += 0.016;
+                    sm.material.opacity = Math.max(0, sm.userData.startOpacity * Math.min(1, t * 1.18));
                 });
                 if (fx.glow) {
                     fx.glow.scale.set(1 + (1-t)*1.15, 1 + (1-t)*1.15, 1);
@@ -14062,7 +14580,7 @@ function createArmyFactory(x,z,ghost=false){
                     // when a large group fires at one static structure.
                     const targetIsStructure=!!(b.targetTank && (b.targetTank.isCommandBase||b.targetTank.isBarracks||b.targetTank.isFactory));
                     if(!targetIsStructure || !b.targetTank._lastMissCraterAt || performance.now()-b.targetTank._lastMissCraterAt>900){
-                        createBlackImpactCrater(b.targetPos.clone(), b.tankShell ? 1.05 : .45, b.tankShell ? 6500 : 2200);
+                        createBlackImpactCrater(b.targetPos.clone(), b.tankShell ? 3.8 : .65, b.tankShell ? 6500 : 2200);
                         if(targetIsStructure) b.targetTank._lastMissCraterAt=performance.now();
                     }
                     scene.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); bullets.splice(i, 1);
@@ -14076,11 +14594,11 @@ function createArmyFactory(x,z,ghost=false){
                     // Tank shells against structures are visually throttled; damage is never throttled.
                     const isStructure=!!(impactTarget.isCommandBase||impactTarget.isBarracks||impactTarget.isFactory);
                     if(!isStructure || !impactTarget._lastHitCraterAt || performance.now()-impactTarget._lastHitCraterAt>900){
-                        createBlackImpactCrater(impactTarget.mesh.position.clone(),1.05,6500);
+                        createBlackImpactCrater(impactTarget.mesh.position.clone(),3.8,9000);
                         if(isStructure) impactTarget._lastHitCraterAt=performance.now();
                     }
                 } else if(!b.infantryBullet) createModernImpactFlash(impactTarget.mesh.position.clone(), b.fromTeam);
-                const impactIsStructure=!!(impactTarget.isCommandBase||impactTarget.isBarracks||impactTarget.isFactory||impactTarget.isOilRig);
+                const impactIsStructure=!!(impactTarget.isCommandBase||impactTarget.isBarracks||impactTarget.isFactory||impactTarget.isOilRig||impactTarget.isArtillery);
                 // Dedicated structure damage handlers own structure HP; do not subtract twice.
                 if(!impactIsStructure) impactTarget.hp -= b.damage;
                 if(impactTarget.isInfantry){
@@ -14098,6 +14616,8 @@ function createArmyFactory(x,z,ghost=false){
                     damageFactory(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isOilRig) {
                     damageOilRig(impactTarget, b.damage, b.fromTeam);
+                } else if (impactTarget.isArtillery) {
+                    damageArtillery(impactTarget, b.damage, b.fromTeam);
                 } else if (impactTarget.isDestroyed !== undefined) {
                     if (!impactTarget.isBuilder) {
                         try { if (typeof updateTanksDamageVisual === 'function') updateTanksDamageVisual(impactTarget); } catch (e) {}
@@ -14235,7 +14755,7 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
             const targetRange = tankData.type === 'rocket' ? 260 : 110;
-            const enemyList = tankData.team === 'player' ? [...enemyTanks, ...reconVehicles.filter(v=>v.team==='enemy'), ...(typeof enemyBuilder!=='undefined'&&enemyBuilder?[enemyBuilder]:[])] : [...playerTanks, ...reconVehicles.filter(v=>v.team==='player'), ...(typeof playerBuilder!=='undefined'&&playerBuilder?[playerBuilder]:[])];
+            const enemyList = tankData.team === 'player' ? [...enemyTanks, ...reconVehicles.filter(v=>v.team==='enemy'), ...(constructedArtillery||[]).filter(a=>a&&a.done&&!a.isDestroyed&&a.owner==='enemy'), ...(typeof enemyBuilder!=='undefined'&&enemyBuilder?[enemyBuilder]:[])] : [...playerTanks, ...reconVehicles.filter(v=>v.team==='player'), ...(constructedArtillery||[]).filter(a=>a&&a.done&&!a.isDestroyed&&a.owner==='player'), ...(typeof playerBuilder!=='undefined'&&playerBuilder?[playerBuilder]:[])];
             let enemyTarget = null, bestTargetDistSq = targetRange * targetRange;
             for (let ei = 0; ei < enemyList.length; ei++) {
                 const e = enemyList[ei];
@@ -14298,6 +14818,7 @@ function createArmyFactory(x,z,ghost=false){
                     ...(constructedFactories||[]).filter(f=>f&&!f.isDestroyed&&f.done&&f.owner!==tankData.team),
                     ...(enemyFactories||[]).filter(f=>f&&!f.isDestroyed&&f.done&&tankData.team==='player'),
                     ...(constructedBarracks||[]).filter(b=>b&&!b.isDestroyed&&b.done&&b.owner!==tankData.team),
+                    ...(constructedArtillery||[]).filter(a=>a&&!a.isDestroyed&&a.done&&a.owner!==tankData.team),
                     ...(tankData.team==='player'?[enemyBaseGroup]:[playerBaseGroup])
                 ].filter(st=>st&&st.mesh&&!st.isDestroyed);
                 let siegeTarget=null, siegeDist=Infinity;
@@ -14741,6 +15262,7 @@ function createArmyFactory(x,z,ghost=false){
         updateFactoryConstruction();
         updateFactoryProduction();
         updateBarracksConstruction();
+        updateArtillerySystem();
         updateBarracksProduction();
         updateBarracksVisuals();
         updateFactoryVisuals();
@@ -15135,6 +15657,7 @@ function createArmyFactory(x,z,ghost=false){
         addStructureVision(playerBaseGroup, 92);
         (constructedFactories || []).forEach(f => addStructureVision(f, 78));
         (constructedBarracks || []).forEach(b => addStructureVision(b, 72));
+        (constructedArtillery || []).forEach(a => addStructureVision(a, a.visionRadius || 190));
         // A captured oil field remains visible to the player and clears war fog around it.
         (oilRigs || []).forEach(r => {
             if (r && !r.isDestroyed && r.owner === 'player') addStructureVision(r, 76);
@@ -15278,6 +15801,7 @@ function createArmyFactory(x,z,ghost=false){
         });
 
         updateWarFogOfWar(now);
+        refreshBattlefieldShadows();
         renderer.render(scene, camera);
     }
 
@@ -15333,6 +15857,8 @@ function createArmyFactory(x,z,ghost=false){
             if(barracksSoldierCard) barracksSoldierCard.style.removeProperty('display'); if(factoryInfantryCard) factoryInfantryCard.style.removeProperty('display');
             if(title)title.innerHTML='FACTORY<br>BUILD';
             factoryCard.classList.toggle('disabled',playerMoney<400||isBuilderFactoryBusy(selectedTank));
+            const artilleryCard=document.getElementById('artillery-build-card');
+            if(artilleryCard){artilleryCard.style.display='flex';artilleryCard.classList.toggle('disabled',playerMoney<350||!!activeArtilleryConstructions.some(c=>c.builder===selectedTank));}
             const barracksCard=document.getElementById('barracks-build-card');
             const hasArmyFactory=constructedFactories.some(f=>f&&f.done&&!f.isDestroyed&&f.owner!=='enemy');
             if(barracksCard){
@@ -15340,6 +15866,7 @@ function createArmyFactory(x,z,ghost=false){
                 barracksCard.classList.toggle('disabled',!hasArmyFactory||playerMoney<150||!!getBuilderBarracksConstruction(selectedTank));
             }
         }else if(hasUnit){
+            const artilleryCard=document.getElementById('artillery-build-card');if(artilleryCard)artilleryCard.style.display='none';
             bar.classList.remove('factory-mode','base-mode');
             if(title)title.innerHTML='ORDERS';
         }else if(!activeFactoryConstructions.length&&!buildPanelOpen){
@@ -15447,9 +15974,7 @@ function createArmyFactory(x,z,ghost=false){
         hideFactoryPlacement();playerMoney-=400;totalMoneySpent+=400;updateEconomyUI();
         point.y=getTerrainHeight(point.x,point.z);
         if(!isBuildingPlacementValid(point,'factory',rotation,'player').valid){showFloatingMsg('🚫 Invalid factory placement');return;}
-        const base=new THREE.Vector3(CORNER_OFFSET,0,CORNER_OFFSET);
-        const away=new THREE.Vector3(point.x-base.x,0,point.z-base.z);
-        if(away.lengthSq()>0.01)rotation=Math.atan2(away.x,away.z);
+        // Keep the exact preview rotation selected by the player.
         const build=createArmyFactory(point.x,point.z,true);build.owner='player';
         build.mesh.position.y=point.y+.03;build.mesh.userData.factoryOwner='player';updateFactoryFlagOwner(build,'player');build.mesh.visible=true;build.mesh.scale.setScalar(.08);build.mesh.rotation.y=rotation;build.rotation=rotation;
         const c={builder,point:point.clone(),build,started:false,elapsed:0,workPoint:point.clone().add(new THREE.Vector3(Math.sin(rotation),0,Math.cos(rotation)).multiplyScalar(-18)),lift:null,cage:null};
@@ -15457,7 +15982,7 @@ function createArmyFactory(x,z,ghost=false){
         const foundationMat=new THREE.MeshStandardMaterial({color:0x747a70,roughness:.82,metalness:.12});
         const foundation=new THREE.Mesh(new THREE.BoxGeometry(25,.45,20),foundationMat); foundation.position.set(point.x,point.y+.22,point.z); foundation.rotation.y=rotation; foundation.castShadow=true; foundation.receiveShadow=true; scene.add(foundation); build.mesh.userData.constructionFoundation=foundation;
         c.cage=createFactoryConstructionCage(build);c.lift=createConstructionLift(build);
-        activeFactoryConstructions.push(c);activeFactoryConstruction=c;
+        activeFactoryConstructions.push(c);activeFactoryConstruction=c;updateConstructionProgressOverlay(c,0,'ARMY FACTORY');
         factoryPlacementPoint=null;builder.buildTarget=c.workPoint.clone();builder.target=c.workPoint.clone();builder.isBuilding=false;
         updateConstructionBarForSelection();showFloatingMsg('🏗️ Construction dozer and crane moving to the factory');
     }
@@ -15466,21 +15991,22 @@ function createArmyFactory(x,z,ghost=false){
         const remaining=[];
         for(const c of activeFactoryConstructions){
             const b=c.builder;
-            if(!b||b.isDestroyed){removeConstructionLift(c);removeFactoryConstructionCage(c);continue;}
+            if(!b||b.isDestroyed){removeConstructionProgressOverlay(c);removeConstructionLift(c);removeFactoryConstructionCage(c);continue;}
             if(!c.started){
+                updateConstructionProgressOverlay(c,0,'ARMY FACTORY');
                 if(b.mesh.position.distanceTo(c.workPoint||c.point)<=2.8){c.started=true;b.isBuilding=true;b.target=null;c.elapsed=0;c.startedAt=performance.now();playSound('constructionStart',1.0);showFloatingMsg('🏭 Factory construction started — crane moving across the frame');}
                 remaining.push(c);continue;
             }
             c.elapsed=Math.floor((performance.now()-(c.startedAt||performance.now()))/SIM_STEP_MS);updateConstructionLift(c.lift);
             if(b.buildBlade){const a=Math.sin(c.elapsed*.12)*.24;b.buildBlade.rotation.x=a;b.buildBlade.position.y=.15+Math.max(0,Math.sin(c.elapsed*.12))*.22;}
-            const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;c.build.mesh.scale.setScalar(.08+p*.92);
+            const p=Math.min(1,c.elapsed/c.build.duration);c.build.progress=p;updateConstructionProgressOverlay(c,p,'ARMY FACTORY');c.build.mesh.scale.setScalar(.08+p*.92);
             c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)-8+8*p+.03;
             if(c.build.mesh.userData.constructionFoundation){ c.build.mesh.userData.constructionFoundation.scale.set(1,.25+p*.75,1); }
             c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=Math.min(1,.12+p*1.05);});
             if(c.elapsed%60===0&&c.elapsed<c.build.duration)showFloatingMsg(`🏭 Factory construction: ${Math.floor(p*100)}%`);
             if(p>=1){
-                c.build.done=true;c.build.ghost=false;c.build.mesh.scale.setScalar(1);c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
-                removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);playSound('constructionComplete',0.9);
+                c.build.done=true;c.build.ghost=false;c.build.mesh.scale.setScalar(1.15);c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
+                removeConstructionProgressOverlay(c);removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);lowerGroundForStructure(c.point.x,c.point.z,'factory');playSound('constructionComplete',0.9);
                 showFloatingMsg('✅ Factory complete — construction dozer retreating');
             }else remaining.push(c);
         }
