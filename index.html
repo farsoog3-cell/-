@@ -11575,56 +11575,42 @@ function createArmyFactory(x,z,ghost=false){
     function issueEnemyStrategicOrders(info){
         const units=info.enemyAll.filter(u=>!u.isBuilder&&!u.isBuilding);
         if(!units.length)return;
-        const oil=oilRigs.filter(r=>!r.isDestroyed&&r.owner!=='enemy');
-        const playerForces=[...playerTanks,...constructedArtillery].filter(u=>u&&!u.isDestroyed&&u.owner!=='enemy'&&!u.isBuilder&&u.mesh);
+        const enemyOwnedOil=oilRigs.filter(r=>!r.isDestroyed&&r.owner==='enemy');
+        const contestedOil=oilRigs.filter(r=>!r.isDestroyed&&r.owner!=='enemy');
+        const playerForces=[...playerTanks,...constructedArtillery,...reconVehicles.filter(v=>v.team==='player'),...ambulances.filter(v=>v.team==='player')]
+            .filter(u=>u&&!u.isDestroyed&&u.owner!=='enemy'&&!u.isBuilder&&u.mesh);
         const enemyBase=info.enemyBase, playerBase=info.playerBase;
-
-        // ترتيب أهداف العدو حسب الخطر والقيمة، وليس عشوائياً.
+        const oilPoint=rig=>new THREE.Vector3(rig.x,getTerrainHeight(rig.x,rig.z),rig.z);
         const nearestPlayer=(u,max=9999)=>playerForces.slice().sort((a,b)=>u.mesh.position.distanceTo(a.mesh.position)-u.mesh.position.distanceTo(b.mesh.position)).find(a=>u.mesh.position.distanceTo(a.mesh.position)<=max)||null;
-        const nearestOil=(u)=>chooseEnemyOilTarget(u);
-
         units.forEach((u,i)=>{
             let target=null;
-            const ownedEnemyOil=oilRigs.filter(r=>r.owner==='enemy'&&!r.isDestroyed);
-            if(u.isInfantry && oil.length){
-                // مشاة العدو هم قوة الاستيلاء الوحيدة على النفط.
-                // الأولوية للنفط المحايد أو الذي يسيطر عليه PLAYER، وليس للبقاء في القاعدة.
-                const rig=nearestOil(u);
-                if(rig) target=enemyOilPoint(rig);
-            }else if(enemyStrategy==='defense'){
-                // إبقاء الآليات حول النفط والقاعدة مع اعتراض أي قوة تقترب.
-                const threatenedOil=ownedEnemyOil.find(r=>playerForces.some(p=>p.mesh.position.distanceTo(enemyOilPoint(r))<95));
-                const threat=nearestPlayer(u,220);
-                if(threatenedOil) target=enemyOilPoint(threatenedOil);
-                else if(threat && (info.playerNearBase || i%4===0)) target=threat.mesh.position.clone();
-                else {
-                    const r=ownedEnemyOil.length?ownedEnemyOil[i%ownedEnemyOil.length]:null;
-                    if(r) target=enemyOilPoint(r);
-                    else target=enemyBase.clone().add(new THREE.Vector3(Math.sin(i)*52,0,Math.cos(i)*52));
-                }
-            }else if(enemyStrategy==='attack'){
-                // حصار مستمر مع إبقاء جزء من القوة لGUARD النفط.
-                const threat=nearestPlayer(u,340);
-                if(ownedEnemyOil.length && i%4===0){
-                    target=enemyOilPoint(ownedEnemyOil[i%ownedEnemyOil.length]);
-                }else if(threat && i%4!==3) target=threat.mesh.position.clone();
-                else target=playerBase.clone();
+            if(u.isInfantry && contestedOil.length){
+                const rig=contestedOil.slice().sort((a,b)=>{
+                    const danger=r=>playerForces.filter(v=>v.mesh.position.distanceTo(oilPoint(r))<60).length;
+                    return danger(a)*24+u.mesh.position.distanceTo(oilPoint(a))-danger(b)*24-u.mesh.position.distanceTo(oilPoint(b));
+                })[0];
+                if(rig)target=oilPoint(rig);
+            }else if(u.type==='ambulance'){
+                const wounded=units.filter(v=>v!==u&&!v.isInfantry&&v.maxHp&&v.hp<v.maxHp*.8)
+                    .sort((a,b)=>u.mesh.position.distanceTo(a.mesh.position)-u.mesh.position.distanceTo(b.mesh.position))[0];
+                const oilThreat=enemyOwnedOil.find(r=>playerForces.some(v=>v.mesh.position.distanceTo(oilPoint(r))<100));
+                target=wounded?wounded.mesh.position.clone():(oilThreat?oilPoint(oilThreat):enemyBase.clone());
             }else{
-                const rig=nearestOil(u);
-                if(rig) target=enemyOilPoint(rig);
-                else target=enemyBase.clone();
+                const threatenedOil=enemyOwnedOil.find(r=>playerForces.some(v=>v.mesh.position.distanceTo(oilPoint(r))<115));
+                if(threatenedOil&&i%3===0)target=oilPoint(threatenedOil);
+                else if(enemyOwnedOil.length&&i%4===0)target=oilPoint(enemyOwnedOil[i%enemyOwnedOil.length]);
+                else{
+                    const threat=nearestPlayer(u,420);
+                    target=threat&&(enemyStrategy==='defense'||i%3!==2)?threat.mesh.position.clone():playerBase.clone();
+                }
             }
             if(target){
                 target.y=getTerrainHeight(target.x,target.z);
-                u.aiTarget=target.clone();
-                u.target=target.clone();
-                u.aiOrder=enemyStrategy;
-                u.aiOrderTime=Date.now();
+                u.aiTarget=target.clone();u.target=target.clone();u.aiOrder=enemyStrategy;u.aiOrderTime=Date.now();
             }
         });
     }
 
-    
     function animateVehicleWheels(unit,delta){
         if(!unit||!unit.mesh)return;
         const speed=Math.hypot(unit.vx||0,unit.vz||0);
@@ -11704,16 +11690,21 @@ function createArmyFactory(x,z,ghost=false){
         // and establish one permanent defensive battery once the enemy economy can afford it.
         const enemyGunCount=constructedArtillery.filter(a=>a&&!a.isDestroyed&&a.owner==='enemy').length
             +activeArtilleryConstructions.filter(c=>c&&c.build&&c.build.owner==='enemy').length;
-        const enemyArtilleryBuilder=liveEnemy.find(u=>u.isBuilder&&!u.isBuilding&&!activeArtilleryConstructions.some(c=>c&&c.builder===u));
-        const shouldBuildGun=enemyMoney>=350&&enemyArtilleryBuilder&&enemyGunCount<(info.playerNearBase?3:1)
-            &&(info.playerNearBase||enemyGunCount===0||enemyStrategy==='defense');
+        const enemyArtilleryBuilder=(!enemyFactoryConstruction&&!enemyBarracksConstruction)
+            ?liveEnemy.find(u=>u.isBuilder&&!u.isDestroyed&&!u.isBuilding&&!u.buildTarget
+                &&!activeArtilleryConstructions.some(c=>c&&c.builder===u)):null;
+        const enemyOwnedOilSites=oilRigs.filter(r=>r&&!r.isDestroyed&&r.owner==='enemy');
+        const oilNeedingGun=enemyOwnedOilSites.find(r=>
+            !constructedArtillery.some(a=>a&&!a.isDestroyed&&a.owner==='enemy'&&a.mesh.position.distanceTo(enemyOilPoint(r))<34)
+            &&!activeArtilleryConstructions.some(c=>c&&c.build&&c.build.owner==='enemy'&&c.point.distanceTo(enemyOilPoint(r))<34));
+        const shouldBuildGun=enemyMoney>=350&&enemyArtilleryBuilder
+            &&(!!oilNeedingGun||enemyGunCount<(info.playerNearBase?3:1));
         if(shouldBuildGun){
-            const base=info.enemyBase.clone();
-            const toward=info.playerBase.clone().sub(base);toward.y=0;if(toward.lengthSq()<.01)toward.set(1,0,1);toward.normalize();
-            const point=base.clone().addScaledVector(toward,enemyGunCount===0?24:30+enemyGunCount*9);
+            const site=oilNeedingGun?enemyOilPoint(oilNeedingGun):info.enemyBase.clone().add(info.playerBase.clone().sub(info.enemyBase).normalize().multiplyScalar(26));
+            const toward=info.playerBase.clone().sub(site);toward.y=0;if(toward.lengthSq()<.01)toward.set(1,0,1);toward.normalize();
+            const point=site.clone().add(new THREE.Vector3(-toward.z,0,toward.x).multiplyScalar(15));
             point.y=getTerrainHeight(point.x,point.z);
-            const rotation=Math.atan2(toward.x,toward.z);
-            startEnemyArtilleryConstruction(enemyArtilleryBuilder,point,rotation);
+            startEnemyArtilleryConstruction(enemyArtilleryBuilder,point,Math.atan2(toward.x,toward.z));
         }
 
         // بعد المصنع وBASE: ينتج العدو المشاة فقط عندما يحتاجهم للنفط،
@@ -11725,7 +11716,7 @@ function createArmyFactory(x,z,ghost=false){
         const enemyInfantryCount=enemyTanks.filter(u=>u&&!u.isDestroyed&&u.isInfantry).length;
         // لا ننتظر امتلاك النفط لإنتاج المشاة: المشاة هم من سيذهبون لاحتلال النفط.
         // إذا كان هناك نفط غير تابع للعدو، يخصص العدو مشاة تلقائياً للاستيلاء عليه.
-        const needOilInfantry=neutralOrPlayerOilCount>0 && enemyInfantryCount<Math.max(4,neutralOrPlayerOilCount*2);
+        const needOilInfantry=neutralOrPlayerOilCount>0 && enemyInfantryCount<Math.max(6,neutralOrPlayerOilCount*3);
         // لا يبدأ العدو تدريب جندي جديد حتى ينتهي السابق من الخروج من الثكنة،
         // مع الالتزام بزمن تدريب PLAYER نفسه (8 ثوانٍ).
         const enemyInfantryStillExiting=enemyTanks.some(u=>u&&!u.isDestroyed&&u.team==='enemy'&&u.isInfantry&&u.barracksExitBarracks===activeEnemyBarracks&&(u.barracksExiting||u.barracksExitLock));
@@ -11745,18 +11736,21 @@ function createArmyFactory(x,z,ghost=false){
         if(factory&&!enemyFactoryProduction&&!enemyFactoryUnitStillExiting){
             const costs={rocket:800,normal:500,ambulance:600,scout:500};
             const affordable=Object.keys(costs).filter(k=>enemyMoney>=costs[k]);
-            if(!affordable.length) return;
-            // العدو حر في اختيار كامل ترسانة المصنع، مع أوزان بسيطة تتغير حسب المعركة.
-            const weights={rocket:2.8,normal:3.0,ambulance:1.15,scout:1.8};
-            if(needOilInfantry){ weights.rocket*=.65; weights.normal*=.85; weights.scout*=1.15; }
-            if(enemyStrategy==='attack'){ weights.rocket+=2.8; weights.normal+=2.4; }
-            if(info.playerStrength>info.enemyStrength*1.25){ weights.normal+=2.0; weights.ambulance+=1.6; weights.scout+=1.0; }
-            if(info.playerNearBase){ weights.rocket+=2.5; weights.normal+=2.0; }
-            let total=affordable.reduce((sum,k)=>sum+weights[k],0), roll=Math.random()*total, type=affordable[0];
-            for(const k of affordable){ roll-=weights[k]; if(roll<=0){type=k;break;} }
-            if(enemyMoney>=costs[type]){
-                enemyMoney-=costs[type];
-                enemyFactoryProduction={factory,type,cost:costs[type],elapsed:0,startedAt:performance.now(),duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND};
+            // Lack of cash pauses factory production only; it must not return from the AI
+            // before issuing movement, attack, defence, and target-selection orders.
+            if(affordable.length){
+                const weights={rocket:2.8,normal:3.0,ambulance:1.15,scout:1.8};
+                if(needOilInfantry){ weights.rocket*=.65; weights.normal*=.85; weights.scout*=1.15; }
+                if(enemyStrategy==='attack'){ weights.rocket+=2.8; weights.normal+=2.4; }
+                if(info.playerStrength>info.enemyStrength*1.25){ weights.normal+=2.0; weights.ambulance+=1.6; weights.scout+=1.0; }
+                if(info.playerNearBase){ weights.rocket+=2.5; weights.normal+=2.0; }
+                if(enemyTanks.some(u=>u&&!u.isDestroyed&&!u.isInfantry&&u.maxHp&&u.hp<u.maxHp*.68))weights.ambulance+=4.5;
+                let total=affordable.reduce((sum,k)=>sum+weights[k],0), roll=Math.random()*total, type=affordable[0];
+                for(const k of affordable){ roll-=weights[k]; if(roll<=0){type=k;break;} }
+                if(enemyMoney>=costs[type]){
+                    enemyMoney-=costs[type];
+                    enemyFactoryProduction={factory,type,cost:costs[type],elapsed:0,startedAt:performance.now(),duration:(type==='scout'?REAL_BUILD_SCOUT_SEC:REAL_BUILD_VEHICLE_SEC)*REAL_TICKS_PER_SECOND};
+                }
             }
         }
 
