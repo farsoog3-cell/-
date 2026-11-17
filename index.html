@@ -2570,7 +2570,7 @@
 
 /* حالة اختيار تركس البناء: صور صغيرة ولا بطاقات كبيرة */
 #construction-bar.factory-mode .build-card{display:none!important;}
-#construction-bar.factory-mode .factory-build-card{display:flex!important;}
+#construction-bar.factory-mode .factory-build-card{display:flex!important;}\n#construction-bar.unit-selected.builder-selected .nuclear-build-card{display:flex!important;}
 
 
 
@@ -4586,7 +4586,7 @@ img { max-width: 100%; }
 
 #victory-screen .result-subtitle{margin:0!important;}
 
-#victory-flag-canvas{width:min(42vw,220px)!important;height:auto!important;aspect-ratio:1.8!important;}
+#victory-flag-canvas{width:min(72vw,360px)!important;height:auto!important;aspect-ratio:2.4!important;}
 #victory-screen .restart-btn{font-family:Tahoma,Arial,sans-serif!important;letter-spacing:0!important;}
 
 
@@ -4611,6 +4611,19 @@ img { max-width: 100%; }
 .flag-country img{width:min(100%,66px);height:34px;object-fit:cover;border:1px solid #aeb4a8;display:block;}
 .flag-country.active{border:2px solid #f3d77d;background:#35402f;}
 @media(max-width:420px){.flag-picker-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+
+ 
+        #construction-bar .nuclear-build-card{border-color:rgba(74,222,128,.58);background:linear-gradient(135deg,rgba(24,38,31,.96),rgba(9,15,13,.98));}
+        .nuclear-mini-preview{position:relative;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#39434a,#171d21);border:1px solid #7c8a88;border-radius:4px;overflow:hidden;}
+        .nuclear-mini-preview span{font-size:27px;color:#a3e635;text-shadow:0 0 10px #65a30d;}
+        .nuclear-mini-preview i{position:absolute;bottom:3px;width:5px;height:28px;background:#aeb8b9;box-shadow:-8px 0 #657276,8px 0 #657276;}
+        #nuclear-command-panel{position:fixed;z-index:1400;top:14px;right:14px;width:min(280px,calc(100vw - 28px));padding:11px;background:rgba(7,13,12,.94);border:1px solid rgba(163,230,53,.65);border-radius:9px;box-shadow:0 0 20px rgba(101,163,13,.18);color:#edf5e9;font:800 12px Arial;display:none;pointer-events:auto}
+        #nuclear-command-panel .nuclear-head{display:flex;justify-content:space-between;align-items:center;color:#d9f99d;font-size:13px;margin-bottom:7px}
+        #nuclear-command-panel .nuclear-status{font-size:11px;color:#cbd5c0;margin:5px 0 9px}
+        #nuclear-command-panel .nuclear-count{font-size:20px;letter-spacing:2px;color:#bef264;text-align:center;padding:6px;background:#101a12;border-radius:5px;margin:6px 0}
+        #nuclear-command-panel button{width:100%;padding:10px;border:1px solid #a3e635;border-radius:5px;background:linear-gradient(180deg,#365314,#1a2e05);color:white;font-weight:900}
+        #nuclear-command-panel button:disabled{opacity:.42;filter:grayscale(1)}
+        .nuclear-target-ring{color:#a3e635}
 
 </style>
 </head>
@@ -4802,6 +4815,16 @@ img { max-width: 100%; }
             <div class="build-price">350$</div>
         </div>
 
+        <div class="factory-build-card nuclear-build-card" id="nuclear-silo-build-card" onclick="playClickSound(); armNuclearSiloBuild()">
+            <div class="build-preview nuclear-mini-preview"><span>☢</span><i></i></div>
+            <div class="build-info">
+                <div class="build-name">☢ NUCLEAR SILO</div>
+                <div class="build-desc">Strategic long-range superweapon</div>
+                <div class="build-hint">Build time: 60 sec</div>
+            </div>
+            <div class="build-price">5000$</div>
+        </div>
+
         <div class="factory-unit-card" id="factory-scud-card" onclick="playClickSound(); queueFactoryUnit('rocket')">
             <div class="factory-unit-preview"><img class="external-bar-image" src="images/units/scud.png" alt="" onload="this.parentElement.classList.add('has-external-image')" onerror="this.remove()"><div class="mini-scud"></div></div>
             <div class="factory-unit-info"><div class="factory-unit-name">🚀 SCUD</div><div class="factory-unit-price">800$</div><div class="factory-unit-time">Ready in 10 sec</div></div>
@@ -4920,6 +4943,14 @@ img { max-width: 100%; }
     </div>
 </div>
 
+<div id="nuclear-command-panel">
+    <div class="nuclear-head"><span>☢ STRATEGIC NUCLEAR SILO</span><button type="button" onclick="closeNuclearPanel()" style="width:auto;padding:3px 7px;background:#263329;border-color:#64748b">✕</button></div>
+    <div class="nuclear-status" id="nuclear-status">Construction in progress</div>
+    <div class="nuclear-count" id="nuclear-countdown">BUILDING</div>
+    <button type="button" id="nuclear-launch-btn" onclick="armNuclearTargeting()" disabled>SELECT LAUNCH TARGET</button>
+    <button type="button" id="nuclear-sell-btn" onclick="sellSelectedBuilding()" style="margin-top:7px;background:linear-gradient(180deg,#5b3d20,#302315);border-color:#c49a54">SELL NUCLEAR SILO · 50% REFUND</button>
+</div>
+
 <div id="canvas-container"></div>
 
 <!-- ===== JAVASCRIPT SECTION: EXTERNAL LIBRARY: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js ===== -->
@@ -4968,7 +4999,10 @@ img { max-width: 100%; }
         constructionLoop: 'sounds/construction_work_loop.mp3',
         artilleryTraverse: 'sounds/artillery_traverse.mp3',
         artilleryFire: 'sounds/artillery_fire.mp3',
-        artilleryImpact: 'sounds/artillery_impact.mp3'
+        artilleryImpact: 'sounds/artillery_impact.mp3',
+        nuclearAlarm: 'sounds/nuclear_alarm.mp3',
+        nuclearLaunch: 'sounds/nuclear_launch.mp3',
+        nuclearExplosion: 'sounds/nuclear_explosion.mp3'
     };
 
     // إذا لم يوجد ملف صوت جديد، لا يختفي الصوت؛ يستخدم بديلاً مناسباً.
@@ -5502,6 +5536,16 @@ img { max-width: 100%; }
     let artilleryPlacementGhost = null;
     let artilleryPlacementPoint = null;
     let activeArtilleryConstructions = [];
+    let nuclearSilos = [];
+    let activeNuclearConstructions = [];
+    let nuclearBuildMode = false;
+    let nuclearBuildGhost = null;
+    let nuclearBuildPoint = null;
+    let selectedNuclearSilo = null;
+    let nuclearTargetMode = false;
+    let nuclearTargetMarker = null;
+    let nuclearMissilesInFlight = [];
+    let nuclearFireParticles = [];
     let artilleryShells = [];
     let artilleryFxParticles = [];
     let activeBarracksProduction = null;
@@ -5992,6 +6036,7 @@ img { max-width: 100%; }
 
     function showUnitSelection(unit, message = true) {
         if (!unit || unit.isDestroyed) return;
+        closeNuclearPanel();
         selectedCommandBase = null;
         selectedFactory = null;
         selectedBarracks = null;
@@ -9740,7 +9785,16 @@ function startGame(){openBattleSetup();}
         const group = new THREE.Group();
         group.name = "scudMissile";
 
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.24, metalness: 0.82 });
+        // شارة علم سوريا واضحة على جسم الصاروخ، بخامة عالية التباين لا تعتمد على إضاءة المشهد.
+        const flagCanvas = document.createElement('canvas'); flagCanvas.width = 256; flagCanvas.height = 128;
+        const flagCtx = flagCanvas.getContext('2d');
+        flagCtx.fillStyle = '#ffffff'; flagCtx.fillRect(0, 0, 256, 128);
+        flagCtx.fillStyle = '#168447'; flagCtx.fillRect(0, 0, 256, 42.7);
+        flagCtx.fillStyle = '#111820'; flagCtx.fillRect(0, 85.3, 256, 42.7);
+        const drawFlagStar = (x, y, r) => { flagCtx.beginPath(); for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,rr=k%2===0?r:r*.43;const px=x+Math.cos(a)*rr,py=y+Math.sin(a)*rr;k?flagCtx.lineTo(px,py):flagCtx.moveTo(px,py);}flagCtx.closePath();flagCtx.fillStyle='#d92732';flagCtx.fill(); };
+        drawFlagStar(86,64,13); drawFlagStar(128,64,13); drawFlagStar(170,64,13);
+        const flagTexture = new THREE.CanvasTexture(flagCanvas); flagTexture.colorSpace = THREE.SRGBColorSpace;
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: flagTexture, roughness: 0.34, metalness: 0.48 });
         const noseMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.12, metalness: 0.92 });
         const darkMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.32, metalness: 0.72 });
         const bandMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.28, metalness: 0.86 });
@@ -9772,16 +9826,27 @@ function startGame(){openBattleSetup();}
         sensorRing.position.y = 6.25;
         group.add(sensorRing);
 
+        // Aerodynamic swept fins: triangular/tapered metal blades instead of blocky cubes.
         for (let i = 0; i < 4; i++) {
             const a = i * Math.PI / 2;
-            const fin = new THREE.Mesh(new THREE.BoxGeometry(0.24, 3.55, 1.95), darkMat);
-            fin.position.set(Math.cos(a) * 0.92, -4.95, Math.sin(a) * 0.92);
+            const finShape = new THREE.Shape();
+            finShape.moveTo(0.72, -3.35);
+            finShape.lineTo(1.72, -6.55);
+            finShape.lineTo(2.62, -6.92);
+            finShape.lineTo(2.18, -4.18);
+            finShape.lineTo(1.05, -3.55);
+            finShape.closePath();
+            const finGeo = new THREE.ExtrudeGeometry(finShape, { depth: 0.22, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.07, bevelThickness: 0.06 });
+            finGeo.computeVertexNormals();
+            const fin = new THREE.Mesh(finGeo, darkMat);
+            fin.position.z = -0.11;
             fin.rotation.y = a;
             fin.castShadow = true;
+            fin.receiveShadow = true;
             group.add(fin);
 
-            const brace = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.45, 0.42), bandMat);
-            brace.position.set(Math.cos(a) * 1.03, -3.95, Math.sin(a) * 1.03);
+            const brace = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.25, 0.30), bandMat);
+            brace.position.set(Math.cos(a) * 1.05, -4.35, Math.sin(a) * 1.05);
             brace.rotation.y = a;
             group.add(brace);
         }
@@ -9812,6 +9877,7 @@ function startGame(){openBattleSetup();}
 
 
     function openConstructionBar() {
+        closeNuclearPanel();
         buildPanelOpen = true;
         selectedCommandBase = playerBaseGroup && !playerBaseGroup.isDestroyed ? playerBaseGroup : null;
         selectedFactory = null;
@@ -9837,6 +9903,8 @@ function startGame(){openBattleSetup();}
     function closeConstructionBar() {
         buildPanelOpen = false;
         factoryBuildArmed = false;
+        if(nuclearBuildGhost&&nuclearBuildGhost.mesh)scene.remove(nuclearBuildGhost.mesh);
+        nuclearBuildGhost=null;nuclearBuildMode=false;nuclearBuildPoint=null;
         const bar = document.getElementById('construction-bar');
         if (bar) bar.classList.remove('open','factory-mode','factory-selected','barracks-selected','base-mode','unit-selected');
     }
@@ -9886,6 +9954,8 @@ function startGame(){openBattleSetup();}
     }
 
     function hideFactoryPlacement() {
+        if(nuclearBuildGhost&&nuclearBuildGhost.mesh)scene.remove(nuclearBuildGhost.mesh);
+        nuclearBuildGhost=null;nuclearBuildMode=false;nuclearBuildPoint=null;
         factoryBuildArmed=false; factoryPlacementMode=false; factoryPlacementPoint=null;
         barracksBuildArmed=false; barracksPlacementMode=false; barracksPlacementPoint=null;
         artilleryPlacementMode=false;artilleryPlacementPoint=null;if(artilleryPlacementGhost){scene.remove(artilleryPlacementGhost.mesh);artilleryPlacementGhost=null;}
@@ -10111,6 +10181,324 @@ function startGame(){openBattleSetup();}
         for(let i=artilleryFxParticles.length-1;i>=0;i--){const f=artilleryFxParticles[i];f.age+=dt;const t=Math.min(1,f.age/f.life);if(!f.mesh||!f.mesh.parent||t>=1){if(f.mesh?.parent)scene.remove(f.mesh);artilleryFxParticles.splice(i,1);continue;}if(f.flash){f.mesh.material.opacity=.95*(1-t);f.mesh.scale.multiplyScalar(1.08);}else{f.mesh.position.add(f.drift);f.mesh.scale.setScalar(f.base*(1+t*2.8));f.mesh.material.opacity=.48*(1-t);}}
     }
 
+
+    // ===== STRATEGIC NUCLEAR SILO: dozer construction, 2.5-minute cooldown and target launch =====
+    function createNuclearSilo(x,z,ghost=false,owner='player'){
+        const root=new THREE.Group(); root.name='strategicNuclearSilo';
+        const mat=(c,m=.45,r=.62)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:r});
+        const concrete=mat(0x667052,.18,.88), steel=mat(0x46523a,.72,.42), dark=mat(0x252d20,.62,.52);
+        const light=mat(0x89936b,.58,.38), warning=mat(0xb49a43,.32,.52);
+        const add=(geo,m,x,y,z,parent=root)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;};
+        add(new THREE.BoxGeometry(30,.65,28),concrete,0,.32,0);
+        add(new THREE.BoxGeometry(27,.22,25),dark,0,.76,0);
+        // Four launch pylons with blinking red warning beacons.
+        const redBeacons=[];
+        for(const [x0,z0] of [[-9,-8],[9,-8],[-9,8],[9,8]]){
+            add(new THREE.BoxGeometry(1.15,30,1.15),steel,x0,15.7,z0);
+            add(new THREE.BoxGeometry(2.2,.55,2.2),warning,x0,1.2,z0);
+            add(new THREE.BoxGeometry(1.3,.5,1.3),light,x0,29.7,z0);
+            const beaconMat=new THREE.MeshStandardMaterial({color:0x7f0000,emissive:0xff0808,emissiveIntensity:.15,roughness:.25});
+            const beacon=add(new THREE.SphereGeometry(.62,12,10),beaconMat,x0,30.55,z0);
+            const beaconLight=new THREE.PointLight(0xff1717,0,15,2);beaconLight.position.set(x0,30.7,z0);root.add(beaconLight);
+            redBeacons.push({mesh:beacon,light:beaconLight,phase:Math.random()*Math.PI*2});
+        }
+        // Tall cylindrical launch cradle and reinforced lower collar.
+        add(new THREE.CylinderGeometry(5.1,6.0,3.4,32),steel,0,2.6,0);
+        add(new THREE.CylinderGeometry(3.9,4.2,4.5,28),dark,0,5.9,0);
+        add(new THREE.TorusGeometry(5.0,.34,10,36),warning,0,4.2,0).rotation.x=Math.PI/2;
+        // Missile standing upright on its launch platform.
+        const rocket=createModernScudMissile(); rocket.name='nuclearSiloRocket'; rocket.scale.setScalar(2.35); rocket.position.set(0,24,0); root.add(rocket);
+        // Service gantry on the right side.
+        add(new THREE.BoxGeometry(5.5,1.1,1.0),steel,7.2,25.5,0);
+        add(new THREE.BoxGeometry(1.0,26,1.0),steel,9.4,13.6,0);
+        add(new THREE.BoxGeometry(1.0,26,1.0),steel,13.2,13.6,0);
+        add(new THREE.BoxGeometry(4.8,1.0,1.0),steel,11.3,26.2,0);
+        // Visible ladder rungs fixed to the service gantry.
+        for(let y=2.2;y<25.5;y+=1.55) add(new THREE.CylinderGeometry(.10,.10,3.4,8),light,11.3,y,.72).rotation.z=Math.PI/2;
+        for(let y=3;y<25;y+=4.2) add(new THREE.BoxGeometry(5.0,.16,.18),warning,11.3,y,.58);
+        // Team flag planted at ground level beside the launch vehicle; the cloth is attached to its pole.
+        const flagPoleX=-12.0, flagPoleZ=2.0;
+        add(new THREE.CylinderGeometry(.13,.18,8.2,12),dark,flagPoleX,4.25,flagPoleZ);
+        add(new THREE.SphereGeometry(.24,10,8),warning,flagPoleX,8.45,flagPoleZ);
+        const flagTex=createFlagTexture(owner==='enemy'?enemyFlagType:playerFlagType);
+        const flagMat=new THREE.MeshBasicMaterial({map:flagTex,color:0xffffff,side:THREE.DoubleSide,transparent:true,depthWrite:false});
+        const flagGeo=new THREE.PlaneGeometry(4.8,2.55,12,6);
+        const flag=new THREE.Mesh(flagGeo,flagMat);
+        flag.name='nuclearTeamFlag'; flag.position.set(flagPoleX+2.25,7.05,flagPoleZ); flag.rotation.y=0;
+        flag.userData.basePositions=Array.from(flagGeo.attributes.position.array);
+        flag.userData.teamFlag=true;flag.userData.team=owner;root.add(flag);
+        activeFlagMeshes.push({mesh:flag,baseHeight:7.05,type:owner==='enemy'?enemyFlagType:playerFlagType,nuclearFlag:true,owner});
+        // Nuclear insignia plate.
+        const sign=add(new THREE.BoxGeometry(4.2,3.6,.28),dark,0,17.2,14.15);
+        const signCanvas=document.createElement('canvas'); signCanvas.width=256;signCanvas.height=256;
+        const ctx=signCanvas.getContext('2d');ctx.fillStyle='#18231a';ctx.fillRect(0,0,256,256);
+        ctx.fillStyle='#a3e635';ctx.font='bold 170px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('☢',128,135);
+        const signTex=new THREE.CanvasTexture(signCanvas);
+        const emblem=new THREE.Mesh(new THREE.PlaneGeometry(3.7,3.1),new THREE.MeshBasicMaterial({map:signTex,transparent:true}));
+        emblem.position.set(0,0,0.17);sign.add(emblem);
+        root.position.set(x,getTerrainHeight(x,z),z); root.scale.setScalar(.72);
+        if(ghost){root.traverse(o=>{if(o.material){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=.34;o.material.depthWrite=false;}});}
+        scene.add(root);
+        let hpLabel=null,hpFill=null;
+        if(!ghost){
+            hpLabel=document.createElement('div');hpLabel.className='tank-hp-label '+(owner==='enemy'?'hp-enemy':'hp-player');
+            hpFill=document.createElement('div');hpFill.className='tank-hp-fill';hpLabel.appendChild(hpFill);
+            const host=document.getElementById('hp-labels-container');if(host)host.appendChild(hpLabel);hpLabel.style.display='none';
+        }
+        return {mesh:root,done:!ghost,ghost,isNuclearSilo:true,owner,team:owner,hp:5200,maxHp:5200,hpLabel,hpFill,hpRevealUntil:0,collisionRadius:20,visionRadius:100,launchReadyAt:0,lastAlarmAt:0,lastReadySmokeAt:0,rocketLoaded:true,redBeacons,isDestroyed:false,buildCost:5000};
+    }
+
+    function destroyNuclearSilo(silo,fromTeam='player'){
+        if(!silo||silo.isDestroyed)return;
+        silo.isDestroyed=true;silo.hp=0;
+        if(silo.hpLabel)silo.hpLabel.style.display='none';
+        if(silo.mesh){const pos=silo.mesh.position.clone();createModernImpactFlash(pos,fromTeam,{heavy:true});
+            for(let i=0;i<12;i++)addSmokeParticle(pos.clone().add(new THREE.Vector3((Math.random()-.5)*5,3+Math.random()*7,(Math.random()-.5)*5)),0x303333,.8+Math.random()*.7);
+            silo.mesh.visible=false;}
+        nuclearSilos=nuclearSilos.filter(x=>x!==silo);
+        activeFlagMeshes=activeFlagMeshes.filter(item=>item&&item.mesh&&item.mesh.parent!==silo.mesh);
+        activeNuclearConstructions=activeNuclearConstructions.filter(c=>{if(c.build===silo){removeConstructionProgressOverlay(c);if(c.build.mesh.parent)scene.remove(c.build.mesh);return false;}return true;});
+        if(selectedNuclearSilo===silo)closeNuclearPanel();
+    }
+    function damageNuclearSilo(silo,amount,fromTeam){
+        if(fromTeam==='player')signalPlayerAttackMusic();
+        if(!silo||silo.isDestroyed||!silo.mesh)return;
+        silo.hp=Math.max(0,(silo.hp||silo.maxHp||5200)-Math.max(1,amount));
+        silo.hpRevealUntil=Date.now()+5000;
+        if(silo.hp<=0)destroyNuclearSilo(silo,fromTeam);
+    }
+
+    function armNuclearSiloBuild(){
+        const builder=selectedTank&&getUnitKind(selectedTank)==='builder'&&!selectedTank.isDestroyed?selectedTank:null;
+        if(!builder){showFloatingMsg('Select the construction dozer first');return;}
+        if(activeNuclearConstructions.some(c=>c.builder===builder)||isBuilderFactoryBusy(builder)||activeArtilleryConstructions.some(c=>c.builder===builder)||getBuilderBarracksConstruction(builder)){showFloatingMsg('This dozer is already building');return;}
+        if(playerMoney<5000){showFloatingMsg('Insufficient funds — nuclear silo costs $5000');return;}
+        hideFactoryPlacement();nuclearBuildMode=true;nuclearBuildPoint=null;
+        if(nuclearBuildGhost?.mesh)scene.remove(nuclearBuildGhost.mesh);
+        nuclearBuildGhost=createNuclearSilo(builder.mesh.position.x,builder.mesh.position.z,true,'player');
+        showFloatingMsg('Choose a flat location for the nuclear launch silo');
+    }
+
+    function updateNuclearBuildGhostFromScreen(clientX,clientY){
+        if(!nuclearBuildMode||!nuclearBuildGhost)return;
+        mouse.x=clientX/window.innerWidth*2-1;mouse.y=-(clientY/window.innerHeight)*2+1;
+        raycaster.setFromCamera(mouse,camera);
+        const hits=raycaster.intersectObject(terrainMesh);
+        if(!hits.length)return;
+        const p=hits[0].point;nuclearBuildPoint=p.clone();
+        nuclearBuildGhost.mesh.position.set(p.x,getBuildingGroundLevel(p.x,p.z,'nuclear'),p.z);
+        const valid=isBuildingPlacementValid(p,'nuclear',0,'player').valid;
+        nuclearBuildGhost.mesh.traverse(o=>{if(o.material&&o.material.color)o.material.color.set(valid?0xffffff:0xff5555);});
+    }
+
+    function startNuclearSiloConstruction(builder,point){
+        if(!builder||builder.isDestroyed||playerMoney<5000)return;
+        playerMoney-=5000;totalMoneySpent+=5000;updateEconomyUI();
+        if(nuclearBuildGhost?.mesh)scene.remove(nuclearBuildGhost.mesh);
+        nuclearBuildGhost=null;nuclearBuildMode=false;nuclearBuildPoint=null;
+        const build=createNuclearSilo(point.x,point.z,true,'player');
+        build.mesh.scale.setScalar(.1296);build.mesh.visible=true;
+        const workPoint=point.clone().add(new THREE.Vector3(-17,0,0));workPoint.y=getTerrainHeight(workPoint.x,workPoint.z);
+        const construction={builder,build,point:point.clone(),workPoint,started:false,startedAt:0};
+        activeNuclearConstructions.push(construction);
+        updateConstructionProgressOverlay(construction,0,'NUCLEAR SILO');
+        builder.buildTarget=workPoint.clone();builder.target=workPoint.clone();builder.isBuilding=false;
+        showFloatingMsg('Construction dozer moving to nuclear silo');
+    }
+
+    function selectNuclearSilo(silo){
+        if(!silo||silo.isDestroyed)return;
+        closeConstructionBar();
+        selectedNuclearSilo=silo;selectedFactory=null;selectedBarracks=null;selectedOilRig=null;selectedTank=null;selectedCommandBase=null;selectedUnitKind='nuclear';selectionMode='single';
+        clearSelectionVisuals();
+        let ring=silo.mesh.getObjectByName('nuclearSelectionRing');
+        if(!ring){ring=new THREE.Mesh(new THREE.RingGeometry(18,18.45,80),new THREE.MeshBasicMaterial({color:0xa3e635,side:THREE.DoubleSide,transparent:true,opacity:.92,depthWrite:false}));ring.name='nuclearSelectionRing';ring.rotation.x=-Math.PI/2;ring.position.y=.16;silo.mesh.add(ring);}
+        ring.visible=true;
+        const panel=document.getElementById('nuclear-command-panel');if(panel)panel.style.display='block';
+        updateNuclearPanel();
+        showFloatingMsg('☢ Nuclear silo selected');
+    }
+    function closeNuclearPanel(){const p=document.getElementById('nuclear-command-panel');if(p)p.style.display='none';if(selectedNuclearSilo&&selectedNuclearSilo.mesh){const r=selectedNuclearSilo.mesh.getObjectByName('nuclearSelectionRing');if(r)r.visible=false;}selectedNuclearSilo=null;nuclearTargetMode=false;if(nuclearTargetMarker&&!(nuclearMissilesInFlight&&nuclearMissilesInFlight.length))nuclearTargetMarker.visible=false;}
+    function updateNuclearPanel(){
+        const silo=selectedNuclearSilo;if(!silo)return;
+        const status=document.getElementById('nuclear-status'),count=document.getElementById('nuclear-countdown'),btn=document.getElementById('nuclear-launch-btn');
+        if(!status||!count||!btn)return;
+        if(!silo.done){status.textContent='Construction in progress';count.textContent=Math.round((silo.progress||0)*100)+'%';btn.disabled=true;return;}
+        const remain=Math.max(0,(silo.launchReadyAt-Date.now())/1000);
+        if(remain>0){status.textContent='Nuclear system recharging';const total=Math.ceil(remain);count.textContent=String(Math.floor(total/60)).padStart(2,'0')+':'+String(total%60).padStart(2,'0');btn.disabled=true;}
+        else{status.textContent='NUCLEAR SYSTEM READY';count.textContent='READY TO LAUNCH';btn.disabled=false;}
+    }
+    function armNuclearTargeting(){
+        if(!selectedNuclearSilo||!selectedNuclearSilo.done||Date.now()<selectedNuclearSilo.launchReadyAt)return;
+        nuclearTargetMode=true;
+        if(!nuclearTargetMarker){
+            nuclearTargetMarker=new THREE.Group();nuclearTargetMarker.name='nuclearGroundTarget';
+            const mk=(r1,r2,color,opacity)=>{const q=new THREE.Mesh(new THREE.RingGeometry(r1,r2,96),new THREE.MeshBasicMaterial({color,side:THREE.DoubleSide,transparent:true,opacity,depthWrite:false}));q.rotation.x=-Math.PI/2;nuclearTargetMarker.add(q);return q;};
+            mk(27,30,0xb7ff38,.95);mk(18,19.2,0xffe35a,.9);mk(33,34,0xefffce,.55);
+            const c=document.createElement('canvas');c.width=256;c.height=256;const cx=c.getContext('2d');cx.fillStyle='rgba(0,0,0,0)';cx.clearRect(0,0,256,256);cx.fillStyle='#c8ff43';cx.font='bold 190px Arial';cx.textAlign='center';cx.textBaseline='middle';cx.shadowColor='#a3e635';cx.shadowBlur=22;cx.fillText('☢',128,132);
+            const tx=new THREE.CanvasTexture(c);const icon=new THREE.Mesh(new THREE.PlaneGeometry(17,17),new THREE.MeshBasicMaterial({map:tx,transparent:true,depthWrite:false,side:THREE.DoubleSide}));icon.rotation.x=-Math.PI/2;icon.position.y=.12;nuclearTargetMarker.add(icon);
+            scene.add(nuclearTargetMarker);
+        }
+        nuclearTargetMarker.visible=true;showFloatingMsg('☢ Touch the battlefield to select the nuclear target');
+    }
+    function updateNuclearTargetFromScreen(clientX,clientY){
+        if(!nuclearTargetMode||!nuclearTargetMarker)return;
+        mouse.x=clientX/window.innerWidth*2-1;mouse.y=-(clientY/window.innerHeight)*2+1;
+        raycaster.setFromCamera(mouse,camera);
+        const hits=raycaster.intersectObject(terrainMesh);
+        if(hits.length){const p=hits[0].point;nuclearTargetMarker.position.set(p.x,getTerrainHeight(p.x,p.z)+.22,p.z);}
+    }
+    function spawnNuclearFire(pos,amount=2,intense=false){
+        for(let i=0;i<amount;i++){
+            const mat=new THREE.MeshBasicMaterial({color:Math.random()>.42?0xff5a12:0xffc247,transparent:true,opacity:.92,blending:THREE.AdditiveBlending,depthWrite:false});
+            const mesh=new THREE.Mesh(new THREE.SphereGeometry(.55+Math.random()*.85,8,7),mat);
+            mesh.position.copy(pos);mesh.position.x+=(Math.random()-.5)*(intense?7:2.5);mesh.position.z+=(Math.random()-.5)*(intense?7:2.5);mesh.position.y+=(Math.random()-.5)*2;
+            scene.add(mesh);
+            nuclearFireParticles.push({mesh,vx:(Math.random()-.5)*(intense?1.25:.42),vy:.45+Math.random()*(intense?1.1:.45),vz:(Math.random()-.5)*(intense?1.25:.42),life:intense?34+Math.random()*25:22+Math.random()*18,age:0,base:.92});
+        }
+    }
+    function fireNuclearMissile(targetPoint,siloOverride=null){
+        const silo=siloOverride||selectedNuclearSilo;if(!silo||!silo.done||Date.now()<silo.launchReadyAt)return;
+        const start=silo.mesh.position.clone();start.y+=20;
+        const missile=createModernScudMissile();missile.scale.setScalar(2.55);missile.position.copy(start);
+        missile.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(0,1,0));
+        const exhaust=new THREE.Group();
+        const flame=new THREE.Mesh(new THREE.ConeGeometry(2.8,13,18),new THREE.MeshBasicMaterial({color:0xff6815,transparent:true,opacity:.92,blending:THREE.AdditiveBlending,depthWrite:false}));
+        flame.rotation.x=Math.PI;flame.position.y=-13;exhaust.add(flame);
+        const core=new THREE.Mesh(new THREE.ConeGeometry(1.25,9,16),new THREE.MeshBasicMaterial({color:0xffe6a3,transparent:true,opacity:.96,blending:THREE.AdditiveBlending,depthWrite:false}));
+        core.rotation.x=Math.PI;core.position.y=-11.5;exhaust.add(core);missile.add(exhaust);scene.add(missile);
+        silo.launchReadyAt=Date.now()+150000;silo.lastAlarmAt=0;silo.lastReadySmokeAt=0;silo.rocketLoaded=false;
+        const siloRocket=silo.mesh.getObjectByName('nuclearSiloRocket');if(siloRocket)siloRocket.visible=false;
+        playSound('nuclearLaunch',1.0);playSound('rocket',.9);
+        triggerCameraShake(.16);shakeTimer=Math.max(shakeTimer,34);shakeIntensity=Math.max(shakeIntensity,.15);
+        const targetGround = targetPoint.clone(); targetGround.y = getTerrainHeight(targetGround.x,targetGround.z);
+        // لا يبقى كشف الهدف بعد إطلاق الصاروخ؛ كشف المؤشر مؤقت أثناء التحديد فقط.
+        nuclearMissilesInFlight.push({mesh:missile,target:targetGround,speed:190,phase:'ascent',altitude:start.y+560,offscreenAt:0,trailAt:0,lastUpdate:performance.now(),owner:silo.owner||'player'});
+        nuclearTargetMode=false;
+        if(nuclearTargetMarker){nuclearTargetMarker.position.set(targetGround.x,targetGround.y+.28,targetGround.z);nuclearTargetMarker.visible=true;}
+        updateNuclearPanel();showFloatingMsg('☢ الصاروخ يرتفع عمودياً');
+    }
+    function explodeNuclearMissile(point,fromTeam='player'){
+        const ground=new THREE.Vector3(point.x,getTerrainHeight(point.x,point.z),point.z);
+        playSound('nuclearExplosion',1.0);playSound('explosion',1.0);
+        triggerCameraShake(.16);shakeTimer=Math.max(shakeTimer,48);shakeIntensity=Math.max(shakeIntensity,.16);
+        // Short-lived white flash and an expanding shockwave; all are removed automatically.
+        const flash=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.96,blending:THREE.AdditiveBlending,depthWrite:false}));
+        flash.position.copy(ground);flash.position.y+=9;scene.add(flash);
+        const light=new THREE.PointLight(0xffffff,24,300,2);light.position.copy(flash.position);scene.add(light);
+        const ring=new THREE.Mesh(new THREE.RingGeometry(1,2.8,72),new THREE.MeshBasicMaterial({color:0xffe7a3,transparent:true,opacity:.95,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
+        ring.rotation.x=-Math.PI/2;ring.position.copy(ground);ring.position.y+=.45;scene.add(ring);
+        const started=performance.now();
+        const animateFlash=()=>{
+            const t=(performance.now()-started)/2600;
+            if(t>=1){scene.remove(flash);scene.remove(light);scene.remove(ring);flash.geometry.dispose();flash.material.dispose();ring.geometry.dispose();ring.material.dispose();return;}
+            const k=1-t;flash.scale.setScalar(8+70*t);flash.material.opacity=.96*k;light.intensity=24*k;
+            ring.scale.setScalar(1+75*t);ring.material.opacity=.95*k;
+            requestAnimationFrame(animateFlash);
+        };requestAnimationFrame(animateFlash);
+        // A taller, wider mushroom cloud gives the nuclear blast a distinct silhouette.
+        // Spawn it first so the shared smoke-particle budget reserves room for the main plume.
+        createMushroomSmokeCloud(ground,2.8);
+        // Ground-hugging debris smoke around the blast perimeter, kept moderate for mobile performance.
+        for(let i=0;i<36;i++){
+            const a=Math.random()*Math.PI*2,r=Math.random()*85;
+            const p=ground.clone();p.x+=Math.cos(a)*r;p.z+=Math.sin(a)*r;p.y+=Math.random()*16;
+            addSmokeParticle(p,i%4===0?0x171717:0x333638,2.2+Math.random()*3.8);
+        }
+        for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,r=Math.random()*45,p=ground.clone();p.x+=Math.cos(a)*r;p.z+=Math.sin(a)*r;addSmokeParticle(p,0x171717,4.5+Math.random()*3);}
+        createModernImpactFlash(ground,fromTeam,{isScud:true,heavy:true});
+        // No black scorch decal or dark crater is left on the ground after a nuclear strike.
+        if(nuclearTargetMarker)nuclearTargetMarker.visible=false;
+        // Heavy circular damage against vehicles, infantry and constructed structures.
+        const radius=132;
+        const allUnits=[...(playerTanks||[]),...(enemyTanks||[]),...(reconVehicles||[]),...(ambulances||[])];
+        allUnits.forEach(u=>{if(!u||u.isDestroyed||!u.mesh)return;const d=Math.hypot(u.mesh.position.x-ground.x,u.mesh.position.z-ground.z);if(d<=radius){u.hp=0;try{destroyCombatUnitSafely(u,fromTeam);}catch(e){u.isDestroyed=true;u.mesh.visible=false;}}});
+        if(typeof soldiers!=='undefined'&&Array.isArray(soldiers)) soldiers.forEach(u=>{if(!u||u.isDestroyed||!u.mesh)return;const d=Math.hypot(u.mesh.position.x-ground.x,u.mesh.position.z-ground.z);if(d<=radius){try{if(typeof startInfantryDeath==='function')startInfantryDeath(u);else{u.hp=0;u.isDestroyed=true;u.mesh.visible=false;}}catch(e){u.isDestroyed=true;u.mesh.visible=false;}}});
+        [...(constructedFactories||[]),...(enemyFactories||[])].forEach(b=>{if(!b||b.isDestroyed||!b.mesh)return;const d=Math.hypot(b.mesh.position.x-ground.x,b.mesh.position.z-ground.z);if(d<=radius)damageFactory(b,99999,fromTeam);});
+        [...(constructedBarracks||[])].forEach(b=>{if(!b||b.isDestroyed||!b.mesh)return;const d=Math.hypot(b.mesh.position.x-ground.x,b.mesh.position.z-ground.z);if(d<=radius)damageBarracks(b,99999,fromTeam);});
+        (constructedArtillery||[]).forEach(a=>{if(!a||a.isDestroyed||!a.mesh)return;const d=Math.hypot(a.mesh.position.x-ground.x,a.mesh.position.z-ground.z);if(d<=radius)damageArtillery(a,99999,fromTeam);});
+        (oilRigs||[]).forEach(r=>{if(!r||r.isDestroyed)return;const d=Math.hypot((r.x||0)-ground.x,(r.z||0)-ground.z);if(d<=radius)damageOilRig(r,99999,fromTeam);});
+        nuclearSilos.slice().forEach(b=>{if(!b.isDestroyed&&b.mesh&&Math.hypot(b.mesh.position.x-ground.x,b.mesh.position.z-ground.z)<=radius)damageNuclearSilo(b,99999,fromTeam);});
+        [playerBaseGroup,enemyBaseGroup].forEach(base=>{if(base&&!base.isDestroyed&&base.mesh&&Math.hypot(base.mesh.position.x-ground.x,base.mesh.position.z-ground.z)<=radius)damageCommandBase(base,999999,fromTeam);});
+        showFloatingMsg('☢ NUCLEAR DETONATION — BLAST ZONE DESTROYED');
+    }
+    function updateNuclearSystem(now){
+        now=now||performance.now();
+        for(const c of [...activeNuclearConstructions]){
+            const b=c.builder;
+            if(!b||b.isDestroyed){removeConstructionProgressOverlay(c);if(c.build.mesh.parent)scene.remove(c.build.mesh);activeNuclearConstructions=activeNuclearConstructions.filter(x=>x!==c);continue;}
+            if(!c.started){updateConstructionProgressOverlay(c,0,'NUCLEAR SILO');if(b.mesh.position.distanceTo(c.workPoint)<4){c.started=true;c.startedAt=now;b.isBuilding=true;b.target=null;}continue;}
+            const p=Math.min(1,(now-c.startedAt)/60000);c.build.progress=p;playConstructionStartOnce(c,p);
+            c.build.mesh.scale.setScalar((.18+.82*p)*.72);c.build.mesh.position.y=getTerrainHeight(c.point.x,c.point.z);
+            updateConstructionProgressOverlay(c,p,'NUCLEAR SILO');
+            if(p>=1){
+                c.build.done=true;c.build.ghost=false;c.build.mesh.scale.setScalar(.72);c.build.launchReadyAt=Date.now()+150000;c.build.progress=1;
+                c.build.mesh.traverse(o=>{if(o.material){o.material.opacity=1;o.material.transparent=false;o.material.depthWrite=true;o.material.needsUpdate=true;}});
+                nuclearSilos.push(c.build);lowerGroundForStructure(c.point.x,c.point.z,'nuclear');removeConstructionProgressOverlay(c);finishBuilderConstructionRetreat({builder:b,build:c.build,point:c.point});playConstructionCompleteOnce(c.build,.95);
+                activeNuclearConstructions=activeNuclearConstructions.filter(x=>x!==c);
+                if((c.build.owner||'player')==='player'){selectNuclearSilo(c.build);showFloatingMsg('Nuclear silo completed — 2.5 minute arming sequence started');}
+                else showFloatingMsg('Enemy nuclear silo construction completed');
+            }
+        }
+        for(const m of [...nuclearMissilesInFlight]){
+            const dt=Math.min(.06,Math.max(.001,(now-(m.lastUpdate||now))/1000));m.lastUpdate=now;
+            let velocity;
+            if(m.phase==='ascent'){
+                // صعود عمودي حقيقي إلى أعلى؛ لا يتجه نحو الهدف أثناء مرحلة الصعود.
+                m.mesh.position.y+=m.speed*dt;
+                velocity=new THREE.Vector3(0,1,0);
+                if(m.mesh.position.y>=m.altitude){
+                    m.phase='offscreen';m.offscreenAt=now;m.mesh.visible=false;
+                    showFloatingMsg('☢ الصاروخ خرج من مجال الكاميرا');
+                }
+            }else if(m.phase==='offscreen'){
+                // انتقال قصير خارج مجال الرؤية ثم ظهور فوق الهدف مباشرة، بلا رحلة أفقية مرئية.
+                if(now-m.offscreenAt>=1550){
+                    m.mesh.position.set(m.target.x,m.target.y+560,m.target.z);
+                    m.mesh.visible=true;m.phase='descent';m.trailAt=0;
+                    showFloatingMsg('☢ الرأس النووي يهبط عمودياً على الهدف');
+                }
+                continue;
+            }else{
+                const remaining=Math.max(0,m.mesh.position.y-m.target.y);
+                if(remaining<Math.max(3,m.speed*dt*1.35)){
+                    explodeNuclearMissile(m.target,m.owner||'player');
+                    if(nuclearTargetMarker)nuclearTargetMarker.visible=false;
+                    scene.remove(m.mesh);m.mesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(x=>x.dispose());}});
+                    nuclearMissilesInFlight=nuclearMissilesInFlight.filter(x=>x!==m);continue;
+                }
+                m.mesh.position.y-=m.speed*dt;
+                velocity=new THREE.Vector3(0,-1,0);
+            }
+            m.mesh.quaternion.slerp(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),velocity),.24);
+            if(now-(m.trailAt||0)>(m.phase==='ascent'?75:155)){
+                m.trailAt=now;const p=m.mesh.position.clone().add(new THREE.Vector3(0,-7,0));
+                if(m.phase==='ascent'){
+                    for(let q=0;q<3;q++)addSmokeParticle(p,0x282a2b,2.5+Math.random()*2.4,{life:90,vy:.10+Math.random()*.07,driftX:(Math.random()-.5)*.06,driftZ:(Math.random()-.5)*.06});
+                    spawnNuclearFire(p,4,true);
+                }else if(m.phase==='descent'){
+                    addSmokeParticle(p,0x55595b,1.35+Math.random()*.8,{life:62,vy:.07});
+                    if(Math.random()>.45)spawnNuclearFire(p,1,false);
+                }
+            }
+        }
+        for(let i=nuclearFireParticles.length-1;i>=0;i--){const f=nuclearFireParticles[i];f.age++;if(!f.mesh||f.age>=f.life){if(f.mesh?.parent)scene.remove(f.mesh);f.mesh?.geometry?.dispose();f.mesh?.material?.dispose();nuclearFireParticles.splice(i,1);continue;}f.mesh.position.x+=f.vx;f.mesh.position.y+=f.vy;f.mesh.position.z+=f.vz;f.mesh.material.opacity=f.base*(1-f.age/f.life);f.mesh.scale.multiplyScalar(1.018);}
+        if(selectedNuclearSilo)updateNuclearPanel();
+        nuclearSilos.forEach(silo=>{
+            if(!silo.done||silo.isDestroyed)return;
+            const ready=Date.now()>=silo.launchReadyAt;
+            if(ready&&!silo.rocketLoaded){const rocket=silo.mesh.getObjectByName('nuclearSiloRocket');if(rocket)rocket.visible=true;silo.rocketLoaded=true;}
+            if(ready&&silo.rocketLoaded&&Date.now()-(silo.lastReadySmokeAt||0)>620){
+                silo.lastReadySmokeAt=Date.now();const rp=silo.mesh.position.clone();rp.y+=16.5;rp.x+=(Math.random()-.5)*1.5;rp.z+=(Math.random()-.5)*1.5;
+                addSmokeParticle(rp,0x66696a,1.0+Math.random()*.7,{life:55,vy:.10,driftX:(Math.random()-.5)*.035,driftZ:(Math.random()-.5)*.035});
+            }
+            if(silo.redBeacons){const pulse=(Math.sin(now*.006)+1)*.5;silo.redBeacons.forEach(b=>{b.mesh.material.emissiveIntensity=.18+pulse*2.3;b.light.intensity=pulse*2.1;});}
+            const flag=silo.mesh.getObjectByName('nuclearTeamFlag');
+            if(flag&&flag.geometry&&flag.userData.basePositions){const a=flag.geometry.attributes.position,base=flag.userData.basePositions,t=now*.004;for(let k=0;k<a.count;k++){const x=base[k*3],y=base[k*3+1];a.array[k*3]=x+Math.sin(t+y*.65+x*.55)*(.12+Math.abs(x)*.055);a.array[k*3+2]=base[k*3+2]+Math.sin(t*1.2+x*.7+y*.3)*(.10+Math.abs(x)*.045);}a.needsUpdate=true;flag.geometry.computeVertexNormals();}
+            if(ready&&Date.now()-(silo.lastAlarmAt||0)>20000){silo.lastAlarmAt=Date.now();playSound('nuclearAlarm',.8);}
+        });
+    }
+
     function updateArtillerySystem(){
         const now=performance.now();
         for(const c of [...activeArtilleryConstructions]){
@@ -10127,7 +10515,7 @@ function startGame(){openBattleSetup();}
         for(const art of constructedArtillery){
             if(!art||!art.done||art.isDestroyed)continue;
             art.recoilOffset=THREE.MathUtils.lerp(art.recoilOffset||0,0,.19);art.recoil.position.z=art.recoilOffset;art.recoil.rotation.x=THREE.MathUtils.lerp(art.recoil.rotation.x||0,0,.18);updateArtilleryCrew(art,now);
-            const enemies=[...playerTanks,...enemyTanks,...reconVehicles,...ambulances,...(constructedArtillery||[])].filter(u=>u&&!u.isDestroyed&&u.mesh&&u.team!==art.owner&&u.mesh.visible!==false&&(u.done!==false));
+            const enemies=[...playerTanks,...enemyTanks,...reconVehicles,...ambulances,...(constructedArtillery||[]),...(nuclearSilos||[])].filter(u=>u&&!u.isDestroyed&&u.mesh&&u.team!==art.owner&&u.mesh.visible!==false&&(u.done!==false));
             let target=null,best=190;
             for(const u of enemies){const d=Math.hypot(u.mesh.position.x-art.mesh.position.x,u.mesh.position.z-art.mesh.position.z);if(d<best){best=d;target=u;}}
             // The carriage never moves; only the barrel assembly slowly traverses. Scan when idle.
@@ -10155,6 +10543,7 @@ function startGame(){openBattleSetup();}
                 // Play the artillery shell explosion sound only when the shell reaches its impact point.
                 playSound('artilleryImpact',1.0);createModernImpactFlash(impact.clone(),sh.owner,{heavy:true});createBlackImpactCrater(impact,7.2,19000,false);triggerCameraShake(.075);for(const u of [...playerTanks,...enemyTanks,...reconVehicles,...ambulances]){if(!u||u.isDestroyed||!u.mesh||u.team===sh.owner)continue;const d=Math.hypot(u.mesh.position.x-impact.x,u.mesh.position.z-impact.z);if(d<24){const dmg=sh.damage*(1-d/27);u.hp=Math.max(0,u.hp-dmg);u.hpRevealUntil=Date.now()+3500;if(u.hp<=0&&!u.isDestroyed){if(typeof destroyCombatUnitSafely==='function')destroyCombatUnitSafely(u,sh.owner);}}}
                 for(const a of (constructedArtillery||[]))if(a&&a.done&&!a.isDestroyed&&a.owner!==sh.owner){const d=Math.hypot(a.mesh.position.x-impact.x,a.mesh.position.z-impact.z);if(d<24)damageArtillery(a,Math.floor(sh.damage*(1-d/27)),sh.owner);}
+            for(const n of (nuclearSilos||[]).slice())if(n&&!n.isDestroyed&&n.owner!==sh.owner){const d=Math.hypot(n.mesh.position.x-impact.x,n.mesh.position.z-impact.z);if(d<27)damageNuclearSilo(n,Math.floor(sh.damage*(1-d/30)),sh.owner);}
                 const enemyBase=sh.owner==='player'?enemyBaseGroup:playerBaseGroup;if(enemyBase&&!enemyBase.isDestroyed&&enemyBase.mesh.position.distanceTo(impact)<13)damageCommandBase(enemyBase,Math.floor(sh.damage*1.15),sh.owner);
                 for(const f of [...(constructedFactories||[]),...(enemyFactories||[])])if(f&&f.done&&!f.isDestroyed&&f.owner!==sh.owner&&f.mesh.position.distanceTo(impact)<13)damageFactory(f,Math.floor(sh.damage*1.05),sh.owner);
                 for(const b of (constructedBarracks||[]))if(b&&b.done&&!b.isDestroyed&&b.owner!==sh.owner&&b.mesh.position.distanceTo(impact)<13)damageBarracks(b,Math.floor(sh.damage*1.05),sh.owner);
@@ -10754,7 +11143,8 @@ function createArmyFactory(x,z,ghost=false){
 
     function getBuildingFootprint(type, rotation=0){
         const isFactory = type==='factory';
-        return {halfX:isFactory?15.2:9.6, halfZ:isFactory?13.0:7.4, radius:isFactory?18.5:11.5};
+        const isNuclear = type==='nuclear';
+        return {halfX:isNuclear?14.0:(isFactory?15.2:9.6), halfZ:isNuclear?13.0:(isFactory?13.0:7.4), radius:isNuclear?16.5:(isFactory?18.5:11.5)};
     }
     // ارتفاع قاعدة المبنى الحقيقي: نأخذ أعلى نقطة تحت كامل footprint حتى لا يدخل
     // أي جزء من الأرض داخل جسم المبنى. ومع شرط الاستواء الصارم في التحقق، يبقى
@@ -10787,7 +11177,7 @@ function createArmyFactory(x,z,ghost=false){
         // A building must sit on a genuinely flat/near-flat patch, never on a steep dune or hill.
         if(maxY-minY>0.55) return {valid:false,reason:'uneven'};
         if(Math.abs(point.x)>390||Math.abs(point.z)>390) return {valid:false,reason:'edge'};
-        const allBuildings=[...(constructedFactories||[]),...(enemyFactories||[]),...(constructedBarracks||[]),...(constructedArtillery||[])];
+        const allBuildings=[...(constructedFactories||[]),...(enemyFactories||[]),...(constructedBarracks||[]),...(constructedArtillery||[]),...(nuclearSilos||[]),...(activeNuclearConstructions||[]).map(c=>c&&c.build).filter(Boolean)];
         for(const b of allBuildings){
             if(!b||!b.mesh||b.isDestroyed) continue;
             const r=(b.collisionRadius||12)+fp.radius;
@@ -10812,12 +11202,41 @@ function createArmyFactory(x,z,ghost=false){
     }
     function findNearestValidEnemyBuildPoint(preferred,type){
         const base=new THREE.Vector3(-CORNER_OFFSET,0,-CORNER_OFFSET);
-        const candidates=[];
-        if(preferred)candidates.push(preferred.clone());
-        for(let r=34;r<=120;r+=8){ for(let i=0;i<16;i++){ const a=(i/16)*Math.PI*2; const p=base.clone().add(new THREE.Vector3(Math.cos(a)*r,0,Math.sin(a)*r)); p.y=getTerrainHeight(p.x,p.z); candidates.push(p); } }
-        candidates.sort((a,b)=>a.distanceToSquared(preferred||base)-b.distanceToSquared(preferred||base));
-        for(const p of candidates){ const v=isBuildingPlacementValid(p,type,0,'enemy'); if(v.valid)return p; }
-        return preferred||base.clone();
+        const anchor=preferred?preferred.clone():base.clone();
+        const candidates=[anchor.clone()];
+        // Search around the requested strategic site first. The old routine searched
+        // only around the command base, causing oil-defense guns to pile up at HQ.
+        for(let r=8;r<=76;r+=6){
+            for(let i=0;i<24;i++){
+                const a=(i/24)*Math.PI*2;
+                const q=anchor.clone().add(new THREE.Vector3(Math.cos(a)*r,0,Math.sin(a)*r));
+                q.y=getTerrainHeight(q.x,q.z);candidates.push(q);
+            }
+        }
+        candidates.sort((a,b)=>a.distanceToSquared(anchor)-b.distanceToSquared(anchor));
+        for(const q of candidates){const v=isBuildingPlacementValid(q,type,0,'enemy');if(v.valid)return q;}
+        // Only use the HQ fallback when no strategic point was supplied.
+        if(!preferred){
+            for(let r=34;r<=120;r+=8)for(let i=0;i<24;i++){
+                const a=(i/24)*Math.PI*2,q=base.clone().add(new THREE.Vector3(Math.cos(a)*r,0,Math.sin(a)*r));
+                q.y=getTerrainHeight(q.x,q.z);if(isBuildingPlacementValid(q,type,0,'enemy').valid)return q;
+            }
+        }
+        return preferred?preferred.clone():base.clone();
+    }
+
+    function findEnemyOilDefenseGunPoint(rig){
+        if(!rig)return null;
+        const oil=enemyOilPoint(rig), candidates=[];
+        // Keep the gun close enough to defend the oil, but outside the oil rig's footprint.
+        for(const radius of [29,33,37,42])for(let i=0;i<16;i++){
+            const a=(i/16)*Math.PI*2;
+            const q=oil.clone().add(new THREE.Vector3(Math.cos(a)*radius,0,Math.sin(a)*radius));
+            q.y=getTerrainHeight(q.x,q.z);candidates.push(q);
+        }
+        candidates.sort((a,b)=>a.distanceToSquared(oil)-b.distanceToSquared(oil));
+        for(const q of candidates)if(isBuildingPlacementValid(q,'artillery',0,'enemy').valid)return q;
+        return null;
     }
 
     function chooseEnemyBuildPoint(){
@@ -10886,11 +11305,21 @@ function createArmyFactory(x,z,ghost=false){
         const playerForces=[...playerTanks,...constructedArtillery,...reconVehicles.filter(v=>v.team==='player'),...ambulances.filter(v=>v.team==='player')]
             .filter(u=>u&&!u.isDestroyed&&u.owner!=='enemy'&&!u.isBuilder&&u.mesh);
         const enemyBase=info.enemyBase, playerBase=info.playerBase;
+        const hostileNuclear=(nuclearSilos||[]).filter(n=>n&&!n.isDestroyed&&n.owner==='player');
+        const priorityNuclear=hostileNuclear.sort((a,b)=>enemyBase.distanceTo(a.mesh.position)-enemyBase.distanceTo(b.mesh.position))[0];
+        const playerArtillery=constructedArtillery.filter(a=>a&&!a.isDestroyed&&a.done&&a.owner==='player'&&a.mesh);
+        const playerOil=oilRigs.filter(r=>r&&!r.isDestroyed&&r.owner==='player');
+        const playerFactories=(constructedFactories||[]).filter(b=>b&&!b.isDestroyed&&b.owner!=='enemy'&&b.mesh);
+        const playerBarracks=(constructedBarracks||[]).filter(b=>b&&!b.isDestroyed&&b.owner!=='enemy'&&b.mesh);
         const oilPoint=rig=>new THREE.Vector3(rig.x,getTerrainHeight(rig.x,rig.z),rig.z);
         const nearestPlayer=(u,max=9999)=>playerForces.slice().sort((a,b)=>u.mesh.position.distanceTo(a.mesh.position)-u.mesh.position.distanceTo(b.mesh.position)).find(a=>u.mesh.position.distanceTo(a.mesh.position)<=max)||null;
         units.forEach((u,i)=>{
             let target=null;
-            if(u.isInfantry && contestedOil.length){
+            if(priorityNuclear && (i%2===0 || enemyStrategy==='attack')){target=priorityNuclear.mesh.position.clone();}
+            else if(playerArtillery.length && i%5===0){
+                const gun=playerArtillery.slice().sort((a,b)=>u.mesh.position.distanceTo(a.mesh.position)-u.mesh.position.distanceTo(b.mesh.position))[0];
+                target=gun.mesh.position.clone();
+            }else if(u.isInfantry && contestedOil.length){
                 const rig=contestedOil.slice().sort((a,b)=>{
                     const danger=r=>playerForces.filter(v=>v.mesh.position.distanceTo(oilPoint(r))<60).length;
                     return danger(a)*24+u.mesh.position.distanceTo(oilPoint(a))-danger(b)*24-u.mesh.position.distanceTo(oilPoint(b));
@@ -10905,6 +11334,11 @@ function createArmyFactory(x,z,ghost=false){
                 const threatenedOil=enemyOwnedOil.find(r=>playerForces.some(v=>v.mesh.position.distanceTo(oilPoint(r))<115));
                 if(threatenedOil&&i%3===0)target=oilPoint(threatenedOil);
                 else if(enemyOwnedOil.length&&i%4===0)target=oilPoint(enemyOwnedOil[i%enemyOwnedOil.length]);
+                else if(playerOil.length&&i%4===1){
+                    const rig=playerOil.slice().sort((a,b)=>u.mesh.position.distanceTo(oilPoint(a))-u.mesh.position.distanceTo(oilPoint(b)))[0];
+                    target=oilPoint(rig);
+                }else if(playerFactories.length&&i%6===2){target=playerFactories[0].mesh.position.clone();}
+                else if(playerBarracks.length&&i%6===4){target=playerBarracks[0].mesh.position.clone();}
                 else{
                     const threat=nearestPlayer(u,420);
                     target=threat&&(enemyStrategy==='defense'||i%3!==2)?threat.mesh.position.clone():playerBase.clone();
@@ -10930,7 +11364,10 @@ function createArmyFactory(x,z,ghost=false){
 
     function startEnemyArtilleryConstruction(builder,point,rotation=0){
         if(!builder||builder.isDestroyed||enemyMoney<350||activeArtilleryConstructions.some(c=>c&&c.builder===builder))return false;
-        point=findNearestValidEnemyBuildPoint(point,'barracks').clone();
+        // Keep artillery at the strategic point chosen by the AI (normally beside owned oil),
+        // rather than relocating it to the command-base search ring.
+        point=findNearestValidEnemyBuildPoint(point,'artillery').clone();
+        if(!isBuildingPlacementValid(point,'artillery',0,'enemy').valid)return false;
         enemyMoney-=350;point.y=getTerrainHeight(point.x,point.z);
         const build=createFieldArtillery(point.x,point.z,true,'enemy');
         build.rotation=rotation;build.mesh.rotation.y=rotation;build.mesh.visible=true;
@@ -10946,6 +11383,18 @@ function createArmyFactory(x,z,ghost=false){
         return true;
     }
 
+    function startEnemyNuclearConstruction(builder,point){
+        if(!builder||builder.isDestroyed||enemyMoney<5000||activeNuclearConstructions.some(c=>c&&c.builder===builder))return false;
+        point=findNearestValidEnemyBuildPoint(point,'nuclear').clone();point.y=getTerrainHeight(point.x,point.z);
+        enemyMoney-=5000;
+        const build=createNuclearSilo(point.x,point.z,true,'enemy');build.mesh.scale.setScalar(.1296);build.mesh.visible=true;
+        const workPoint=point.clone().add(new THREE.Vector3(17,0,0));workPoint.y=getTerrainHeight(workPoint.x,workPoint.z);
+        const construction={builder,build,point:point.clone(),workPoint,started:false,startedAt:0,owner:'enemy'};
+        activeNuclearConstructions.push(construction);updateConstructionProgressOverlay(construction,0,'ENEMY NUCLEAR SILO');
+        builder.buildTarget=workPoint.clone();builder.target=workPoint.clone();builder.isBuilding=false;
+        return true;
+    }
+
     function updateEnemyAI(){
         enemyAIThink++; if(enemyAIThink%8!==0)return;
         const liveEnemy=enemyTanks.filter(t=>!t.isDestroyed), livePlayer=[...playerTanks,...constructedArtillery.filter(a=>a&&a.done&&a.owner==='player'&&!a.isDestroyed)].filter(t=>!t.isDestroyed);
@@ -10955,9 +11404,16 @@ function createArmyFactory(x,z,ghost=false){
         enemyBaseAlarmActive=!!info.enemyNearBase;
         const builder=liveEnemy.find(t=>t.isBuilder), factory=enemyFactories.find(f=>f.done&&!f.isDestroyed);
 
-        // العدو القوي: يفضل الهجوم المستمر، ويحوّل الدفاع إلى هجوم مضاد سريع.
-        if(info.playerNearBase) enemySetStrategy('attack','⚔️ Enemy breached the player base perimeter');
-        else if(info.enemyNearBase) enemySetStrategy('attack','⚔️ Enemy forces have reached the player base');
+        // A nuclear threat immediately escalates the enemy response; a ready/owned silo
+        // also shifts the enemy from passive defense into a decisive offensive posture.
+        const playerNuclearThreat=(nuclearSilos||[]).some(n=>n&&!n.isDestroyed&&n.owner==='player');
+        const enemyOwnsNuclear=(nuclearSilos||[]).some(n=>n&&!n.isDestroyed&&n.owner==='enemy');
+        if(playerNuclearThreat) enemySetStrategy('attack','☢️ Nuclear threat detected: destroy the enemy silo');
+        else if(enemyOwnsNuclear) enemySetStrategy('attack','☢️ Nuclear arsenal ready: launch a full offensive');
+        else if(info.playerNearBase) enemySetStrategy('defense','🛡️ Enemy forces threaten the enemy command base');
+        else if(info.enemyNearBase) enemySetStrategy('attack','⚔️ Enemy assault is reaching the player command base');
+        else if(info.enemyOil<2 || enemyMoney<420) enemySetStrategy('economy','⛽ Secure oil and rebuild reserves');
+        else if(info.playerStrength>Math.max(3,info.enemyStrength*1.25)) enemySetStrategy('defense','🛡️ Reinforce the line before counterattacking');
         else if(Date.now()>enemyStrategyUntil) enemySetStrategy('attack','⚔️ ATTACK IN PROGRESS');
 
         // إنشاء مصنع العدو مرة واحدة، ثم ترك الشاحنة تنفذ البناء فعلياً.
@@ -10992,25 +11448,34 @@ function createArmyFactory(x,z,ghost=false){
             }
         }
 
-        // Defensive doctrine: build a field gun near the base when hostile forces approach,
-        // and establish one permanent defensive battery once the enemy economy can afford it.
-        const enemyGunCount=constructedArtillery.filter(a=>a&&!a.isDestroyed&&a.owner==='enemy').length
-            +activeArtilleryConstructions.filter(c=>c&&c.build&&c.build.owner==='enemy').length;
+        // Strategic deterrence: build an enemy nuclear silo once the economy and base infrastructure can sustain it.
+        const enemyNuclearCount=(nuclearSilos||[]).filter(n=>n&&!n.isDestroyed&&n.owner==='enemy').length
+            +activeNuclearConstructions.filter(c=>c&&c.build&&c.build.owner==='enemy').length;
+        const nuclearBuilder=liveEnemy.find(u=>u.isBuilder&&!u.isDestroyed&&!u.isBuilding&&!u.buildTarget
+            &&!activeNuclearConstructions.some(c=>c&&c.builder===u));
+        if(factory&&enemyBarracks&&enemyNuclearCount===0&&nuclearBuilder&&enemyMoney>=5000){
+            const toward=info.playerBase.clone().sub(info.enemyBase).normalize();
+            const site=info.enemyBase.clone().add(new THREE.Vector3(-toward.z,0,toward.x).multiplyScalar(38)).addScaledVector(toward,-24);
+            site.y=getTerrainHeight(site.x,site.z);
+            startEnemyNuclearConstruction(nuclearBuilder,site);
+        }
+
+        // Oil security doctrine: one field gun per captured oil rig, placed beside that rig.
+        // Never build a fallback battery around the command base; this prevents gun spam.
         const enemyArtilleryBuilder=(!enemyFactoryConstruction&&!enemyBarracksConstruction)
             ?liveEnemy.find(u=>u.isBuilder&&!u.isDestroyed&&!u.isBuilding&&!u.buildTarget
                 &&!activeArtilleryConstructions.some(c=>c&&c.builder===u)):null;
         const enemyOwnedOilSites=oilRigs.filter(r=>r&&!r.isDestroyed&&r.owner==='enemy');
         const oilNeedingGun=enemyOwnedOilSites.find(r=>
-            !constructedArtillery.some(a=>a&&!a.isDestroyed&&a.owner==='enemy'&&a.mesh.position.distanceTo(enemyOilPoint(r))<34)
-            &&!activeArtilleryConstructions.some(c=>c&&c.build&&c.build.owner==='enemy'&&c.point.distanceTo(enemyOilPoint(r))<34));
-        const shouldBuildGun=enemyMoney>=350&&enemyArtilleryBuilder
-            &&(!!oilNeedingGun||enemyGunCount<(info.playerNearBase?3:1));
-        if(shouldBuildGun){
-            const site=oilNeedingGun?enemyOilPoint(oilNeedingGun):info.enemyBase.clone().add(info.playerBase.clone().sub(info.enemyBase).normalize().multiplyScalar(26));
-            const toward=info.playerBase.clone().sub(site);toward.y=0;if(toward.lengthSq()<.01)toward.set(1,0,1);toward.normalize();
-            const point=site.clone().add(new THREE.Vector3(-toward.z,0,toward.x).multiplyScalar(15));
-            point.y=getTerrainHeight(point.x,point.z);
-            startEnemyArtilleryConstruction(enemyArtilleryBuilder,point,Math.atan2(toward.x,toward.z));
+            !constructedArtillery.some(a=>a&&!a.isDestroyed&&a.owner==='enemy'&&a.mesh&&a.mesh.position.distanceTo(enemyOilPoint(r))<48)
+            &&!activeArtilleryConstructions.some(c=>c&&c.build&&c.build.owner==='enemy'&&c.point.distanceTo(enemyOilPoint(r))<48));
+        if(enemyMoney>=350&&enemyArtilleryBuilder&&oilNeedingGun){
+            const point=findEnemyOilDefenseGunPoint(oilNeedingGun);
+            if(point){
+                const toward=info.playerBase.clone().sub(enemyOilPoint(oilNeedingGun));toward.y=0;
+                if(toward.lengthSq()<.01)toward.set(1,0,1);toward.normalize();
+                startEnemyArtilleryConstruction(enemyArtilleryBuilder,point,Math.atan2(toward.x,toward.z));
+            }
         }
 
         // بعد المصنع وBASE: ينتج العدو المشاة فقط عندما يحتاجهم للنفط،
@@ -11048,6 +11513,7 @@ function createArmyFactory(x,z,ghost=false){
                 const weights={rocket:2.8,normal:3.0,ambulance:1.15,scout:1.8};
                 if(needOilInfantry){ weights.rocket*=.65; weights.normal*=.85; weights.scout*=1.15; }
                 if(enemyStrategy==='attack'){ weights.rocket+=2.8; weights.normal+=2.4; }
+                if(playerNuclearThreat||enemyOwnsNuclear){weights.rocket+=3.8;weights.normal+=3.2;weights.scout+=1.4;}
                 if(info.playerStrength>info.enemyStrength*1.25){ weights.normal+=2.0; weights.ambulance+=1.6; weights.scout+=1.0; }
                 if(info.playerNearBase){ weights.rocket+=2.5; weights.normal+=2.0; }
                 if(enemyTanks.some(u=>u&&!u.isDestroyed&&!u.isInfantry&&u.maxHp&&u.hp<u.maxHp*.68))weights.ambulance+=4.5;
@@ -11061,6 +11527,10 @@ function createArmyFactory(x,z,ghost=false){
         }
 
         issueEnemyStrategicOrders(info);
+        const enemyReadySilo=(nuclearSilos||[]).find(n=>n&&!n.isDestroyed&&n.done&&n.owner==='enemy'&&Date.now()>=(n.launchReadyAt||0)&&n.rocketLoaded);
+        if(enemyReadySilo&&playerBaseGroup&&!playerBaseGroup.isDestroyed){
+            fireNuclearMissile(playerBaseGroup.mesh.position.clone(),enemyReadySilo);
+        }
         if(enemyAIThink%180===0){
             const labels={defense:'🛡️ Enemy is defending',attack:'⚔️ Enemy attack started',economy:'⛽ Enemy is focusing on oil and economy'};
             showFloatingMsg(labels[enemyStrategy]||'🤖 Enemy strategy changed');
@@ -11094,11 +11564,13 @@ function createArmyFactory(x,z,ghost=false){
         return rigs.find(r=>r.group===obj)||null;
     }
     function selectOilRig(rig){
+        closeNuclearPanel();
         selectedCommandBase=null;selectedOilRig=rig;selectedBarracks=null;selectedFactory=null;selectedTank=null;selectedUnitKind='oil';selectionMode='single';defenseCommandArmed=false;
         clearSelectionVisuals();revealUnitHp(rig,5000);updateConstructionBarForSelection();
         showFloatingMsg('🛢️ Oil rig selected');
     }
     function selectBarracks(barracks){
+        closeNuclearPanel();
         selectedCommandBase=null;
         if(barracks && barracks.owner !== 'enemy') playSound('barracksSelect', 0.8);
         if(barracks&&!barracks.buildCost)barracks.buildCost=150;
@@ -11181,6 +11653,8 @@ function createArmyFactory(x,z,ghost=false){
             building=selectedBarracks; kind='barracks'; refund=Math.floor((Number(building.buildCost)||150)/2);
         }else if(selectedCommandBase && !selectedCommandBase.isDestroyed && selectedCommandBase.owner!=='enemy'){
             building=selectedCommandBase; kind='commandBase'; refund=Math.floor((Number(building.buildCost)||2000)/2);
+        }else if(selectedNuclearSilo && !selectedNuclearSilo.isDestroyed && selectedNuclearSilo.owner!=='enemy'){
+            building=selectedNuclearSilo; kind='nuclear'; refund=Math.floor((Number(building.buildCost)||5000)/2);
         }
         if(!building){showFloatingMsg('Select one of your buildings or command centers to sell');return;}
         // معسكر القيادة هو مجموعة THREE.Group نفسها، بينما بقية المباني تملك mesh منفصلاً.
@@ -11224,6 +11698,11 @@ function createArmyFactory(x,z,ghost=false){
         }else if(kind==='commandBase'){
             selectedCommandBase=null;
             building._saleInProgress=true;
+        }else if(kind==='nuclear'){
+            if(selectedNuclearSilo===building)closeNuclearPanel();
+            nuclearSilos=nuclearSilos.filter(n=>n!==building);
+            activeFlagMeshes=activeFlagMeshes.filter(item=>item&&item.mesh&&item.mesh.parent!==building.mesh);
+            building._saleInProgress=true;
         }
 
         playerMoney+=refund; updateEconomyUI();
@@ -11263,9 +11742,15 @@ function createArmyFactory(x,z,ghost=false){
             // First remove the building after the full seven-second dismantling order.
             if(mesh.parent)mesh.parent.remove(mesh);else scene.remove(mesh);
             if(building.hpLabel&&building.hpLabel.remove)building.hpLabel.remove();
-            if(kind==='commandBase'){
+            if(kind==='commandBase'||kind==='nuclear'){
                 building.isDestroyed=true;
                 building.hp=0;
+                if(building.hpLabel)building.hpLabel.style.display='none';
+            }
+            if(kind==='commandBase'){
+                // Selling command HQ also removes every friendly nuclear silo and unfinished silo site.
+                (nuclearSilos||[]).filter(n=>n&&n.owner!=='enemy').slice().forEach(n=>destroyNuclearSilo(n,'player'));
+                (activeNuclearConstructions||[]).filter(c=>c&&c.build&&c.build.owner!=='enemy').slice().forEach(c=>{removeConstructionProgressOverlay(c);if(c.build.mesh.parent)scene.remove(c.build.mesh);activeNuclearConstructions=activeNuclearConstructions.filter(x=>x!==c);});
             }
             // Keep the construction fence visible until the building has disappeared,
             // then fade and remove the fence separately.
@@ -11312,6 +11797,7 @@ function createArmyFactory(x,z,ghost=false){
     }
 
     function selectFactory(factory) {
+        closeNuclearPanel();
         selectedCommandBase=null;
         if(factory && factory.owner !== 'enemy') playSound('factorySelect', 0.8);
         if(factory&&!factory.buildCost)factory.buildCost=400;
@@ -11955,6 +12441,23 @@ function createArmyFactory(x,z,ghost=false){
 
             raycastAt(clientX, clientY);
 
+            if(nuclearTargetMode && selectedNuclearSilo){
+                const targetHits=raycaster.intersectObject(terrainMesh);
+                if(targetHits.length){const p=targetHits[0].point.clone();p.y=getTerrainHeight(p.x,p.z);fireNuclearMissile(p);}
+                return;
+            }
+            if(nuclearBuildMode && nuclearBuildGhost){
+                const hits=raycaster.intersectObject(terrainMesh);
+                if(hits.length){
+                    const p=hits[0].point.clone();p.y=getTerrainHeight(p.x,p.z);
+                    const valid=isBuildingPlacementValid(p,'nuclear',0,'player').valid;
+                    const builder=selectedTank&&getUnitKind(selectedTank)==='builder'&&!selectedTank.isDestroyed?selectedTank:null;
+                    if(!valid){showFloatingMsg('Cannot place nuclear silo here: choose flat, empty ground');return;}
+                    if(builder)startNuclearSiloConstruction(builder,p);else{nuclearBuildMode=false;if(nuclearBuildGhost?.mesh)scene.remove(nuclearBuildGhost.mesh);nuclearBuildGhost=null;showFloatingMsg('Select the construction dozer first');}
+                }
+                return;
+            }
+
             const unit = findPlayerUnitAtRay();
             const factory = findFactoryAtRay();
             const barracks = findBarracksAtRay();
@@ -11998,6 +12501,7 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
 
+            for(const silo of nuclearSilos){if(silo&&!silo.isDestroyed&&silo.mesh){const h=raycaster.intersectObject(silo.mesh,true);if(h.length){selectNuclearSilo(silo);return;}}}
             if (barracks && barracks.done) { selectBarracks(barracks); return; }
             if (oilRig) { selectOilRig(oilRig); return; }
             // الضغط على مصنع مكتمل يفتح قائمة إنتاجه.
@@ -12147,6 +12651,7 @@ function createArmyFactory(x,z,ghost=false){
 
         dom.addEventListener('pointermove', (e) => {
             if (gameOver || isCinematicEnding) return;
+            if(nuclearTargetMode){updateNuclearTargetFromScreen(e.clientX,e.clientY);return;}
 
             if (defenseCommandArmed && e.pointerType !== 'touch') {
                 updateDefenseMarkerFromScreen(e.clientX, e.clientY);
@@ -12179,8 +12684,8 @@ function createArmyFactory(x,z,ghost=false){
                 }
 
                 if (touchMode === 'pan') {
-                    if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode) {
-                        if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
+                    if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode || nuclearBuildMode) {
+                        if(nuclearBuildMode) updateNuclearBuildGhostFromScreen(e.clientX,e.clientY); else if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                         lastX = e.clientX; lastY = e.clientY;
                         gestureMoved = true;
                         return;
@@ -12205,8 +12710,8 @@ function createArmyFactory(x,z,ghost=false){
                 return;
             }
 
-            if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode) {
-                if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
+            if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode || nuclearBuildMode) {
+                if(nuclearBuildMode) updateNuclearBuildGhostFromScreen(e.clientX,e.clientY); else if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                 return;
             }
             if (!isDragging) return;
@@ -12246,20 +12751,20 @@ function createArmyFactory(x,z,ghost=false){
                 pinchStartDistance = 0;
                 pinchStartRadius = targetCameraRadius;
 
-                if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode) {
-                    if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
+                if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode || nuclearBuildMode) {
+                    if(nuclearBuildMode) updateNuclearBuildGhostFromScreen(e.clientX,e.clientY); else if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX,e.clientY);
                     handleTap(e.clientX, e.clientY);
-                } else if (!wasMoved) {
+                } else if (nuclearTargetMode || !wasMoved) {
                     handleTap(e.clientX, e.clientY);
                 }
                 return;
             }
 
             isDragging = false;
-            if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode) {
-                if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
+            if (factoryPlacementMode || barracksPlacementMode || artilleryPlacementMode || nuclearBuildMode) {
+                if(nuclearBuildMode) updateNuclearBuildGhostFromScreen(e.clientX,e.clientY); else if(artilleryPlacementMode) updateArtilleryGhostFromScreen(e.clientX,e.clientY); else if(barracksPlacementMode) updateBarracksGhostFromScreen(e.clientX,e.clientY); else updateFactoryGhostFromScreen(e.clientX, e.clientY);
                 handleTap(e.clientX, e.clientY);
-            } else if (!hasMoved) handleTap(e.clientX, e.clientY);
+            } else if (nuclearTargetMode || !hasMoved) handleTap(e.clientX, e.clientY);
         };
 
         dom.addEventListener('pointerup', endPointer);
@@ -12547,6 +13052,10 @@ function createArmyFactory(x,z,ghost=false){
         [...new Set([...(constructedBarracks || [])])].forEach(b => {
             if (!b || !b.mesh || b.isDestroyed || b.done === false) return;
             list.push({x:b.mesh.position.x, z:b.mesh.position.z, radius:(b.collisionRadius || 10)});
+        });
+        [...new Set([...(nuclearSilos || [])])].forEach(b => {
+            if (!b || !b.mesh || b.isDestroyed || b.done === false) return;
+            list.push({x:b.mesh.position.x, z:b.mesh.position.z, radius:(b.collisionRadius || 23)});
         });
         return list;
     }
@@ -13088,6 +13597,7 @@ function createArmyFactory(x,z,ghost=false){
         (constructedFactories||[]).forEach(f=>{if(f&&f!==targetUnit&&f.done&&!f.isDestroyed)addRoot(f.mesh);});
         (constructedBarracks||[]).forEach(b=>{if(b&&b!==targetUnit&&b.done&&!b.isDestroyed)addRoot(b.mesh);});
         (constructedArtillery||[]).forEach(a=>{if(a&&a!==targetUnit&&a.done&&!a.isDestroyed)addRoot(a.mesh);});
+        (nuclearSilos||[]).forEach(a=>{if(a&&a!==targetUnit&&a.done&&!a.isDestroyed)addRoot(a.mesh);});
         (oilRigs||[]).forEach(r=>{if(r&&r!==targetUnit&&!r.isDestroyed&&r.group)addRoot(r.group);});
         [...(playerTanks||[]),...(enemyTanks||[]),...(reconVehicles||[]),...(ambulances||[])].forEach(u=>{
             if(u && u!==fromUnit && u!==targetUnit && !u.isDestroyed && u.mesh) addRoot(u.mesh);
@@ -13271,7 +13781,7 @@ function createArmyFactory(x,z,ghost=false){
         const key=`${type}:${Math.round(x/2)}:${Math.round(z/2)}`;
         if(loweredStructurePads.has(key))return;
         loweredStructurePads.add(key);
-        const radius=type==='commandBase'?23:type==='factory'?19:type==='artillery'?14:12;
+        const radius=type==='commandBase'?23:type==='nuclear'?25:type==='factory'?19:type==='artillery'?14:12;
         // A broad, shallow earthwork creates a recessed emplacement rather than a deep impact crater.
         deformBattleTerrainForCrater(new THREE.Vector3(x,getTerrainHeight(x,z),z),radius,1.15);
     }
@@ -13541,6 +14051,7 @@ function createArmyFactory(x,z,ghost=false){
         if (selectedFactory && unit === selectedFactory) return true;
         if (selectedBarracks && unit === selectedBarracks) return true;
         if (selectedOilRig && unit === selectedOilRig) return true;
+        if (selectedNuclearSilo && unit === selectedNuclearSilo) return true;
         if (selectionMode === 'all' && selectedUnitKind && getUnitKind(unit) === selectedUnitKind && getSelectedUnits().includes(unit)) return true;
         return false;
     }
@@ -13611,6 +14122,7 @@ function createArmyFactory(x,z,ghost=false){
         [...(constructedBarracks||[])].forEach(b=>updateStructureBar(b,11));
         [...(constructedArtillery||[])].forEach(a=>updateStructureBar(a,8));
         [...(oilRigs||[])].forEach(r=>updateStructureBar(r,8));
+        [...(nuclearSilos||[])].forEach(n=>updateStructureBar(n,25));
 
         const worldProgress = document.getElementById('factory-world-progress');
         if (worldProgress) {
@@ -14795,8 +15307,8 @@ function createArmyFactory(x,z,ghost=false){
             kicker.innerText='BATTLE OVER';
             title.innerText='YOU SURRENDERED';
             title.style.color='#e0b85a';
-            subtitle.innerText='You surrendered after selling all buildings; your army was destroyed, your flag disappeared, and the enemy won';
-            if(flagCanvas)flagCanvas.style.display='none';
+            subtitle.innerText='You surrendered after selling all buildings; your army was destroyed and the enemy won';
+            if(flagCanvas)flagCanvas.style.display='';
         } else if (isPlayerWinner) {
             if(flagCanvas)flagCanvas.style.display='';
             kicker.innerText="MISSION COMPLETE";
@@ -14817,29 +15329,27 @@ function createArmyFactory(x,z,ghost=false){
             الأموال الEGYPTوفة: ${totalMoneySpent}$<br>
             الوحدات المتبقية: ${activePlayerTanks}
         `;
-        if(!playerSurrenderedBySellingAllBuildings) renderVictoryFlagCanvas(winningFlag);
+        renderVictoryFlagCanvas();
+        setTimeout(renderVictoryFlagCanvas,450);
     }
 
-    function renderVictoryFlagCanvas(flagType) {
-        const canvas = document.getElementById('victory-flag-canvas');
-        if(!canvas) return;
-        const ctx = canvas.getContext('2d');
-        canvas.width = 180; canvas.height = 100;
-        const color = flagType === 'green'
-            ? ((typeof battleConfig !== 'undefined' && battleConfig.playerColor) || '#168cff')
-            : ((typeof battleConfig !== 'undefined' && battleConfig.enemyColor) || '#f43f5e');
-        ctx.clearRect(0,0,180,100);
-        ctx.fillStyle = color;
-        ctx.fillRect(0,0,180,100);
-        const grad = ctx.createLinearGradient(0,0,0,100);
-        grad.addColorStop(0,'rgba(255,255,255,.20)');
-        grad.addColorStop(.5,'rgba(255,255,255,.03)');
-        grad.addColorStop(1,'rgba(0,0,0,.22)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0,0,180,100);
-        ctx.strokeStyle='rgba(255,255,255,.72)';
-        ctx.lineWidth=2;
-        ctx.strokeRect(1,1,178,98);
+    function renderVictoryFlagCanvas() {
+        const canvas=document.getElementById('victory-flag-canvas');if(!canvas)return;
+        const ctx=canvas.getContext('2d');canvas.width=360;canvas.height=150;
+        ctx.clearRect(0,0,360,150);ctx.fillStyle='#111914';ctx.fillRect(0,0,360,150);
+        const finishTeam=(x,label)=>{
+            ctx.strokeStyle='rgba(255,255,255,.72)';ctx.lineWidth=2;ctx.strokeRect(x+1,9,164,90);
+            ctx.fillStyle='#f2f4ed';ctx.font='bold 16px Arial';ctx.textAlign='center';ctx.fillText(label,x+83,128);
+        };
+        const drawTeam=(x,type,label)=>{
+            const paint=img=>{if(img)ctx.drawImage(img,x+2,10,162,88);finishTeam(x,label);};
+            if(typeof type==='string'&&type.indexOf('flag:')===0&&typeof window.__countryFlagData==='function'){
+                const image=new Image();image.onload=()=>paint(image);image.onerror=()=>{const tex=createFlagTexture(type);paint(tex.image);};image.src=window.__countryFlagData(type.slice(5));
+            }else{const tex=createFlagTexture(type);paint(tex.image);if(tex&&tex.dispose)tex.dispose();}
+        };
+        drawTeam(10,playerFlagType,'PLAYER FLAG');
+        drawTeam(184,enemyFlagType,'ENEMY FLAG');
+        ctx.strokeStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.moveTo(180,12);ctx.lineTo(180,138);ctx.stroke();
     }
 
     function onWindowResize() {
@@ -14961,6 +15471,10 @@ function createArmyFactory(x,z,ghost=false){
         const explored = warFogExploredCtx;
         const revealers = [];
         if (window.__temporaryReconScans) { window.__temporaryReconScans = window.__temporaryReconScans.filter(v => v.until > now); window.__temporaryReconScans.forEach(v => revealers.push({x:v.x,z:v.z,r:v.r})); }
+        // أثناء تحريك مؤشر النووي ينكشف محيط الهدف مباشرة، دون كشف دائم للخريطة.
+        if (nuclearTargetMode && nuclearTargetMarker && nuclearTargetMarker.visible) {
+            revealers.push({x:nuclearTargetMarker.position.x,z:nuclearTargetMarker.position.z,r:112});
+        }
 
         // رؤية قصيرة للقوات العادية؛ مركبة الاستطلاع وحدها تSCAN مساحة أكبر.
         const addUnits = (arr, kind) => (arr || []).forEach(u => {
@@ -15004,6 +15518,8 @@ function createArmyFactory(x,z,ghost=false){
         addStructureVision(playerBaseGroup, 92);
         (constructedFactories || []).forEach(f => addStructureVision(f, 78));
         (constructedBarracks || []).forEach(b => addStructureVision(b, 72));
+        (nuclearSilos || []).forEach(n => addStructureVision(n, n.visionRadius || 100));
+        (activeNuclearConstructions || []).forEach(c=>{if(c&&c.build&&c.build.owner!=='enemy'&&c.point)revealers.push({x:c.point.x,z:c.point.z,r:100});});
         (constructedArtillery || []).forEach(a => addStructureVision(a, a.visionRadius || 190));
         // A captured oil field remains visible to the player and clears war fog around it.
         (oilRigs || []).forEach(r => {
@@ -15094,6 +15610,7 @@ function createArmyFactory(x,z,ghost=false){
         setEnemyStructureVisibility(enemyBaseGroup, 82);
         (enemyFactories || []).forEach(f => setEnemyStructureVisibility(f, 68));
         (constructedBarracks || []).filter(b => b && (b.owner === 'enemy' || b.team === 'enemy')).forEach(b => setEnemyStructureVisibility(b, 62));
+        (nuclearSilos || []).filter(n => n && n.owner === 'enemy').forEach(n => setEnemyStructureVisibility(n, 72));
     }
 
     function animate(now) {
@@ -15146,6 +15663,7 @@ function createArmyFactory(x,z,ghost=false){
             beam.rotation.z = Math.sin(phase * 0.5) * 0.012;
         });
 
+        updateNuclearSystem(now);
         updateWarFogOfWar(now);
         refreshBattlefieldShadows();
         renderer.render(scene, camera);
@@ -15171,7 +15689,7 @@ function createArmyFactory(x,z,ghost=false){
         const title=bar?bar.querySelector('.build-title'):null;
         if(!bar||!factoryCard)return;
         const sellBtn=document.getElementById('sell-building-btn');
-        if(sellBtn){const canSell=!!((selectedFactory&&!selectedFactory.isDestroyed&&selectedFactory.owner!=='enemy')||(selectedBarracks&&!selectedBarracks.isDestroyed&&selectedBarracks.owner!=='enemy')||(selectedCommandBase&&!selectedCommandBase.isDestroyed&&selectedCommandBase.owner!=='enemy'));sellBtn.style.display=canSell?'block':'none';sellBtn.disabled=!canSell;}
+        if(sellBtn){const canSell=!!((selectedFactory&&!selectedFactory.isDestroyed&&selectedFactory.owner!=='enemy')||(selectedBarracks&&!selectedBarracks.isDestroyed&&selectedBarracks.owner!=='enemy')||(selectedCommandBase&&!selectedCommandBase.isDestroyed&&selectedCommandBase.owner!=='enemy')||(selectedNuclearSilo&&!selectedNuclearSilo.isDestroyed&&selectedNuclearSilo.owner!=='enemy'));sellBtn.style.display=canSell?'block':'none';sellBtn.disabled=!canSell;}
         const hasUnit=!!(selectedTank&&!selectedTank.isDestroyed);
         const builderSelected=hasUnit&&getUnitKind(selectedTank)==='builder';
         const ambulanceSelected=hasUnit&&getUnitKind(selectedTank)==='ambulance';
@@ -15186,9 +15704,10 @@ function createArmyFactory(x,z,ghost=false){
             sf.style.display=combatSelected?'flex':'none';
             sf.classList.toggle('active',combatSelected && getSelectedCombatUnits().some(u=>u.ceaseFire));
         }
-        if(selectedOilRig){ bar.classList.remove('base-mode','factory-mode','factory-selected','barracks-selected','unit-selected','builder-selected'); bar.classList.add('open'); if(title)title.innerHTML='OIL<br>FIELD'; return;}
-        if(selectedBarracks){updateBarracksBar();return;}
+        if(selectedOilRig){ const nc=document.getElementById('nuclear-silo-build-card');if(nc)nc.style.display='none'; bar.classList.remove('base-mode','factory-mode','factory-selected','barracks-selected','unit-selected','builder-selected'); bar.classList.add('open'); if(title)title.innerHTML='OIL<br>FIELD'; return;}
+        if(selectedBarracks){const nc=document.getElementById('nuclear-silo-build-card');if(nc)nc.style.display='none';updateBarracksBar();return;}
         if(selectedFactory){
+            const nc=document.getElementById('nuclear-silo-build-card');if(nc)nc.style.display='none';
             bar.classList.remove('barracks-selected','builder-selected','unit-selected');
             const barracksBuildCard=document.getElementById('barracks-build-card');
             const factoryInfantryCard=document.getElementById('factory-infantry-card');
@@ -15205,6 +15724,8 @@ function createArmyFactory(x,z,ghost=false){
             factoryCard.classList.toggle('disabled',playerMoney<400||isBuilderFactoryBusy(selectedTank));
             const artilleryCard=document.getElementById('artillery-build-card');
             if(artilleryCard){artilleryCard.style.display='flex';artilleryCard.classList.toggle('disabled',playerMoney<350||!!activeArtilleryConstructions.some(c=>c.builder===selectedTank));}
+            const nuclearCard=document.getElementById('nuclear-silo-build-card');
+            if(nuclearCard){nuclearCard.style.display='flex';nuclearCard.classList.toggle('disabled',playerMoney<5000||!!activeNuclearConstructions.some(c=>c.builder===selectedTank));}
             const barracksCard=document.getElementById('barracks-build-card');
             const hasArmyFactory=constructedFactories.some(f=>f&&f.done&&!f.isDestroyed&&f.owner!=='enemy');
             if(barracksCard){
@@ -15213,6 +15734,7 @@ function createArmyFactory(x,z,ghost=false){
             }
         }else if(hasUnit){
             const artilleryCard=document.getElementById('artillery-build-card');if(artilleryCard)artilleryCard.style.display='none';
+            const nuclearCard=document.getElementById('nuclear-silo-build-card');if(nuclearCard)nuclearCard.style.display='none';
             bar.classList.remove('factory-mode','base-mode');
             if(title)title.innerHTML='ORDERS';
         }else if(!activeFactoryConstructions.length&&!buildPanelOpen){
@@ -16040,7 +16562,7 @@ window.updateCameraSensitivity=function(v){
    if(typeof playerMoney!=='undefined'&&playerMoney<300){setArmed(false);msg('Not enough funds for a scan');return;}
    if(typeof playerMoney!=='undefined'){playerMoney-=300;if(typeof updateEconomyUI==='function')updateEconomyUI();}
    window.__temporaryReconScans=window.__temporaryReconScans||[];
-   window.__temporaryReconScans.push({x:point.x,z:point.z,r:SCAN_RADIUS,until:performance.now()+25000});
+   window.__temporaryReconScans.push({x:point.x,z:point.z,r:SCAN_RADIUS,until:performance.now()+50000});
    scanCooldownUntil=Date.now()+SCAN_COOLDOWN_MS;
    refreshScanCooldown();
    if(!scanCooldownTimer)scanCooldownTimer=setInterval(refreshScanCooldown,250);
@@ -16471,4 +16993,28 @@ window.updateCameraSensitivity=function(v){
             #victory-screen .restart-btn{min-height:36px!important;padding:7px!important;}
         }
 
+</style>
+
+
+<style id="nuclear-compact-and-touch-scroll-final">
+/* Smaller strategic silo, in the same olive military palette as the base. */
+#nuclear-command-panel{width:184px!important;max-width:calc(100vw - 18px)!important;padding:7px!important;border-radius:7px!important;font-size:10px!important;}
+#nuclear-command-panel .nuclear-head{font-size:10px!important;margin-bottom:3px!important;gap:5px!important;}
+#nuclear-command-panel .nuclear-status{font-size:9px!important;margin:3px 0 5px!important;line-height:1.25!important;}
+#nuclear-command-panel .nuclear-count{font-size:13px!important;letter-spacing:1px!important;padding:3px 5px!important;margin:3px 0 5px!important;min-height:19px!important;}
+#nuclear-command-panel button{font-size:9px!important;padding:6px 7px!important;min-height:29px!important;}
+/* Native horizontal swipe/drag for the complete building and unit card strip. */
+#construction-bar{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-x pan-y!important;scrollbar-width:thin!important;scrollbar-color:rgba(190,205,160,.72) rgba(0,0,0,.28)!important;scroll-snap-type:x proximity!important;}
+#construction-bar>.build-title,#construction-bar>.build-card,#construction-bar>.factory-build-card,#construction-bar>.factory-unit-card,#construction-bar>.barracks-build-card,#construction-bar>.barracks-unit-card{flex-shrink:0!important;scroll-snap-align:start!important;}
+#construction-bar .build-card,#construction-bar .factory-build-card,#construction-bar .factory-unit-card,#construction-bar .barracks-build-card,#construction-bar .barracks-unit-card{touch-action:pan-x pan-y!important;}
+#construction-bar::-webkit-scrollbar{height:5px!important;}
+#construction-bar::-webkit-scrollbar-thumb{background:rgba(190,205,160,.7)!important;border-radius:8px!important;}
+@media(max-width:700px){
+ #nuclear-command-panel{top:7px!important;right:7px!important;width:154px!important;max-width:calc(100vw - 14px)!important;padding:5px!important;}
+ #nuclear-command-panel .nuclear-head{font-size:8px!important;}
+ #nuclear-command-panel .nuclear-status{font-size:8px!important;}
+ #nuclear-command-panel .nuclear-count{font-size:12px!important;letter-spacing:.7px!important;}
+ #nuclear-command-panel button{font-size:8px!important;padding:5px!important;min-height:26px!important;}
+ #construction-bar{scrollbar-width:thin!important;touch-action:pan-x!important;}
+}
 </style>
