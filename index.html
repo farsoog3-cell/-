@@ -10139,7 +10139,6 @@ function startGame(){openBattleSetup();}
             const previousYaw=art.mesh.rotation.y;
             art.mesh.rotation.y+=yawDelta*Math.min(1,deltaTimeSafe()*.0038);
             const yawStep=Math.abs(art.mesh.rotation.y-previousYaw);
-            if(Math.abs(yawDelta)>.025&&now-(art.lastTraverseSoundAt||0)>1250){playSound('artilleryTraverse',.72);art.lastTraverseSoundAt=now;}
             art.pivot.rotation.y=0;
             if(!target||now<(art.reloadAt||0))continue;
             // Do not fire until the entire carriage is aligned with the detected target.
@@ -10152,7 +10151,9 @@ function startGame(){openBattleSetup();}
             playSound('artilleryFire',.95);
         }
         for(let i=artilleryShells.length-1;i>=0;i--){const sh=artilleryShells[i];sh.progress+=1/60/sh.duration;const t=Math.min(1,sh.progress);const pos=sh.start.clone().lerp(sh.target,t);pos.y+=4*t*(1-t)*Math.min(58,Math.max(12,sh.start.distanceTo(sh.target)*.34));sh.mesh.position.copy(pos);sh.mesh.lookAt(sh.target);if(performance.now()-(sh.lastTrail||0)>75){spawnArtilleryPuff(pos.clone(),.34+Math.random()*.22,.75+Math.random()*.45);sh.lastTrail=performance.now();}
-            if(t>=1){const impact=sh.target.clone();if(sh.mesh.parent)scene.remove(sh.mesh);if(typeof createModernExplosion==='function')createModernExplosion(impact.x,impact.z);playSound('artilleryImpact',1.0);createModernImpactFlash(impact.clone(),sh.owner,{heavy:true});createBlackImpactCrater(impact,7.2,19000,false);triggerCameraShake(.075);for(const u of [...playerTanks,...enemyTanks,...reconVehicles,...ambulances]){if(!u||u.isDestroyed||!u.mesh||u.team===sh.owner)continue;const d=Math.hypot(u.mesh.position.x-impact.x,u.mesh.position.z-impact.z);if(d<24){const dmg=sh.damage*(1-d/27);u.hp=Math.max(0,u.hp-dmg);u.hpRevealUntil=Date.now()+3500;if(u.hp<=0&&!u.isDestroyed){if(typeof destroyCombatUnitSafely==='function')destroyCombatUnitSafely(u,sh.owner);}}}
+            if(t>=1){const impact=sh.target.clone();if(sh.mesh.parent)scene.remove(sh.mesh);if(typeof createModernExplosion==='function')createModernExplosion(impact.x,impact.z);
+                // Play the artillery shell explosion sound only when the shell reaches its impact point.
+                playSound('artilleryImpact',1.0);createModernImpactFlash(impact.clone(),sh.owner,{heavy:true});createBlackImpactCrater(impact,7.2,19000,false);triggerCameraShake(.075);for(const u of [...playerTanks,...enemyTanks,...reconVehicles,...ambulances]){if(!u||u.isDestroyed||!u.mesh||u.team===sh.owner)continue;const d=Math.hypot(u.mesh.position.x-impact.x,u.mesh.position.z-impact.z);if(d<24){const dmg=sh.damage*(1-d/27);u.hp=Math.max(0,u.hp-dmg);u.hpRevealUntil=Date.now()+3500;if(u.hp<=0&&!u.isDestroyed){if(typeof destroyCombatUnitSafely==='function')destroyCombatUnitSafely(u,sh.owner);}}}
                 for(const a of (constructedArtillery||[]))if(a&&a.done&&!a.isDestroyed&&a.owner!==sh.owner){const d=Math.hypot(a.mesh.position.x-impact.x,a.mesh.position.z-impact.z);if(d<24)damageArtillery(a,Math.floor(sh.damage*(1-d/27)),sh.owner);}
                 const enemyBase=sh.owner==='player'?enemyBaseGroup:playerBaseGroup;if(enemyBase&&!enemyBase.isDestroyed&&enemyBase.mesh.position.distanceTo(impact)<13)damageCommandBase(enemyBase,Math.floor(sh.damage*1.15),sh.owner);
                 for(const f of [...(constructedFactories||[]),...(enemyFactories||[])])if(f&&f.done&&!f.isDestroyed&&f.owner!==sh.owner&&f.mesh.position.distanceTo(impact)<13)damageFactory(f,Math.floor(sh.damage*1.05),sh.owner);
