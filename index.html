@@ -4997,6 +4997,7 @@ img { max-width: 100%; }
         audio.preload = 'auto';
         audio.loop = loop;
         audio.setAttribute('playsinline', '');
+        try { audio.load(); } catch(e) {}
         audio.addEventListener('error', () => {
             console.warn('[GAME AUDIO] Failed to load audio:', type, url);
         }, { once: true });
@@ -5185,6 +5186,16 @@ img { max-width: 100%; }
         }else{
             playAudioElement(audio,finalVolume,true).catch(cleanup);
         }
+    }
+
+    // لا يصدر صوت إتمام البناء إلا عند اكتمال مبنى فعلي، ومرة واحدة لكل مبنى.
+    function playConstructionCompleteOnce(build, volume = 0.9) {
+        if (!build || build.done !== true || build.isDestroyed || !build.mesh) return false;
+        if (build.userData?.constructionCompleteSoundPlayed || build.mesh.userData?.constructionCompleteSoundPlayed) return false;
+        if (build.userData) build.userData.constructionCompleteSoundPlayed = true;
+        if (build.mesh.userData) build.mesh.userData.constructionCompleteSoundPlayed = true;
+        playSound('constructionComplete', volume);
+        return true;
     }
 
     // أصوات أحداث المعركة من ملفات خارجية مع حد زمني يمنع تكرار النداءات.
@@ -10102,7 +10113,7 @@ function startGame(){openBattleSetup();}
             c.build.mesh.visible=true;c.build.mesh.scale.set(1.32,.18+.82*p,1.08);c.build.mesh.position.y=getTerrainHeight(c.point.x,c.point.z)-4.5*(1-p);
             c.build.mesh.traverse(o=>{if(o.material){o.material.opacity=Math.min(1,.18+p*.82);o.material.transparent=p<1;o.material.depthWrite=p>=1;}});
             updateConstructionProgressOverlay(c,p,'FIELD ARTILLERY');
-            if(p>=1){c.build.done=true;c.build.ghost=false;c.build.mesh.scale.set(1.32,1.05,1.08);c.build.mesh.position.y=getTerrainHeight(c.point.x,c.point.z);c.build.mesh.traverse(o=>{if(o.material){o.material.opacity=1;o.material.transparent=false;o.material.depthWrite=true;}});if(c.cage?.mesh)scene.remove(c.cage.mesh);if(c.lift?.mesh)scene.remove(c.lift.mesh);removeConstructionProgressOverlay(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}constructedArtillery.push(c.build);lowerGroundForStructure(c.point.x,c.point.z,'artillery');createArtilleryCrew(c.build);finishBuilderConstructionRetreat({builder:b,build:c.build,point:c.point});playSound('constructionComplete',.9);activeArtilleryConstructions=activeArtilleryConstructions.filter(x=>x!==c);showFloatingMsg('Field artillery completed — defensive range active');}
+            if(p>=1){c.build.done=true;c.build.ghost=false;c.build.mesh.scale.set(1.32,1.05,1.08);c.build.mesh.position.y=getTerrainHeight(c.point.x,c.point.z);c.build.mesh.traverse(o=>{if(o.material){o.material.opacity=1;o.material.transparent=false;o.material.depthWrite=true;}});if(c.cage?.mesh)scene.remove(c.cage.mesh);if(c.lift?.mesh)scene.remove(c.lift.mesh);removeConstructionProgressOverlay(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}constructedArtillery.push(c.build);lowerGroundForStructure(c.point.x,c.point.z,'artillery');createArtilleryCrew(c.build);finishBuilderConstructionRetreat({builder:b,build:c.build,point:c.point});playConstructionCompleteOnce(c.build,.9);activeArtilleryConstructions=activeArtilleryConstructions.filter(x=>x!==c);showFloatingMsg('Field artillery completed — defensive range active');}
         }
         for(const art of constructedArtillery){
             if(!art||!art.done||art.isDestroyed)continue;
@@ -10129,7 +10140,7 @@ function startGame(){openBattleSetup();}
             const origin=art.recoil.localToWorld(new THREE.Vector3(0,1.55,-15.55));const shell=new THREE.Group();const ball=new THREE.Mesh(new THREE.SphereGeometry(.48,16,12),new THREE.MeshStandardMaterial({color:0x252a27,metalness:.82,roughness:.3}));ball.scale.set(1,1,1.18);shell.add(ball);const band=new THREE.Mesh(new THREE.TorusGeometry(.43,.055,6,16),new THREE.MeshStandardMaterial({color:0x777d75,metalness:.9,roughness:.28}));band.rotation.x=Math.PI/2;shell.add(band);shell.position.copy(origin);shell.traverse(o=>{if(o.isMesh)o.castShadow=true;});scene.add(shell);
             const direction=aim.clone().sub(origin).normalize();spawnArtilleryMuzzleBlast(origin,direction);art.recoilOffset=1.18;art.recoil.position.z=1.18;art.lastShotAt=now;art.recoil.rotation.x=-.075;for(let smoke=0;smoke<13;smoke++)spawnArtilleryPuff(origin.clone().addScaledVector(direction,.25+smoke*.34),1.0+Math.random()*.7,1.45+Math.random()*.9);triggerCameraShake(.095);
             artilleryShells.push({mesh:shell,start:origin,target:aim,progress:0,duration:Math.max(1.25,best/105),owner:art.owner,damage:320,lastTrail:0});
-            playSound('artilleryFire',.95,origin);
+            playSound('artilleryFire',.95);
         }
         for(let i=artilleryShells.length-1;i>=0;i--){const sh=artilleryShells[i];sh.progress+=1/60/sh.duration;const t=Math.min(1,sh.progress);const pos=sh.start.clone().lerp(sh.target,t);pos.y+=4*t*(1-t)*Math.min(58,Math.max(12,sh.start.distanceTo(sh.target)*.34));sh.mesh.position.copy(pos);sh.mesh.lookAt(sh.target);if(performance.now()-(sh.lastTrail||0)>75){spawnArtilleryPuff(pos.clone(),.34+Math.random()*.22,.75+Math.random()*.45);sh.lastTrail=performance.now();}
             if(t>=1){const impact=sh.target.clone();if(sh.mesh.parent)scene.remove(sh.mesh);if(typeof createModernExplosion==='function')createModernExplosion(impact.x,impact.z);playSound('artilleryImpact',.9,impact);createModernImpactFlash(impact.clone(),sh.owner,{heavy:true});createBlackImpactCrater(impact,7.2,19000,false);triggerCameraShake(.075);for(const u of [...playerTanks,...enemyTanks,...reconVehicles,...ambulances]){if(!u||u.isDestroyed||!u.mesh||u.team===sh.owner)continue;const d=Math.hypot(u.mesh.position.x-impact.x,u.mesh.position.z-impact.z);if(d<24){const dmg=sh.damage*(1-d/27);u.hp=Math.max(0,u.hp-dmg);u.hpRevealUntil=Date.now()+3500;if(u.hp<=0&&!u.isDestroyed){if(typeof destroyCombatUnitSafely==='function')destroyCombatUnitSafely(u,sh.owner);}}}
@@ -10254,7 +10265,7 @@ function startGame(){openBattleSetup();}
             if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}
             const r=c.build.rotation||0,forward=new THREE.Vector3(Math.sin(r),0,Math.cos(r));const retreat=c.build.mesh.position.clone().sub(forward.multiplyScalar(9));retreat.y=getTerrainHeight(retreat.x,retreat.z);
             b.isBuilding=false;b.buildTarget=null;b.target=retreat;b.factoryRetreating=true;
-            constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});activeBarracksConstruction=null;playSound('constructionComplete',0.9);updateConstructionBarForSelection();showFloatingMsg('✅ Military barracks complete — select it to train soldiers');
+            constructedBarracks.push(c.build);obstacles.push({x:c.build.mesh.position.x,z:c.build.mesh.position.z,radius:8});activeBarracksConstruction=null;playConstructionCompleteOnce(c.build,0.9);updateConstructionBarForSelection();showFloatingMsg('✅ Military barracks complete — select it to train soldiers');
         }
     }
     function queueBarracksUnit(type){
@@ -15331,7 +15342,7 @@ function createArmyFactory(x,z,ghost=false){
             if(c.elapsed%60===0&&c.elapsed<c.build.duration)showFloatingMsg(`🏭 Factory construction: ${Math.floor(p*100)}%`);
             if(p>=1){
                 c.build.done=true;c.build.ghost=false;c.build.mesh.scale.setScalar(1.15);c.build.mesh.position.y=getBuildingGroundLevel(c.point.x,c.point.z,'factory',c.build.rotation||0)+.03;c.build.mesh.traverse(o=>{if(o.material)o.material.opacity=1;});
-                removeConstructionProgressOverlay(c);removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);lowerGroundForStructure(c.point.x,c.point.z,'factory');playSound('constructionComplete',0.9);
+                removeConstructionProgressOverlay(c);removeConstructionLift(c);removeFactoryConstructionCage(c);if(c.build.mesh.userData.constructionFoundation){scene.remove(c.build.mesh.userData.constructionFoundation);c.build.mesh.userData.constructionFoundation=null;}finishBuilderConstructionRetreat(c);constructedFactories.push(c.build);lowerGroundForStructure(c.point.x,c.point.z,'factory');playConstructionCompleteOnce(c.build,0.9);
                 showFloatingMsg('✅ Factory complete — construction dozer retreating');
             }else remaining.push(c);
         }
