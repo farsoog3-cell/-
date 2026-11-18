@@ -4857,9 +4857,6 @@ img { max-width: 100%; }
             <button class="bar-control-btn" id="bar-defend-btn" onclick="playClickSound(); armDefenseCommand()" title="Guard unit: tap the ground to set a guard area">
                 <span class="bar-icon shield-icon">🛡</span><small>GUARD</small>
             </button>
-            <button class="bar-control-btn" id="bar-capture-oil-btn" onclick="playClickSound(); armOilCaptureCommand()" title="Select an oil well to send the selected soldier to capture it">
-                <span class="bar-icon">🚩</span><small>CAPTURE</small>
-            </button>
             <button class="bar-control-btn" id="temporary-scout-scan" onclick="playClickSound()" title="Remote scan: select an area on the map to reveal it for 25 seconds">
                 <span class="bar-icon">⌖</span><small>SCAN</small>
             </button>
@@ -5487,9 +5484,6 @@ img { max-width: 100%; }
     let playerTargetPos = null;
     let selectedUnitKind = null; // 'normal', 'rocket', 'ambulance', 'builder', or 'infantry'
     let defenseCommandArmed = false;
-    let oilCaptureCommandArmed = false;
-    let oilCaptureTargetRig = null;
-    let oilCaptureTargetMarker = null;
     let lastTapTime = 0;
     let lastTapX = 0;
     let lastTapY = 0;
@@ -5916,17 +5910,8 @@ img { max-width: 100%; }
         const singleBtn = document.getElementById('sel-single-btn');
         const scanBtn = document.getElementById('temporary-scout-scan');
         const barDefendBtn = document.getElementById('bar-defend-btn');
-        const captureOilBtn = document.getElementById('bar-capture-oil-btn');
         const hasSelection = !!(selectedTank && !selectedTank.isDestroyed && selectedUnitKind && selectedUnitKind !== 'factory');
-        const infantrySelected = !!(hasSelection && selectedTank.isInfantry && selectedUnitKind === 'infantry');
         const scoutSelected = hasSelection && selectedUnitKind === 'scout';
-        if (captureOilBtn) {
-            captureOilBtn.style.display = infantrySelected ? 'flex' : 'none';
-            captureOilBtn.disabled = !infantrySelected;
-            captureOilBtn.classList.toggle('armed', oilCaptureCommandArmed);
-            captureOilBtn.innerHTML = oilCaptureCommandArmed ? '<span class="bar-icon">➤</span><small>CHOOSE OIL</small>' : '<span class="bar-icon">🚩</span><small>CAPTURE</small>' ;
-        }
-        if (!infantrySelected && oilCaptureCommandArmed) { oilCaptureCommandArmed = false; clearOilCaptureTargetMarker(); }
 
         // سيارة الاستطلاع تستخدم الSCAN عن بُعد فقط؛ لا نعرض لها أمر الGUARD.
         [btn, cancelBtn, allBtn, singleBtn].forEach(el => {
@@ -5952,44 +5937,9 @@ img { max-width: 100%; }
         }
     }
 
-    function clearOilCaptureTargetMarker() {
-        if (oilCaptureTargetMarker && typeof scene !== 'undefined' && scene) scene.remove(oilCaptureTargetMarker);
-        oilCaptureTargetMarker = null;
-        oilCaptureTargetRig = null;
-    }
-
-    function armOilCaptureCommand() {
-        if (!selectedTank || selectedTank.isDestroyed || !selectedTank.isInfantry || selectedUnitKind !== 'infantry') {
-            showFloatingMsg('Select a soldier first');
-            return;
-        }
-        defenseCommandArmed = false;
-        oilCaptureCommandArmed = true;
-        clearOilCaptureTargetMarker();
-        updateDefenseButton();
-        showFloatingMsg('🚩 Touch an oil well to send the soldier to capture it');
-    }
-
-    function showOilCaptureTargetMarker(rig) {
-        clearOilCaptureTargetMarker();
-        if (!rig || typeof THREE === 'undefined' || typeof scene === 'undefined') return;
-        const group = new THREE.Group();
-        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,2.5,8), new THREE.MeshBasicMaterial({color:0xffd34e}));
-        shaft.position.y = 1.25;
-        const head = new THREE.Mesh(new THREE.ConeGeometry(0.72,1.25,8), new THREE.MeshBasicMaterial({color:0xffb52e}));
-        head.position.y = 2.95;
-        group.add(shaft,head);
-        group.position.set(rig.x, getTerrainHeight(rig.x,rig.z)+0.25, rig.z);
-        scene.add(group);
-        oilCaptureTargetMarker = group;
-        oilCaptureTargetRig = rig;
-    }
-
     function cancelUnitSelection() {
         // زر "CANCEL": يمسح تحديد الوحدة الحالية فقط.
         defenseCommandArmed = false;
-        oilCaptureCommandArmed = false;
-        clearOilCaptureTargetMarker();
         if (typeof window.__remoteScoutScanSetArmed === 'function') window.__remoteScoutScanSetArmed(false);
         factoryBuildArmed = false;
         selectedFactory = null;
@@ -6093,8 +6043,6 @@ img { max-width: 100%; }
         selectedOilRig = null;
         selectedTank = unit;
         selectedUnitKind = getUnitKind(unit);
-        oilCaptureCommandArmed = false;
-        clearOilCaptureTargetMarker();
         unit.hpRevealUntil = 0;
         selectionMode = 'single';
         defenseCommandArmed = false;
@@ -12515,32 +12463,6 @@ function createArmyFactory(x,z,ghost=false){
             const barracks = findBarracksAtRay();
             const oilRig = findOilRigAtRay();
 
-            // أمر السيطرة المباشر: بعد تفعيل الزر، لمس بئر النفط يرسل الجندي المحدد إليه فوراً.
-            if (oilCaptureCommandArmed) {
-                if (oilRig && selectedTank && selectedTank.isInfantry && !selectedTank.isDestroyed) {
-                    const rigPoint = new THREE.Vector3(oilRig.x, getTerrainHeight(oilRig.x,oilRig.z), oilRig.z);
-                    const dx = selectedTank.mesh.position.x - rigPoint.x;
-                    const dz = selectedTank.mesh.position.z - rigPoint.z;
-                    const len = Math.hypot(dx,dz) || 1;
-                    const destination = rigPoint.clone().add(new THREE.Vector3(dx/len*4,0,dz/len*4));
-                    destination.y = getTerrainHeight(destination.x,destination.z);
-                    selectedTank.manualControl = true;
-                    selectedTank.hasPlayerMoveOrder = true;
-                    selectedTank.holdPosition = false;
-                    selectedTank.guardPoint = null;
-                    selectedTank.bombardPoint = null;
-                    selectedTank.target = destination;
-                    selectedTank.combatHoldTarget = null;
-                    oilCaptureCommandArmed = false;
-                    showOilCaptureTargetMarker(oilRig);
-                    updateDefenseButton();
-                    showFloatingMsg('🚩 Soldier moving to capture the oil well');
-                } else {
-                    showFloatingMsg('Touch an oil well to capture it');
-                }
-                return;
-            }
-
             // أثناء وضع المدفع: اللمس يثبت الموقع ويبدأ التركس البناء.
             if (artilleryPlacementMode && artilleryPlacementGhost) {
                 const hits=raycaster.intersectObject(terrainMesh);if(hits.length){const p=hits[0].point.clone();p.y=getTerrainHeight(p.x,p.z);const builder=selectedTank&&getUnitKind(selectedTank)==='builder'&&!selectedTank.isDestroyed?selectedTank:null;const valid=isBuildingPlacementValid(p,'barracks',artilleryPlacementRotation,'player').valid;if(!valid){showFloatingMsg('Cannot place artillery here');return;}if(builder)startArtilleryConstruction(builder,p,artilleryPlacementRotation);else{artilleryPlacementMode=false;scene.remove(artilleryPlacementGhost.mesh);artilleryPlacementGhost=null;}}
@@ -15276,11 +15198,6 @@ function createArmyFactory(x,z,ghost=false){
             }
         });
 
-        if (oilCaptureTargetRig && (oilCaptureTargetRig.isDestroyed || oilCaptureTargetRig.owner === 'player')) {
-            clearOilCaptureTargetMarker();
-            showFloatingMsg('✅ Oil well captured');
-        }
-
         const ownedOil=oilRigs.filter(r=>!r.isDestroyed&&r.owner==='player').length;
         const enemyOwnedOil=oilRigs.filter(r=>!r.isDestroyed&&r.owner==='enemy').length;
         const totalOil=oilRigs.filter(r=>!r.isDestroyed).length||4;
@@ -16413,55 +16330,17 @@ window.updateCameraSensitivity=function(v){
  const bootImages=['images/loading1.jpg','images/loading2.jpg','images/loading3.jpg'];let bootIndex=0;const bootImg=document.getElementById('boot-loading-image');
  function setBootImage(){if(!bootImg)return;let tries=0;while(tries<bootImages.length){bootImg.src=bootImages[bootIndex];bootImg.dataset.failed='';bootIndex=(bootIndex+1)%bootImages.length;tries++;break;}}
  bootImg.onerror=()=>{bootImg.style.display='none';};setBootImage();const bootSlideTimer=setInterval(()=>{if(!document.getElementById('boot-loading-overlay')){clearInterval(bootSlideTimer);return;}setBootImage();},3500);
- // صوت المقدمة يعمل طوال مدة شريط الانتظار، ويتوقف فور انتهاء المؤقت.
- const bootVoice = new Audio('sounds/intro-voice.mp3');
- bootVoice.preload = 'auto'; bootVoice.loop = true; bootVoice.volume = 1;
- window.__introVoicePlayedDuringBoot = false;
- let bootVoiceStarted = false, bootFinished = false;
- const bootFill = $('boot-loading-fill');
- const BOOT_LOADING_DURATION = 15000;
- const bootStartedAt = Date.now();
- function stopBootVoice(){
-   try { bootVoice.pause(); bootVoice.currentTime = 0; } catch(e) {}
- }
- function finishBootLoading(){
-   if(bootFinished)return;
-   bootFinished=true;
-   if(bootFill)bootFill.style.width='100%';
-   stopBootVoice();
-   window.__introVoicePlayedDuringBoot = bootVoiceStarted;
-   setTimeout(()=>{
-     load.remove();
-     const settings=$('settings-modal'); if(settings)settings.style.display='flex';
-     document.body.classList.remove('waiting-menu-active');
-     try{if(typeof startPreGameMusic==='function')startPreGameMusic();}catch(e){}
-   },180);
- }
- function startLoadingVoice(){
-   if(bootFinished || bootVoiceStarted)return;
-   try { if(typeof unlockGameAudio==='function')unlockGameAudio(); } catch(e){}
-   const playPromise=bootVoice.play();
-   if(playPromise && typeof playPromise.then==='function'){
-     playPromise.then(()=>{bootVoiceStarted=true;}).catch(()=>{bootVoiceStarted=false;});
-   } else { bootVoiceStarted=true; }
- }
- const startLoadingMusicFromGesture = () => { startLoadingVoice(); };
- load.addEventListener('pointerdown',startLoadingMusicFromGesture,{passive:true});
- document.addEventListener('pointerdown',startLoadingMusicFromGesture,{once:true,passive:true});
- document.addEventListener('touchstart',startLoadingMusicFromGesture,{once:true,passive:true});
- document.addEventListener('click',startLoadingMusicFromGesture,{once:true});
- // محاولة التشغيل التلقائي؛ وإذا منع المتصفح ذلك يبدأ الصوت عند أول لمسة.
- startLoadingVoice();
- const boot=setInterval(()=>{
-   if(bootFinished){clearInterval(boot);return;}
-   const elapsed=Date.now()-bootStartedAt;
-   const progress=Math.min(100,(elapsed/BOOT_LOADING_DURATION)*100);
-   if(bootFill)bootFill.style.width=progress+'%';
-   if(elapsed>=BOOT_LOADING_DURATION){
-     clearInterval(boot);
-     finishBootLoading();
-   }
- },100);
+ // Try to begin the loading music immediately. Mobile browsers may block autoplay;
+ // the first user touch/click retries playback inside the browser's allowed gesture.
+ try { if (typeof startPreGameMusic === 'function') startPreGameMusic(); } catch(e) {}
+ const startLoadingMusicFromGesture = () => {
+   try { if (typeof unlockGameAudio === 'function') unlockGameAudio(); if (typeof startPreGameMusic === 'function') startPreGameMusic(); } catch(e) {}
+ };
+ load.addEventListener('pointerdown', startLoadingMusicFromGesture, {passive:true});
+ document.addEventListener('pointerdown', startLoadingMusicFromGesture, {once:true, passive:true});
+ document.addEventListener('touchstart', startLoadingMusicFromGesture, {once:true, passive:true});
+ document.addEventListener('click', startLoadingMusicFromGesture, {once:true});
+ let p=0;const boot=setInterval(()=>{p=Math.min(100,p+4);const f=$('boot-loading-fill');if(f)f.style.width=p+'%';if(p>=100){clearInterval(boot);load.remove();$('settings-modal').style.display='flex';document.body.classList.remove('waiting-menu-active');try{if(typeof startPreGameMusic==='function')startPreGameMusic();}catch(e){} }},45);
 })();
 </script>
 
@@ -16919,9 +16798,8 @@ window.updateCameraSensitivity=function(v){
   audio.loop = false;
   audio.volume = 1;
 
-  var hasStarted = !!window.__introVoicePlayedDuringBoot;
+  var hasStarted = false;
   var retryArmed = false;
-  if (hasStarted) { try { audio.pause(); audio.currentTime = 0; } catch(e) {} }
 
   function battleBaseIsVisible() {
     if (!document.body || !document.body.classList.contains('battle-active')) return false;
@@ -17139,10 +17017,4 @@ window.updateCameraSensitivity=function(v){
  #nuclear-command-panel button{font-size:8px!important;padding:5px!important;min-height:26px!important;}
  #construction-bar{scrollbar-width:thin!important;touch-action:pan-x!important;}
 }
-</style>
-
-<style id="oil-capture-command-style">
-#bar-capture-oil-btn{display:none;min-width:62px;}
-#bar-capture-oil-btn.armed{border-color:#f5c451!important;background:linear-gradient(180deg,rgba(120,86,22,.96),rgba(53,40,16,.96))!important;box-shadow:0 0 12px rgba(245,196,81,.35)!important;}
-#bar-capture-oil-btn .bar-icon{font-size:20px;line-height:1.1;}
 </style>
